@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scripts | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/scripts.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tracking Scripts</h1>
+        <button class="btn btn-primary" onclick="showModal('createModal')">+ Add Script</button>
+      </div>
+
+      <div class="card">
+        <p style="color: #6b7280; margin-bottom: 20px;">
+          Manage tracking pixels and scripts for your landing pages. Global scripts are added to all pages,
+          or you can assign scripts to specific landing pages.
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Position</th>
+                <th>Scope</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="scriptsTable">
+              <tr>
+                <td colspan="6" class="loading"><div class="spinner"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Add Script</h2>
+        <button class="modal-close" onclick="hideModal('createModal')">&times;</button>
+      </div>
+      <form id="createForm">
+        <div class="form-group">
+          <label>Script Name</label>
+          <input type="text" id="createName" required placeholder="e.g., Google Analytics">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="createType">
+              <option value="analytics">Analytics</option>
+              <option value="pixel">Tracking Pixel</option>
+              <option value="conversion">Conversion</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Position</label>
+            <select id="createPosition">
+              <option value="head">Head (before &lt;/head&gt;)</option>
+              <option value="body_start">Body Start (after &lt;body&gt;)</option>
+              <option value="body_end">Body End (before &lt;/body&gt;)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Script Code</label>
+          <textarea id="createCode" rows="8" required placeholder="<script>...</script>" style="font-family: monospace;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Landing Pages</label>
+          <select id="createPages" multiple style="min-height: 100px;">
+            <!-- Populated dynamically -->
+          </select>
+          <small style="color: #666;">Hold Ctrl/Cmd to select multiple. Leave empty for all pages (global).</small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('createModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Script</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Edit Script</h2>
+        <button class="modal-close" onclick="hideModal('editModal')">&times;</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label>Script Name</label>
+          <input type="text" id="editName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="editType">
+              <option value="analytics">Analytics</option>
+              <option value="pixel">Tracking Pixel</option>
+              <option value="conversion">Conversion</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Position</label>
+            <select id="editPosition">
+              <option value="head">Head</option>
+              <option value="body_start">Body Start</option>
+              <option value="body_end">Body End</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Script Code</label>
+          <textarea id="editCode" rows="8" required style="font-family: monospace;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Landing Pages</label>
+          <select id="editPages" multiple style="min-height: 100px;"></select>
+          <small style="color: #666;">Leave empty for all pages (global).</small>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 12px;">
+          <label class="toggle">
+            <input type="checkbox" id="editActive">
+            <span class="toggle-slider"></span>
+          </label>
+          <span>Active</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('editModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    let landingPages = [];
+
+    async function loadLandingPages() {
+      const res = await fetch('/api/pages');
+      landingPages = await res.json();
+
+      const createSelect = document.getElementById('createPages');
+      const editSelect = document.getElementById('editPages');
+
+      [createSelect, editSelect].forEach(select => {
+        select.innerHTML = landingPages.map(page =>
+          `<option value="${page.id}">${page.name}</option>`
+        ).join('');
+      });
+    }
+
+    async function loadScripts() {
+      const res = await fetch('/api/scripts');
+      const scripts = await res.json();
+
+      const tbody = document.getElementById('scriptsTable');
+      if (scripts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No scripts yet. Add your first tracking script!</td></tr>';
+      } else {
+        tbody.innerHTML = scripts.map(script => {
+          const pageNames = script.landing_page_ids?.length
+            ? landingPages.filter(p => script.landing_page_ids.includes(p.id)).map(p => p.name).join(', ')
+            : 'All Pages (Global)';
+
+          return `
+            <tr>
+              <td><strong>${script.name}</strong></td>
+              <td><span class="badge badge-blue">${script.type}</span></td>
+              <td>${script.position.replace('_', ' ')}</td>
+              <td>${pageNames}</td>
+              <td>
+                <span class="badge ${script.is_active ? 'badge-green' : 'badge-gray'}">
+                  ${script.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="action-btn action-btn-edit" onclick="editScript(${script.id})">Edit</button>
+                <button class="action-btn action-btn-delete" onclick="deleteScript(${script.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const selectedPages = Array.from(document.getElementById('createPages').selectedOptions).map(o => parseInt(o.value));
+
+      const data = {
+        name: document.getElementById('createName').value,
+        type: document.getElementById('createType').value,
+        position: document.getElementById('createPosition').value,
+        code: document.getElementById('createCode').value,
+        landing_page_ids: selectedPages
+      };
+
+      try {
+        await api('/api/scripts', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+
+        hideModal('createModal');
+        document.getElementById('createForm').reset();
+        loadScripts();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function editScript(id) {
+      const res = await fetch(`/api/scripts/${id}`);
+      const script = await res.json();
+
+      document.getElementById('editId').value = script.id;
+      document.getElementById('editName').value = script.name;
+      document.getElementById('editType').value = script.type;
+      document.getElementById('editPosition').value = script.position;
+      document.getElementById('editCode').value = script.code;
+      document.getElementById('editActive').checked = script.is_active;
+
+      // Set selected pages
+      const select = document.getElementById('editPages');
+      Array.from(select.options).forEach(opt => {
+        opt.selected = (script.landing_page_ids || []).includes(parseInt(opt.value));
+      });
+
+      showModal('editModal');
+    }
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('editId').value;
+      const selectedPages = Array.from(document.getElementById('editPages').selectedOptions).map(o => parseInt(o.value));
+
+      const data = {
+        name: document.getElementById('editName').value,
+        type: document.getElementById('editType').value,
+        position: document.getElementById('editPosition').value,
+        code: document.getElementById('editCode').value,
+        landing_page_ids: selectedPages,
+        is_active: document.getElementById('editActive').checked
+      };
+
+      try {
+        await api(`/api/scripts/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+
+        hideModal('editModal');
+        loadScripts();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteScript(id) {
+      if (!confirm('Are you sure you want to delete this script?')) return;
+
+      await fetch(`/api/scripts/${id}`, { method: 'DELETE' });
+      loadScripts();
+    }
+
+    // Initialize
+    loadLandingPages().then(() => loadScripts());
+  </script>
+</body>
+</html>

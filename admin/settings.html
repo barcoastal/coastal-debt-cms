@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .settings-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .settings-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+    .settings-card p {
+      color: #6b7280;
+      margin: 0 0 20px 0;
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .connection-status.connected {
+      background: #d1fae5;
+      border: 1px solid #10b981;
+    }
+    .connection-status.disconnected {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+    }
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .status-dot.green { background: #10b981; }
+    .status-dot.yellow { background: #f59e0b; }
+    .account-info {
+      flex: 1;
+    }
+    .account-info strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .account-info span {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .cost-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .stat-card .label {
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .setup-steps {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .setup-steps h4 {
+      margin: 0 0 12px 0;
+    }
+    .setup-steps ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .setup-steps li {
+      margin-bottom: 8px;
+      color: #4b5563;
+    }
+    .setup-steps a {
+      color: #3052FF;
+    }
+    .accounts-dropdown {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </a>
+        <a href="/admin/settings.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Settings</h1>
+      </div>
+
+      <!-- Google Ads Connection -->
+      <div class="settings-card">
+        <h3>Google Ads Integration</h3>
+        <p>Connect your Google Ads account to track cost per lead and campaign performance.</p>
+
+        <div id="connectionStatus">
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Not Connected</strong>
+              <span>Connect your Google Ads account to see cost data</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Developer Token Section -->
+        <div id="developerTokenSection">
+          <div class="form-group">
+            <label>Developer Token</label>
+            <input type="password" id="developerToken" placeholder="Enter your Google Ads Developer Token">
+            <small style="color: #666;">Required for API access. Get it from <a href="https://ads.google.com/aw/apicenter" target="_blank">Google Ads API Center</a></small>
+          </div>
+          <button class="btn btn-secondary" onclick="saveDeveloperToken()">Save Developer Token</button>
+        </div>
+
+        <!-- Connect Button -->
+        <div id="connectSection" style="margin-top: 16px; display: none;">
+          <button class="btn btn-primary" onclick="connectGoogleAds()">Connect Google Ads Account</button>
+        </div>
+
+        <!-- Account Selection (shown after OAuth) -->
+        <div id="accountSelection" class="accounts-dropdown" style="display: none;">
+          <div class="form-group">
+            <label>Select Google Ads Account</label>
+            <select id="accountSelect">
+              <option value="">Loading accounts...</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="selectAccount()">Use This Account</button>
+        </div>
+
+        <!-- Disconnect Button -->
+        <div id="disconnectSection" style="display: none; margin-top: 16px;">
+          <button class="btn btn-danger" onclick="disconnectGoogleAds()">Disconnect Google Ads</button>
+        </div>
+
+        <!-- Cost Statistics -->
+        <div id="costStats" style="display: none;">
+          <h4 style="margin-top: 24px; margin-bottom: 16px;">Cost Performance (Last 30 Days)</h4>
+          <div class="cost-stats">
+            <div class="stat-card">
+              <div class="value" id="totalSpend">$0</div>
+              <div class="label">Total Spend</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="avgCpl">$0</div>
+              <div class="label">Avg Cost Per Lead</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="leadsWithCost">0</div>
+              <div class="label">Leads with Cost Data</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="totalLeads">0</div>
+              <div class="label">Total Leads</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="fetchAllCosts()">Fetch Missing Costs</button>
+            <span id="fetchStatus" style="margin-left: 12px; color: #6b7280;"></span>
+          </div>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="setup-steps" id="setupSteps">
+          <h4>Setup Instructions</h4>
+          <ol>
+            <li>Go to <a href="https://ads.google.com/aw/apicenter" target="_blank">Google Ads API Center</a> and apply for a Developer Token (Basic access is fine)</li>
+            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> and create OAuth 2.0 credentials</li>
+            <li>Set the redirect URI to: <code id="redirectUri">http://localhost:3000/api/google-ads/callback</code></li>
+            <li>Enable the Google Ads API in your Google Cloud project</li>
+            <li>Set environment variables: <code>GOOGLE_ADS_CLIENT_ID</code> and <code>GOOGLE_ADS_CLIENT_SECRET</code></li>
+            <li>Enter your Developer Token above and click Save</li>
+            <li>Click "Connect Google Ads Account" to authorize</li>
+          </ol>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    async function checkStatus() {
+      // Check for URL params (after OAuth redirect)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('connected') === 'true') {
+        // Just connected, need to select account
+        document.getElementById('accountSelection').style.display = 'block';
+        loadAccounts();
+        history.replaceState({}, '', '/admin/settings.html');
+      }
+      if (params.get('error')) {
+        alert('Connection error: ' + params.get('error'));
+        history.replaceState({}, '', '/admin/settings.html');
+      }
+
+      // Check connection status
+      const statusRes = await fetch('/api/google-ads/status');
+      const status = await statusRes.json();
+
+      // Check developer token
+      const tokenRes = await fetch('/api/google-ads/has-developer-token');
+      const tokenStatus = await tokenRes.json();
+
+      const statusDiv = document.getElementById('connectionStatus');
+      const connectSection = document.getElementById('connectSection');
+      const disconnectSection = document.getElementById('disconnectSection');
+      const costStats = document.getElementById('costStats');
+      const setupSteps = document.getElementById('setupSteps');
+      const accountSelection = document.getElementById('accountSelection');
+
+      if (status.connected && status.customer_id) {
+        // Fully connected
+        statusDiv.innerHTML = `
+          <div class="connection-status connected">
+            <div class="status-dot green"></div>
+            <div class="account-info">
+              <strong>Connected: ${status.account_name || status.customer_id}</strong>
+              <span>Connected on ${formatDate(status.connected_at)}</span>
+            </div>
+          </div>
+        `;
+        connectSection.style.display = 'none';
+        disconnectSection.style.display = 'block';
+        costStats.style.display = 'block';
+        setupSteps.style.display = 'none';
+        accountSelection.style.display = 'none';
+        loadCostStats();
+      } else if (status.connected) {
+        // Connected but no account selected
+        statusDiv.innerHTML = `
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Account Selection Required</strong>
+              <span>Please select which Google Ads account to use</span>
+            </div>
+          </div>
+        `;
+        connectSection.style.display = 'none';
+        accountSelection.style.display = 'block';
+        loadAccounts();
+      } else {
+        // Not connected
+        if (tokenStatus.has_token) {
+          connectSection.style.display = 'block';
+          document.getElementById('developerTokenSection').innerHTML = `
+            <p style="color: #10b981;">Developer token saved</p>
+          `;
+        }
+      }
+    }
+
+    async function saveDeveloperToken() {
+      const token = document.getElementById('developerToken').value;
+      if (!token) {
+        alert('Please enter a developer token');
+        return;
+      }
+
+      const res = await fetch('/api/google-ads/developer-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ developer_token: token })
+      });
+
+      if (res.ok) {
+        document.getElementById('developerTokenSection').innerHTML = `
+          <p style="color: #10b981;">Developer token saved</p>
+        `;
+        document.getElementById('connectSection').style.display = 'block';
+      } else {
+        alert('Failed to save token');
+      }
+    }
+
+    async function connectGoogleAds() {
+      const res = await fetch('/api/google-ads/connect');
+      const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      // Redirect to Google OAuth
+      window.location.href = data.auth_url;
+    }
+
+    async function loadAccounts() {
+      const res = await fetch('/api/google-ads/accounts');
+      const data = await res.json();
+
+      const select = document.getElementById('accountSelect');
+
+      if (data.error) {
+        select.innerHTML = `<option value="">Error: ${data.error}</option>`;
+        return;
+      }
+
+      if (!data.accounts || data.accounts.length === 0) {
+        select.innerHTML = `<option value="">No accounts found</option>`;
+        return;
+      }
+
+      select.innerHTML = data.accounts.map(acc =>
+        `<option value="${acc.customer_id}" data-name="${acc.name}">${acc.name} (${acc.customer_id})</option>`
+      ).join('');
+    }
+
+    async function selectAccount() {
+      const select = document.getElementById('accountSelect');
+      const customerId = select.value;
+      const accountName = select.options[select.selectedIndex].dataset.name;
+
+      if (!customerId) {
+        alert('Please select an account');
+        return;
+      }
+
+      const res = await fetch('/api/google-ads/select-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: customerId, account_name: accountName })
+      });
+
+      if (res.ok) {
+        checkStatus();
+      } else {
+        alert('Failed to select account');
+      }
+    }
+
+    async function disconnectGoogleAds() {
+      if (!confirm('Are you sure you want to disconnect Google Ads?')) return;
+
+      await fetch('/api/google-ads/disconnect', { method: 'POST' });
+      location.reload();
+    }
+
+    async function loadCostStats() {
+      const res = await fetch('/api/google-ads/stats');
+      const stats = await res.json();
+
+      document.getElementById('totalSpend').textContent = '$' + ((stats.total_spend_cents || 0) / 100).toFixed(2);
+      document.getElementById('avgCpl').textContent = '$' + ((stats.avg_cpl_cents || 0) / 100).toFixed(2);
+      document.getElementById('leadsWithCost').textContent = stats.leads_with_cost || 0;
+      document.getElementById('totalLeads').textContent = stats.total_leads || 0;
+    }
+
+    async function fetchAllCosts() {
+      document.getElementById('fetchStatus').textContent = 'Fetching...';
+
+      const res = await fetch('/api/google-ads/fetch-all-costs', { method: 'POST' });
+      const data = await res.json();
+
+      document.getElementById('fetchStatus').textContent =
+        `Done! Fetched ${data.fetched} of ${data.total} leads`;
+
+      loadCostStats();
+    }
+
+    checkStatus();
+  </script>
+</body>
+</html>

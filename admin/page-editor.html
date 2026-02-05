@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Editor | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      height: calc(100vh - 120px);
+    }
+
+    .preview-panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-frame {
+      flex: 1;
+      border: none;
+      width: 100%;
+    }
+
+    .editor-panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .editor-section {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .editor-section:last-child {
+      border-bottom: none;
+    }
+
+    .editor-section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .editor-section h3 svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .color-input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .color-input-group input[type="color"] {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .color-input-group input[type="text"] {
+      flex: 1;
+    }
+
+    .section-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .section-toggle label {
+      font-weight: 500;
+    }
+
+    .testimonial-item, .case-study-item {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .testimonial-item .form-group,
+    .case-study-item .form-group {
+      margin-bottom: 12px;
+    }
+
+    .testimonial-item .form-group:last-child,
+    .case-study-item .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .add-item-btn {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed #d1d5db;
+      background: transparent;
+      border-radius: 8px;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-item-btn:hover {
+      border-color: #3052FF;
+      color: #3052FF;
+    }
+
+    .remove-item-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 280px;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      z-index: 100;
+    }
+
+    @media (max-width: 1200px) {
+      .editor-layout {
+        grid-template-columns: 1fr;
+      }
+      .preview-panel {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pages.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" style="padding-bottom: 80px;">
+      <div class="page-header">
+        <h1>Edit Page: <span id="pageName">Loading...</span></h1>
+        <a href="/admin/pages.html" class="btn btn-secondary">Back to Pages</a>
+      </div>
+
+      <div class="editor-layout">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+          <!-- Colors Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+              Brand Colors
+            </h3>
+            <div class="form-group">
+              <label>Primary Color</label>
+              <div class="color-input-group">
+                <input type="color" id="colorPrimary" value="#3052FF">
+                <input type="text" id="colorPrimaryText" value="#3052FF">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Secondary Color</label>
+              <div class="color-input-group">
+                <input type="color" id="colorSecondary" value="#10b981">
+                <input type="text" id="colorSecondaryText" value="#10b981">
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              Hero Section
+            </h3>
+            <div class="section-toggle">
+              <label>Show Hero Section</label>
+              <label class="toggle">
+                <input type="checkbox" id="showHero" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Headline</label>
+              <input type="text" id="heroHeadline" placeholder="Main headline...">
+            </div>
+            <div class="form-group">
+              <label>Subheadline</label>
+              <textarea id="heroSubheadline" rows="2" placeholder="Supporting text..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>CTA Button Text</label>
+              <input type="text" id="heroCta" placeholder="Get Started">
+            </div>
+          </div>
+
+          <!-- Trust Logos Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Trust Logos
+            </h3>
+            <div class="section-toggle">
+              <label>Show Trust Logos</label>
+              <label class="toggle">
+                <input type="checkbox" id="showTrustLogos" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Logo URLs (one per line)</label>
+              <textarea id="trustLogos" rows="4" placeholder="https://example.com/logo1.png&#10;https://example.com/logo2.png"></textarea>
+            </div>
+          </div>
+
+          <!-- Benefits Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Benefits Section
+            </h3>
+            <div class="section-toggle">
+              <label>Show Benefits</label>
+              <label class="toggle">
+                <input type="checkbox" id="showBenefits" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="benefitsTitle" placeholder="Why Choose Us">
+            </div>
+            <div class="form-group">
+              <label>Benefits (one per line)</label>
+              <textarea id="benefitsList" rows="5" placeholder="Reduce debt by up to 50%&#10;Stop creditor calls&#10;One affordable payment"></textarea>
+            </div>
+          </div>
+
+          <!-- Case Studies Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Case Studies
+            </h3>
+            <div class="section-toggle">
+              <label>Show Case Studies</label>
+              <label class="toggle">
+                <input type="checkbox" id="showCaseStudies" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="caseStudiesTitle" placeholder="Real Results">
+            </div>
+            <div id="caseStudiesList"></div>
+            <button type="button" class="add-item-btn" onclick="addCaseStudy()">+ Add Case Study</button>
+          </div>
+
+          <!-- Testimonials Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              Testimonials
+            </h3>
+            <div class="section-toggle">
+              <label>Show Testimonials</label>
+              <label class="toggle">
+                <input type="checkbox" id="showTestimonials" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="testimonialsTitle" placeholder="What Our Clients Say">
+            </div>
+            <div id="testimonialsList"></div>
+            <button type="button" class="add-item-btn" onclick="addTestimonial()">+ Add Testimonial</button>
+          </div>
+
+          <!-- Empathy Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              Empathy Section
+            </h3>
+            <div class="section-toggle">
+              <label>Show Empathy Section</label>
+              <label class="toggle">
+                <input type="checkbox" id="showEmpathy" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" id="empathyTitle" placeholder="We Know This Is Hard">
+            </div>
+            <div class="form-group">
+              <label>Content</label>
+              <textarea id="empathyContent" rows="4" placeholder="Supportive message..."></textarea>
+            </div>
+          </div>
+
+          <!-- FAQ Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              FAQ Section
+            </h3>
+            <div class="section-toggle">
+              <label>Show FAQ</label>
+              <label class="toggle">
+                <input type="checkbox" id="showFaq" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="faqTitle" placeholder="Frequently Asked Questions">
+            </div>
+            <div id="faqList"></div>
+            <button type="button" class="add-item-btn" onclick="addFaq()">+ Add FAQ</button>
+          </div>
+
+          <!-- Footer Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+              Footer
+            </h3>
+            <div class="form-group">
+              <label>Company Name</label>
+              <input type="text" id="footerCompany" placeholder="Coastal Debt Solutions">
+            </div>
+            <div class="form-group">
+              <label>Disclaimer Text</label>
+              <textarea id="footerDisclaimer" rows="3" placeholder="Legal disclaimer..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+          <div class="preview-header">
+            <strong>Live Preview</strong>
+            <a id="previewLink" href="#" target="_blank" class="btn btn-secondary btn-small">Open in New Tab</a>
+          </div>
+          <iframe id="previewFrame" class="preview-frame" src="about:blank"></iframe>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Save Bar -->
+  <div class="save-bar">
+    <button class="btn btn-secondary" onclick="window.location.href='/admin/pages.html'">Cancel</button>
+    <button class="btn btn-primary" onclick="saveContent()">Save & Regenerate</button>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    const pageId = new URLSearchParams(window.location.search).get('id');
+    let pageData = null;
+    let content = {};
+
+    // Color sync
+    document.getElementById('colorPrimary').addEventListener('input', (e) => {
+      document.getElementById('colorPrimaryText').value = e.target.value;
+    });
+    document.getElementById('colorPrimaryText').addEventListener('input', (e) => {
+      document.getElementById('colorPrimary').value = e.target.value;
+    });
+    document.getElementById('colorSecondary').addEventListener('input', (e) => {
+      document.getElementById('colorSecondaryText').value = e.target.value;
+    });
+    document.getElementById('colorSecondaryText').addEventListener('input', (e) => {
+      document.getElementById('colorSecondary').value = e.target.value;
+    });
+
+    async function loadPage() {
+      if (!pageId) {
+        alert('No page ID specified');
+        window.location.href = '/admin/pages.html';
+        return;
+      }
+
+      const res = await fetch(`/api/pages/${pageId}`);
+      pageData = await res.json();
+      content = pageData.content || {};
+
+      document.getElementById('pageName').textContent = pageData.name;
+      document.getElementById('previewLink').href = `/lp/${pageData.slug}/`;
+      document.getElementById('previewFrame').src = `/lp/${pageData.slug}/`;
+
+      // Populate form fields
+      populateFields();
+    }
+
+    function populateFields() {
+      // Colors
+      document.getElementById('colorPrimary').value = content.colors?.primary || '#3052FF';
+      document.getElementById('colorPrimaryText').value = content.colors?.primary || '#3052FF';
+      document.getElementById('colorSecondary').value = content.colors?.secondary || '#10b981';
+      document.getElementById('colorSecondaryText').value = content.colors?.secondary || '#10b981';
+
+      // Hero
+      document.getElementById('showHero').checked = content.hero?.show !== false;
+      document.getElementById('heroHeadline').value = content.hero?.headline || '';
+      document.getElementById('heroSubheadline').value = content.hero?.subheadline || '';
+      document.getElementById('heroCta').value = content.hero?.cta || '';
+
+      // Trust Logos
+      document.getElementById('showTrustLogos').checked = content.trustLogos?.show !== false;
+      document.getElementById('trustLogos').value = (content.trustLogos?.logos || []).join('\n');
+
+      // Benefits
+      document.getElementById('showBenefits').checked = content.benefits?.show !== false;
+      document.getElementById('benefitsTitle').value = content.benefits?.title || '';
+      document.getElementById('benefitsList').value = (content.benefits?.items || []).join('\n');
+
+      // Case Studies
+      document.getElementById('showCaseStudies').checked = content.caseStudies?.show !== false;
+      document.getElementById('caseStudiesTitle').value = content.caseStudies?.title || '';
+      renderCaseStudies(content.caseStudies?.items || []);
+
+      // Testimonials
+      document.getElementById('showTestimonials').checked = content.testimonials?.show !== false;
+      document.getElementById('testimonialsTitle').value = content.testimonials?.title || '';
+      renderTestimonials(content.testimonials?.items || []);
+
+      // Empathy
+      document.getElementById('showEmpathy').checked = content.empathy?.show !== false;
+      document.getElementById('empathyTitle').value = content.empathy?.title || '';
+      document.getElementById('empathyContent').value = content.empathy?.content || '';
+
+      // FAQ
+      document.getElementById('showFaq').checked = content.faq?.show !== false;
+      document.getElementById('faqTitle').value = content.faq?.title || '';
+      renderFaqs(content.faq?.items || []);
+
+      // Footer
+      document.getElementById('footerCompany').value = content.footer?.company || '';
+      document.getElementById('footerDisclaimer').value = content.footer?.disclaimer || '';
+    }
+
+    function renderCaseStudies(items) {
+      const container = document.getElementById('caseStudiesList');
+      container.innerHTML = items.map((item, i) => `
+        <div class="case-study-item" data-index="${i}">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" class="cs-title" value="${item.title || ''}">
+          </div>
+          <div class="form-group">
+            <label>Original Debt</label>
+            <input type="text" class="cs-original" value="${item.original || ''}">
+          </div>
+          <div class="form-group">
+            <label>Settled For</label>
+            <input type="text" class="cs-settled" value="${item.settled || ''}">
+          </div>
+          <div class="form-group">
+            <label>PDF URL</label>
+            <input type="text" class="cs-pdf" value="${item.pdf || ''}">
+          </div>
+          <button type="button" class="remove-item-btn" onclick="removeCaseStudy(${i})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    function addCaseStudy() {
+      const container = document.getElementById('caseStudiesList');
+      const index = container.children.length;
+      const div = document.createElement('div');
+      div.className = 'case-study-item';
+      div.dataset.index = index;
+      div.innerHTML = `
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" class="cs-title" value="">
+        </div>
+        <div class="form-group">
+          <label>Original Debt</label>
+          <input type="text" class="cs-original" value="">
+        </div>
+        <div class="form-group">
+          <label>Settled For</label>
+          <input type="text" class="cs-settled" value="">
+        </div>
+        <div class="form-group">
+          <label>PDF URL</label>
+          <input type="text" class="cs-pdf" value="">
+        </div>
+        <button type="button" class="remove-item-btn" onclick="removeCaseStudy(${index})">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeCaseStudy(index) {
+      const container = document.getElementById('caseStudiesList');
+      container.children[index].remove();
+    }
+
+    function renderTestimonials(items) {
+      const container = document.getElementById('testimonialsList');
+      container.innerHTML = items.map((item, i) => `
+        <div class="testimonial-item" data-index="${i}">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" class="test-name" value="${item.name || ''}">
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <input type="text" class="test-location" value="${item.location || ''}">
+          </div>
+          <div class="form-group">
+            <label>Quote</label>
+            <textarea class="test-quote" rows="2">${item.quote || ''}</textarea>
+          </div>
+          <button type="button" class="remove-item-btn" onclick="removeTestimonial(${i})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    function addTestimonial() {
+      const container = document.getElementById('testimonialsList');
+      const index = container.children.length;
+      const div = document.createElement('div');
+      div.className = 'testimonial-item';
+      div.dataset.index = index;
+      div.innerHTML = `
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" class="test-name" value="">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" class="test-location" value="">
+        </div>
+        <div class="form-group">
+          <label>Quote</label>
+          <textarea class="test-quote" rows="2"></textarea>
+        </div>
+        <button type="button" class="remove-item-btn" onclick="removeTestimonial(${index})">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeTestimonial(index) {
+      const container = document.getElementById('testimonialsList');
+      container.children[index].remove();
+    }
+
+    function renderFaqs(items) {
+      const container = document.getElementById('faqList');
+      container.innerHTML = items.map((item, i) => `
+        <div class="testimonial-item" data-index="${i}">
+          <div class="form-group">
+            <label>Question</label>
+            <input type="text" class="faq-question" value="${item.question || ''}">
+          </div>
+          <div class="form-group">
+            <label>Answer</label>
+            <textarea class="faq-answer" rows="2">${item.answer || ''}</textarea>
+          </div>
+          <button type="button" class="remove-item-btn" onclick="removeFaq(${i})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    function addFaq() {
+      const container = document.getElementById('faqList');
+      const index = container.children.length;
+      const div = document.createElement('div');
+      div.className = 'testimonial-item';
+      div.dataset.index = index;
+      div.innerHTML = `
+        <div class="form-group">
+          <label>Question</label>
+          <input type="text" class="faq-question" value="">
+        </div>
+        <div class="form-group">
+          <label>Answer</label>
+          <textarea class="faq-answer" rows="2"></textarea>
+        </div>
+        <button type="button" class="remove-item-btn" onclick="removeFaq(${index})">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeFaq(index) {
+      const container = document.getElementById('faqList');
+      container.children[index].remove();
+    }
+
+    function collectContent() {
+      // Collect case studies
+      const caseStudies = [];
+      document.querySelectorAll('.case-study-item').forEach(item => {
+        caseStudies.push({
+          title: item.querySelector('.cs-title').value,
+          original: item.querySelector('.cs-original').value,
+          settled: item.querySelector('.cs-settled').value,
+          pdf: item.querySelector('.cs-pdf').value
+        });
+      });
+
+      // Collect testimonials
+      const testimonials = [];
+      document.querySelectorAll('.testimonial-item').forEach(item => {
+        if (item.querySelector('.test-name')) {
+          testimonials.push({
+            name: item.querySelector('.test-name').value,
+            location: item.querySelector('.test-location').value,
+            quote: item.querySelector('.test-quote').value
+          });
+        }
+      });
+
+      // Collect FAQs
+      const faqs = [];
+      document.querySelectorAll('#faqList .testimonial-item').forEach(item => {
+        faqs.push({
+          question: item.querySelector('.faq-question').value,
+          answer: item.querySelector('.faq-answer').value
+        });
+      });
+
+      return {
+        colors: {
+          primary: document.getElementById('colorPrimary').value,
+          secondary: document.getElementById('colorSecondary').value
+        },
+        hero: {
+          show: document.getElementById('showHero').checked,
+          headline: document.getElementById('heroHeadline').value,
+          subheadline: document.getElementById('heroSubheadline').value,
+          cta: document.getElementById('heroCta').value
+        },
+        trustLogos: {
+          show: document.getElementById('showTrustLogos').checked,
+          logos: document.getElementById('trustLogos').value.split('\n').filter(l => l.trim())
+        },
+        benefits: {
+          show: document.getElementById('showBenefits').checked,
+          title: document.getElementById('benefitsTitle').value,
+          items: document.getElementById('benefitsList').value.split('\n').filter(l => l.trim())
+        },
+        caseStudies: {
+          show: document.getElementById('showCaseStudies').checked,
+          title: document.getElementById('caseStudiesTitle').value,
+          items: caseStudies
+        },
+        testimonials: {
+          show: document.getElementById('showTestimonials').checked,
+          title: document.getElementById('testimonialsTitle').value,
+          items: testimonials
+        },
+        empathy: {
+          show: document.getElementById('showEmpathy').checked,
+          title: document.getElementById('empathyTitle').value,
+          content: document.getElementById('empathyContent').value
+        },
+        faq: {
+          show: document.getElementById('showFaq').checked,
+          title: document.getElementById('faqTitle').value,
+          items: faqs
+        },
+        footer: {
+          company: document.getElementById('footerCompany').value,
+          disclaimer: document.getElementById('footerDisclaimer').value
+        }
+      };
+    }
+
+    async function saveContent() {
+      const newContent = collectContent();
+
+      try {
+        await api(`/api/pages/${pageId}/content`, {
+          method: 'PUT',
+          body: JSON.stringify({ content: newContent })
+        });
+
+        // Refresh preview
+        document.getElementById('previewFrame').src = `/lp/${pageData.slug}/?t=${Date.now()}`;
+        alert('Content saved and page regenerated!');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>

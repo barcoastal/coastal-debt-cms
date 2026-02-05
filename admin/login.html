@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:50px;margin-bottom:10px;background:#fff;padding:10px 15px;border-radius:8px;">
+        <p style="color:#6b7280;margin:0;">Content Management System</p>
+      </div>
+
+      <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="admin@coastaldebt.com">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="Enter your password">
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check if already logged in
+    fetch('/api/auth/me')
+      .then(res => {
+        if (res.ok) {
+          window.location.href = '/admin/';
+        }
+      });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('errorMessage');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Login failed';
+          errorDiv.style.display = 'block';
+          return;
+        }
+
+        window.location.href = '/admin/';
+      } catch (err) {
+        errorDiv.textContent = 'Connection error. Please try again.';
+        errorDiv.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

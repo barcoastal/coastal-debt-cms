@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forms | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .field-item {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .field-item .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 120px 80px;
+      gap: 12px;
+      align-items: end;
+    }
+    .field-item .remove-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      height: 38px;
+    }
+    .add-field-btn {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed #d1d5db;
+      background: transparent;
+      border-radius: 8px;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .add-field-btn:hover {
+      border-color: #3052FF;
+      color: #3052FF;
+    }
+    .platform-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field-types {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .field-item.hidden-field {
+      background: #fef3c7;
+      border: 1px dashed #f59e0b;
+    }
+    .hidden-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Forms</h1>
+        <button class="btn btn-primary" onclick="showModal('createModal')">+ Create Form</button>
+      </div>
+
+      <div class="card">
+        <p style="color: #6b7280; margin-bottom: 20px;">
+          Create different forms for each ad platform with custom fields and webhooks. Then assign forms to landing pages.
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Platform</th>
+                <th>Fields</th>
+                <th>Webhook</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="formsTable">
+              <tr>
+                <td colspan="6" class="loading"><div class="spinner"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>Create Form</h2>
+        <button class="modal-close" onclick="hideModal('createModal')">&times;</button>
+      </div>
+      <form id="createForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Form Name</label>
+            <input type="text" id="createName" required placeholder="e.g., Google Ads Form">
+          </div>
+          <div class="form-group">
+            <label>Platform</label>
+            <select id="createPlatform">
+              <option value="google">Google Ads</option>
+              <option value="meta">Meta (Facebook/Instagram)</option>
+              <option value="tiktok">TikTok</option>
+              <option value="bing">Bing Ads</option>
+              <option value="outbrain">Outbrain</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Webhook URL</label>
+          <input type="url" id="createWebhook" placeholder="https://hooks.zapier.com/...">
+        </div>
+        <div class="form-group">
+          <label>Submit Button Text</label>
+          <input type="text" id="createSubmitText" value="Get My Free Debt Analysis">
+        </div>
+        <div class="form-group">
+          <label>Success Message</label>
+          <input type="text" id="createSuccessMsg" value="Thank you! A debt specialist will call you within 15 minutes.">
+        </div>
+        <div class="form-group">
+          <label>Form Fields</label>
+          <p class="field-types">Available types: text, email, tel, select, radio, textarea, hidden</p>
+          <div id="createFields"></div>
+          <button type="button" class="add-field-btn" onclick="addField('create')">+ Add Field</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('createModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Form</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>Edit Form</h2>
+        <button class="modal-close" onclick="hideModal('editModal')">&times;</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editId">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Form Name</label>
+            <input type="text" id="editName" required>
+          </div>
+          <div class="form-group">
+            <label>Platform</label>
+            <select id="editPlatform">
+              <option value="google">Google Ads</option>
+              <option value="meta">Meta (Facebook/Instagram)</option>
+              <option value="tiktok">TikTok</option>
+              <option value="bing">Bing Ads</option>
+              <option value="outbrain">Outbrain</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Webhook URL</label>
+          <input type="url" id="editWebhook">
+        </div>
+        <div class="form-group">
+          <label>Submit Button Text</label>
+          <input type="text" id="editSubmitText">
+        </div>
+        <div class="form-group">
+          <label>Success Message</label>
+          <input type="text" id="editSuccessMsg">
+        </div>
+        <div class="form-group">
+          <label>Form Fields</label>
+          <p class="field-types">Available types: text, email, tel, select, radio, textarea, hidden</p>
+          <div id="editFields"></div>
+          <button type="button" class="add-field-btn" onclick="addField('edit')">+ Add Field</button>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 12px;">
+          <label class="toggle">
+            <input type="checkbox" id="editActive">
+            <span class="toggle-slider"></span>
+          </label>
+          <span>Active</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('editModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    const defaultFields = [
+      { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Smith' },
+      { name: 'company_name', label: 'Company Name', type: 'text', required: true, placeholder: 'Your Company' },
+      { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'john@company.com' },
+      { name: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '(555) 123-4567' }
+    ];
+
+    const platformLabels = {
+      google: 'Google Ads',
+      meta: 'Meta',
+      tiktok: 'TikTok',
+      bing: 'Bing Ads',
+      outbrain: 'Outbrain',
+      linkedin: 'LinkedIn',
+      other: 'Other'
+    };
+
+    async function loadForms() {
+      const res = await fetch('/api/forms');
+      const forms = await res.json();
+
+      const tbody = document.getElementById('formsTable');
+      if (forms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No forms yet. Create your first form!</td></tr>';
+      } else {
+        tbody.innerHTML = forms.map(form => {
+          const visibleFields = form.fields.filter(f => f.type !== 'hidden').length;
+          const hiddenFields = form.fields.filter(f => f.type === 'hidden').length;
+          const fieldsDisplay = hiddenFields > 0
+            ? `${visibleFields} visible, ${hiddenFields} hidden`
+            : `${visibleFields} fields`;
+          return `
+          <tr>
+            <td><strong>${form.name}</strong></td>
+            <td><span class="badge badge-blue">${platformLabels[form.platform] || form.platform}</span></td>
+            <td>${fieldsDisplay}</td>
+            <td>${form.webhook_url ? '<span class="badge badge-green">Set</span>' : '<span class="badge badge-gray">None</span>'}</td>
+            <td>
+              <span class="badge ${form.is_active ? 'badge-green' : 'badge-gray'}">
+                ${form.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="action-btn action-btn-edit" onclick="editForm(${form.id})">Edit</button>
+              <button class="action-btn action-btn-delete" onclick="deleteForm(${form.id})">Delete</button>
+            </td>
+          </tr>
+        `}).join('');
+      }
+    }
+
+    function renderFields(containerId, fields) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = fields.map((field, i) => {
+        const isHidden = field.type === 'hidden';
+        return `
+        <div class="field-item ${isHidden ? 'hidden-field' : ''}" data-index="${i}">
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Field Name ${isHidden ? '<span class="hidden-badge">Hidden</span>' : ''}</label>
+              <input type="text" class="field-name" value="${field.name}" placeholder="field_name">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Label</label>
+              <input type="text" class="field-label" value="${field.label}" placeholder="Display Label">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Type</label>
+              <select class="field-type" onchange="updateFieldStyle(this)">
+                <option value="text" ${field.type === 'text' ? 'selected' : ''}>Text</option>
+                <option value="email" ${field.type === 'email' ? 'selected' : ''}>Email</option>
+                <option value="tel" ${field.type === 'tel' ? 'selected' : ''}>Phone</option>
+                <option value="select" ${field.type === 'select' ? 'selected' : ''}>Select</option>
+                <option value="radio" ${field.type === 'radio' ? 'selected' : ''}>Radio</option>
+                <option value="textarea" ${field.type === 'textarea' ? 'selected' : ''}>Textarea</option>
+                <option value="hidden" ${field.type === 'hidden' ? 'selected' : ''}>Hidden</option>
+              </select>
+            </div>
+            <button type="button" class="remove-btn" onclick="removeField('${containerId}', ${i})">Remove</button>
+          </div>
+          <div class="form-row" style="margin-top: 8px;">
+            <div class="form-group" style="margin-bottom:0">
+              <label>${isHidden ? 'Default Value' : 'Placeholder'}</label>
+              <input type="text" class="field-placeholder" value="${field.placeholder || ''}" placeholder="${isHidden ? 'Hidden field value' : 'Placeholder text'}">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Options (for select/radio, comma separated)</label>
+              <input type="text" class="field-options" value="${field.options || ''}" placeholder="Option 1, Option 2">
+            </div>
+            <div class="form-group" style="margin-bottom:0; display: flex; align-items: center; gap: 8px; padding-top: 24px;">
+              <input type="checkbox" class="field-required" ${field.required ? 'checked' : ''}>
+              <label style="margin: 0;">Required</label>
+            </div>
+            <div></div>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function updateFieldStyle(select) {
+      const fieldItem = select.closest('.field-item');
+      const isHidden = select.value === 'hidden';
+      fieldItem.classList.toggle('hidden-field', isHidden);
+      const label = fieldItem.querySelector('.form-group label');
+      const badge = label.querySelector('.hidden-badge');
+      if (isHidden && !badge) {
+        label.innerHTML = 'Field Name <span class="hidden-badge">Hidden</span>';
+      } else if (!isHidden && badge) {
+        label.innerHTML = 'Field Name';
+      }
+    }
+
+    function addField(mode) {
+      const containerId = mode + 'Fields';
+      const container = document.getElementById(containerId);
+      const index = container.children.length;
+      const div = document.createElement('div');
+      div.className = 'field-item';
+      div.dataset.index = index;
+      div.innerHTML = `
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Field Name</label>
+            <input type="text" class="field-name" value="" placeholder="field_name">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Label</label>
+            <input type="text" class="field-label" value="" placeholder="Display Label">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Type</label>
+            <select class="field-type" onchange="updateFieldStyle(this)">
+              <option value="text">Text</option>
+              <option value="email">Email</option>
+              <option value="tel">Phone</option>
+              <option value="select">Select</option>
+              <option value="radio">Radio</option>
+              <option value="textarea">Textarea</option>
+              <option value="hidden">Hidden</option>
+            </select>
+          </div>
+          <button type="button" class="remove-btn" onclick="removeField('${containerId}', ${index})">Remove</button>
+        </div>
+        <div class="form-row" style="margin-top: 8px;">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Placeholder</label>
+            <input type="text" class="field-placeholder" value="" placeholder="Placeholder text">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Options (for select/radio)</label>
+            <input type="text" class="field-options" value="" placeholder="Option 1, Option 2">
+          </div>
+          <div class="form-group" style="margin-bottom:0; display: flex; align-items: center; gap: 8px; padding-top: 24px;">
+            <input type="checkbox" class="field-required">
+            <label style="margin: 0;">Required</label>
+          </div>
+          <div></div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeField(containerId, index) {
+      const container = document.getElementById(containerId);
+      container.children[index]?.remove();
+    }
+
+    function collectFields(containerId) {
+      const container = document.getElementById(containerId);
+      const fields = [];
+      container.querySelectorAll('.field-item').forEach(item => {
+        fields.push({
+          name: item.querySelector('.field-name').value,
+          label: item.querySelector('.field-label').value,
+          type: item.querySelector('.field-type').value,
+          placeholder: item.querySelector('.field-placeholder').value,
+          options: item.querySelector('.field-options').value,
+          required: item.querySelector('.field-required').checked
+        });
+      });
+      return fields;
+    }
+
+    // Initialize create form with default fields
+    renderFields('createFields', defaultFields);
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        name: document.getElementById('createName').value,
+        platform: document.getElementById('createPlatform').value,
+        webhook_url: document.getElementById('createWebhook').value,
+        submit_button_text: document.getElementById('createSubmitText').value,
+        success_message: document.getElementById('createSuccessMsg').value,
+        fields: collectFields('createFields')
+      };
+
+      try {
+        await api('/api/forms', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+
+        hideModal('createModal');
+        document.getElementById('createForm').reset();
+        renderFields('createFields', defaultFields);
+        loadForms();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function editForm(id) {
+      const res = await fetch(`/api/forms/${id}`);
+      const form = await res.json();
+
+      document.getElementById('editId').value = form.id;
+      document.getElementById('editName').value = form.name;
+      document.getElementById('editPlatform').value = form.platform;
+      document.getElementById('editWebhook').value = form.webhook_url || '';
+      document.getElementById('editSubmitText').value = form.submit_button_text || '';
+      document.getElementById('editSuccessMsg').value = form.success_message || '';
+      document.getElementById('editActive').checked = form.is_active;
+
+      renderFields('editFields', form.fields || []);
+      showModal('editModal');
+    }
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('editId').value;
+      const data = {
+        name: document.getElementById('editName').value,
+        platform: document.getElementById('editPlatform').value,
+        webhook_url: document.getElementById('editWebhook').value,
+        submit_button_text: document.getElementById('editSubmitText').value,
+        success_message: document.getElementById('editSuccessMsg').value,
+        fields: collectFields('editFields'),
+        is_active: document.getElementById('editActive').checked
+      };
+
+      try {
+        await api(`/api/forms/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+
+        hideModal('editModal');
+        loadForms();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteForm(id) {
+      if (!confirm('Are you sure you want to delete this form?')) return;
+
+      try {
+        await api(`/api/forms/${id}`, { method: 'DELETE' });
+        loadForms();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    loadForms();
+  </script>
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bankruptcy Alternative for Business | Settle Debt for 50-80% Less</title>
+  <meta name="description" content="Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.">
+  {{HEAD_SCRIPTS}}
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --navy:#1a2e4a;
+      --navy-dark:#0f1c2e;
+      --blue:{{colors.primary}};
+      --blue-light:{{colors.primaryLight}};
+      --blue-pale:#B7CFF3;
+      --gold:#f59e0b;
+      --white:#ffffff;
+      --gray-100:#f3f4f6;
+      --gray-200:#e5e7eb;
+      --gray-600:#4b5563;
+      --gray-800:#1f2937;
+      --red-100:#fee2e2;
+      --red-600:#dc2626;
+      --green-100:#dcfce7;
+      --green-600:#16a34a;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px}
+
+    /* Header */
+    header{background:var(--white);padding:20px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+    .header-inner{display:flex;justify-content:space-between;align-items:center}
+    .logo{display:flex;align-items:center;text-decoration:none}
+    .logo img{height:36px;width:auto}
+    .header-phone{display:flex;align-items:center;gap:8px;background:var(--blue);color:var(--white);font-weight:600;text-decoration:none;font-size:1rem;padding:12px 24px;border-radius:50px;transition:all 0.2s}
+    .header-phone:hover{background:var(--blue-light);transform:translateY(-1px)}
+    .phone-icon{width:18px;height:18px}
+
+    /* Hero */
+    .hero{background:var(--white);padding:60px 0 60px;position:relative;overflow:hidden}
+    .hero-grid{display:grid;grid-template-columns:1fr 420px;gap:50px;align-items:start}
+    .hero-content{color:var(--gray-800);padding-top:10px}
+    .hero-badge{display:inline-block;background:rgba(48,82,255,0.1);color:var(--blue);padding:8px 16px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:20px}
+    .hero h1{font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:20px;color:#000}
+    .hero h1 span{color:var(--blue)}
+    .hero-sub{font-size:1.15rem;color:#7984a9;margin-bottom:30px;line-height:1.6}
+    .hero-points{list-style:none;display:flex;flex-direction:column;gap:14px}
+    .hero-points li{display:flex;align-items:center;gap:12px;color:var(--gray-800);font-size:1rem}
+    .check-icon{width:24px;height:24px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .check-icon svg{width:14px;height:14px}
+
+    /* Form */
+    .form-card{background:var(--white);border-radius:24px;padding:32px 28px;box-shadow:0 4px 30px rgba(0,0,0,0.08)}
+    .form-title{font-size:1.5rem;font-weight:600;color:#000;margin-bottom:6px;text-align:center}
+    .form-subtitle{color:#7984a9;font-size:0.95rem;text-align:center;margin-bottom:20px}
+    .form-group{margin-bottom:12px}
+    .form-group label{display:block;font-weight:400;color:#000;margin-bottom:10px;font-size:1rem}
+    .form-group input,.form-group select{width:100%;height:48px;padding:0 20px;border:1px solid #eee;border-radius:500px;font-size:1rem;transition:all 0.2s;background:#fff;box-shadow:none;outline:none}
+    .form-group input::placeholder{color:#999}
+    .form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 20px center}
+    .radio-group{display:flex;gap:10px}
+    .radio-label{flex:1;height:48px;border:1px solid #eee;border-radius:500px;cursor:pointer;transition:all 0.2s;background:#fff;font-weight:400;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center}
+    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.08);color:var(--blue);font-weight:500}
+    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    .radio-label span{line-height:48px}
+    .submit-btn{width:100%;height:52px;background:var(--blue);color:var(--white);border:none;border-radius:50px;font-size:1.2rem;font-weight:500;cursor:pointer;transition:all 0.2s;margin-top:16px}
+    .submit-btn:hover{background:transparent;color:var(--blue);border:2px solid var(--blue)}
+    .form-disclaimer{font-size:0.8rem;color:#7984a9;text-align:center;margin-top:16px;line-height:1.5}
+
+    /* Trust Bar */
+    .trust-bar{background:var(--white);padding:40px 0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200)}
+    .trust-label{text-align:center;font-size:0.9rem;color:#7984a9;margin-bottom:25px;text-transform:uppercase;letter-spacing:1px;font-weight:500}
+    .trust-logos{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+    .trust-logos img{height:auto;max-height:50px;opacity:0.85;transition:opacity 0.2s;filter:grayscale(0)}
+    .trust-logos img:hover{opacity:1}
+
+    /* Comparison Table */
+    .comparison-section{padding:70px 0;background:var(--white)}
+    .comparison-table{width:100%;border-collapse:collapse;margin-top:40px;font-size:0.95rem}
+    .comparison-table th,.comparison-table td{padding:18px 20px;text-align:left;border-bottom:1px solid var(--gray-200)}
+    .comparison-table th{background:var(--gray-100);font-weight:700;color:var(--navy)}
+    .comparison-table th:first-child{border-radius:12px 0 0 0}
+    .comparison-table th:last-child{border-radius:0 12px 0 0}
+    .comparison-table td:first-child{font-weight:600;color:var(--gray-800);background:var(--gray-100)}
+    .comparison-table .col-bankruptcy{background:var(--red-100);color:var(--red-600)}
+    .comparison-table .col-settlement{background:var(--green-100);color:var(--green-600);font-weight:600}
+    .comparison-cta{text-align:center;margin-top:40px}
+    .comparison-cta a{display:inline-block;background:var(--blue);color:var(--white);padding:18px 40px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .comparison-cta a:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
+
+    /* How It Works */
+    .section{padding:70px 0}
+    .section-title{text-align:center;font-size:2rem;font-weight:700;color:var(--navy);margin-bottom:15px}
+    .section-sub{text-align:center;color:var(--gray-600);max-width:600px;margin:0 auto 50px}
+    .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+    .step-card{text-align:center;padding:40px 30px;border-radius:20px;background:var(--white);border:1px solid var(--gray-200);transition:all 0.3s}
+    .step-card:hover{border-color:var(--blue);box-shadow:0 10px 40px rgba(48,82,255,0.1)}
+    .step-num{width:56px;height:56px;background:var(--blue);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;margin:0 auto 20px}
+    .step-card h3{font-size:1.2rem;color:var(--navy);margin-bottom:10px}
+    .step-card p{color:var(--gray-600);font-size:0.95rem}
+
+    /* Case Studies */
+    .cases-section{background:var(--navy);padding:70px 0}
+    .cases-section .section-title{color:var(--white)}
+    .cases-section .section-sub{color:rgba(255,255,255,0.7)}
+    .cases-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .case-card{background:var(--white);border-radius:20px;padding:30px;text-align:center}
+    .case-industry{font-size:0.85rem;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+    .case-story{font-size:0.9rem;color:var(--gray-600);line-height:1.5;margin-bottom:16px;text-align:left}
+    .case-original{color:var(--gray-600);font-size:0.9rem;margin-bottom:5px}
+    .case-original span{text-decoration:line-through}
+    .case-settled{font-size:1.8rem;font-weight:800;color:var(--navy);margin-bottom:8px}
+    .case-savings{display:inline-block;background:var(--blue);color:var(--white);padding:8px 18px;border-radius:50px;font-weight:700;font-size:0.9rem}
+    .case-note{font-size:0.8rem;color:var(--gray-600);margin-top:10px;font-style:italic}
+    .case-link{display:inline-block;margin-top:15px;padding:10px 20px;background:transparent;border:2px solid var(--blue);color:var(--blue);border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    .case-link:hover{background:var(--blue);color:var(--white)}
+
+    /* Empathy Section */
+    .empathy-section{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);padding:70px 0}
+    .empathy-content{max-width:800px;margin:0 auto;text-align:center;color:var(--white)}
+    .empathy-content h2{font-size:2.2rem;font-weight:700;margin-bottom:25px}
+    .empathy-content p{font-size:1.1rem;line-height:1.8;color:rgba(255,255,255,0.85);margin-bottom:20px}
+    .empathy-content p:last-child{margin-bottom:0;font-size:1.2rem;color:var(--white);font-weight:500}
+    .empathy-content strong{color:var(--blue-pale)}
+    .empathy-cta{display:inline-block;margin-top:30px;padding:18px 50px;background:var(--blue);color:var(--white);border-radius:50px;font-size:1.1rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    .empathy-cta:hover{background:var(--blue-light);transform:translateY(-2px);box-shadow:0 8px 25px rgba(48,82,255,0.4)}
+
+    /* Testimonials */
+    .testimonials{background:var(--gray-100)}
+    .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:25px}
+    .testimonial-card{background:var(--white);border-radius:20px;padding:35px;box-shadow:0 4px 20px rgba(0,0,0,0.05)}
+    .testimonial-stars{color:var(--gold);font-size:1.2rem;margin-bottom:15px}
+    .testimonial-text{color:var(--gray-800);font-size:1rem;margin-bottom:20px;font-style:italic}
+    .testimonial-author{display:flex;align-items:center;gap:12px}
+    .author-avatar{width:45px;height:45px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:600}
+    .author-info h4{font-size:0.95rem;color:var(--navy);margin-bottom:2px}
+    .author-info p{font-size:0.8rem;color:var(--gray-600)}
+
+    /* FAQ Section */
+    .faq-section{padding:70px 0;background:var(--white)}
+    .faq-grid{max-width:800px;margin:0 auto}
+    .faq-item{border-bottom:1px solid var(--gray-200);padding:25px 0}
+    .faq-item:last-child{border-bottom:none}
+    .faq-question{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .faq-answer{color:var(--gray-600);font-size:1rem;line-height:1.7}
+
+    /* CTA Footer */
+    .cta-footer{background:var(--blue);padding:70px 0;text-align:center}
+    .cta-footer h2{color:var(--white);font-size:2.2rem;margin-bottom:15px;font-weight:800}
+    .cta-footer p{color:rgba(255,255,255,0.9);font-size:1.15rem;margin-bottom:30px}
+    .cta-btn{display:inline-block;background:var(--white);color:var(--blue);padding:18px 50px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .cta-btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(0,0,0,0.2)}
+    .cta-phone{color:var(--white);font-size:1.4rem;font-weight:600;margin-top:25px}
+    .cta-phone a{color:var(--white);text-decoration:none}
+
+    /* Footer */
+    footer{background:var(--navy-dark);padding:40px 0;text-align:center}
+    footer p{color:rgba(255,255,255,0.6);font-size:0.85rem}
+    footer a{color:rgba(255,255,255,0.8);text-decoration:none}
+    footer a:hover{color:var(--white)}
+
+    /* Sticky Mobile CTA */
+    .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:12px 20px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
+    .mobile-cta a{display:block;text-align:center;background:var(--blue);color:var(--white);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
+
+    /* Responsive */
+    @media(max-width:992px){
+      .hero-grid{grid-template-columns:1fr;gap:40px}
+      .hero-content{order:1}
+      .form-card{max-width:480px;margin:0 auto;order:2}
+      .hero h1{font-size:2.4rem}
+      .hero-image{display:none}
+      .cases-grid{grid-template-columns:repeat(2,1fr)}
+      .testimonials-grid{grid-template-columns:repeat(2,1fr)}
+      .empathy-content h2{font-size:1.8rem}
+      .empathy-section{padding:50px 0}
+      .comparison-table{font-size:0.85rem}
+      .comparison-table th,.comparison-table td{padding:12px 10px}
+    }
+    @media(max-width:768px){
+      .hero{padding:50px 0 40px}
+      .hero h1{font-size:1.9rem}
+      .hero-sub{font-size:1rem}
+      .hero-points{gap:10px}
+      .hero-points li{font-size:0.95rem}
+      .form-card{padding:24px 20px}
+      .form-title{font-size:1.3rem}
+      .form-group label{font-size:0.95rem;margin-bottom:8px}
+      .form-group input,.form-group select,.radio-label{height:44px}
+      .submit-btn{height:48px;font-size:1.1rem}
+      .steps-grid{grid-template-columns:1fr}
+      .cases-grid{grid-template-columns:1fr}
+      .trust-logos{gap:25px}
+      .trust-logos img{max-height:40px}
+      .section{padding:50px 0}
+      .section-title{font-size:1.5rem}
+      .testimonials-grid{grid-template-columns:1fr}
+      .empathy-content h2{font-size:1.5rem}
+      .empathy-content p{font-size:1rem}
+      .mobile-cta{display:block}
+      .cta-footer{padding-bottom:100px}
+      .header-phone span{display:none}
+      .header-phone{padding:10px 14px}
+      .comparison-table-wrapper{overflow-x:auto}
+      .comparison-table{min-width:500px}
+      .radio-group{flex-direction:column;gap:10px}
+    }
+
+    /* Form Steps */
+    .form-step{display:none}
+    .form-step.active{display:block;animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Sorry Message */
+    .sorry-message{text-align:center;padding:30px 10px}
+    .sorry-icon{width:60px;height:60px;margin:0 auto 20px;color:#7984a9}
+    .sorry-icon svg{width:100%;height:100%}
+    .sorry-message h3{font-size:1.5rem;color:#000;margin-bottom:12px;font-weight:600}
+    .sorry-message p{color:#7984a9;font-size:1rem;margin-bottom:8px}
+    .sorry-message .sorry-sub{font-size:0.9rem;color:#aaa}
+
+    /* Form Success */
+    .form-success{text-align:center;padding:50px 20px}
+    .form-success h3{color:var(--blue);font-size:1.6rem;margin-bottom:12px;font-weight:600}
+    .form-success p{color:#7984a9;font-size:1rem}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+  </style>
+</head>
+<body>
+  {{BODY_SCRIPTS}}
+  <!-- Header -->
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="40"></a>
+      <a href="tel:+18001234567" class="header-phone">
+        <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+        </svg>
+        <span>{{phone}}</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">{{badge}}</div>
+        <h1>{{headline}}<br>Settle Your Business Debt for <span>{{headlineHighlight}}</span></h1>
+        <p class="hero-sub">{{subheadline}}</p>
+        <ul class="hero-points" id="bulletPoints"></ul>
+      </div>
+
+      <div class="form-card">
+        <!-- Step 1: Debt Amount -->
+        <div class="form-step form-step-1 active">
+          <h2 class="form-title">{{formTitle}}</h2>
+          <p class="form-subtitle">{{formSubtitle}}</p>
+          <div class="form-group">
+            <label for="debt_amount">How much business debt do you have?</label>
+            <select id="debt_amount" name="debt_amount">
+              <option value="">Select amount...</option>
+              <option value="under-20000">Under $20,000</option>
+              <option value="20000-50000">$20,000 - $50,000</option>
+              <option value="50000-100000">$50,000 - $100,000</option>
+              <option value="100000-250000">$100,000 - $250,000</option>
+              <option value="250000-500000">$250,000 - $500,000</option>
+              <option value="500000-1000000">$500,000 - $1,000,000</option>
+              <option value="1000000+">$1,000,000+</option>
+            </select>
+          </div>
+          <button type="button" class="submit-btn" id="checkDebtBtn">Continue</button>
+        </div>
+
+        <!-- Step 2: Sorry Message -->
+        <div class="form-step form-step-sorry">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 3: Rest of Form -->
+        <div class="form-step form-step-2">
+          <h2 class="form-title">Great! You Qualify</h2>
+          <p class="form-subtitle">Complete your details for a free consultation.</p>
+          <form id="leadForm">
+            <input type="hidden" id="debt_amount_hidden" name="debt_amount">
+            <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+            <input type="hidden" id="gclid" name="gclid" value="">
+            <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+            <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+            <input type="hidden" id="page_url" name="page_url" value="">
+            <input type="hidden" id="referrer_url" name="referrer_url" value="">
+            {{HIDDEN_FIELDS}}
+            <div id="dynamicFormFields"></div>
+            <button type="submit" class="submit-btn">{{formSubmitText}}</button>
+          </form>
+          <p class="form-disclaimer">By submitting, you agree to receive calls and texts. We respect your privacy.</p>
+        </div>
+
+        <!-- Step 4: Success -->
+        <div class="form-step form-success">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Bar -->
+  <section class="trust-bar">
+    <div class="container">
+      <p class="trust-label">{{trustLabel}}</p>
+      <div class="trust-logos" id="trustLogos"></div>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section class="comparison-section">
+    <div class="container">
+      <h2 class="section-title">{{comparisonTitle}}</h2>
+      <p class="section-sub">See why thousands of business owners chose us instead of filing bankruptcy</p>
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Filing Bankruptcy</th>
+              <th>Debt Settlement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Public Record</td>
+              <td class="col-bankruptcy">Yes - searchable forever</td>
+              <td class="col-settlement">No - private negotiation</td>
+            </tr>
+            <tr>
+              <td>Credit Impact</td>
+              <td class="col-bankruptcy">7-10 years</td>
+              <td class="col-settlement">Recovers in 12-24 months</td>
+            </tr>
+            <tr>
+              <td>Your Business</td>
+              <td class="col-bankruptcy">May be forced to close</td>
+              <td class="col-settlement">Keep operating</td>
+            </tr>
+            <tr>
+              <td>Your Assets</td>
+              <td class="col-bankruptcy">Can be seized</td>
+              <td class="col-settlement">Protected</td>
+            </tr>
+            <tr>
+              <td>Time to Resolve</td>
+              <td class="col-bankruptcy">6-18 months in court</td>
+              <td class="col-settlement">3-6 months average</td>
+            </tr>
+            <tr>
+              <td>Cost</td>
+              <td class="col-bankruptcy">$10K-50K+ legal fees</td>
+              <td class="col-settlement">No upfront fees</td>
+            </tr>
+            <tr>
+              <td>Future Financing</td>
+              <td class="col-bankruptcy">Nearly impossible for years</td>
+              <td class="col-settlement">Possible within months</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="comparison-cta">
+        <a href="#leadForm" onclick="document.getElementById('full_name').focus()">See How Much You Could Save Without Bankruptcy</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" style="background:var(--gray-100)">
+    <div class="container">
+      <h2 class="section-title">{{howItWorksTitle}}</h2>
+      <p class="section-sub">{{howItWorksSubtitle}}</p>
+      <div class="steps-grid" id="stepsGrid"></div>
+    </div>
+  </section>
+
+  <!-- Case Studies -->
+  <section class="cases-section">
+    <div class="container">
+      <h2 class="section-title">{{caseStudiesTitle}}</h2>
+      <p class="section-sub">{{caseStudiesSubtitle}}</p>
+      <div class="cases-grid">
+        <div class="case-card">
+          <div class="case-industry">Home Interiors</div>
+          <p class="case-story">Facing a $107K judgment from Mulligan Funding, this interior design business was days away from losing everything. We negotiated a settlement that saved their company.</p>
+          <p class="case-original">Judgment: <span>$107,684</span></p>
+          <p class="case-settled">$55,000</p>
+          <div class="case-savings">49% Savings</div>
+          <p class="case-note">$52,684 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/Mulligan.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Pumping Services</div>
+          <p class="case-story">A pumping services company was sued by DLP Funding over an MCA default. We stepped in and settled the lawsuit for a fraction of what was owed.</p>
+          <p class="case-original">Owed: <span>$12,792</span></p>
+          <p class="case-settled">$5,000</p>
+          <div class="case-savings">61% Savings</div>
+          <p class="case-note">Lawsuit dismissed</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/DLP.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Education</div>
+          <p class="case-story">RTQ Academy, an education and family services provider, was drowning in MCA debt from Byzfunder. We negotiated a settlement that let them keep serving their community.</p>
+          <p class="case-original">Balance: <span>$40,570</span></p>
+          <p class="case-settled">$18,000</p>
+          <div class="case-savings">56% Savings</div>
+          <p class="case-note">$22,570 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/Bzfunder.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Construction</div>
+          <p class="case-story">B Squared Carpentry faced $169K in MCA debt from Expansion Capital Group. Our team negotiated aggressively and secured a settlement that kept them in business.</p>
+          <p class="case-original">Balance: <span>$169,006</span></p>
+          <p class="case-settled">$117,955</p>
+          <div class="case-savings">30% Savings</div>
+          <p class="case-note">$51,051 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/AMA-B-Squared-Carpentry-LLC-dba-B-Squared-Carpentry.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Empathy Section -->
+  <section class="empathy-section">
+    <div class="container">
+      <div class="empathy-content">
+        <h2>{{empathyTitle}}</h2>
+        <div id="empathyText"></div>
+        <a href="#leadForm" class="empathy-cta" onclick="document.getElementById('debt_amount').focus()">Get Your Free Consultation</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section testimonials">
+    <div class="container">
+      <h2 class="section-title">{{testimonialsTitle}}</h2>
+      <p class="section-sub">{{testimonialsSubtitle}}</p>
+      <div class="testimonials-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq-section">
+    <div class="container">
+      <h2 class="section-title">Bankruptcy Questions? We Have Answers.</h2>
+      <p class="section-sub">Get the facts before making a decision</p>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <div class="faq-question">Is debt settlement really better than filing bankruptcy?</div>
+          <div class="faq-answer">For most business owners, yes. Bankruptcy stays on your record for 7-10 years, can force you to close your business, and makes future financing nearly impossible. Debt settlement is private, faster, and lets you keep operating.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Will this affect my credit like bankruptcy would?</div>
+          <div class="faq-answer">Settlement does impact credit temporarily, but most clients see their scores recover within 12-24 months. Bankruptcy damage lasts 7-10 years.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">What types of debt can you settle?</div>
+          <div class="faq-answer">We specialize in Merchant Cash Advances (MCAs), business lines of credit, and unsecured business loans. If you're being sued or facing daily/weekly ACH withdrawals, we can help.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">How long does the process take?</div>
+          <div class="faq-answer">Most cases settle in 3-6 months. Bankruptcy proceedings can drag on for 6-18 months or longer.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Do I need a lawyer to file bankruptcy? What about settlement?</div>
+          <div class="faq-answer">Bankruptcy requires legal representation and court appearances. Debt settlement doesn't — we handle all negotiations directly with your creditors.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">What if I've already talked to a bankruptcy lawyer?</div>
+          <div class="faq-answer">Get a second opinion. Many business owners come to us after consulting bankruptcy attorneys and discover settlement saves them more money with less damage to their business.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Footer -->
+  <section class="cta-footer">
+    <div class="container">
+      <h2>{{ctaTitle}}</h2>
+      <p>{{ctaSubtitle}}</p>
+      <a href="#leadForm" class="cta-btn" onclick="document.getElementById('full_name').focus()">{{ctaButton}}</a>
+      <p class="cta-phone">Or call now: <a href="tel:+18001234567">{{phone}}</a></p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Coastal Debt Resolve. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <!-- Mobile Sticky CTA -->
+  <div class="mobile-cta">
+    <a href="tel:+18001234567">Call Now: {{phone}}</a>
+  </div>
+
+  <!-- Form JS -->
+  <script>
+    // Page configuration from CMS
+    const PAGE_SLUG = '{{SLUG}}';
+    const API_BASE = '/api';
+
+    // Generate unique visitor ID (eli_clickid) - passes ad blockers
+    (function() {
+      var k = '_vid_'; // storage key (non-obvious name)
+      var id = localStorage.getItem(k);
+      if (!id) {
+        // Generate unique ID: timestamp (base36) + random string
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        var s = Math.random().toString(36).substring(2, 6);
+        id = 'eli_' + t + r + s;
+        try { localStorage.setItem(k, id); } catch(e) {}
+      }
+      // Set hidden field
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      // Also store in window for reference
+      window._eliClickId = id;
+
+      // Track visitor with full device info
+      try {
+        var ua = navigator.userAgent;
+        var browser = 'Unknown', browserVer = '', os = 'Unknown', osVer = '', deviceType = 'Desktop';
+
+        // Detect browser
+        if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) { browser = 'Chrome'; browserVer = ua.match(/Chrome\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) { browser = 'Safari'; browserVer = ua.match(/Version\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Firefox') > -1) { browser = 'Firefox'; browserVer = ua.match(/Firefox\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Edg') > -1) { browser = 'Edge'; browserVer = ua.match(/Edg\/(\d+)/)?.[1] || ''; }
+
+        // Detect OS
+        if (ua.indexOf('Windows') > -1) { os = 'Windows'; osVer = ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Mac OS') > -1) { os = 'macOS'; osVer = ua.match(/Mac OS X (\d+[._]\d+)/)?.[1]?.replace('_','.') || ''; }
+        else if (ua.indexOf('Android') > -1) { os = 'Android'; osVer = ua.match(/Android (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) { os = 'iOS'; osVer = ua.match(/OS (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Linux') > -1) { os = 'Linux'; }
+
+        // Detect device type
+        if (/Mobile|Android|iPhone|iPod/.test(ua)) deviceType = 'Mobile';
+        else if (/iPad|Tablet/.test(ua)) deviceType = 'Tablet';
+
+        // Get UTM params
+        var params = new URLSearchParams(window.location.search);
+
+        // Send tracking data
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eli_clickid: id,
+            gclid: params.get('gclid') || '',
+            rt_clickid: params.get('rt_clickid') || '',
+            user_agent: ua,
+            browser: browser,
+            browser_version: browserVer,
+            os: os,
+            os_version: osVer,
+            device_type: deviceType,
+            screen_width: screen.width,
+            screen_height: screen.height,
+            language: navigator.language || '',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            referrer_url: document.referrer || '',
+            landing_page: window.location.pathname,
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || ''
+          })
+        }).catch(function(){});
+      } catch(e) {}
+    })();
+
+    // Capture URL parameters (gclid, rt_clickid, UTM params)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('gclid')) {
+      document.getElementById('gclid').value = urlParams.get('gclid');
+    }
+    if (urlParams.get('rt_clickid')) {
+      document.getElementById('rt_clickid').value = urlParams.get('rt_clickid');
+    }
+
+    // Capture page URL and referrer
+    document.getElementById('page_url').value = window.location.href;
+    document.getElementById('referrer_url').value = document.referrer || '';
+
+    // Form step elements
+    const step1 = document.querySelector('.form-step-1');
+    const stepSorry = document.querySelector('.form-step-sorry');
+    const step2 = document.querySelector('.form-step-2');
+    const stepSuccess = document.querySelector('.form-success');
+    const debtSelect = document.getElementById('debt_amount');
+    const checkDebtBtn = document.getElementById('checkDebtBtn');
+
+    // Populate dynamic content
+    const bulletPoints = {{bulletPointsJson}};
+    const bulletPointsHtml = bulletPoints.map(point => `
+      <li>
+        <span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+        ${point}
+      </li>
+    `).join('');
+    document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
+
+    const steps = {{stepsJson}};
+    const stepsHtml = steps.map((step, i) => `
+      <div class="step-card">
+        <div class="step-num">${i + 1}</div>
+        <h3>${step.title}</h3>
+        <p>${step.description}</p>
+      </div>
+    `).join('');
+    document.getElementById('stepsGrid').innerHTML = stepsHtml;
+
+    const empathyText = {{empathyTextJson}};
+    const empathyHtml = empathyText.map((text, i) => {
+      if (i === empathyText.length - 1) return `<p>${text}</p>`;
+      if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;
+      return `<p>${text}</p>`;
+    }).join('');
+    document.getElementById('empathyText').innerHTML = empathyHtml;
+
+    const testimonials = [
+      { initials: 'KT', name: 'KMJ Trucking, LLC', title: 'Trucking Company', text: "They were helpful, clear communication, effective results, empathetic towards the situation. I couldn't have asked for a better team to help my trucking company through this difficult time." },
+      { initials: 'AA', name: 'AAMCO Auburn', title: 'Auto Repair Shop', text: "Their team was very responsive and explained the process clearly. As an auto repair shop owner, I was overwhelmed with MCA debt. Coastal Debt gave me my life back." },
+      { initials: 'ES', name: 'Edward Sweeney', title: 'Business Owner', text: "I cannot thank Carlos enough for his guidance through this process. He has been amazing. When I thought bankruptcy was my only option, Coastal Debt showed me there was another way." },
+      { initials: 'DF', name: 'Danny Francis', title: 'Business Owner', text: "My experience with Coastal Debt has been great! My rep Julio has been there every step of the way. They truly care about helping business owners like me get back on their feet." },
+      { initials: 'AC', name: 'Arnie Creinin', title: 'Company Owner', text: "Simone did an outstanding job with our company. She was always true to her word and kept us informed throughout the entire process. Highly recommend!" },
+      { initials: 'TG', name: 'Tyler Geoffroy', title: 'Business Owner', text: "Zack and Natasha were the first people to truly explain everything in detail. After talking to so many people who just wanted my money, Coastal Debt actually helped me." }
+    ];
+    const testimonialsHtml = testimonials.map(t => `
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"${t.text}"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">${t.initials}</div>
+          <div class="author-info">
+            <h4>${t.name}</h4>
+            <p>${t.title}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('testimonialsGrid').innerHTML = testimonialsHtml;
+
+    const trustLogos = [
+      { src: 'https://join.coastaldebt.com/wp-content/uploads/2026/01/blue-seal-120-61-bbb-92025913.png', alt: 'BBB Accredited Business', height: '50' },
+      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/BSI-logo3.webp', alt: 'BSI', height: '45' },
+      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/6849a0e8939628a2019fd416_WhatsApp-Image-2025-06-11-at-19.33.05-p-500.jpeg.webp', alt: 'Trustpilot', height: '45' },
+      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/6634aeab2fd552b666b69c8f_logo05-p-500.webp', alt: 'Featured Partner', height: '40' },
+      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/663b0c012eaa591b833e2050_Business-Insider.svg', alt: 'Business Insider', height: '28' }
+    ];
+    const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
+    document.getElementById('trustLogos').innerHTML = trustLogosHtml;
+
+    // Render dynamic form fields
+    const formFields = {{formFieldsJson}};
+    const formFieldsHtml = formFields.map(field => {
+      if (field.type === 'radio') {
+        const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label>${field.label}</label>
+            <div class="radio-group">
+              ${options.map((opt, i) => `
+                <label class="radio-label">
+                  <input type="radio" name="${field.name}" value="${opt.toLowerCase()}" ${field.required && i === 0 ? 'required' : ''}>
+                  <span>${opt}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (field.type === 'select') {
+        const options = (field.options || '').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <select id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}>
+              <option value="">Select...</option>
+              ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          </div>
+        `;
+      } else if (field.type === 'textarea') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <textarea id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} rows="3" style="border-radius:16px;padding:12px 20px;"></textarea>
+          </div>
+        `;
+      } else if (field.type === 'hidden') {
+        return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
+      } else {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <input type="${field.type}" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>
+          </div>
+        `;
+      }
+    }).join('');
+    document.getElementById('dynamicFormFields').innerHTML = formFieldsHtml;
+
+    // Add phone formatting to any phone fields
+    document.querySelectorAll('input[type="tel"]').forEach(phoneInput => {
+      phoneInput.addEventListener('input', function(e) {
+        let x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        let formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+      });
+    });
+
+    // Step 1: Check debt amount
+    checkDebtBtn.addEventListener('click', function() {
+      const debtValue = debtSelect.value;
+
+      if (!debtValue) {
+        debtSelect.focus();
+        debtSelect.style.borderColor = '#dc2626';
+        setTimeout(() => debtSelect.style.borderColor = '#eee', 2000);
+        return;
+      }
+
+      step1.classList.remove('active');
+
+      if (debtValue === 'under-20000') {
+        stepSorry.classList.add('active');
+      } else {
+        document.getElementById('debt_amount_hidden').value = debtValue;
+        step2.classList.add('active');
+      }
+    });
+
+    // Form submission
+    document.getElementById('leadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      data.landing_page_slug = PAGE_SLUG;
+
+      try {
+        const response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          step2.classList.remove('active');
+          stepSuccess.classList.add('active');
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        btn.disabled = false;
+        btn.textContent = '{{formButton}}';
+      }
+    });
+  </script>
+</body>
+</html>
