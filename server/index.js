@@ -76,6 +76,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint - check what cookies the server sees (remove after debugging)
+app.get('/api/debug/cookies', (req, res) => {
+  res.json({
+    cookies: req.cookies,
+    rtkclickid: req.cookies?.['rtkclickid-store'] || 'NOT FOUND',
+    allCookieNames: Object.keys(req.cookies || {}),
+    rawCookieHeader: req.headers.cookie || 'NO COOKIE HEADER'
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin`);

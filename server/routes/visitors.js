@@ -9,7 +9,7 @@ router.post('/track', async (req, res) => {
   const {
     eli_clickid,
     gclid,
-    rt_clickid,
+    rt_clickid: rt_clickid_body,
     user_agent,
     browser,
     browser_version,
@@ -28,6 +28,10 @@ router.post('/track', async (req, res) => {
     utm_term,
     utm_content
   } = req.body;
+
+  // Get rt_clickid from: body → cookie → referer URL param
+  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
+  console.log('Visitor rt_clickid:', { body: rt_clickid_body, cookie: req.cookies?.['rtkclickid-store'], final: rt_clickid });
 
   if (!eli_clickid) {
     return res.status(400).json({ error: 'eli_clickid required' });

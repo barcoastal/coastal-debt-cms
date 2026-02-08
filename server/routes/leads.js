@@ -31,8 +31,9 @@ router.post('/', async (req, res) => {
     ...hiddenFields
   } = req.body;
 
-  // Fallback: read RedTrack cookie server-side (handles HttpOnly cookies)
+  // Get rt_clickid from: body → RedTrack cookie
   const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
+  console.log('Lead rt_clickid:', { body: rt_clickid_body, cookie: req.cookies?.['rtkclickid-store'], allCookies: Object.keys(req.cookies || {}), final: rt_clickid });
 
   // Find the landing page
   const page = db.prepare('SELECT * FROM landing_pages WHERE slug = ?').get(landing_page_slug);
