@@ -561,6 +561,12 @@
         // Get UTM params
         var params = new URLSearchParams(window.location.search);
 
+        // Helper to get cookie value
+        function getCookieVal(name) {
+          var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+          return match ? decodeURIComponent(match[2]) : '';
+        }
+
         // Send tracking data
         fetch('/api/visitors/track', {
           method: 'POST',
@@ -568,7 +574,7 @@
           body: JSON.stringify({
             eli_clickid: id,
             gclid: params.get('gclid') || '',
-            rt_clickid: params.get('rt_clickid') || '',
+            rt_clickid: params.get('rt_clickid') || getCookieVal('rtkclickid-store') || '',
             user_agent: ua,
             browser: browser,
             browser_version: browserVer,
@@ -591,13 +597,21 @@
       } catch(e) {}
     })();
 
+    // Helper to get cookie value
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : '';
+    }
+
     // Capture URL parameters (gclid, rt_clickid, UTM params)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('gclid')) {
       document.getElementById('gclid').value = urlParams.get('gclid');
     }
-    if (urlParams.get('rt_clickid')) {
-      document.getElementById('rt_clickid').value = urlParams.get('rt_clickid');
+    // Get rt_clickid from URL param first, then fall back to cookie
+    const rtClickId = urlParams.get('rt_clickid') || getCookie('rtkclickid-store');
+    if (rtClickId) {
+      document.getElementById('rt_clickid').value = rtClickId;
     }
 
     // Capture page URL and referrer
