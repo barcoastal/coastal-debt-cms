@@ -561,10 +561,18 @@
         // Get UTM params
         var params = new URLSearchParams(window.location.search);
 
-        // Helper to get cookie value
+        // Helper to get cookie value - robust parsing
         function getCookieVal(name) {
-          var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-          return match ? decodeURIComponent(match[2]) : '';
+          var cookies = {};
+          document.cookie.split(';').forEach(function(c) {
+            var parts = c.trim().split('=');
+            if (parts.length >= 2) {
+              cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+            }
+          });
+          var val = cookies[name];
+          if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+          return '';
         }
 
         // Send tracking data
@@ -597,10 +605,23 @@
       } catch(e) {}
     })();
 
-    // Helper to get cookie value
+    // Helper to get cookie value - robust parsing
     function getCookie(name) {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? decodeURIComponent(match[2]) : '';
+      // Method 1: Parse all cookies into object
+      const cookies = {};
+      document.cookie.split(';').forEach(function(c) {
+        const parts = c.trim().split('=');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join('=').trim();
+          cookies[key] = val;
+        }
+      });
+      const value = cookies[name];
+      if (value) {
+        try { return decodeURIComponent(value); } catch(e) { return value; }
+      }
+      return '';
     }
 
     // Helper to safely get/set localStorage
@@ -632,6 +653,13 @@
       setStored('_rt_clickid', rtClickId);
       document.getElementById('rt_clickid').value = rtClickId;
     }
+    // Debug: Log what we found (remove after testing)
+    console.log('RT Click ID sources:', {
+      urlParam: urlParams.get('rt_clickid'),
+      localStorage: getStored('_rt_clickid'),
+      cookie: getCookie('rtkclickid-store'),
+      final: rtClickId
+    });
 
     // Capture page URL and referrer
     document.getElementById('page_url').value = window.location.href;
