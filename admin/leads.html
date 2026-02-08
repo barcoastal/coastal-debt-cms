@@ -7,10 +7,7 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
     .table-container { overflow-x: auto; }
-    table { min-width: 2000px; }
     table td { font-size: 13px; word-break: break-word; }
-    table td:nth-child(8), table td:nth-child(9), table td:nth-child(10) { min-width: 220px; } /* GCLID, RT Click ID, Eli Click ID */
-    table th:nth-child(8), table th:nth-child(9), table th:nth-child(10) { min-width: 220px; }
   </style>
 </head>
 <body>
@@ -105,24 +102,17 @@
               <tr>
                 <th>Name</th>
                 <th>Company</th>
-                <th>Email</th>
                 <th>Phone</th>
                 <th>Debt Amount</th>
-                <th>Landing Page</th>
                 <th>Source</th>
-                <th>GCLID</th>
                 <th>RT Click ID</th>
-                <th>Eli Click ID</th>
-                <th>Page URL</th>
-                <th>Referrer</th>
-                <th>Cost</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="leadsTable">
               <tr>
-                <td colspan="15" class="loading"><div class="spinner"></div></td>
+                <td colspan="8" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -187,25 +177,17 @@
 
       const tbody = document.getElementById('leadsTable');
       if (data.leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="15" class="empty-state">No leads found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No leads found</td></tr>';
       } else {
         tbody.innerHTML = data.leads.map(lead => {
-          const hf = lead.hidden_fields || {};
           return `
           <tr>
             <td>${lead.full_name || '-'}</td>
             <td>${lead.company_name || '-'}</td>
-            <td>${lead.email || '-'}</td>
             <td>${lead.phone || '-'}</td>
             <td>${lead.debt_amount || '-'}</td>
-            <td>${lead.landing_page_name || '-'}</td>
             <td><span class="badge badge-blue">${lead.platform || '-'}</span></td>
-            <td>${lead.gclid || '-'}</td>
             <td>${lead.rt_clickid || '-'}</td>
-            <td>${lead.eli_clickid || '-'}</td>
-            <td>${hf.page_url || '-'}</td>
-            <td>${hf.referrer_url || '-'}</td>
-            <td>${lead.cost_cents ? '$' + (lead.cost_cents/100).toFixed(2) : '-'}</td>
             <td>${formatDate(lead.created_at)}</td>
             <td class="actions" style="display:flex;flex-direction:column;gap:4px;">
               <button class="action-btn action-btn-view" onclick="viewLead(${lead.id})">View</button>

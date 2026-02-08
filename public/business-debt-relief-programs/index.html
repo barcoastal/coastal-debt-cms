@@ -584,7 +584,7 @@
           body: JSON.stringify({
             eli_clickid: id,
             gclid: params.get('gclid') || '',
-            rt_clickid: params.get('rt_clickid') || getCookieVal('rtkclickid-store') || '',
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
             user_agent: ua,
             browser: browser,
             browser_version: browserVer,
@@ -604,6 +604,20 @@
             utm_content: params.get('utm_content') || ''
           })
         }).catch(function(){});
+
+        // Retry visitor tracking with rt_clickid after RedTrack script loads
+        setTimeout(function() {
+          var rtId = '';
+          try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
+          if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
+          if (rtId) {
+            fetch('/api/visitors/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ eli_clickid: id, rt_clickid: rtId })
+            }).catch(function(){});
+          }
+        }, 3000);
       } catch(e) {}
     })();
 
@@ -649,12 +663,26 @@
       document.getElementById('gclid').value = gclid;
     }
 
-    // RT_CLICKID: URL param → localStorage → RedTrack rtkclickid-store cookie
-    const rtClickId = urlParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store');
+    // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
+    function getRtClickId() {
+      try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
+      return urlParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+    }
+    var rtClickId = getRtClickId();
     if (rtClickId) {
       setStored('_rt_clickid', rtClickId);
       document.getElementById('rt_clickid').value = rtClickId;
     }
+    // RedTrack script may set cookie/sessionStorage after page load - retry after delay
+    setTimeout(function() {
+      if (!document.getElementById('rt_clickid').value) {
+        var delayed = getRtClickId();
+        if (delayed) {
+          setStored('_rt_clickid', delayed);
+          document.getElementById('rt_clickid').value = delayed;
+        }
+      }
+    }, 2000);
 
     // Capture page URL and referrer
     document.getElementById('page_url').value = window.location.href;
@@ -826,9 +854,9 @@
       const data = Object.fromEntries(formData.entries());
       data.landing_page_slug = PAGE_SLUG;
 
-      // Always re-check rt_clickid from cookie at submit time (RedTrack may set it after page load)
+      // Always re-check rt_clickid at submit time from all sources
       if (!data.rt_clickid) {
-        data.rt_clickid = getCookie('rtkclickid-store') || getStored('_rt_clickid') || '';
+        data.rt_clickid = getRtClickId();
       }
 
       try {
