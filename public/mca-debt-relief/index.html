@@ -192,8 +192,8 @@
       .submit-btn{height:48px;font-size:1.1rem}
       .steps-grid{grid-template-columns:1fr}
       .cases-grid{grid-template-columns:1fr}
-      .trust-logos{gap:25px}
-      .trust-logos img{max-height:40px}
+      .trust-logos{justify-content:center;gap:15px 20px}
+      .trust-logos img{max-height:35px}
       .section{padding:50px 0}
       .section-title{font-size:1.5rem}
       .testimonials-grid{grid-template-columns:1fr}
@@ -647,19 +647,12 @@
       document.getElementById('gclid').value = gclid;
     }
 
-    // RT_CLICKID: URL param → localStorage → rtkclickid-store cookie
+    // RT_CLICKID: URL param → localStorage → RedTrack rtkclickid-store cookie
     const rtClickId = urlParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store');
     if (rtClickId) {
       setStored('_rt_clickid', rtClickId);
       document.getElementById('rt_clickid').value = rtClickId;
     }
-    // Debug: Log what we found (remove after testing)
-    console.log('RT Click ID sources:', {
-      urlParam: urlParams.get('rt_clickid'),
-      localStorage: getStored('_rt_clickid'),
-      cookie: getCookie('rtkclickid-store'),
-      final: rtClickId
-    });
 
     // Capture page URL and referrer
     document.getElementById('page_url').value = window.location.href;
@@ -830,6 +823,11 @@
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
       data.landing_page_slug = PAGE_SLUG;
+
+      // Always re-check rt_clickid from cookie at submit time (RedTrack may set it after page load)
+      if (!data.rt_clickid) {
+        data.rt_clickid = getCookie('rtkclickid-store') || getStored('_rt_clickid') || '';
+      }
 
       try {
         const response = await fetch(API_BASE + '/leads', {
