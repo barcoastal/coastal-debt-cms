@@ -236,24 +236,36 @@
         .map(([k, v]) => `<tr><td><strong>${k}</strong></td><td>${v}</td></tr>`)
         .join('');
 
+      const hf = lead.hidden_fields || {};
+
       document.getElementById('leadDetails').innerHTML = `
         <table style="width: 100%;">
+          <tr><td colspan="2" style="padding-top:10px;"><strong>Contact Info</strong></td></tr>
           <tr><td><strong>Name</strong></td><td>${lead.full_name || '-'}</td></tr>
           <tr><td><strong>Company</strong></td><td>${lead.company_name || '-'}</td></tr>
           <tr><td><strong>Email</strong></td><td>${lead.email || '-'}</td></tr>
           <tr><td><strong>Phone</strong></td><td>${lead.phone || '-'}</td></tr>
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Qualification</strong></td></tr>
           <tr><td><strong>Debt Amount</strong></td><td>${lead.debt_amount || '-'}</td></tr>
           <tr><td><strong>Has MCA</strong></td><td>${lead.has_mca || '-'}</td></tr>
           <tr><td><strong>Considered Bankruptcy</strong></td><td>${lead.considered_bankruptcy || '-'}</td></tr>
-          <tr><td><strong>GCLID</strong></td><td>${lead.gclid || '-'}</td></tr>
-          <tr><td><strong>RT Click ID</strong></td><td>${lead.rt_clickid || '-'}</td></tr>
-          <tr><td><strong>Eli Click ID</strong></td><td>${lead.eli_clickid || '-'}</td></tr>
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Tracking IDs</strong></td></tr>
+          <tr><td><strong>GCLID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.gclid || '-'}</td></tr>
+          <tr><td><strong>RT Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.rt_clickid || '-'}</td></tr>
+          <tr><td><strong>Eli Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.eli_clickid || '-'}</td></tr>
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Source</strong></td></tr>
           <tr><td><strong>Landing Page</strong></td><td>${lead.landing_page_name || '-'}</td></tr>
           <tr><td><strong>Traffic Source</strong></td><td>${lead.traffic_source || '-'}</td></tr>
           <tr><td><strong>Platform</strong></td><td>${lead.platform || '-'}</td></tr>
-          <tr><td><strong>Cost</strong></td><td>${lead.cost_cents ? '$' + (lead.cost_cents/100).toFixed(2) : '-'}</td></tr>
-          <tr><td><strong>Date</strong></td><td>${formatDate(lead.created_at)}</td></tr>
-          ${hiddenFields ? `<tr><td colspan="2"><strong>Hidden Fields:</strong></td></tr>${hiddenFields}` : ''}
+          <tr><td><strong>Page URL</strong></td><td style="word-break:break-all;">${hf.page_url || '-'}</td></tr>
+          <tr><td><strong>Referrer URL</strong></td><td style="word-break:break-all;">${hf.referrer_url || '-'}</td></tr>
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Cost & Date</strong></td></tr>
+          <tr><td><strong>Cost</strong></td><td>${lead.cost_cents ? '$' + (lead.cost_cents/100).toFixed(2) + ' ' + (lead.cost_currency || 'USD') : '-'}</td></tr>
+          <tr><td><strong>Submitted</strong></td><td>${formatDate(lead.created_at)}</td></tr>
+          ${Object.keys(hf).filter(k => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug').length > 0 ? `
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Additional Fields</strong></td></tr>
+          ${Object.entries(hf).filter(([k]) => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug').map(([k, v]) => `<tr><td><strong>${k}</strong></td><td style="word-break:break-all;">${v || '-'}</td></tr>`).join('')}
+          ` : ''}
         </table>
       `;
 

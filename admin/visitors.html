@@ -118,6 +118,7 @@
             <thead>
               <tr>
                 <th>Eli Click ID</th>
+                <th>RT Click ID</th>
                 <th>IP Address</th>
                 <th>Location</th>
                 <th>Device</th>
@@ -137,7 +138,7 @@
             </thead>
             <tbody id="visitorsTable">
               <tr>
-                <td colspan="16" class="loading"><div class="spinner"></div></td>
+                <td colspan="17" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -201,11 +202,12 @@
 
       const tbody = document.getElementById('visitorsTable');
       if (data.visitors.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="16" class="empty-state">No visitors found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="17" class="empty-state">No visitors found</td></tr>';
       } else {
         tbody.innerHTML = data.visitors.map(v => `
           <tr>
             <td style="font-family:monospace;font-size:11px;">${v.eli_clickid || '-'}</td>
+            <td style="font-family:monospace;font-size:11px;">${v.rt_clickid || '-'}</td>
             <td>${v.ip_address || '-'}</td>
             <td>${[v.city, v.country].filter(Boolean).join(', ') || '-'}</td>
             <td><span class="badge badge-gray">${v.device_type || '-'}</span></td>
