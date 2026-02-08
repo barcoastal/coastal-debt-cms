@@ -9,6 +9,7 @@
     .field-item {
       background: #f9fafb;
       padding: 16px;
+      padding-left: 44px;
       border-radius: 8px;
       margin-bottom: 12px;
       position: relative;
@@ -28,6 +29,34 @@
       cursor: pointer;
       font-size: 12px;
       height: 38px;
+    }
+    .field-move-btns {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .field-move-btns button {
+      background: #e5e7eb;
+      border: none;
+      width: 28px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #374151;
+      padding: 0;
+      line-height: 1;
+    }
+    .field-move-btns button:hover {
+      background: #3052FF;
+      color: white;
     }
     .add-field-btn {
       width: 100%;
@@ -334,6 +363,10 @@
         const isHidden = field.type === 'hidden';
         return `
         <div class="field-item ${isHidden ? 'hidden-field' : ''}" data-index="${i}">
+          <div class="field-move-btns">
+            <button type="button" onclick="moveField('${containerId}', ${i}, -1)" title="Move up" ${i === 0 ? 'disabled style="opacity:0.3;cursor:default"' : ''}>&#9650;</button>
+            <button type="button" onclick="moveField('${containerId}', ${i}, 1)" title="Move down" ${i === fields.length - 1 ? 'disabled style="opacity:0.3;cursor:default"' : ''}>&#9660;</button>
+          </div>
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0">
               <label>Field Name ${isHidden ? '<span class="hidden-badge">Hidden</span>' : ''}</label>
@@ -439,9 +472,19 @@
       container.appendChild(div);
     }
 
+    function moveField(containerId, index, direction) {
+      const fields = collectFields(containerId);
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= fields.length) return;
+      const item = fields.splice(index, 1)[0];
+      fields.splice(newIndex, 0, item);
+      renderFields(containerId, fields);
+    }
+
     function removeField(containerId, index) {
-      const container = document.getElementById(containerId);
-      container.children[index]?.remove();
+      const fields = collectFields(containerId);
+      fields.splice(index, 1);
+      renderFields(containerId, fields);
     }
 
     function collectFields(containerId) {
