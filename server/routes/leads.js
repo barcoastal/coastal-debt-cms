@@ -26,10 +26,13 @@ router.post('/', async (req, res) => {
     has_mca,
     considered_bankruptcy,
     gclid,
-    rt_clickid,
+    rt_clickid: rt_clickid_body,
     eli_clickid,
     ...hiddenFields
   } = req.body;
+
+  // Fallback: read RedTrack cookie server-side (handles HttpOnly cookies)
+  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
 
   // Find the landing page
   const page = db.prepare('SELECT * FROM landing_pages WHERE slug = ?').get(landing_page_slug);
