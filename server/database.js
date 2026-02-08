@@ -2,7 +2,9 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'data', 'cms.db');
+// Use persistent volume on Railway (/data), fallback to local data/ directory
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..', 'data');
+const dbPath = path.join(dataDir, 'cms.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys
