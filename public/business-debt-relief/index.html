@@ -603,14 +603,33 @@
       return match ? decodeURIComponent(match[2]) : '';
     }
 
-    // Capture URL parameters (gclid, rt_clickid, UTM params)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('gclid')) {
-      document.getElementById('gclid').value = urlParams.get('gclid');
+    // Helper to safely get/set localStorage
+    function getStored(key) {
+      try { return localStorage.getItem(key) || ''; } catch(e) { return ''; }
     }
-    // Get rt_clickid from URL param first, then fall back to cookie
-    const rtClickId = urlParams.get('rt_clickid') || getCookie('rtkclickid-store');
+    function setStored(key, val) {
+      try { if (val) localStorage.setItem(key, val); } catch(e) {}
+    }
+
+    // Capture URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // GCLID: URL param → localStorage → _gcl_aw cookie
+    let gclid = urlParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    if (gclid) {
+      // Clean gclid from cookie format (GCL.timestamp.value → value)
+      if (gclid.startsWith('GCL.')) {
+        const parts = gclid.split('.');
+        gclid = parts[parts.length - 1];
+      }
+      setStored('_gclid', gclid);
+      document.getElementById('gclid').value = gclid;
+    }
+
+    // RT_CLICKID: URL param → localStorage → rtkclickid-store cookie
+    const rtClickId = urlParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store');
     if (rtClickId) {
+      setStored('_rt_clickid', rtClickId);
       document.getElementById('rt_clickid').value = rtClickId;
     }
 
