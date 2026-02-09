@@ -138,6 +138,9 @@
                 <th>Phone</th>
                 <th>Debt Amount</th>
                 <th>Source</th>
+                <th>GCLID</th>
+                <th>RT Click ID</th>
+                <th>Eli Click ID</th>
                 <th>Campaign</th>
                 <th>MCA</th>
                 <th>Current Status</th>
@@ -152,7 +155,7 @@
             </thead>
             <tbody id="leadsTable">
               <tr>
-                <td colspan="15" class="loading"><div class="spinner"></div></td>
+                <td colspan="18" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -217,7 +220,7 @@
 
       const tbody = document.getElementById('leadsTable');
       if (data.leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="15" class="empty-state">No leads found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="18" class="empty-state">No leads found</td></tr>';
       } else {
         tbody.innerHTML = data.leads.map(lead => {
           const mcaHtml = lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-');
@@ -227,6 +230,9 @@
             '<td>' + (lead.phone || '-') + '</td>' +
             '<td>' + (lead.debt_amount || '-') + '</td>' +
             '<td><span class="badge badge-blue">' + (lead.platform || '-') + '</span></td>' +
+            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.gclid || '') + '">' + (lead.gclid || '-') + '</td>' +
+            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
+            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
             '<td>' + (lead.utm_campaign || '-') + '</td>' +
             '<td>' + mcaHtml + '</td>' +
             '<td>' + getStatusBadge(lead.current_status) + '</td>' +
