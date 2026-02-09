@@ -120,7 +120,7 @@ router.get('/connect', authenticateToken, (req, res) => {
     `&response_type=code` +
     `&scope=${encodeURIComponent(SCOPES.join(' '))}` +
     `&access_type=offline` +
-    `&prompt=consent`;
+    `&prompt=select_account+consent`;
 
   res.json({ auth_url: authUrl });
 });
