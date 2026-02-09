@@ -200,18 +200,8 @@
           </div>
         </div>
 
-        <!-- Developer Token Section -->
-        <div id="developerTokenSection">
-          <div class="form-group">
-            <label>Developer Token</label>
-            <input type="password" id="developerToken" placeholder="Enter your Google Ads Developer Token">
-            <small style="color: #666;">Required for API access. Get it from <a href="https://ads.google.com/aw/apicenter" target="_blank">Google Ads API Center</a></small>
-          </div>
-          <button class="btn btn-secondary" onclick="saveDeveloperToken()">Save Developer Token</button>
-        </div>
-
         <!-- Connect Button -->
-        <div id="connectSection" style="margin-top: 16px; display: none;">
+        <div id="connectSection" style="margin-top: 16px;">
           <button class="btn btn-primary" onclick="connectGoogleAds()">Connect Google Ads Account</button>
         </div>
 
@@ -260,16 +250,8 @@
 
         <!-- Setup Instructions -->
         <div class="setup-steps" id="setupSteps">
-          <h4>Setup Instructions</h4>
-          <ol>
-            <li>Go to <a href="https://ads.google.com/aw/apicenter" target="_blank">Google Ads API Center</a> and apply for a Developer Token (Basic access is fine)</li>
-            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> and create OAuth 2.0 credentials</li>
-            <li>Set the redirect URI to: <code id="redirectUri">http://localhost:3000/api/google-ads/callback</code></li>
-            <li>Enable the Google Ads API in your Google Cloud project</li>
-            <li>Set environment variables: <code>GOOGLE_ADS_CLIENT_ID</code> and <code>GOOGLE_ADS_CLIENT_SECRET</code></li>
-            <li>Enter your Developer Token above and click Save</li>
-            <li>Click "Connect Google Ads Account" to authorize</li>
-          </ol>
+          <h4>How to Connect</h4>
+          <p style="color: #6b7280; margin-bottom: 8px;">Click "Connect Google Ads Account" above, sign in with your Google account, and select the ads account you want to use. That's it!</p>
         </div>
       </div>
 
@@ -721,10 +703,6 @@
       const statusRes = await fetch('/api/google-ads/status');
       const status = await statusRes.json();
 
-      // Check developer token
-      const tokenRes = await fetch('/api/google-ads/has-developer-token');
-      const tokenStatus = await tokenRes.json();
-
       const statusDiv = document.getElementById('connectionStatus');
       const connectSection = document.getElementById('connectSection');
       const disconnectSection = document.getElementById('disconnectSection');
@@ -763,38 +741,8 @@
         connectSection.style.display = 'none';
         accountSelection.style.display = 'block';
         loadAccounts();
-      } else {
-        // Not connected
-        if (tokenStatus.has_token) {
-          connectSection.style.display = 'block';
-          document.getElementById('developerTokenSection').innerHTML = `
-            <p style="color: #10b981;">Developer token saved</p>
-          `;
-        }
       }
-    }
-
-    async function saveDeveloperToken() {
-      const token = document.getElementById('developerToken').value;
-      if (!token) {
-        alert('Please enter a developer token');
-        return;
-      }
-
-      const res = await fetch('/api/google-ads/developer-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ developer_token: token })
-      });
-
-      if (res.ok) {
-        document.getElementById('developerTokenSection').innerHTML = `
-          <p style="color: #10b981;">Developer token saved</p>
-        `;
-        document.getElementById('connectSection').style.display = 'block';
-      } else {
-        alert('Failed to save token');
-      }
+      // Otherwise: not connected, connect button already visible
     }
 
     async function connectGoogleAds() {

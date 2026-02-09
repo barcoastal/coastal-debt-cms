@@ -44,11 +44,19 @@ function decrypt(text) {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || '';
 const REDIRECT_URI = process.env.GOOGLE_ADS_REDIRECT_URI || 'http://localhost:3000/api/google-ads/callback';
+const DEVELOPER_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
 
 // Scopes needed for Google Ads API
 const SCOPES = [
   'https://www.googleapis.com/auth/adwords'
 ];
+
+// Helper: get developer token from env var or DB (backwards compat)
+function getDeveloperToken(config) {
+  if (DEVELOPER_TOKEN) return DEVELOPER_TOKEN;
+  if (config && config.developer_token_encrypted) return decrypt(config.developer_token_encrypted);
+  return null;
+}
 
 // Get connection status
 router.get('/status', authenticateToken, (req, res) => {
@@ -95,8 +103,15 @@ router.get('/has-developer-token', authenticateToken, (req, res) => {
 
 // Initiate OAuth flow
 router.get('/connect', authenticateToken, (req, res) => {
-  if (!GOOGLE_CLIENT_ID) {
-    return res.status(500).json({ error: 'Google OAuth not configured. Set GOOGLE_ADS_CLIENT_ID environment variable.' });
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    return res.status(500).json({ error: 'Google OAuth not configured. Set GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET environment variables.' });
+  }
+  if (!DEVELOPER_TOKEN) {
+    // Check DB fallback
+    const config = db.prepare('SELECT developer_token_encrypted FROM google_ads_config WHERE id = 1').get();
+    if (!config || !config.developer_token_encrypted) {
+      return res.status(500).json({ error: 'Developer token not configured. Set GOOGLE_ADS_DEVELOPER_TOKEN environment variable.' });
+    }
   }
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -188,10 +203,10 @@ router.get('/accounts', authenticateToken, async (req, res) => {
 
   try {
     const accessToken = await getValidAccessToken(config);
-    const developerToken = decrypt(config.developer_token_encrypted);
+    const developerToken = getDeveloperToken(config);
 
     if (!developerToken) {
-      return res.status(400).json({ error: 'Developer token not set' });
+      return res.status(400).json({ error: 'Developer token not configured. Set GOOGLE_ADS_DEVELOPER_TOKEN env variable.' });
     }
 
     // List accessible customers
@@ -320,7 +335,7 @@ async function fetchGclidCost(gclid) {
 
   try {
     const accessToken = await getValidAccessToken(config);
-    const developerToken = decrypt(config.developer_token_encrypted);
+    const developerToken = getDeveloperToken(config);
 
     if (!developerToken) return null;
 
@@ -472,10 +487,10 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
 
   try {
     const accessToken = await getValidAccessToken(config);
-    const developerToken = decrypt(config.developer_token_encrypted);
+    const developerToken = getDeveloperToken(config);
 
     if (!developerToken) {
-      return { success: false, error: 'Developer token not set' };
+      return { success: false, error: 'Developer token not configured' };
     }
 
     const conversion = {
@@ -530,7 +545,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
 
   try {
     const accessToken = await getValidAccessToken(config);
-    const developerToken = decrypt(config.developer_token_encrypted);
+    const developerToken = getDeveloperToken(config);
 
     const query = `
       SELECT
