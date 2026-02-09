@@ -6,6 +6,12 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+}, 0);
+
 // Default form fields
 const defaultFormFields = [
   { name: 'has_mca', label: 'Do you have MCA (Merchant Cash Advance) debt?', type: 'radio', required: true, options: 'Yes,No' },
@@ -139,6 +145,7 @@ router.post('/', authenticateToken, (req, res) => {
     // Generate the landing page HTML
     generateLandingPage(result.lastInsertRowid);
 
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'page', result.lastInsertRowid, `Created page: ${name}`, req.ip);
     res.json({ id: result.lastInsertRowid, slug: safeSlug, message: 'Page created' });
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -182,6 +189,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   // Regenerate the landing page HTML
   generateLandingPage(req.params.id);
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'page', parseInt(req.params.id), `Updated page: ${name || page.name}`, req.ip);
   res.json({ message: 'Page updated' });
 });
 
@@ -219,6 +227,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
   db.prepare('DELETE FROM leads WHERE landing_page_id = ?').run(req.params.id);
   db.prepare('DELETE FROM landing_pages WHERE id = ?').run(req.params.id);
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'page', parseInt(req.params.id), `Deleted page: ${page?.slug || req.params.id}`, req.ip);
   res.json({ message: 'Page deleted' });
 });
 
@@ -302,6 +311,29 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{formWebhook}}/g, formWebhook);
   html = html.replace(/{{formSubmitText}}/g, formSubmitText);
   html = html.replace(/{{formSuccessMsg}}/g, formSuccessMsg);
+
+  // Inject branding from settings
+  try {
+    const brandingRows = db.prepare("SELECT key, value FROM settings WHERE key IN ('favicon_url', 'meta_image_url', 'site_name')").all();
+    const branding = {};
+    brandingRows.forEach(r => { branding[r.key] = r.value; });
+
+    let brandingTags = '';
+    if (branding.favicon_url) {
+      brandingTags += `\n  <link rel="icon" href="${branding.favicon_url}">`;
+    }
+    if (branding.meta_image_url) {
+      brandingTags += `\n  <meta property="og:image" content="${branding.meta_image_url}">`;
+    }
+    if (branding.site_name) {
+      brandingTags += `\n  <meta property="og:site_name" content="${branding.site_name}">`;
+    }
+    if (brandingTags) {
+      html = html.replace('</head>', brandingTags + '\n</head>');
+    }
+  } catch (err) {
+    console.error('Failed to inject branding:', err);
+  }
 
   // Create the page directory and save
   const pageDir = path.join(__dirname, '..', '..', 'public', page.slug);

@@ -5,9 +5,16 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+}, 0);
+
 // Import uploadConversion (loaded after initialization)
 let uploadConversion = null;
 let sendFacebookEvent = null;
+let uploadBingConversion = null;
 setTimeout(() => {
   try {
     uploadConversion = require('./google-ads').uploadConversion;
@@ -18,6 +25,11 @@ setTimeout(() => {
     sendFacebookEvent = require('./facebook').sendFacebookEvent;
   } catch (e) {
     console.log('Facebook module not loaded yet');
+  }
+  try {
+    uploadBingConversion = require('./bing-ads').uploadBingConversion;
+  } catch (e) {
+    console.log('Bing Ads module not loaded yet');
   }
 }, 0);
 
@@ -78,7 +90,7 @@ router.all('/conversion', async (req, res) => {
 
   // Find the lead by eli_clickid
   const lead = db.prepare(`
-    SELECT l.*, v.gclid as visitor_gclid
+    SELECT l.*, v.gclid as visitor_gclid, v.msclkid as visitor_msclkid
     FROM leads l
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid
     WHERE l.eli_clickid = ?
@@ -111,16 +123,19 @@ router.all('/conversion', async (req, res) => {
   // Get the GCLID (from lead or visitor)
   const gclid = lead.gclid || lead.visitor_gclid;
 
-  if (!gclid) {
-    // Log the event but can't send to Google
+  // Get the msclkid (from lead or visitor)
+  const msclkid = lead.msclkid || lead.visitor_msclkid;
+
+  if (!gclid && !msclkid) {
+    // Log the event but can't send to Google or Bing
     db.prepare(`
       INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message)
-      VALUES (?, ?, ?, ?, 'postback', 'failed', 'No GCLID available')
+      VALUES (?, ?, ?, ?, 'postback', 'failed', 'No GCLID or msclkid available')
     `).run(lead.id, eli_clickid, event, value || null);
 
     return res.json({
       success: true,
-      warning: 'Lead found but no GCLID - cannot send to Google Ads',
+      warning: 'Lead found but no GCLID or msclkid - cannot send to ad platforms',
       lead_id: lead.id
     });
   }
@@ -153,7 +168,7 @@ router.all('/conversion', async (req, res) => {
   // If we have a conversion action configured, send to Google Ads
   // Use debt_amount as revenue, fall back to value
   const googleAdsValue = debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : null);
-  if (config && config.conversion_action_id && uploadConversion) {
+  if (gclid && config && config.conversion_action_id && uploadConversion) {
     googleResult = await uploadConversion(
       gclid,
       config.conversion_action_id,
@@ -216,6 +231,39 @@ router.all('/conversion', async (req, res) => {
     }
   }
 
+  // Send to Bing Ads if event config has send_to_bing enabled and msclkid is present
+  let bingResult = null;
+  if (msclkid && config && config.send_to_bing && config.bing_conversion_goal_id && uploadBingConversion) {
+    try {
+      const bingValue = debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : undefined);
+      bingResult = await uploadBingConversion(
+        msclkid,
+        config.bing_conversion_goal_id,
+        null,
+        bingValue,
+        currency
+      );
+
+      // Log Bing Ads result in conversion_events
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, msclkid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message, sent_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'bing_ads', ?, ?, ${bingResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+      `).run(
+        lead.id,
+        eli_clickid,
+        msclkid,
+        event,
+        value || null,
+        debt_amount ? parseFloat(debt_amount) : null,
+        revenue ? parseFloat(revenue) : null,
+        bingResult.success ? 'sent' : 'failed',
+        bingResult.error || null
+      );
+    } catch (err) {
+      console.error('Failed to send Bing Ads event:', err);
+    }
+  }
+
   // Update lead status if needed
   db.prepare(`
     UPDATE leads SET
@@ -246,7 +294,8 @@ router.all('/conversion', async (req, res) => {
     revenue: revenue ? parseFloat(revenue) : null,
     google_ads_sent: status === 'sent',
     google_ads_configured: !!(config && config.conversion_action_id),
-    facebook_capi_sent: fbResult?.success || false
+    facebook_capi_sent: fbResult?.success || false,
+    bing_ads_sent: bingResult?.success || false
   });
 });
 
@@ -288,17 +337,18 @@ router.get('/config', authenticateToken, (req, res) => {
  * ADMIN: Create postback configuration
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, bing_conversion_goal_id, send_to_bing } = req.body;
 
   if (!name || !event_name) {
     return res.status(400).json({ error: 'Name and event_name required' });
   }
 
   const result = db.prepare(`
-    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, send_to_facebook ? 1 : 0);
+    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, bing_conversion_goal_id, send_to_bing)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, send_to_facebook ? 1 : 0, bing_conversion_goal_id || null, send_to_bing ? 1 : 0);
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'postback_config', result.lastInsertRowid, `Created postback config: ${name}`, req.ip);
   res.json({ id: result.lastInsertRowid, message: 'Config created' });
 });
 
@@ -306,7 +356,7 @@ router.post('/config', authenticateToken, (req, res) => {
  * ADMIN: Update postback configuration
  */
 router.put('/config/:id', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, send_to_facebook } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, send_to_facebook, bing_conversion_goal_id, send_to_bing } = req.body;
 
   db.prepare(`
     UPDATE postback_config SET
@@ -315,10 +365,13 @@ router.put('/config/:id', authenticateToken, (req, res) => {
       google_ads_event_name = ?,
       conversion_action_id = ?,
       is_active = COALESCE(?, is_active),
-      send_to_facebook = COALESCE(?, send_to_facebook)
+      send_to_facebook = COALESCE(?, send_to_facebook),
+      bing_conversion_goal_id = ?,
+      send_to_bing = COALESCE(?, send_to_bing)
     WHERE id = ?
-  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, send_to_facebook != null ? (send_to_facebook ? 1 : 0) : null, req.params.id);
+  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, send_to_facebook != null ? (send_to_facebook ? 1 : 0) : null, bing_conversion_goal_id || null, send_to_bing != null ? (send_to_bing ? 1 : 0) : null, req.params.id);
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'postback_config', parseInt(req.params.id), `Updated postback config: ${name || req.params.id}`, req.ip);
   res.json({ message: 'Config updated' });
 });
 
@@ -326,7 +379,9 @@ router.put('/config/:id', authenticateToken, (req, res) => {
  * ADMIN: Delete postback configuration
  */
 router.delete('/config/:id', authenticateToken, (req, res) => {
+  const cfg = db.prepare('SELECT name FROM postback_config WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM postback_config WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'postback_config', parseInt(req.params.id), `Deleted postback config: ${cfg?.name || req.params.id}`, req.ip);
   res.json({ message: 'Config deleted' });
 });
 

@@ -165,7 +165,48 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_conversion_eli ON conversion_events(eli_clickid);
   CREATE INDEX IF NOT EXISTS idx_conversion_gclid ON conversion_events(gclid);
+
+  CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    user_name TEXT,
+    action TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id INTEGER,
+    details TEXT,
+    ip_address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_logs(user_id);
+  CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
 `);
+
+// Create bing_ads_config table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS bing_ads_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token_encrypted TEXT,
+    refresh_token_encrypted TEXT,
+    token_expires_at DATETIME,
+    account_id TEXT,
+    customer_id TEXT,
+    account_name TEXT,
+    uet_tag_id TEXT,
+    connected_at DATETIME,
+    connected_by_user_id INTEGER,
+    FOREIGN KEY (connected_by_user_id) REFERENCES users(id)
+  )
+`);
+
+// Add msclkid to leads, visitors, conversion_events if not exist
+try { db.exec(`ALTER TABLE leads ADD COLUMN msclkid TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE visitors ADD COLUMN msclkid TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE conversion_events ADD COLUMN msclkid TEXT`); } catch (e) {}
+
+// Add Bing fields to postback_config if not exist
+try { db.exec(`ALTER TABLE postback_config ADD COLUMN bing_conversion_goal_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE postback_config ADD COLUMN send_to_bing INTEGER DEFAULT 0`); } catch (e) {}
 
 // Add cost columns to leads table if not exist
 try {
@@ -203,6 +244,9 @@ try { db.exec(`ALTER TABLE leads ADD COLUMN stage TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN contract_sign_date TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN total_debt_sign TEXT`); } catch (e) {}
 
+// Add permissions column to users if not exist
+try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'`); } catch (e) {}
+
 // Add pixel_id to facebook_config if not exist
 try {
   db.exec(`ALTER TABLE facebook_config ADD COLUMN pixel_id TEXT`);
@@ -225,6 +269,34 @@ db.exec(`
     connected_at DATETIME,
     FOREIGN KEY (default_landing_page_id) REFERENCES landing_pages(id)
   )
+`);
+
+// Notification and alert tables
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notification_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    enabled INTEGER DEFAULT 1,
+    email_recipients TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS alert_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    enabled INTEGER DEFAULT 1,
+    metric TEXT NOT NULL,
+    condition TEXT NOT NULL,
+    threshold REAL NOT NULL,
+    time_window_hours INTEGER NOT NULL DEFAULT 24,
+    secondary_metric TEXT,
+    secondary_condition TEXT,
+    secondary_threshold REAL,
+    notify_email INTEGER DEFAULT 1,
+    email_recipients TEXT,
+    last_triggered_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Create default admin user if none exists

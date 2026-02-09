@@ -9,6 +9,7 @@ router.post('/track', async (req, res) => {
   const {
     eli_clickid,
     gclid,
+    msclkid,
     rt_clickid: rt_clickid_body,
     user_agent,
     browser,
@@ -53,25 +54,27 @@ router.post('/track', async (req, res) => {
         last_visit = CURRENT_TIMESTAMP,
         visit_count = visit_count + 1,
         gclid = COALESCE(NULLIF(?, ''), gclid),
+        msclkid = COALESCE(NULLIF(?, ''), msclkid),
         rt_clickid = COALESCE(NULLIF(?, ''), rt_clickid),
         landing_page = ?
       WHERE eli_clickid = ?
-    `).run(gclid || '', rt_clickid || '', landing_page || '', eli_clickid);
+    `).run(gclid || '', msclkid || '', rt_clickid || '', landing_page || '', eli_clickid);
 
     res.json({ success: true, visitor_id: existing.id, returning: true });
   } else {
     // Create new visitor
     const result = db.prepare(`
       INSERT INTO visitors (
-        eli_clickid, gclid, rt_clickid, ip_address,
+        eli_clickid, gclid, msclkid, rt_clickid, ip_address,
         user_agent, browser, browser_version, os, os_version, device_type,
         screen_width, screen_height, language, timezone,
         referrer_url, landing_page,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eli_clickid,
       gclid || '',
+      msclkid || '',
       rt_clickid || '',
       ip_address,
       user_agent || '',

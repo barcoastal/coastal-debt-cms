@@ -5,11 +5,21 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+}, 0);
+
 // Import uploadConversion (loaded after initialization)
 let uploadConversion = null;
+let sendLeadNotification = null;
 setTimeout(() => {
   try {
     uploadConversion = require('./google-ads').uploadConversion;
+  } catch (e) {}
+  try {
+    sendLeadNotification = require('./notifications').sendLeadNotification;
   } catch (e) {}
 }, 0);
 
@@ -156,6 +166,12 @@ async function processLeadgenEvent(leadgenId, config) {
     );
 
     console.log(`Facebook lead inserted: ID ${result.lastInsertRowid}`);
+
+    // Send lead notification email
+    if (sendLeadNotification) {
+      const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(landingPageId);
+      sendLeadNotification(fields, landingPage).catch(() => {});
+    }
 
     // Auto-create "lead" conversion event
     try {
@@ -310,6 +326,7 @@ router.post('/config', authenticateToken, (req, res) => {
     `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null);
   }
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'connected', 'facebook', null, 'Facebook config updated', req.ip);
   res.json({ message: 'Config saved' });
 });
 

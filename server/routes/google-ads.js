@@ -5,6 +5,12 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+}, 0);
+
 // Encryption key - in production, use environment variable
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'coastal-debt-cms-encryption-key-32';
 const IV_LENGTH = 16;
@@ -164,6 +170,7 @@ router.get('/callback', async (req, res) => {
       );
     }
 
+    if (logActivity) logActivity(null, 'System', 'connected', 'google_ads', null, 'Google Ads connected via OAuth', req.ip);
     res.redirect('/admin/settings.html?connected=true');
   } catch (err) {
     console.error('OAuth callback error:', err);
@@ -260,6 +267,7 @@ router.post('/disconnect', authenticateToken, (req, res) => {
     WHERE id = 1
   `).run();
 
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'disconnected', 'google_ads', null, 'Google Ads disconnected', req.ip);
   res.json({ message: 'Disconnected' });
 });
 

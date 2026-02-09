@@ -6,6 +6,12 @@ const db = require('../database');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'coastal-debt-secret-key-change-in-production';
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+}, 0);
+
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
   const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
@@ -52,6 +58,8 @@ router.post('/login', (req, res) => {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
+
+  if (logActivity) logActivity(user.id, user.name, 'login', 'user', user.id, 'Login successful', req.ip);
 
   res.json({
     message: 'Login successful',
@@ -101,6 +109,7 @@ router.post('/users', authenticateToken, (req, res) => {
       VALUES (?, ?, ?, ?)
     `).run(email, passwordHash, name, role || 'editor');
 
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'user', result.lastInsertRowid, `Created user: ${name}`, req.ip);
     res.json({ id: result.lastInsertRowid, message: 'User created' });
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -131,6 +140,7 @@ router.put('/users/:id', authenticateToken, (req, res) => {
   params.push(userId);
 
   db.prepare(query).run(...params);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'user', parseInt(userId), `Updated user: ${name}`, req.ip);
   res.json({ message: 'User updated' });
 });
 
@@ -145,7 +155,9 @@ router.delete('/users/:id', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Cannot delete yourself' });
   }
 
+  const delUser = db.prepare('SELECT name FROM users WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'user', parseInt(req.params.id), `Deleted user: ${delUser?.name || req.params.id}`, req.ip);
   res.json({ message: 'User deleted' });
 });
 

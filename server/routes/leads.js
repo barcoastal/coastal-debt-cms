@@ -4,10 +4,19 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Import logActivity (loaded after initialization to avoid circular deps)
+let logActivity = null;
+let sendLeadNotification = null;
+setTimeout(() => {
+  try { logActivity = require('./settings').logActivity; } catch (e) {}
+  try { sendLeadNotification = require('./notifications').sendLeadNotification; } catch (e) {}
+}, 0);
+
 // Import Google Ads functions (will be loaded after module initialization)
 let fetchGclidCost = null;
 let uploadConversion = null;
 let sendFacebookEvent = null;
+let uploadBingConversion = null;
 setTimeout(() => {
   try {
     fetchGclidCost = require('./google-ads').fetchGclidCost;
@@ -19,6 +28,11 @@ setTimeout(() => {
     sendFacebookEvent = require('./facebook').sendFacebookEvent;
   } catch (e) {
     console.log('Facebook module not loaded yet');
+  }
+  try {
+    uploadBingConversion = require('./bing-ads').uploadBingConversion;
+  } catch (e) {
+    console.log('Bing Ads module not loaded yet');
   }
 }, 0);
 
@@ -34,6 +48,7 @@ router.post('/', async (req, res) => {
     has_mca,
     considered_bankruptcy,
     gclid,
+    msclkid,
     rt_clickid: rt_clickid_body,
     eli_clickid,
     ...hiddenFields
@@ -60,8 +75,8 @@ router.post('/', async (req, res) => {
   const result = db.prepare(`
     INSERT INTO leads (
       landing_page_id, full_name, company_name, email, phone,
-      debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, hidden_fields
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, rt_clickid, eli_clickid, hidden_fields
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     page.id,
     full_name,
@@ -72,6 +87,7 @@ router.post('/', async (req, res) => {
     has_mca,
     considered_bankruptcy,
     gclid || '',
+    msclkid || '',
     rt_clickid || '',
     eli_clickid || '',
     JSON.stringify(hiddenFields)
@@ -92,6 +108,7 @@ router.post('/', async (req, res) => {
         has_mca,
         considered_bankruptcy,
         gclid: gclid || '',
+        msclkid: msclkid || '',
         rt_clickid: rt_clickid || '',
         eli_clickid: eli_clickid || '',
         traffic_source: page.traffic_source,
@@ -167,6 +184,32 @@ router.post('/', async (req, res) => {
     console.error('Failed to create lead conversion event:', err);
   }
 
+  // Auto-send 'lead' event to Bing Ads if msclkid + config present
+  if (msclkid && uploadBingConversion) {
+    try {
+      const bingConfig = db.prepare('SELECT * FROM bing_ads_config WHERE id = 1').get();
+      const leadBingConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+      if (bingConfig && bingConfig.refresh_token_encrypted && leadBingConfig && leadBingConfig.send_to_bing && leadBingConfig.bing_conversion_goal_id) {
+        const leadId = result.lastInsertRowid;
+        uploadBingConversion(msclkid, leadBingConfig.bing_conversion_goal_id).then(bingResult => {
+          db.prepare(`
+            INSERT INTO conversion_events (lead_id, eli_clickid, msclkid, conversion_action_name, source, status, error_message, sent_at)
+            VALUES (?, ?, ?, 'lead', 'bing_ads', ?, ?, ${bingResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+          `).run(
+            leadId,
+            eli_clickid || '',
+            msclkid,
+            bingResult.success ? 'sent' : 'failed',
+            bingResult.error || null
+          );
+          console.log(`Bing Ads lead event for lead ${leadId}: ${bingResult.success ? 'sent' : 'failed'}`);
+        }).catch(err => console.error('Failed to send Bing Ads lead event:', err));
+      }
+    } catch (err) {
+      console.error('Failed to check Bing Ads config for lead event:', err);
+    }
+  }
+
   // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
   if (page.platform === 'meta' && sendFacebookEvent) {
     const nameParts = (full_name || '').trim().split(/\s+/);
@@ -193,11 +236,17 @@ router.post('/', async (req, res) => {
   }
 
   res.json({ success: true, id: result.lastInsertRowid });
+
+  // Send lead notification email (async, don't block)
+  if (sendLeadNotification) {
+    sendLeadNotification({ full_name, company_name, email, phone }, page).catch(() => {});
+  }
 });
 
 // Get all leads (admin)
 router.get('/', authenticateToken, (req, res) => {
-  const { page = 1, limit = 50, search, landing_page_id, platform, from_date, to_date } = req.query;
+  const { page = 1, limit = 50, search, landing_page_id, platform, from_date, to_date,
+          event, campaign, has_mca, debt_amount, stage, transfer_status } = req.query;
   const offset = (page - 1) * limit;
 
   let query = `
@@ -218,6 +267,7 @@ router.get('/', authenticateToken, (req, res) => {
   let countQuery = `
     SELECT COUNT(*) as total FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE 1=1
   `;
   const params = [];
@@ -252,6 +302,43 @@ router.get('/', authenticateToken, (req, res) => {
     params.push(to_date);
   }
 
+  if (event) {
+    const eventFilter = ` AND EXISTS (SELECT 1 FROM conversion_events ce2 WHERE ce2.lead_id = l.id AND ce2.conversion_action_name = ?)`;
+    query += eventFilter;
+    countQuery += eventFilter;
+    params.push(event);
+  }
+
+  if (campaign) {
+    query += ` AND v.utm_campaign = ?`;
+    countQuery += ` AND v.utm_campaign = ?`;
+    params.push(campaign);
+  }
+
+  if (has_mca) {
+    query += ` AND l.has_mca = ?`;
+    countQuery += ` AND l.has_mca = ?`;
+    params.push(has_mca);
+  }
+
+  if (debt_amount) {
+    query += ` AND l.debt_amount = ?`;
+    countQuery += ` AND l.debt_amount = ?`;
+    params.push(debt_amount);
+  }
+
+  if (stage) {
+    query += ` AND l.stage = ?`;
+    countQuery += ` AND l.stage = ?`;
+    params.push(stage);
+  }
+
+  if (transfer_status) {
+    query += ` AND l.transfer_status = ?`;
+    countQuery += ` AND l.transfer_status = ?`;
+    params.push(transfer_status);
+  }
+
   const total = db.prepare(countQuery).get(...params).total;
 
   query += ` ORDER BY l.created_at DESC LIMIT ? OFFSET ?`;
@@ -277,7 +364,7 @@ router.get('/', authenticateToken, (req, res) => {
   });
 });
 
-// Get single lead
+// Get single lead (with events timeline)
 router.get('/:id', authenticateToken, (req, res) => {
   const lead = db.prepare(`
     SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform
@@ -296,7 +383,34 @@ router.get('/:id', authenticateToken, (req, res) => {
     lead.hidden_fields = {};
   }
 
+  // Include event timeline
+  lead.events = db.prepare(`
+    SELECT id, conversion_action_name, conversion_value, debt_amount,
+           revenue, source, status, error_message, created_at, sent_at
+    FROM conversion_events
+    WHERE lead_id = ?
+    ORDER BY created_at ASC
+  `).all(req.params.id);
+
   res.json(lead);
+});
+
+// Get lead events timeline
+router.get('/:id/events', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT id FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) {
+    return res.status(404).json({ error: 'Lead not found' });
+  }
+
+  const events = db.prepare(`
+    SELECT id, conversion_action_name, conversion_value, debt_amount,
+           revenue, source, status, error_message, created_at, sent_at
+    FROM conversion_events
+    WHERE lead_id = ?
+    ORDER BY created_at ASC
+  `).all(req.params.id);
+
+  res.json(events);
 });
 
 // Update lead fields (Salesforce tracking)
@@ -322,7 +436,9 @@ router.patch('/:id', authenticateToken, (req, res) => {
 
 // Delete lead
 router.delete('/:id', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT full_name FROM leads WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM leads WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${lead?.full_name || req.params.id}`, req.ip);
   res.json({ message: 'Lead deleted' });
 });
 

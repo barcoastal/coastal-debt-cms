@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings | Coastal Debt CMS</title>
+  <title>Integrations | Coastal Debt CMS</title>
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
     .settings-card {
@@ -158,12 +158,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           Scripts
         </a>
-        <a href="/admin/users.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Users
-        </a>
         <a href="/admin/settings.html" class="active">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           Settings
         </a>
       </nav>
@@ -182,7 +182,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Settings</h1>
+        <h1>Integrations</h1>
       </div>
 
       <!-- Google Ads Connection -->
@@ -269,6 +269,75 @@
             <li>Set environment variables: <code>GOOGLE_ADS_CLIENT_ID</code> and <code>GOOGLE_ADS_CLIENT_SECRET</code></li>
             <li>Enter your Developer Token above and click Save</li>
             <li>Click "Connect Google Ads Account" to authorize</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Bing Ads Integration -->
+      <div class="settings-card">
+        <h3>Bing Ads Integration</h3>
+        <p>Connect your Microsoft Advertising account to upload offline conversions via msclkid.</p>
+
+        <div id="bingConnectionStatus">
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Not Connected</strong>
+              <span>Connect your Bing Ads account to send conversions</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connect Button -->
+        <div id="bingConnectSection" style="margin-top: 16px;">
+          <button class="btn btn-primary" onclick="connectBingAds()">Connect Bing Ads Account</button>
+        </div>
+
+        <!-- Account Details (shown after OAuth) -->
+        <div id="bingAccountSection" style="display: none; margin-top: 16px;">
+          <div class="form-group">
+            <label>Account ID</label>
+            <input type="text" id="bingAccountId" placeholder="Enter your Bing Ads Account ID">
+          </div>
+          <div class="form-group">
+            <label>Customer ID</label>
+            <input type="text" id="bingCustomerId" placeholder="Enter your Customer ID">
+          </div>
+          <div class="form-group">
+            <label>Account Name</label>
+            <input type="text" id="bingAccountName" placeholder="Enter account display name">
+          </div>
+          <button class="btn btn-primary" onclick="saveBingAccount()">Save Account Details</button>
+          <span id="bingAccountStatus" style="margin-left: 12px; color: #6b7280;"></span>
+        </div>
+
+        <!-- UET Tag ID (shown after connected) -->
+        <div id="bingUetSection" style="display: none; margin-top: 16px;">
+          <div class="form-group">
+            <label>UET Tag ID</label>
+            <input type="text" id="bingUetTagId" placeholder="Enter your UET Tag ID">
+            <small style="color: #666;">Find it in Microsoft Advertising &rarr; Conversion Tracking &rarr; UET Tags</small>
+          </div>
+          <button class="btn btn-secondary" onclick="saveBingUetTag()">Save UET Tag</button>
+          <span id="bingUetStatus" style="margin-left: 12px; color: #6b7280;"></span>
+        </div>
+
+        <!-- Disconnect Button -->
+        <div id="bingDisconnectSection" style="display: none; margin-top: 16px;">
+          <button class="btn btn-danger" onclick="disconnectBingAds()">Disconnect Bing Ads</button>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="setup-steps" id="bingSetupSteps" style="margin-top: 16px;">
+          <h4>Setup Instructions</h4>
+          <ol>
+            <li>Go to <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank">Azure App Registrations</a> and register a new application</li>
+            <li>Set the redirect URI to: <code id="bingRedirectUri">http://localhost:3000/api/bing-ads/callback</code></li>
+            <li>Under "Certificates & Secrets", create a new client secret</li>
+            <li>Under "API Permissions", add <code>https://ads.microsoft.com/msads.manage</code></li>
+            <li>Set environment variables: <code>BING_ADS_CLIENT_ID</code>, <code>BING_ADS_CLIENT_SECRET</code>, <code>BING_ADS_REDIRECT_URI</code></li>
+            <li>Click "Connect Bing Ads Account" above to authorize</li>
+            <li>After connecting, enter your Account ID, Customer ID, and UET Tag ID</li>
           </ol>
         </div>
       </div>
@@ -505,6 +574,133 @@
     }
 
     loadFbConfig();
+
+    // --- Bing Ads ---
+    async function checkBingStatus() {
+      // Check for URL params (after Bing OAuth redirect)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('bing_connected') === 'true') {
+        history.replaceState({}, '', '/admin/settings.html');
+      }
+      if (params.get('bing_error')) {
+        alert('Bing connection error: ' + params.get('bing_error'));
+        history.replaceState({}, '', '/admin/settings.html');
+      }
+
+      try {
+        const status = await api('/api/bing-ads/status');
+
+        const statusDiv = document.getElementById('bingConnectionStatus');
+        const connectSection = document.getElementById('bingConnectSection');
+        const accountSection = document.getElementById('bingAccountSection');
+        const uetSection = document.getElementById('bingUetSection');
+        const disconnectSection = document.getElementById('bingDisconnectSection');
+        const setupSteps = document.getElementById('bingSetupSteps');
+
+        if (status.connected && status.account_id) {
+          statusDiv.innerHTML = `
+            <div class="connection-status connected">
+              <div class="status-dot green"></div>
+              <div class="account-info">
+                <strong>Connected: ${status.account_name || status.account_id}</strong>
+                <span>Account: ${status.account_id} | Customer: ${status.customer_id}${status.uet_tag_id ? ' | UET: ' + status.uet_tag_id : ''}</span>
+              </div>
+            </div>
+          `;
+          connectSection.style.display = 'none';
+          accountSection.style.display = 'block';
+          uetSection.style.display = 'block';
+          disconnectSection.style.display = 'block';
+          setupSteps.style.display = 'none';
+          document.getElementById('bingAccountId').value = status.account_id || '';
+          document.getElementById('bingCustomerId').value = status.customer_id || '';
+          document.getElementById('bingAccountName').value = status.account_name || '';
+          document.getElementById('bingUetTagId').value = status.uet_tag_id || '';
+        } else if (status.connected) {
+          statusDiv.innerHTML = `
+            <div class="connection-status disconnected">
+              <div class="status-dot yellow"></div>
+              <div class="account-info">
+                <strong>OAuth Connected</strong>
+                <span>Please enter your account details below</span>
+              </div>
+            </div>
+          `;
+          connectSection.style.display = 'none';
+          accountSection.style.display = 'block';
+          uetSection.style.display = 'block';
+          disconnectSection.style.display = 'block';
+          setupSteps.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Failed to check Bing status:', e);
+      }
+    }
+
+    async function connectBingAds() {
+      try {
+        const data = await api('/api/bing-ads/connect');
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        window.location.href = data.auth_url;
+      } catch (e) {
+        alert('Failed to initiate Bing OAuth: ' + e.message);
+      }
+    }
+
+    async function saveBingAccount() {
+      const accountId = document.getElementById('bingAccountId').value;
+      const customerId = document.getElementById('bingCustomerId').value;
+      const accountName = document.getElementById('bingAccountName').value;
+
+      if (!accountId || !customerId) {
+        alert('Account ID and Customer ID are required');
+        return;
+      }
+
+      try {
+        await api('/api/bing-ads/select-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ account_id: accountId, customer_id: customerId, account_name: accountName })
+        });
+        document.getElementById('bingAccountStatus').textContent = 'Saved!';
+        document.getElementById('bingAccountStatus').style.color = '#10b981';
+        checkBingStatus();
+      } catch (e) {
+        document.getElementById('bingAccountStatus').textContent = 'Failed to save';
+        document.getElementById('bingAccountStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function saveBingUetTag() {
+      const uetTagId = document.getElementById('bingUetTagId').value;
+      try {
+        await api('/api/bing-ads/save-uet-tag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uet_tag_id: uetTagId })
+        });
+        document.getElementById('bingUetStatus').textContent = 'Saved!';
+        document.getElementById('bingUetStatus').style.color = '#10b981';
+      } catch (e) {
+        document.getElementById('bingUetStatus').textContent = 'Failed to save';
+        document.getElementById('bingUetStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function disconnectBingAds() {
+      if (!confirm('Are you sure you want to disconnect Bing Ads?')) return;
+      await api('/api/bing-ads/disconnect', { method: 'POST' });
+      location.reload();
+    }
+
+    checkBingStatus();
+
+    // Set Bing redirect URI display
+    document.getElementById('bingRedirectUri').textContent = window.location.origin + '/api/bing-ads/callback';
 
     // --- Google Ads ---
     async function checkStatus() {

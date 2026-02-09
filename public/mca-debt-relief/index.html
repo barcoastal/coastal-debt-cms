@@ -233,6 +233,11 @@
     .form-success{text-align:center;padding:50px 20px}
     .form-success h3{color:var(--blue);font-size:1.6rem;margin-bottom:12px;font-weight:600}
     .form-success p{color:#7984a9;font-size:1rem}
+    .consent-group{margin:16px 0 0}
+    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.75rem;color:#7984a9;line-height:1.5}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+    .consent-label a{color:var(--blue);text-decoration:underline}
+    .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
     .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
   </style>
 </head>
@@ -279,10 +284,10 @@
               <option value="1000000+">$1,000,000+</option>
             </select>
           </div>
-          <button type="button" class="submit-btn" id="checkDebtBtn">Continue</button>
+          <button type="button" class="submit-btn" id="checkDebtBtn" style="display:none;">Continue</button>
         </div>
 
-        <!-- Step 2: Sorry Message -->
+        <!-- Step 2: Sorry - Debt too low -->
         <div class="form-step form-step-sorry">
           <div class="sorry-message">
             <div class="sorry-icon">
@@ -294,23 +299,61 @@
           </div>
         </div>
 
-        <!-- Step 3: Rest of Form -->
+        <!-- Step 3: MCA Question -->
+        <div class="form-step form-step-mca">
+          <h2 class="form-title">One Quick Question</h2>
+          <p class="form-subtitle">Do you currently have a Merchant Cash Advance (MCA)?</p>
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="Yes">
+                <span>Yes</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="No">
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Sorry - No MCA -->
+        <div class="form-step form-step-sorry-mca">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Rest of Form -->
         <div class="form-step form-step-2">
           <h2 class="form-title">Great! You Qualify</h2>
           <p class="form-subtitle">Complete your details for a free consultation.</p>
           <form id="leadForm">
             <input type="hidden" id="debt_amount_hidden" name="debt_amount">
+            <input type="hidden" id="has_mca_hidden" name="has_mca" value="">
             <input type="hidden" name="landing_page_slug" value="mca-debt-relief">
             <input type="hidden" id="gclid" name="gclid" value="">
+            <input type="hidden" id="msclkid" name="msclkid" value="">
             <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
             <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
             <input type="hidden" id="page_url" name="page_url" value="">
             <input type="hidden" id="referrer_url" name="referrer_url" value="">
             
             <div id="dynamicFormFields"></div>
+            <div class="consent-group">
+              <label class="consent-label">
+                <input type="checkbox" id="consentCheckbox" required>
+                <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+              </label>
+              <div class="consent-error" id="consentError">You must agree to continue</div>
+            </div>
             <button type="submit" class="submit-btn">Get My Free Debt Analysis</button>
           </form>
-          <p class="form-disclaimer">By submitting, you agree to receive calls and texts. We respect your privacy.</p>
         </div>
 
         <!-- Step 4: Success -->
@@ -590,6 +633,7 @@
           body: JSON.stringify({
             eli_clickid: id,
             gclid: params.get('gclid') || '',
+            msclkid: params.get('msclkid') || '',
             rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
             user_agent: ua,
             browser: browser,
@@ -671,6 +715,13 @@
       document.getElementById('gclid').value = gclid;
     }
 
+    // MSCLKID: URL param → localStorage
+    let msclkid = _lpParams.get('msclkid') || getStored('_msclkid') || '';
+    if (msclkid) {
+      setStored('_msclkid', msclkid);
+      document.getElementById('msclkid').value = msclkid;
+    }
+
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
     function getRtClickId() {
       try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
@@ -699,6 +750,8 @@
     // Form step elements
     const step1 = document.querySelector('.form-step-1');
     const stepSorry = document.querySelector('.form-step-sorry');
+    const stepMca = document.querySelector('.form-step-mca');
+    const stepSorryMca = document.querySelector('.form-step-sorry-mca');
     const step2 = document.querySelector('.form-step-2');
     const stepSuccess = document.querySelector('.form-success');
     const debtSelect = document.getElementById('debt_amount');
@@ -765,9 +818,9 @@
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
-    // Render dynamic form fields
+    // Render dynamic form fields (skip has_mca — handled by its own step)
     const formFields = [{"name":"has_mca","label":"Do you have MCA (Merchant Cash Advance) debt?","type":"radio","required":true,"options":"Yes,No"},{"name":"company_name","label":"Company Name","type":"text","required":true,"placeholder":"Your Company Name"},{"name":"full_name","label":"Full Name","type":"text","required":true,"placeholder":"John Smith"},{"name":"email","label":"Email","type":"email","required":true,"placeholder":"john@company.com"},{"name":"phone","label":"Phone","type":"tel","required":true,"placeholder":"(555) 123-4567"}];
-    const formFieldsHtml = formFields.map(field => {
+    const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
       if (field.type === 'radio') {
         const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
         return `
@@ -803,7 +856,7 @@
         `;
       } else if (field.type === 'hidden') {
         // Skip if this hidden field already exists in the form (to avoid duplicates)
-        const existingIds = ['gclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        const existingIds = ['gclid', 'msclkid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
         if (existingIds.includes(field.name)) return '';
         return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
       } else if (field.type === 'tel') {
@@ -855,30 +908,71 @@
       });
     });
 
-    // Step 1: Check debt amount
+    // Step 1: Auto-advance on debt amount selection
+    debtSelect.addEventListener('change', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) return;
+
+      setTimeout(function() {
+        step1.classList.remove('active');
+        if (debtValue === 'under-20000') {
+          stepSorry.classList.add('active');
+        } else {
+          document.getElementById('debt_amount_hidden').value = debtValue;
+          stepMca.classList.add('active');
+        }
+      }, 200);
+    });
+
+    // Step 2: MCA question — auto-advance on radio select
+    document.querySelectorAll('input[name="mca_check"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        const mcaValue = this.value;
+        setTimeout(function() {
+          stepMca.classList.remove('active');
+          if (mcaValue === 'No') {
+            stepSorryMca.classList.add('active');
+          } else {
+            // Set has_mca hidden field in the form
+            var mcaHidden = document.getElementById('has_mca_hidden');
+            if (mcaHidden) mcaHidden.value = mcaValue;
+            step2.classList.add('active');
+          }
+        }, 200);
+      });
+    });
+
+    // Keep button as no-JS fallback
     checkDebtBtn.addEventListener('click', function() {
       const debtValue = debtSelect.value;
-
       if (!debtValue) {
         debtSelect.focus();
         debtSelect.style.borderColor = '#dc2626';
         setTimeout(() => debtSelect.style.borderColor = '#eee', 2000);
         return;
       }
-
       step1.classList.remove('active');
-
       if (debtValue === 'under-20000') {
         stepSorry.classList.add('active');
       } else {
         document.getElementById('debt_amount_hidden').value = debtValue;
-        step2.classList.add('active');
+        stepMca.classList.add('active');
       }
     });
 
     // Form submission
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+
+      // Validate consent checkbox
+      var consentBox = document.getElementById('consentCheckbox');
+      var consentErr = document.getElementById('consentError');
+      if (!consentBox.checked) {
+        consentErr.style.display = 'block';
+        consentBox.focus();
+        return;
+      }
+      consentErr.style.display = 'none';
 
       // Validate phone fields
       var phoneInputs = this.querySelectorAll('input[type="tel"]');

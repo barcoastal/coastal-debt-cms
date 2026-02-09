@@ -15,6 +15,9 @@ const visitorsRoutes = require('./routes/visitors');
 const googleAdsRoutes = require('./routes/google-ads');
 const postbackRoutes = require('./routes/postback');
 const facebookRoutes = require('./routes/facebook');
+const bingAdsRoutes = require('./routes/bing-ads');
+const settingsRoutes = require('./routes/settings');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -74,6 +77,9 @@ app.use('/api/visitors', visitorsRoutes);
 app.use('/api/google-ads', googleAdsRoutes);
 app.use('/api/postback', postbackRoutes);
 app.use('/api/facebook', facebookRoutes);
+app.use('/api/bing-ads', bingAdsRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Redirect root to admin
 app.get('/', (req, res) => {
@@ -114,6 +120,11 @@ try {
 } catch (err) {
   console.error('Failed to regenerate landing pages on startup:', err.message);
 }
+
+// Background alert rule evaluation - every 15 minutes
+const { evaluateAlertRules } = require('./routes/notifications');
+setInterval(evaluateAlertRules, 15 * 60 * 1000);
+setTimeout(evaluateAlertRules, 30 * 1000); // Run once 30s after startup
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

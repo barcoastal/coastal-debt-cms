@@ -23,6 +23,24 @@
     .mca-no { color: #6b7280; }
     .badge-gray { background: var(--gray-200); color: var(--gray-600); }
     .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+
+    /* Event Timeline */
+    .event-timeline { margin-top: 20px; padding: 0 0 0 20px; border-left: 2px solid var(--gray-200); }
+    .event-timeline-title { font-weight: 600; font-size: 14px; margin: 20px 0 10px; color: var(--gray-800); }
+    .timeline-item { position: relative; padding: 8px 0 16px 20px; }
+    .timeline-dot { position: absolute; left: -27px; top: 12px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
+    .timeline-dot.dot-blue { background: #3b82f6; }
+    .timeline-dot.dot-yellow { background: #f59e0b; }
+    .timeline-dot.dot-orange { background: #f97316; }
+    .timeline-dot.dot-green { background: #16a34a; }
+    .timeline-dot.dot-red { background: #dc2626; }
+    .timeline-dot.dot-gray { background: #9ca3af; }
+    .timeline-date { font-size: 11px; color: var(--gray-600); margin-bottom: 2px; }
+    .timeline-event { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .timeline-meta { font-size: 11px; color: var(--gray-600); }
   </style>
 </head>
 <body>
@@ -81,12 +99,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           Scripts
         </a>
-        <a href="/admin/users.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Users
-        </a>
         <a href="/admin/settings.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           Settings
         </a>
       </nav>
@@ -111,7 +129,7 @@
 
       <!-- Filters -->
       <div class="card">
-        <div class="filters">
+        <div class="filters" style="flex-wrap: wrap;">
           <input type="text" id="searchInput" placeholder="Search by name, email, company...">
           <select id="platformFilter">
             <option value="">All Sources</option>
@@ -128,6 +146,33 @@
           </select>
           <input type="date" id="fromDate" placeholder="From date">
           <input type="date" id="toDate" placeholder="To date">
+          <select id="campaignFilter">
+            <option value="">All Campaigns</option>
+          </select>
+          <select id="eventFilter">
+            <option value="">All Events</option>
+          </select>
+          <select id="mcaFilter">
+            <option value="">MCA: All</option>
+            <option value="Yes">MCA: Yes</option>
+            <option value="No">MCA: No</option>
+          </select>
+          <select id="debtAmountFilter">
+            <option value="">All Debt Amounts</option>
+            <option value="under-20000">Under $20,000</option>
+            <option value="20000-50000">$20,000 - $50,000</option>
+            <option value="50000-100000">$50,000 - $100,000</option>
+            <option value="100000-250000">$100,000 - $250,000</option>
+            <option value="250000-500000">$250,000 - $500,000</option>
+            <option value="500000-1000000">$500,000 - $1,000,000</option>
+            <option value="1000000+">$1,000,000+</option>
+          </select>
+          <select id="stageFilter">
+            <option value="">All Stages</option>
+          </select>
+          <select id="transferStatusFilter">
+            <option value="">All Transfer Status</option>
+          </select>
           <button class="btn btn-primary" onclick="loadLeads()">Apply</button>
         </div>
 
@@ -209,6 +254,12 @@
       const pageId = document.getElementById('pageFilter').value;
       const fromDate = document.getElementById('fromDate').value;
       const toDate = document.getElementById('toDate').value;
+      const campaign = document.getElementById('campaignFilter').value;
+      const event = document.getElementById('eventFilter').value;
+      const hasMca = document.getElementById('mcaFilter').value;
+      const debtAmount = document.getElementById('debtAmountFilter').value;
+      const stage = document.getElementById('stageFilter').value;
+      const transferStatus = document.getElementById('transferStatusFilter').value;
 
       const params = new URLSearchParams({ page, limit: 25 });
       if (search) params.append('search', search);
@@ -216,6 +267,12 @@
       if (pageId) params.append('landing_page_id', pageId);
       if (fromDate) params.append('from_date', fromDate);
       if (toDate) params.append('to_date', toDate);
+      if (campaign) params.append('campaign', campaign);
+      if (event) params.append('event', event);
+      if (hasMca) params.append('has_mca', hasMca);
+      if (debtAmount) params.append('debt_amount', debtAmount);
+      if (stage) params.append('stage', stage);
+      if (transferStatus) params.append('transfer_status', transferStatus);
 
       const res = await fetch(`/api/leads?${params}`);
       const data = await res.json();
@@ -275,6 +332,37 @@
 
       const hf = lead.hidden_fields || {};
 
+      const eventsHtml = (lead.events && lead.events.length > 0) ? `
+        <div class="event-timeline-title">Event Timeline</div>
+        <div class="event-timeline">
+          ${lead.events.map(evt => {
+            const name = (evt.conversion_action_name || '').toLowerCase();
+            let dotClass = 'dot-gray';
+            let badgeClass = 'badge-gray';
+            if (name === 'lead') { dotClass = 'dot-blue'; badgeClass = 'badge-blue'; }
+            else if (name === 'qualified') { dotClass = 'dot-yellow'; badgeClass = 'badge-yellow'; }
+            else if (name === 'appointment') { dotClass = 'dot-orange'; badgeClass = 'badge-orange'; }
+            else if (name === 'closed' || name === 'sale') { dotClass = 'dot-green'; badgeClass = 'badge-green'; }
+            else if (name === 'failed') { dotClass = 'dot-red'; badgeClass = 'badge-red'; }
+            const statusLabel = evt.status === 'sent' ? '(sent)' : evt.status === 'failed' ? '(failed)' : evt.status === 'logged' ? '(logged)' : '';
+            const valueParts = [];
+            if (evt.conversion_value) valueParts.push('Value: $' + evt.conversion_value);
+            if (evt.revenue) valueParts.push('Revenue: $' + evt.revenue);
+            if (evt.source) valueParts.push('Source: ' + evt.source);
+            return '<div class="timeline-item">' +
+              '<div class="timeline-dot ' + dotClass + '"></div>' +
+              '<div class="timeline-date">' + formatDate(evt.created_at) + '</div>' +
+              '<div class="timeline-event">' +
+                '<span class="badge ' + badgeClass + '">' + (evt.conversion_action_name || 'unknown') + '</span>' +
+                '<span class="timeline-meta">' + statusLabel + '</span>' +
+              '</div>' +
+              (valueParts.length ? '<div class="timeline-meta">' + valueParts.join(' | ') + '</div>' : '') +
+              (evt.error_message ? '<div class="timeline-meta" style="color:#dc2626;">' + evt.error_message + '</div>' : '') +
+            '</div>';
+          }).join('')}
+        </div>
+      ` : '<div class="event-timeline-title" style="color:var(--gray-600);font-size:12px;margin-top:15px;">No events recorded</div>';
+
       document.getElementById('leadDetails').innerHTML = `
         <table style="width: 100%;">
           <tr><td colspan="2" style="padding-top:10px;"><strong>Contact Info</strong></td></tr>
@@ -304,6 +392,7 @@
           ${Object.entries(hf).filter(([k]) => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug').map(([k, v]) => `<tr><td><strong>${k}</strong></td><td style="word-break:break-all;">${v || '-'}</td></tr>`).join('')}
           ` : ''}
         </table>
+        ${eventsHtml}
       `;
 
       showModal('leadModal');
@@ -361,7 +450,62 @@
       }
     }
 
+    async function loadFilterOptions() {
+      // Load campaigns
+      try {
+        const res = await fetch('/api/analytics/campaigns');
+        const campaigns = await res.json();
+        const select = document.getElementById('campaignFilter');
+        campaigns.forEach(c => {
+          const option = document.createElement('option');
+          option.value = c;
+          option.textContent = c;
+          select.appendChild(option);
+        });
+      } catch (e) {}
+
+      // Load event names
+      try {
+        const res = await fetch('/api/analytics/event-names');
+        const events = await res.json();
+        const select = document.getElementById('eventFilter');
+        events.forEach(e => {
+          const option = document.createElement('option');
+          option.value = e;
+          option.textContent = e;
+          select.appendChild(option);
+        });
+      } catch (e) {}
+
+      // Load distinct stages and transfer statuses from existing leads
+      try {
+        const res = await fetch('/api/leads?limit=1000');
+        const data = await res.json();
+        const stages = new Set();
+        const transfers = new Set();
+        data.leads.forEach(l => {
+          if (l.stage) stages.add(l.stage);
+          if (l.transfer_status) transfers.add(l.transfer_status);
+        });
+        const stageSelect = document.getElementById('stageFilter');
+        [...stages].sort().forEach(s => {
+          const option = document.createElement('option');
+          option.value = s;
+          option.textContent = s;
+          stageSelect.appendChild(option);
+        });
+        const transferSelect = document.getElementById('transferStatusFilter');
+        [...transfers].sort().forEach(s => {
+          const option = document.createElement('option');
+          option.value = s;
+          option.textContent = s;
+          transferSelect.appendChild(option);
+        });
+      } catch (e) {}
+    }
+
     loadLandingPages();
+    loadFilterOptions();
     loadLeads();
   </script>
 </body>

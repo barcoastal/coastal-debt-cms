@@ -30,6 +30,28 @@ function buildFilters(req, tableAlias = 'l', pageAlias = 'lp') {
   return { conditions, params };
 }
 
+// Get distinct campaign names for filter dropdowns
+router.get('/campaigns', authenticateToken, (req, res) => {
+  const campaigns = db.prepare(`
+    SELECT DISTINCT v.utm_campaign
+    FROM visitors v
+    WHERE v.utm_campaign IS NOT NULL AND v.utm_campaign != ''
+    ORDER BY v.utm_campaign
+  `).all();
+  res.json(campaigns.map(r => r.utm_campaign));
+});
+
+// Get distinct conversion event names for filter dropdowns
+router.get('/event-names', authenticateToken, (req, res) => {
+  const events = db.prepare(`
+    SELECT DISTINCT ce.conversion_action_name
+    FROM conversion_events ce
+    WHERE ce.conversion_action_name IS NOT NULL
+    ORDER BY ce.conversion_action_name
+  `).all();
+  res.json(events.map(r => r.conversion_action_name));
+});
+
 // Get dashboard stats
 router.get('/dashboard', authenticateToken, (req, res) => {
   const { conditions, params } = buildFilters(req);
@@ -53,13 +75,21 @@ router.get('/dashboard', authenticateToken, (req, res) => {
   const leadsThisMonth = db.prepare(countQuery(`l.created_at >= ?`)).get(...params, monthAgo).count;
   const activePages = db.prepare('SELECT COUNT(*) as count FROM landing_pages WHERE is_active = 1').get().count;
 
+  // Revenue metrics
+  const totalRevenue = db.prepare('SELECT COALESCE(SUM(revenue), 0) as total FROM conversion_events WHERE revenue IS NOT NULL').get().total;
+  const revenueThisMonth = db.prepare('SELECT COALESCE(SUM(revenue), 0) as total FROM conversion_events WHERE revenue IS NOT NULL AND created_at >= ?').get(monthAgo).total;
+  const totalCostCents = db.prepare(`SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l ${join} ${where}`).get(...params).total;
+
   res.json({
     totalLeads: db.prepare(`SELECT COUNT(*) as count FROM leads l ${join} ${where}`).get(...params).count,
     leadsToday,
     leadsThisWeek,
     leadsThisMonth,
     activePages,
-    totalPages: db.prepare('SELECT COUNT(*) as count FROM landing_pages').get().count
+    totalPages: db.prepare('SELECT COUNT(*) as count FROM landing_pages').get().count,
+    totalRevenue,
+    revenueThisMonth,
+    totalCostCents
   });
 });
 
@@ -156,6 +186,86 @@ router.get('/recent', authenticateToken, (req, res) => {
   `).all(...params, limit);
 
   res.json(leads);
+});
+
+// Platform financials
+let fbSpendCache = { data: null, timestamp: 0 };
+
+router.get('/platform-financials', authenticateToken, async (req, res) => {
+  try {
+    const platforms = ['google', 'meta', 'bing'];
+    const result = {};
+
+    for (const platform of platforms) {
+      // Revenue: from conversion_events.revenue joined through leads → landing_pages.platform
+      const revenueRow = db.prepare(`
+        SELECT COALESCE(SUM(ce.revenue), 0) as revenue
+        FROM conversion_events ce
+        JOIN leads l ON ce.lead_id = l.id
+        JOIN landing_pages lp ON l.landing_page_id = lp.id
+        WHERE lp.platform = ? AND ce.revenue IS NOT NULL
+      `).get(platform);
+
+      // Leads count
+      const leadsRow = db.prepare(`
+        SELECT COUNT(*) as count FROM leads l
+        JOIN landing_pages lp ON l.landing_page_id = lp.id
+        WHERE lp.platform = ?
+      `).get(platform);
+
+      const revenue = revenueRow.revenue || 0;
+      const leads = leadsRow.count || 0;
+      let cost = 0;
+
+      if (platform === 'google') {
+        // Google cost from leads.cost_cents
+        const costRow = db.prepare(`
+          SELECT COALESCE(SUM(l.cost_cents), 0) as total
+          FROM leads l
+          JOIN landing_pages lp ON l.landing_page_id = lp.id
+          WHERE lp.platform = 'google'
+        `).get();
+        cost = (costRow.total || 0) / 100;
+      } else if (platform === 'meta') {
+        // Meta cost from Facebook Marketing API (cached 5 min)
+        const now = Date.now();
+        if (fbSpendCache.data !== null && now - fbSpendCache.timestamp < 5 * 60 * 1000) {
+          cost = fbSpendCache.data;
+        } else {
+          try {
+            const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+            if (fbConfig && fbConfig.ad_account_id && fbConfig.page_access_token) {
+              const params = new URLSearchParams({
+                fields: 'spend',
+                date_preset: 'maximum',
+                access_token: fbConfig.page_access_token
+              });
+              const fbRes = await fetch(`https://graph.facebook.com/v21.0/${fbConfig.ad_account_id}/insights?${params}`);
+              const fbData = await fbRes.json();
+              if (fbData.data && fbData.data.length > 0) {
+                cost = parseFloat(fbData.data[0].spend || 0);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch Facebook spend:', err.message);
+          }
+          fbSpendCache = { data: cost, timestamp: now };
+        }
+      }
+      // Bing: cost = 0 (stub)
+
+      const profit = revenue - cost;
+      const cpl = leads > 0 ? cost / leads : 0;
+      const roas = cost > 0 ? revenue / cost : 0;
+
+      result[platform] = { revenue, cost, profit, leads, cpl, roas };
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Platform financials error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Google Ads: Summary stats
