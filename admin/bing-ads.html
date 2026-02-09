@@ -34,6 +34,8 @@
     .mca-yes { color: #16a34a; font-weight: 600; }
     .mca-no { color: #6b7280; }
     table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1600px; }
+    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
@@ -175,6 +177,8 @@
                 <th>Company</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Eli Click ID</th>
+                <th>RT Click ID</th>
                 <th>Campaign</th>
                 <th>MCA</th>
                 <th>Current Status</th>
@@ -187,7 +191,7 @@
               </tr>
             </thead>
             <tbody id="leadsTable">
-              <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+              <tr><td colspan="15" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -301,7 +305,7 @@
         const tbody = document.getElementById('leadsTable');
 
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--gray-400);">No Bing leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--gray-400);">No Bing leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead => {
             const mcaHtml = lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-');
@@ -310,6 +314,8 @@
               '<td>' + (lead.company_name || '-') + '</td>' +
               '<td>' + (lead.email || '-') + '</td>' +
               '<td>' + (lead.phone || '-') + '</td>' +
+              '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
+              '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
               '<td>' + (lead.utm_campaign || '-') + '</td>' +
               '<td>' + mcaHtml + '</td>' +
               '<td>' + getStatusBadge(lead.current_status) + '</td>' +

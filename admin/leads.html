@@ -8,6 +8,8 @@
   <style>
     .table-container { overflow-x: auto; }
     table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 2000px; }
+    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .editable-cell {
       cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
       display: inline-block; border: 1px solid transparent; transition: all 0.15s;
@@ -230,9 +232,9 @@
             '<td>' + (lead.phone || '-') + '</td>' +
             '<td>' + (lead.debt_amount || '-') + '</td>' +
             '<td><span class="badge badge-blue">' + (lead.platform || '-') + '</span></td>' +
-            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.gclid || '') + '">' + (lead.gclid || '-') + '</td>' +
-            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
-            '<td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
+            '<td class="clickid-cell" title="' + (lead.gclid || '') + '">' + (lead.gclid || '-') + '</td>' +
+            '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
+            '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
             '<td>' + (lead.utm_campaign || '-') + '</td>' +
             '<td>' + mcaHtml + '</td>' +
             '<td>' + getStatusBadge(lead.current_status) + '</td>' +

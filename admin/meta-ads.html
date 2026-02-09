@@ -23,6 +23,9 @@
     .badge-gray { background: var(--gray-200); color: var(--gray-600); }
     .badge-yellow { background: #fef3c7; color: #92400e; }
     .badge-purple { background: #ede9fe; color: #5b21b6; }
+    table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1200px; }
+    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
@@ -168,17 +171,19 @@
           <table>
             <thead>
               <tr>
+                <th>Lead ID</th>
                 <th>Name</th>
                 <th>Company</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Eli Click ID</th>
                 <th>Source</th>
                 <th>Current Status</th>
                 <th>Date</th>
               </tr>
             </thead>
             <tbody id="leadsTable">
-              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -301,14 +306,16 @@
         const tbody = document.getElementById('leadsTable');
 
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead => {
             return '<tr>' +
+              '<td>' + (lead.id || '-') + '</td>' +
               '<td>' + (lead.full_name || '-') + '</td>' +
               '<td>' + (lead.company_name || '-') + '</td>' +
               '<td>' + (lead.email || '-') + '</td>' +
               '<td>' + (lead.phone || '-') + '</td>' +
+              '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
               '<td>' + getSourceBadge(lead.lead_source) + '</td>' +
               '<td>' + getStatusBadge(lead.current_status) + '</td>' +
               '<td>' + formatDate(lead.created_at) + '</td>' +
