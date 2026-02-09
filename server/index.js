@@ -95,6 +95,26 @@ app.get('/api/debug/cookies', (req, res) => {
   });
 });
 
+// Regenerate all landing pages from DB on startup (Railway wipes filesystem on deploy)
+try {
+  const { generateLandingPage } = require('./routes/pages');
+  const pages = db.prepare('SELECT id, slug FROM landing_pages').all();
+  let count = 0;
+  for (const page of pages) {
+    try {
+      generateLandingPage(page.id);
+      count++;
+    } catch (err) {
+      console.error(`Failed to regenerate page "${page.slug}":`, err.message);
+    }
+  }
+  if (count > 0) {
+    console.log(`Regenerated ${count}/${pages.length} landing pages on startup`);
+  }
+} catch (err) {
+  console.error('Failed to regenerate landing pages on startup:', err.message);
+}
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin`);

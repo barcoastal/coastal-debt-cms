@@ -177,13 +177,14 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Eli Click ID</th>
+                <th>RT Click ID</th>
                 <th>Source</th>
                 <th>Current Status</th>
                 <th>Date</th>
               </tr>
             </thead>
             <tbody id="leadsTable">
-              <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+              <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -306,7 +307,7 @@
         const tbody = document.getElementById('leadsTable');
 
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead => {
             return '<tr>' +
@@ -316,6 +317,7 @@
               '<td>' + (lead.email || '-') + '</td>' +
               '<td>' + (lead.phone || '-') + '</td>' +
               '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
+              '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
               '<td>' + getSourceBadge(lead.lead_source) + '</td>' +
               '<td>' + getStatusBadge(lead.current_status) + '</td>' +
               '<td>' + formatDate(lead.created_at) + '</td>' +
