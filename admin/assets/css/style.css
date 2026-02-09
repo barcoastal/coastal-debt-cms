@@ -378,9 +378,10 @@ tr:hover {
 /* Filters */
 .filters {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .filters input,
@@ -389,12 +390,21 @@ tr:hover {
   border: 1px solid var(--gray-300);
   border-radius: 8px;
   font-size: 0.9rem;
+  height: 42px;
 }
 
 .filters input:focus,
 .filters select:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.filters .btn {
+  height: 42px;
+  padding: 0 24px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 /* Modal */

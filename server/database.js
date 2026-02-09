@@ -178,6 +178,55 @@ try {
   db.exec(`ALTER TABLE leads ADD COLUMN cost_fetched_at DATETIME`);
 } catch (e) {}
 
+// Add google_ads_event_name to postback_config if not exist
+try {
+  db.exec(`ALTER TABLE postback_config ADD COLUMN google_ads_event_name TEXT`);
+} catch (e) {}
+
+// Add send_to_facebook to postback_config if not exist
+try {
+  db.exec(`ALTER TABLE postback_config ADD COLUMN send_to_facebook INTEGER DEFAULT 0`);
+} catch (e) {}
+
+// Add debt_amount and revenue to conversion_events if not exist
+try {
+  db.exec(`ALTER TABLE conversion_events ADD COLUMN debt_amount REAL`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE conversion_events ADD COLUMN revenue REAL`);
+} catch (e) {}
+
+// Add Salesforce tracking columns to leads table
+try { db.exec(`ALTER TABLE leads ADD COLUMN transfer_status TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN five9_dispo TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN stage TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN contract_sign_date TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN total_debt_sign TEXT`); } catch (e) {}
+
+// Add pixel_id to facebook_config if not exist
+try {
+  db.exec(`ALTER TABLE facebook_config ADD COLUMN pixel_id TEXT`);
+} catch (e) {}
+
+// Add ad_account_id to facebook_config if not exist
+try {
+  db.exec(`ALTER TABLE facebook_config ADD COLUMN ad_account_id TEXT`);
+} catch (e) {}
+
+// Create facebook_config table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS facebook_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    page_access_token TEXT,
+    verify_token TEXT,
+    app_id TEXT,
+    app_secret TEXT,
+    default_landing_page_id INTEGER,
+    connected_at DATETIME,
+    FOREIGN KEY (default_landing_page_id) REFERENCES landing_pages(id)
+  )
+`);
+
 // Create default admin user if none exists
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
 if (userCount.count === 0) {

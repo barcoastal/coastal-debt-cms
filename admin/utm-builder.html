@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UTM Builder | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .utm-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .utm-form .full-width { grid-column: 1 / -1; }
+    .generated-url-box {
+      background: var(--gray-50); border: 2px solid var(--gray-200); border-radius: 8px;
+      padding: 16px; word-break: break-all; font-family: monospace; font-size: 0.9rem;
+      color: var(--gray-800); min-height: 48px; display: flex; align-items: center;
+    }
+    .generated-url-box.has-url { border-color: var(--primary); background: #f0f4ff; }
+    .url-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .presets-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .preset-btn {
+      padding: 8px 16px; border: 1px solid var(--gray-300); border-radius: 8px;
+      background: var(--white); cursor: pointer; font-size: 0.85rem; color: var(--gray-700);
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .preset-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0f4ff; }
+    .copy-toast {
+      position: fixed; bottom: 24px; right: 24px; background: var(--green); color: white;
+      padding: 12px 24px; border-radius: 8px; font-weight: 600; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    }
+    .copy-toast.show { opacity: 1; }
+    .history-actions { display: flex; gap: 8px; }
+    .history-copy-btn {
+      padding: 4px 10px; border: 1px solid var(--gray-300); border-radius: 6px;
+      background: var(--white); cursor: pointer; font-size: 0.8rem; color: var(--gray-600);
+    }
+    .history-copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0; }
+    .history-url { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 0.85rem; }
+    @media (max-width: 768px) { .utm-form { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/utm-builder.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>UTM Builder</h1>
+      </div>
+
+      <!-- UTM Form -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Generate Tagged URL</h3>
+        </div>
+        <div class="utm-form">
+          <div class="form-group full-width">
+            <label>Landing Page</label>
+            <select id="pageSelect" onchange="updateBaseUrl()">
+              <option value="">-- Select a landing page --</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Base URL</label>
+            <input type="text" id="baseUrl" placeholder="Select a landing page or enter a custom URL" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>utm_source <span style="color:var(--red)">*</span></label>
+            <input type="text" id="utmSource" placeholder="e.g. google, facebook, newsletter" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>utm_medium <span style="color:var(--red)">*</span></label>
+            <input type="text" id="utmMedium" placeholder="e.g. organic, cpc, email, social" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>utm_campaign</label>
+            <input type="text" id="utmCampaign" placeholder="e.g. spring_sale, brand_awareness" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>utm_term</label>
+            <input type="text" id="utmTerm" placeholder="e.g. debt+relief, paid+keyword" oninput="updatePreview()">
+          </div>
+          <div class="form-group full-width">
+            <label>utm_content</label>
+            <input type="text" id="utmContent" placeholder="e.g. ad_variation_a, header_link" oninput="updatePreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Quick Presets</h3>
+        </div>
+        <div class="presets-grid">
+          <button class="preset-btn" onclick="applyPreset('google','organic','','','')">Google Organic</button>
+          <button class="preset-btn" onclick="applyPreset('google','cpc','','','')">Google CPC</button>
+          <button class="preset-btn" onclick="applyPreset('facebook','social','','','')">Facebook Social</button>
+          <button class="preset-btn" onclick="applyPreset('facebook','cpc','','','')">Facebook CPC</button>
+          <button class="preset-btn" onclick="applyPreset('instagram','social','','','')">Instagram Social</button>
+          <button class="preset-btn" onclick="applyPreset('newsletter','email','','','')">Email Campaign</button>
+          <button class="preset-btn" onclick="applyPreset('linkedin','social','','','')">LinkedIn Social</button>
+          <button class="preset-btn" onclick="applyPreset('tiktok','social','','','')">TikTok Social</button>
+          <button class="preset-btn" onclick="applyPreset('bing','cpc','','','')">Bing CPC</button>
+          <button class="preset-btn" onclick="applyPreset('youtube','video','','','')">YouTube Video</button>
+        </div>
+      </div>
+
+      <!-- Generated URL -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Generated URL</h3>
+        </div>
+        <div class="generated-url-box" id="urlPreview">Fill in the fields above to generate a tagged URL</div>
+        <div class="url-actions">
+          <button class="btn btn-primary" id="copyBtn" onclick="copyUrl()" disabled>Copy URL</button>
+          <button class="btn btn-secondary" id="saveBtn" onclick="saveToHistory()" disabled>Save to History</button>
+          <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Generated Links History</h3>
+          <button class="btn btn-secondary btn-small" onclick="clearHistory()">Clear History</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Source</th>
+                <th>Medium</th>
+                <th>Campaign</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTable">
+              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="copy-toast" id="copyToast">Copied to clipboard!</div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentUrl = '';
+
+    async function loadPages() {
+      try {
+        const pages = await api('/api/pages');
+        const select = document.getElementById('pageSelect');
+        (Array.isArray(pages) ? pages : pages.pages || []).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.slug;
+          opt.textContent = p.name + ' (' + p.slug + ')';
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Error loading pages:', err);
+      }
+    }
+
+    function updateBaseUrl() {
+      const slug = document.getElementById('pageSelect').value;
+      if (slug) {
+        document.getElementById('baseUrl').value = window.location.origin + '/lp/' + slug;
+      }
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const base = document.getElementById('baseUrl').value.trim();
+      const source = document.getElementById('utmSource').value.trim();
+      const medium = document.getElementById('utmMedium').value.trim();
+      const campaign = document.getElementById('utmCampaign').value.trim();
+      const term = document.getElementById('utmTerm').value.trim();
+      const content = document.getElementById('utmContent').value.trim();
+
+      const box = document.getElementById('urlPreview');
+      const copyBtn = document.getElementById('copyBtn');
+      const saveBtn = document.getElementById('saveBtn');
+
+      if (!base || !source || !medium) {
+        box.textContent = 'Fill in Base URL, utm_source, and utm_medium to generate a tagged URL';
+        box.classList.remove('has-url');
+        copyBtn.disabled = true;
+        saveBtn.disabled = true;
+        currentUrl = '';
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('utm_source', source);
+      params.set('utm_medium', medium);
+      if (campaign) params.set('utm_campaign', campaign);
+      if (term) params.set('utm_term', term);
+      if (content) params.set('utm_content', content);
+
+      const separator = base.includes('?') ? '&' : '?';
+      currentUrl = base + separator + params.toString();
+      box.textContent = currentUrl;
+      box.classList.add('has-url');
+      copyBtn.disabled = false;
+      saveBtn.disabled = false;
+    }
+
+    function applyPreset(source, medium, campaign, term, content) {
+      document.getElementById('utmSource').value = source;
+      document.getElementById('utmMedium').value = medium;
+      document.getElementById('utmCampaign').value = campaign;
+      document.getElementById('utmTerm').value = term;
+      document.getElementById('utmContent').value = content;
+      updatePreview();
+    }
+
+    function copyUrl() {
+      if (!currentUrl) return;
+      navigator.clipboard.writeText(currentUrl).then(() => showToast());
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => showToast());
+    }
+
+    function showToast() {
+      const toast = document.getElementById('copyToast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function saveToHistory() {
+      if (!currentUrl) return;
+      const history = JSON.parse(localStorage.getItem('utm_history') || '[]');
+      history.unshift({
+        url: currentUrl,
+        source: document.getElementById('utmSource').value.trim(),
+        medium: document.getElementById('utmMedium').value.trim(),
+        campaign: document.getElementById('utmCampaign').value.trim(),
+        created: new Date().toISOString()
+      });
+      // Keep last 50
+      if (history.length > 50) history.length = 50;
+      localStorage.setItem('utm_history', JSON.stringify(history));
+      renderHistory();
+      showToast();
+    }
+
+    function clearForm() {
+      document.getElementById('pageSelect').value = '';
+      document.getElementById('baseUrl').value = '';
+      document.getElementById('utmSource').value = '';
+      document.getElementById('utmMedium').value = '';
+      document.getElementById('utmCampaign').value = '';
+      document.getElementById('utmTerm').value = '';
+      document.getElementById('utmContent').value = '';
+      updatePreview();
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('utm_history');
+      renderHistory();
+    }
+
+    function deleteHistoryItem(index) {
+      const history = JSON.parse(localStorage.getItem('utm_history') || '[]');
+      history.splice(index, 1);
+      localStorage.setItem('utm_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('utm_history') || '[]');
+      const tbody = document.getElementById('historyTable');
+
+      if (!history.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = history.map((item, i) => {
+        const d = new Date(item.created);
+        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return '<tr>' +
+          '<td><div class="history-url" title="' + item.url.replace(/"/g, '&quot;') + '">' + item.url + '</div></td>' +
+          '<td>' + (item.source || '-') + '</td>' +
+          '<td>' + (item.medium || '-') + '</td>' +
+          '<td>' + (item.campaign || '-') + '</td>' +
+          '<td>' + dateStr + '</td>' +
+          '<td><div class="history-actions">' +
+            '<button class="history-copy-btn" onclick="copyText(\'' + item.url.replace(/'/g, "\\'") + '\')">Copy</button>' +
+            '<button class="history-copy-btn" onclick="deleteHistoryItem(' + i + ')" style="color:var(--red)">Delete</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    loadPages();
+    renderHistory();
+  </script>
+</body>
+</html>

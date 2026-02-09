@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bankruptcy Alternative for Business | Settle Debt for 50-80% Less</title>
   <meta name="description" content="Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.">
-  <!-- RedTrack Universal Click Tracking -->
-  <script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=join.coastaldebt.com&cookieduration=90&defaultcampaignid=698210b86d509187d170a80e&regviewonce=false"></script>
-  
+  <script async src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=join.coastaldebt.com&cookieduration=90&defaultcampaignid=698210b86d509187d170a80e&regviewonce=false"></script>
+<script type="text/javascript">(function(){var a=document.createElement("script");a.type="text/javascript";a.async=!0;a.defer=!0;a.src=document.location.protocol+"//dist.routingapi.com/jsapi/v1/retreaver.min.js";a.onload=a.onreadystatechange=function(){Retreaver.configure({host:"api.routingapi.com",prefix:"https:"==document.location.protocol?"https":"http"});(new Retreaver.Campaign({campaign_key:"824eaeb4bf1f34f3cbc498aa77326031"})).auto_replace_numbers()};(document.getElementsByTagName("head")[0]||document.getElementsByTagName("body")[0]).appendChild(a)})();</script>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
@@ -59,6 +59,12 @@
     .form-group{margin-bottom:12px}
     .form-group label{display:block;font-weight:400;color:#000;margin-bottom:10px;font-size:1rem}
     .form-group input,.form-group select{width:100%;height:48px;padding:0 20px;border:1px solid #eee;border-radius:500px;font-size:1rem;transition:all 0.2s;background:#fff;box-shadow:none;outline:none}
+    .phone-wrapper{display:flex;align-items:center;border:1px solid #eee;border-radius:500px;background:#fff;height:48px;transition:all 0.2s}
+    .phone-wrapper:focus-within{border-color:var(--blue)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.95rem;color:#333;white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:46px;border-radius:0 500px 500px 0}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:20px}
     .form-group input::placeholder{color:#999}
     .form-group input:focus,.form-group select:focus{border-color:var(--blue)}
     .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 20px center}
@@ -240,7 +246,7 @@
         <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
         </svg>
-        <span>(800) 123-0000</span>
+        <span>(888) 979-9511</span>
       </a>
     </div>
   </header>
@@ -498,7 +504,7 @@
       <h2>Don't Let Bankruptcy Be Your Only Option</h2>
       <p>Free consultation. See how much you could save without filing.</p>
       <a href="#leadForm" class="cta-btn" onclick="document.getElementById('full_name').focus()">Get My Free Debt Analysis</a>
-      <p class="cta-phone">Or call now: <a href="tel:+18001234567">(800) 123-0000</a></p>
+      <p class="cta-phone">Or call now: <a href="tel:+18001234567">(888) 979-9511</a></p>
     </div>
   </section>
 
@@ -511,7 +517,7 @@
 
   <!-- Mobile Sticky CTA -->
   <div class="mobile-cta">
-    <a href="tel:+18001234567">Call Now: (800) 123-0000</a>
+    <a href="tel:+18001234567">Call Now: (888) 979-9511</a>
   </div>
 
   <!-- Form JS -->
@@ -621,6 +627,8 @@
       } catch(e) {}
     })();
 
+    // Wrap in IIFE to avoid variable name collisions with external scripts (e.g., RedTrack)
+    (function() {
     // Helper to get cookie value - robust parsing
     function getCookie(name) {
       // Method 1: Parse all cookies into object
@@ -648,11 +656,11 @@
       try { if (val) localStorage.setItem(key, val); } catch(e) {}
     }
 
-    // Capture URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
+    // Capture URL parameters (use unique name to avoid collision with RedTrack script)
+    var _lpParams = new URLSearchParams(window.location.search);
 
     // GCLID: URL param → localStorage → _gcl_aw cookie
-    let gclid = urlParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    let gclid = _lpParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
     if (gclid) {
       // Clean gclid from cookie format (GCL.timestamp.value → value)
       if (gclid.startsWith('GCL.')) {
@@ -666,7 +674,7 @@
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
     function getRtClickId() {
       try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
-      return urlParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
     }
     var rtClickId = getRtClickId();
     if (rtClickId) {
@@ -748,17 +756,17 @@
     document.getElementById('testimonialsGrid').innerHTML = testimonialsHtml;
 
     const trustLogos = [
-      { src: 'https://join.coastaldebt.com/wp-content/uploads/2026/01/blue-seal-120-61-bbb-92025913.png', alt: 'BBB Accredited Business', height: '50' },
-      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/BSI-logo3.webp', alt: 'BSI', height: '45' },
-      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/6849a0e8939628a2019fd416_WhatsApp-Image-2025-06-11-at-19.33.05-p-500.jpeg.webp', alt: 'Trustpilot', height: '45' },
-      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/6634aeab2fd552b666b69c8f_logo05-p-500.webp', alt: 'Featured Partner', height: '40' },
-      { src: 'https://join.coastaldebt.com/wp-content/uploads/2025/08/663b0c012eaa591b833e2050_Business-Insider.svg', alt: 'Business Insider', height: '28' }
+      { src: '/lp/assets/trust-logos/bbb.png', alt: 'BBB Accredited Business', height: '50' },
+      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI', height: '45' },
+      { src: '/lp/assets/trust-logos/trustpilot.webp', alt: 'Trustpilot', height: '45' },
+      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'Featured Partner', height: '40' },
+      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' }
     ];
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
     // Render dynamic form fields
-    const formFields = [{"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},{"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},{"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},{"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},{"name":"has_mca","label":"Do you have a Merchant Cash Advance (MCA)?","type":"radio","placeholder":"","options":"Yes,No","required":true},{"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},{"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}];
+    const formFields = [{"name":"has_mca","label":"Do you have a Merchant Cash Advance (MCA)?","type":"radio","placeholder":"","options":"Yes,No","required":true},{"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},{"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},{"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},{"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},{"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},{"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}];
     const formFieldsHtml = formFields.map(field => {
       if (field.type === 'radio') {
         const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
@@ -798,6 +806,17 @@
         const existingIds = ['gclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
         if (existingIds.includes(field.name)) return '';
         return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
+      } else if (field.type === 'tel') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <div class="phone-wrapper">
+              <span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>
+              <input type="tel" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || '(555) 123-4567'}" ${field.required ? 'required' : ''}>
+            </div>
+            <div class="phone-error" id="${field.name}_error">Please enter a valid 10-digit US phone number</div>
+          </div>
+        `;
       } else {
         return `
           <div class="form-group">
@@ -809,15 +828,30 @@
     }).join('');
     document.getElementById('dynamicFormFields').innerHTML = formFieldsHtml;
 
-    // Add phone formatting to any phone fields
-    document.querySelectorAll('input[type="tel"]').forEach(phoneInput => {
+    // US phone validation: valid area code (2-9 first digit), 10 digits total
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      var areaCode = parseInt(digits.substring(0, 3));
+      if (digits[0] === '0' || digits[0] === '1') return false; // area codes start 2-9
+      if (digits[3] === '0' || digits[3] === '1') return false; // exchange starts 2-9
+      if (areaCode === 555) return false; // fictional
+      return true;
+    }
+
+    // Add phone formatting and validation
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
       phoneInput.addEventListener('input', function(e) {
-        let x = e.target.value.replace(/\D/g, '').substring(0, 10);
-        let formatted = '';
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
         if (x.length > 0) formatted = '(' + x.substring(0, 3);
         if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
         if (x.length >= 6) formatted += '-' + x.substring(6, 10);
         e.target.value = formatted;
+        // Clear error on typing
+        var errEl = document.getElementById(e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
       });
     });
 
@@ -845,6 +879,20 @@
     // Form submission
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+
+      // Validate phone fields
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById(phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
 
       const btn = this.querySelector('.submit-btn');
       btn.disabled = true;
@@ -878,6 +926,7 @@
         btn.textContent = 'Get My Free Debt Analysis';
       }
     });
+    })(); // end IIFE
   </script>
 </body>
 </html>

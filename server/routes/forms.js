@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { generateLandingPage } = require('./pages');
 
 const router = express.Router();
 
@@ -91,6 +92,10 @@ router.put('/:id', authenticateToken, (req, res) => {
     is_active !== undefined ? (is_active ? 1 : 0) : form.is_active,
     req.params.id
   );
+
+  // Regenerate all landing pages that use this form
+  const pages = db.prepare('SELECT id FROM landing_pages WHERE form_id = ?').all(req.params.id);
+  pages.forEach(p => generateLandingPage(p.id));
 
   res.json({ message: 'Form updated' });
 });

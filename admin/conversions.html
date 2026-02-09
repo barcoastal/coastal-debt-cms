@@ -102,6 +102,26 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
         </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
         <a href="/admin/pages.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Landing Pages
@@ -157,8 +177,40 @@
           <ol style="margin: 12px 0 0 20px; color: #166534;">
             <li>In Salesforce, create a workflow rule or Process Builder flow</li>
             <li>When a lead status changes, make an HTTP POST to the postback URL</li>
-            <li>Include: <code>eli_clickid={Lead.Eli_Click_ID__c}&event={status}&value={amount}</code></li>
+            <li>Include: <code>eli_clickid={Lead.Eli_Click_ID__c}&event={status}&debt_amount={debt}&revenue={revenue}&value={amount}</code></li>
           </ol>
+        </div>
+
+        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; border: 1px solid #93c5fd; margin-top: 16px;">
+          <strong>Accepted Salesforce Fields:</strong>
+          <p style="color: #1e40af; margin: 8px 0 12px 0; font-size: 14px;">
+            These fields can be sent with each postback to update lead tracking data:
+          </p>
+          <div id="sfFieldsList" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="background: white; padding: 10px 14px; border-radius: 6px; font-size: 13px;">
+              <code style="background:#dbeafe; padding:2px 6px; border-radius:4px; color:#1e40af;">transfer_status</code>
+              <span style="color:#6b7280; margin-left:6px;">Lead transfer status</span>
+            </div>
+            <div style="background: white; padding: 10px 14px; border-radius: 6px; font-size: 13px;">
+              <code style="background:#dbeafe; padding:2px 6px; border-radius:4px; color:#1e40af;">five9_dispo</code>
+              <span style="color:#6b7280; margin-left:6px;">Five9 disposition</span>
+            </div>
+            <div style="background: white; padding: 10px 14px; border-radius: 6px; font-size: 13px;">
+              <code style="background:#dbeafe; padding:2px 6px; border-radius:4px; color:#1e40af;">stage</code>
+              <span style="color:#6b7280; margin-left:6px;">Pipeline stage</span>
+            </div>
+            <div style="background: white; padding: 10px 14px; border-radius: 6px; font-size: 13px;">
+              <code style="background:#dbeafe; padding:2px 6px; border-radius:4px; color:#1e40af;">contract_sign_date</code>
+              <span style="color:#6b7280; margin-left:6px;">Contract signing date</span>
+            </div>
+            <div style="background: white; padding: 10px 14px; border-radius: 6px; font-size: 13px;">
+              <code style="background:#dbeafe; padding:2px 6px; border-radius:4px; color:#1e40af;">total_debt_sign</code>
+              <span style="color:#6b7280; margin-left:6px;">Total debt at signing</span>
+            </div>
+          </div>
+          <p style="color: #1e40af; margin: 12px 0 0 0; font-size: 13px;">
+            Example: <code style="background:#1e293b; color:#22d3ee; padding:4px 8px; border-radius:4px; font-size:12px;">...&transfer_status=Transferred&five9_dispo=Sale&stage=Closed Won&contract_sign_date=2025-01-15&total_debt_sign=50000</code>
+          </p>
         </div>
       </div>
 
@@ -178,6 +230,8 @@
                   <th>Lead</th>
                   <th>Event</th>
                   <th>Value</th>
+                  <th>Debt Amount</th>
+                  <th>Revenue</th>
                   <th>GCLID</th>
                   <th>Eli Click ID</th>
                   <th>Source</th>
@@ -187,7 +241,7 @@
                 </tr>
               </thead>
               <tbody id="eventsTable">
-                <tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr>
+                <tr><td colspan="11" class="loading"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -200,7 +254,7 @@
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0;">Event to Google Ads Mapping</h3>
-            <button class="btn btn-primary" onclick="showModal('addConfigModal')">+ Add Event</button>
+            <button class="btn btn-primary" onclick="editingConfigId=null;document.querySelector('#addConfigModal h2').textContent='Add Event Mapping';document.getElementById('addConfigForm').reset();showModal('addConfigModal')">+ Add Event</button>
           </div>
 
           <p style="color: #6b7280; margin-bottom: 20px;">
@@ -228,16 +282,26 @@
           <input type="text" id="configName" required placeholder="e.g., Lead Qualified">
         </div>
         <div class="form-group">
-          <label>Event Name (from Salesforce)</label>
+          <label>Event Name (from Salesforce/CRM)</label>
           <input type="text" id="configEventName" required placeholder="e.g., qualified">
           <small style="color: #666;">This must match the event name sent in the postback URL</small>
         </div>
         <div class="form-group">
-          <label>Google Ads Conversion Action</label>
-          <select id="configConversionAction">
-            <option value="">-- Select (or configure in Settings first) --</option>
-          </select>
-          <small style="color: #666;">The conversion action to fire in Google Ads</small>
+          <label>Google Ads Conversion Action Name</label>
+          <input type="text" id="configGoogleAdsEventName" placeholder="e.g., Lead, Purchase, Signup">
+          <small style="color: #666;">The exact conversion action name Google Ads expects to receive</small>
+        </div>
+        <div class="form-group">
+          <label>Google Ads Conversion Action ID (optional)</label>
+          <input type="text" id="configConversionAction" placeholder="e.g., customers/123/conversionActions/456">
+          <small style="color: #666;">The conversion action resource name from Google Ads API</small>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="configSendToFacebook" style="width:auto;">
+            Send to Facebook CAPI
+          </label>
+          <small style="color: #666;">When enabled, this event will also be sent to Facebook Conversions API</small>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="hideModal('addConfigModal')">Cancel</button>
@@ -278,13 +342,15 @@
 
       const tbody = document.getElementById('eventsTable');
       if (data.events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No conversion events yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No conversion events yet</td></tr>';
       } else {
         tbody.innerHTML = data.events.map(e => `
           <tr>
             <td>${e.full_name || e.email || '-'}</td>
             <td><strong>${e.conversion_action_name || '-'}</strong></td>
-            <td>${e.conversion_value ? '$' + e.conversion_value : '-'}</td>
+            <td>${e.conversion_value ? '$' + Number(e.conversion_value).toLocaleString() : '-'}</td>
+            <td>${e.debt_amount ? '$' + Number(e.debt_amount).toLocaleString() : '-'}</td>
+            <td>${e.revenue ? '$' + Number(e.revenue).toLocaleString() : '-'}</td>
             <td style="font-size: 11px;">${e.gclid || '-'}</td>
             <td style="font-size: 11px;">${e.eli_clickid || '-'}</td>
             <td>${e.source}</td>
@@ -334,11 +400,15 @@
             <div>
               <div class="name">${c.name}</div>
               <div style="margin-top: 4px;">
-                Event: <span class="event-name">${c.event_name}</span>
-                ${c.conversion_action_id ? ` → Google Ads Action: ${c.conversion_action_id}` : ' <span style="color: #f59e0b;">(No Google Ads action)</span>'}
+                CRM Event: <span class="event-name">${c.event_name}</span>
+                ${c.google_ads_event_name ? ` → Google Ads: <span class="event-name" style="background:#dcfce7;color:#166534;">${c.google_ads_event_name}</span>` : ''}
+                ${c.conversion_action_id ? ` (ID: <span style="font-size:12px;color:#666;">${c.conversion_action_id}</span>)` : ''}
+                ${c.send_to_facebook ? ' <span class="event-name" style="background:#dbeafe;color:#1d4ed8;">Facebook CAPI</span>' : ''}
+                ${!c.google_ads_event_name && !c.conversion_action_id && !c.send_to_facebook ? ' <span style="color: #f59e0b;">(No routing configured)</span>' : ''}
               </div>
             </div>
-            <div>
+            <div style="display:flex;gap:8px;">
+              <button class="action-btn action-btn-edit" onclick="editConfig(${c.id}, '${c.name}', '${c.event_name}', '${c.google_ads_event_name || ''}', '${c.conversion_action_id || ''}', ${c.send_to_facebook ? 1 : 0})">Edit</button>
               <button class="action-btn action-btn-delete" onclick="deleteConfig(${c.id})">Delete</button>
             </div>
           </div>
@@ -346,20 +416,9 @@
       }
     }
 
-    async function loadConversionActions() {
-      try {
-        const res = await fetch('/api/google-ads/conversion-actions');
-        const data = await res.json();
+    // loadConversionActions removed - using text input now
 
-        const select = document.getElementById('configConversionAction');
-        if (data.actions && data.actions.length > 0) {
-          select.innerHTML = '<option value="">-- Select --</option>' +
-            data.actions.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-        }
-      } catch (e) {
-        console.log('Could not load conversion actions - Google Ads may not be connected');
-      }
-    }
+    let editingConfigId = null;
 
     document.getElementById('addConfigForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -367,11 +426,16 @@
       const data = {
         name: document.getElementById('configName').value,
         event_name: document.getElementById('configEventName').value,
-        conversion_action_id: document.getElementById('configConversionAction').value || null
+        google_ads_event_name: document.getElementById('configGoogleAdsEventName').value || null,
+        conversion_action_id: document.getElementById('configConversionAction').value || null,
+        send_to_facebook: document.getElementById('configSendToFacebook').checked ? 1 : 0
       };
 
-      const res = await fetch('/api/postback/config', {
-        method: 'POST',
+      const url = editingConfigId ? `/api/postback/config/${editingConfigId}` : '/api/postback/config';
+      const method = editingConfigId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
@@ -379,12 +443,25 @@
       if (res.ok) {
         hideModal('addConfigModal');
         document.getElementById('addConfigForm').reset();
+        editingConfigId = null;
+        document.querySelector('#addConfigModal h2').textContent = 'Add Event Mapping';
         loadConfigs();
       } else {
         const err = await res.json();
         alert('Error: ' + err.error);
       }
     });
+
+    function editConfig(id, name, eventName, googleAdsEventName, conversionActionId, sendToFacebook) {
+      editingConfigId = id;
+      document.querySelector('#addConfigModal h2').textContent = 'Edit Event Mapping';
+      document.getElementById('configName').value = name;
+      document.getElementById('configEventName').value = eventName;
+      document.getElementById('configGoogleAdsEventName').value = googleAdsEventName;
+      document.getElementById('configConversionAction').value = conversionActionId;
+      document.getElementById('configSendToFacebook').checked = !!sendToFacebook;
+      showModal('addConfigModal');
+    }
 
     async function deleteConfig(id) {
       if (!confirm('Delete this event mapping?')) return;
@@ -397,7 +474,6 @@
     loadPostbackUrl();
     loadEvents();
     loadConfigs();
-    loadConversionActions();
   </script>
 </body>
 </html>

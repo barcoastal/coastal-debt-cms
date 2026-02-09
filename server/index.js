@@ -14,6 +14,7 @@ const formsRoutes = require('./routes/forms');
 const visitorsRoutes = require('./routes/visitors');
 const googleAdsRoutes = require('./routes/google-ads');
 const postbackRoutes = require('./routes/postback');
+const facebookRoutes = require('./routes/facebook');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,16 +42,23 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'admin'), {
   etag: true
 }));
 
-// Serve generated landing pages WITH cache headers for Cloudflare
-// Cache for 1 day at edge, revalidate after 1 hour
+// Serve generated landing pages with cache headers
+const isProduction = !!process.env.RAILWAY_VOLUME_MOUNT_PATH;
 app.use('/lp', (req, res, next) => {
-  // Cache headers for Cloudflare CDN
-  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
-  res.setHeader('CDN-Cache-Control', 'max-age=86400'); // Cloudflare specific
+  if (isProduction) {
+    // Production: cache for Cloudflare CDN
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+    res.setHeader('CDN-Cache-Control', 'max-age=86400');
+  } else {
+    // Development: no caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
   res.setHeader('Vary', 'Accept-Encoding');
   next();
 }, express.static(path.join(__dirname, '..', 'public'), {
-  maxAge: '1h',
+  maxAge: isProduction ? '1h' : 0,
   etag: true,
   lastModified: true
 }));
@@ -65,6 +73,7 @@ app.use('/api/forms', formsRoutes);
 app.use('/api/visitors', visitorsRoutes);
 app.use('/api/google-ads', googleAdsRoutes);
 app.use('/api/postback', postbackRoutes);
+app.use('/api/facebook', facebookRoutes);
 
 // Redirect root to admin
 app.get('/', (req, res) => {

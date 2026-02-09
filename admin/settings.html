@@ -126,6 +126,26 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
         </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
         <a href="/admin/pages.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Landing Pages
@@ -252,11 +272,241 @@
           </ol>
         </div>
       </div>
+
+      <!-- Meta (Facebook) Integration -->
+      <div class="settings-card">
+        <h3>Meta (Facebook) Integration</h3>
+        <p>Connect Facebook to receive leads from Instant Forms (Lead Ads).</p>
+
+        <div id="fbConnectionStatus">
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Not Configured</strong>
+              <span>Set up your Page Access Token to receive instant form leads</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Webhook URL (read-only) -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>Webhook URL</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="fbWebhookUrl" readonly style="flex: 1; background: #f9fafb; font-family: monospace; font-size: 13px;">
+            <button class="btn btn-secondary" onclick="copyFbWebhook()">Copy</button>
+          </div>
+          <small style="color: #666;">Use this URL in your Facebook App's Webhooks settings</small>
+        </div>
+
+        <!-- Config Form -->
+        <div class="form-group">
+          <label>Page Access Token</label>
+          <input type="password" id="fbPageToken" placeholder="Enter your Facebook Page Access Token">
+          <small style="color: #666;">Get it from <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a> with <code>leads_retrieval</code> and <code>pages_manage_ads</code> permissions</small>
+        </div>
+
+        <div class="form-group">
+          <label>Webhook Verify Token</label>
+          <input type="text" id="fbVerifyToken" placeholder="A secret token to verify webhook requests">
+          <small style="color: #666;">Enter any random string. You'll use the same value when setting up the webhook in Facebook App</small>
+        </div>
+
+        <div class="form-group">
+          <label>Pixel ID</label>
+          <input type="text" id="fbPixelId" placeholder="Enter your Facebook Pixel ID">
+          <small style="color: #666;">Required for Conversions API (CAPI). Find it in <a href="https://business.facebook.com/events_manager" target="_blank">Events Manager</a> &rarr; Data Sources</small>
+        </div>
+
+        <div class="form-group">
+          <label>Ad Account ID</label>
+          <input type="text" id="fbAdAccountId" placeholder="act_123456789">
+          <small style="color: #666;">Required for cost stats. Find it in <a href="https://business.facebook.com/adsmanager" target="_blank">Ads Manager</a> &rarr; Account Overview. Format: <code>act_XXXXXXXXX</code></small>
+        </div>
+
+        <div class="form-group">
+          <label>Default Landing Page for Instant Form Leads</label>
+          <select id="fbDefaultPage">
+            <option value="">Select a landing page...</option>
+          </select>
+          <small style="color: #666;">Facebook instant form leads will be associated with this landing page</small>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px;">
+          <button class="btn btn-primary" onclick="saveFbConfig()">Save Configuration</button>
+          <button class="btn btn-secondary" onclick="testFbConnection()">Test Connection</button>
+        </div>
+        <span id="fbSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
+
+        <!-- Facebook Cost Statistics -->
+        <div id="fbCostStats" style="display: none;">
+          <h4 style="margin-top: 24px; margin-bottom: 16px;">Ad Spend (Last 30 Days)</h4>
+          <div class="cost-stats">
+            <div class="stat-card">
+              <div class="value" id="fbTotalSpend">$0</div>
+              <div class="label">Total Spend</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="fbAvgCpl">$0</div>
+              <div class="label">Avg Cost Per Lead</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="fbFbLeads">0</div>
+              <div class="label">Facebook-reported Leads</div>
+            </div>
+            <div class="stat-card">
+              <div class="value" id="fbLocalLeads">0</div>
+              <div class="label">Local CMS Leads</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="refreshFbStats()">Refresh Stats</button>
+            <span id="fbStatsStatus" style="margin-left: 12px; color: #6b7280;"></span>
+          </div>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="setup-steps" style="margin-top: 20px;">
+          <h4>Setup Instructions</h4>
+          <ol>
+            <li>Go to <a href="https://developers.facebook.com/apps/" target="_blank">Facebook Developers</a> and create an App (type: Business)</li>
+            <li>Add the "Webhooks" product to your app</li>
+            <li>Subscribe to the <strong>Page</strong> object, <strong>leadgen</strong> field</li>
+            <li>Set Callback URL to the Webhook URL above and the Verify Token to match your setting</li>
+            <li>Go to <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a>, select your app and page</li>
+            <li>Generate a Page Access Token with <code>leads_retrieval</code> and <code>pages_manage_ads</code> permissions</li>
+            <li>For a non-expiring token, exchange the short-lived token for a long-lived one via the API</li>
+            <li>Paste the token above and save</li>
+          </ol>
+        </div>
+      </div>
     </main>
   </div>
 
   <script src="assets/js/common.js"></script>
   <script>
+    // --- Facebook Config ---
+    async function loadFbConfig() {
+      // Set webhook URL
+      const baseUrl = window.location.origin;
+      document.getElementById('fbWebhookUrl').value = baseUrl + '/api/facebook/webhook';
+
+      // Load landing pages for dropdown
+      try {
+        const pagesRes = await api('/api/pages');
+        const select = document.getElementById('fbDefaultPage');
+        (pagesRes.pages || pagesRes).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name + ' (' + p.platform + ')';
+          select.appendChild(opt);
+        });
+      } catch (e) {}
+
+      // Load existing config
+      try {
+        const config = await api('/api/facebook/config');
+        if (config.page_access_token) {
+          document.getElementById('fbPageToken').value = config.page_access_token;
+          document.getElementById('fbVerifyToken').value = config.verify_token || '';
+          document.getElementById('fbPixelId').value = config.pixel_id || '';
+          document.getElementById('fbAdAccountId').value = config.ad_account_id || '';
+          document.getElementById('fbDefaultPage').value = config.default_landing_page_id || '';
+
+          document.getElementById('fbConnectionStatus').innerHTML = `
+            <div class="connection-status connected">
+              <div class="status-dot green"></div>
+              <div class="account-info">
+                <strong>Configured</strong>
+                <span>Connected on ${config.connected_at ? formatDate(config.connected_at) : 'Unknown'}</span>
+              </div>
+            </div>
+          `;
+
+          // Show cost stats if ad_account_id is configured
+          if (config.ad_account_id) {
+            document.getElementById('fbCostStats').style.display = 'block';
+            loadFbStats();
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function saveFbConfig() {
+      const token = document.getElementById('fbPageToken').value;
+      const verify = document.getElementById('fbVerifyToken').value;
+      const pixelId = document.getElementById('fbPixelId').value;
+      const adAccountId = document.getElementById('fbAdAccountId').value;
+      const pageId = document.getElementById('fbDefaultPage').value;
+
+      if (!token || !verify) {
+        alert('Page Access Token and Verify Token are required');
+        return;
+      }
+
+      try {
+        await api('/api/facebook/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            page_access_token: token,
+            verify_token: verify,
+            pixel_id: pixelId || null,
+            ad_account_id: adAccountId || null,
+            default_landing_page_id: pageId || null
+          })
+        });
+        document.getElementById('fbSaveStatus').textContent = 'Saved!';
+        document.getElementById('fbSaveStatus').style.color = '#10b981';
+        loadFbConfig();
+      } catch (e) {
+        document.getElementById('fbSaveStatus').textContent = 'Failed to save';
+        document.getElementById('fbSaveStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function testFbConnection() {
+      try {
+        const res = await api('/api/facebook/test', { method: 'POST' });
+        if (res.success) {
+          alert('Connected! Page: ' + res.page_name + ' (ID: ' + res.page_id + ')');
+        } else {
+          alert('Error: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Connection test failed: ' + e.message);
+      }
+    }
+
+    function copyFbWebhook() {
+      const input = document.getElementById('fbWebhookUrl');
+      navigator.clipboard.writeText(input.value);
+      input.select();
+    }
+
+    async function loadFbStats() {
+      try {
+        const stats = await api('/api/facebook/stats');
+        document.getElementById('fbTotalSpend').textContent = '$' + (stats.total_spend || 0).toFixed(2);
+        document.getElementById('fbAvgCpl').textContent = '$' + (stats.avg_cpl || 0).toFixed(2);
+        document.getElementById('fbFbLeads').textContent = stats.fb_leads || 0;
+        document.getElementById('fbLocalLeads').textContent = stats.local_leads || 0;
+      } catch (e) {
+        document.getElementById('fbStatsStatus').textContent = 'Failed to load stats';
+        document.getElementById('fbStatsStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function refreshFbStats() {
+      document.getElementById('fbStatsStatus').textContent = 'Refreshing...';
+      document.getElementById('fbStatsStatus').style.color = '#6b7280';
+      await loadFbStats();
+      document.getElementById('fbStatsStatus').textContent = 'Updated!';
+      document.getElementById('fbStatsStatus').style.color = '#10b981';
+    }
+
+    loadFbConfig();
+
+    // --- Google Ads ---
     async function checkStatus() {
       // Check for URL params (after OAuth redirect)
       const params = new URLSearchParams(window.location.search);

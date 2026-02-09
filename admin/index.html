@@ -31,6 +31,26 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
         </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
         <a href="/admin/pages.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Landing Pages
@@ -68,6 +88,28 @@
     <main class="main-content">
       <div class="page-header">
         <h1>Dashboard</h1>
+      </div>
+
+      <!-- Filters -->
+      <div class="card">
+        <div class="filters">
+          <select id="platformFilter">
+            <option value="">All Platforms</option>
+            <option value="google">Google</option>
+            <option value="meta">Meta</option>
+            <option value="tiktok">TikTok</option>
+            <option value="bing">Bing</option>
+            <option value="outbrain">Outbrain</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="other">Other</option>
+          </select>
+          <select id="pageFilter">
+            <option value="">All Landing Pages</option>
+          </select>
+          <input type="date" id="fromDate">
+          <input type="date" id="toDate">
+          <button class="btn btn-primary" onclick="loadDashboard()">Apply</button>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -139,10 +181,38 @@
   <script>
     let leadsChart, platformChart;
 
+    // Populate landing pages filter
+    async function loadPageFilter() {
+      try {
+        const res = await fetch('/api/pages', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+        const pages = await res.json();
+        const sel = document.getElementById('pageFilter');
+        pages.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.slug;
+          opt.textContent = p.name;
+          sel.appendChild(opt);
+        });
+      } catch(e) {}
+    }
+    loadPageFilter();
+
     async function loadDashboard() {
       try {
+        // Get filter values
+        const platform = document.getElementById('platformFilter').value;
+        const page = document.getElementById('pageFilter').value;
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        const params = new URLSearchParams();
+        if (platform) params.set('platform', platform);
+        if (page) params.set('page', page);
+        if (fromDate) params.set('from', fromDate);
+        if (toDate) params.set('to', toDate);
+        const qs = params.toString() ? '?' + params.toString() : '';
+
         // Load stats
-        const statsRes = await fetch('/api/analytics/dashboard');
+        const statsRes = await fetch('/api/analytics/dashboard' + qs);
         const stats = await statsRes.json();
 
         document.getElementById('statLeadsToday').textContent = stats.leadsToday;
@@ -151,9 +221,10 @@
         document.getElementById('statActivePages').textContent = stats.activePages;
 
         // Load leads over time
-        const timeRes = await fetch('/api/analytics/over-time?days=30');
+        const timeRes = await fetch('/api/analytics/over-time?days=30' + (qs ? '&' + params.toString() : ''));
         const timeData = await timeRes.json();
 
+        if (leadsChart) leadsChart.destroy();
         const ctx1 = document.getElementById('leadsChart').getContext('2d');
         leadsChart = new Chart(ctx1, {
           type: 'line',
@@ -178,9 +249,10 @@
         });
 
         // Load leads by platform
-        const platformRes = await fetch('/api/analytics/by-platform');
+        const platformRes = await fetch('/api/analytics/by-platform' + qs);
         const platformData = await platformRes.json();
 
+        if (platformChart) platformChart.destroy();
         const ctx2 = document.getElementById('platformChart').getContext('2d');
         platformChart = new Chart(ctx2, {
           type: 'doughnut',
@@ -197,7 +269,7 @@
         });
 
         // Load recent leads
-        const recentRes = await fetch('/api/analytics/recent?limit=10');
+        const recentRes = await fetch('/api/analytics/recent?limit=10' + (qs ? '&' + params.toString() : ''));
         const recentLeads = await recentRes.json();
 
         const tbody = document.getElementById('recentLeadsTable');

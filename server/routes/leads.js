@@ -4,13 +4,21 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
-// Import fetchGclidCost (will be loaded after module initialization)
+// Import Google Ads functions (will be loaded after module initialization)
 let fetchGclidCost = null;
+let uploadConversion = null;
+let sendFacebookEvent = null;
 setTimeout(() => {
   try {
     fetchGclidCost = require('./google-ads').fetchGclidCost;
+    uploadConversion = require('./google-ads').uploadConversion;
   } catch (e) {
     console.log('Google Ads module not loaded yet');
+  }
+  try {
+    sendFacebookEvent = require('./facebook').sendFacebookEvent;
+  } catch (e) {
+    console.log('Facebook module not loaded yet');
   }
 }, 0);
 
@@ -128,6 +136,62 @@ router.post('/', async (req, res) => {
     }).catch(err => console.error('Failed to fetch GCLID cost:', err));
   }
 
+  // Auto-create "lead" conversion event for every lead submission
+  try {
+    const leadConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+
+    db.prepare(`
+      INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_id, conversion_action_name, source, status)
+      VALUES (?, ?, ?, ?, 'lead', 'auto', ?)
+    `).run(
+      result.lastInsertRowid,
+      eli_clickid || '',
+      gclid || '',
+      leadConfig?.conversion_action_id || null,
+      (gclid && leadConfig?.conversion_action_id) ? 'pending' : 'logged'
+    );
+
+    // Send to Google Ads if GCLID + conversion action configured
+    if (gclid && leadConfig?.conversion_action_id && uploadConversion) {
+      const leadId = result.lastInsertRowid;
+      uploadConversion(gclid, leadConfig.conversion_action_id).then(gadsResult => {
+        const evt = db.prepare(`SELECT id FROM conversion_events WHERE lead_id = ? AND conversion_action_name = 'lead' ORDER BY id DESC LIMIT 1`).get(leadId);
+        if (gadsResult.success && evt) {
+          db.prepare(`UPDATE conversion_events SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?`).run(evt.id);
+        } else if (evt) {
+          db.prepare(`UPDATE conversion_events SET status = 'failed', error_message = ? WHERE id = ?`).run(gadsResult.error, evt.id);
+        }
+      }).catch(err => console.error('Failed to send lead event to Google Ads:', err));
+    }
+  } catch (err) {
+    console.error('Failed to create lead conversion event:', err);
+  }
+
+  // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
+  if (page.platform === 'meta' && sendFacebookEvent) {
+    const nameParts = (full_name || '').trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    sendFacebookEvent('Lead', {
+      email,
+      phone,
+      firstName,
+      lastName
+    }).then(fbResult => {
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at)
+        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+      `).run(
+        result.lastInsertRowid,
+        eli_clickid || '',
+        fbResult.success ? 'sent' : 'failed',
+        fbResult.error || null
+      );
+      console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
+    }).catch(err => console.error('Failed to send Facebook CAPI Lead event:', err));
+  }
+
   res.json({ success: true, id: result.lastInsertRowid });
 });
 
@@ -137,9 +201,18 @@ router.get('/', authenticateToken, (req, res) => {
   const offset = (page - 1) * limit;
 
   let query = `
-    SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform
+    SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform,
+           v.utm_campaign,
+           (
+             SELECT ce.conversion_action_name
+             FROM conversion_events ce
+             WHERE ce.lead_id = l.id
+             ORDER BY ce.created_at DESC
+             LIMIT 1
+           ) as current_status
     FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE 1=1
   `;
   let countQuery = `
@@ -224,6 +297,27 @@ router.get('/:id', authenticateToken, (req, res) => {
   }
 
   res.json(lead);
+});
+
+// Update lead fields (Salesforce tracking)
+router.patch('/:id', authenticateToken, (req, res) => {
+  const { transfer_status, five9_dispo, stage, contract_sign_date, total_debt_sign } = req.body;
+  const fields = [];
+  const params = [];
+
+  if (transfer_status !== undefined) { fields.push('transfer_status = ?'); params.push(transfer_status); }
+  if (five9_dispo !== undefined) { fields.push('five9_dispo = ?'); params.push(five9_dispo); }
+  if (stage !== undefined) { fields.push('stage = ?'); params.push(stage); }
+  if (contract_sign_date !== undefined) { fields.push('contract_sign_date = ?'); params.push(contract_sign_date); }
+  if (total_debt_sign !== undefined) { fields.push('total_debt_sign = ?'); params.push(total_debt_sign); }
+
+  if (!fields.length) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  params.push(req.params.id);
+  db.prepare(`UPDATE leads SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+  res.json({ success: true });
 });
 
 // Delete lead

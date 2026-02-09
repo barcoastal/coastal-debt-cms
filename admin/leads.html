@@ -7,7 +7,20 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
     .table-container { overflow-x: auto; }
-    table td { font-size: 13px; word-break: break-word; }
+    table td { font-size: 12px; white-space: nowrap; }
+    .editable-cell {
+      cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
+      display: inline-block; border: 1px solid transparent; transition: all 0.15s;
+    }
+    .editable-cell:hover { background: var(--gray-100); border-color: var(--gray-300); }
+    .editable-cell input, .editable-cell select {
+      border: 1px solid var(--primary); border-radius: 4px; padding: 4px 6px;
+      font-size: 12px; width: 100%; outline: none;
+    }
+    .mca-yes { color: #16a34a; font-weight: 600; }
+    .mca-no { color: #6b7280; }
+    .badge-gray { background: var(--gray-200); color: var(--gray-600); }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
   </style>
 </head>
 <body>
@@ -33,6 +46,26 @@
         <a href="/admin/conversions.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
+        </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
         </a>
         <a href="/admin/pages.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -93,7 +126,7 @@
           </select>
           <input type="date" id="fromDate" placeholder="From date">
           <input type="date" id="toDate" placeholder="To date">
-          <button class="btn btn-primary btn-small" onclick="loadLeads()">Filter</button>
+          <button class="btn btn-primary" onclick="loadLeads()">Apply</button>
         </div>
 
         <div class="table-container">
@@ -105,14 +138,21 @@
                 <th>Phone</th>
                 <th>Debt Amount</th>
                 <th>Source</th>
-                <th>RT Click ID</th>
+                <th>Campaign</th>
+                <th>MCA</th>
+                <th>Current Status</th>
+                <th>Transfer Status</th>
+                <th>Five9 Dispo</th>
+                <th>Stage</th>
+                <th>Contract Sign Date</th>
+                <th>Total Debt Sign</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="leadsTable">
               <tr>
-                <td colspan="8" class="loading"><div class="spinner"></div></td>
+                <td colspan="15" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -177,24 +217,31 @@
 
       const tbody = document.getElementById('leadsTable');
       if (data.leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No leads found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="15" class="empty-state">No leads found</td></tr>';
       } else {
         tbody.innerHTML = data.leads.map(lead => {
-          return `
-          <tr>
-            <td>${lead.full_name || '-'}</td>
-            <td>${lead.company_name || '-'}</td>
-            <td>${lead.phone || '-'}</td>
-            <td>${lead.debt_amount || '-'}</td>
-            <td><span class="badge badge-blue">${lead.platform || '-'}</span></td>
-            <td>${lead.rt_clickid || '-'}</td>
-            <td>${formatDate(lead.created_at)}</td>
-            <td class="actions" style="display:flex;flex-direction:column;gap:4px;">
-              <button class="action-btn action-btn-view" onclick="viewLead(${lead.id})">View</button>
-              <button class="action-btn action-btn-delete" onclick="confirmDelete(${lead.id})">Delete</button>
-            </td>
-          </tr>
-        `}).join('');
+          const mcaHtml = lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-');
+          return '<tr>' +
+            '<td>' + (lead.full_name || '-') + '</td>' +
+            '<td>' + (lead.company_name || '-') + '</td>' +
+            '<td>' + (lead.phone || '-') + '</td>' +
+            '<td>' + (lead.debt_amount || '-') + '</td>' +
+            '<td><span class="badge badge-blue">' + (lead.platform || '-') + '</span></td>' +
+            '<td>' + (lead.utm_campaign || '-') + '</td>' +
+            '<td>' + mcaHtml + '</td>' +
+            '<td>' + getStatusBadge(lead.current_status) + '</td>' +
+            '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + (lead.transfer_status || '-') + '</span></td>' +
+            '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + (lead.five9_dispo || '-') + '</span></td>' +
+            '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + (lead.stage || '-') + '</span></td>' +
+            '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + (lead.contract_sign_date || '-') + '</span></td>' +
+            '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + (lead.total_debt_sign || '-') + '</span></td>' +
+            '<td>' + formatDate(lead.created_at) + '</td>' +
+            '<td class="actions" style="display:flex;flex-direction:column;gap:4px;">' +
+              '<button class="action-btn action-btn-view" onclick="viewLead(' + lead.id + ')">View</button>' +
+              '<button class="action-btn action-btn-delete" onclick="confirmDelete(' + lead.id + ')">Delete</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
       }
 
       // Pagination
@@ -273,6 +320,38 @@
     document.getElementById('searchInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') loadLeads();
     });
+
+    function getStatusBadge(status) {
+      if (!status) return '<span class="badge badge-gray">No events</span>';
+      const colors = { qualified: 'badge-blue', appointment: 'badge-yellow', closed: 'badge-green', sale: 'badge-green', failed: 'badge-red' };
+      return '<span class="badge ' + (colors[status.toLowerCase()] || 'badge-blue') + '">' + status + '</span>';
+    }
+
+    function editField(el, leadId, field) {
+      if (el.querySelector('input')) return;
+      const current = el.textContent.trim();
+      const val = current === '-' ? '' : current;
+      const isDate = field === 'contract_sign_date';
+      const inputType = isDate ? 'date' : 'text';
+      el.innerHTML = '<input type="' + inputType + '" value="' + val + '" onblur="saveField(this,' + leadId + ',\'' + field + '\')" onkeydown="if(event.key===\'Enter\')this.blur()">';
+      el.querySelector('input').focus();
+    }
+
+    async function saveField(input, leadId, field) {
+      const value = input.value.trim();
+      const cell = input.parentElement;
+      try {
+        await fetch('/api/leads/' + leadId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [field]: value || null })
+        });
+        cell.textContent = value || '-';
+      } catch (err) {
+        console.error('Error saving field:', err);
+        cell.textContent = value || '-';
+      }
+    }
 
     loadLandingPages();
     loadLeads();

@@ -134,7 +134,7 @@ async function fetchGeoInfo(ip, visitorId) {
 
 // Get all visitors (admin)
 router.get('/', authenticateToken, (req, res) => {
-  const { page = 1, limit = 50, converted, search } = req.query;
+  const { page = 1, limit = 50, converted, search, from_date, to_date } = req.query;
   const offset = (page - 1) * limit;
 
   let query = `SELECT * FROM visitors WHERE 1=1`;
@@ -151,6 +151,18 @@ router.get('/', authenticateToken, (req, res) => {
     query += ` AND (eli_clickid LIKE ? OR ip_address LIKE ? OR city LIKE ? OR country LIKE ?)`;
     countQuery += ` AND (eli_clickid LIKE ? OR ip_address LIKE ? OR city LIKE ? OR country LIKE ?)`;
     params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  if (from_date) {
+    query += ` AND DATE(last_visit) >= DATE(?)`;
+    countQuery += ` AND DATE(last_visit) >= DATE(?)`;
+    params.push(from_date);
+  }
+
+  if (to_date) {
+    query += ` AND DATE(last_visit) <= DATE(?)`;
+    countQuery += ` AND DATE(last_visit) <= DATE(?)`;
+    params.push(to_date);
   }
 
   const total = db.prepare(countQuery).get(...params).total;
