@@ -276,11 +276,19 @@ function generateLandingPage(pageId) {
 
   let html = fs.readFileSync(templatePath, 'utf8');
 
+  // Get Facebook Pixel ID from config
+  let fbPixelId = '';
+  try {
+    const fbConfig = db.prepare('SELECT pixel_id FROM facebook_config WHERE id = 1').get();
+    fbPixelId = fbConfig?.pixel_id || '';
+  } catch (e) {}
+
   // Replace placeholders
   html = html.replace(/{{SLUG}}/g, page.slug);
   html = html.replace(/{{HEAD_SCRIPTS}}/g, headScripts);
   html = html.replace(/{{BODY_SCRIPTS}}/g, bodyScripts);
   html = html.replace(/{{HIDDEN_FIELDS}}/g, hiddenFieldsHtml);
+  html = html.replace(/{{FB_PIXEL_ID}}/g, fbPixelId);
 
   // Replace content placeholders
   Object.entries(content).forEach(([key, value]) => {

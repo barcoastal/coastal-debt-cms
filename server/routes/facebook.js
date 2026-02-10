@@ -185,6 +185,7 @@ async function processLeadgenEvent(leadgenId, config) {
     }
 
     // Send "Lead" event to Facebook CAPI — Instant Form leads are always from Facebook
+    // Note: Instant form leads come from Facebook directly, so no fbc/fbp/IP/UA available
     try {
       const nameParts = (fields.full_name || '').trim().split(/\s+/);
       const firstName = fields._first_name || nameParts[0] || '';
@@ -195,16 +196,17 @@ async function processLeadgenEvent(leadgenId, config) {
         phone: fields.phone,
         firstName,
         lastName
-      });
+      }, {});
 
       db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at)
-        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
+        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
       `).run(
         result.lastInsertRowid,
         'fb_' + leadgenId,
         fbResult.success ? 'sent' : 'failed',
-        fbResult.error || null
+        fbResult.error || null,
+        fbResult.payload ? JSON.stringify(fbResult.payload) : null
       );
       console.log(`Facebook CAPI Lead event for instant form lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
     } catch (err) {
@@ -220,9 +222,9 @@ async function processLeadgenEvent(leadgenId, config) {
  * Send a conversion event to Facebook Conversions API (CAPI)
  *
  * @param {string} eventName - e.g. "Lead", "Purchase", or custom event
- * @param {object} userData - { email, phone, firstName, lastName }
- * @param {object} [options] - { value, currency }
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {object} userData - { email, phone, firstName, lastName, fbc, fbp, client_ip_address, client_user_agent }
+ * @param {object} [options] - { value, currency, event_source_url, event_id }
+ * @returns {Promise<{success: boolean, error?: string, event_id?: string}>}
  */
 async function sendFacebookEvent(eventName, userData, options = {}) {
   try {
@@ -251,12 +253,27 @@ async function sendFacebookEvent(eventName, userData, options = {}) {
     if (userData.firstName) user_data.fn = [hash(userData.firstName)];
     if (userData.lastName) user_data.ln = [hash(userData.lastName)];
 
+    // Add match quality parameters (not hashed)
+    if (userData.fbc) user_data.fbc = userData.fbc;
+    if (userData.fbp) user_data.fbp = userData.fbp;
+    if (userData.client_ip_address) user_data.client_ip_address = userData.client_ip_address;
+    if (userData.client_user_agent) user_data.client_user_agent = userData.client_user_agent;
+
+    // Generate event_id for deduplication if not provided
+    const event_id = options.event_id || crypto.randomUUID();
+
     const eventData = {
       event_name: eventName,
       event_time: Math.floor(Date.now() / 1000),
       action_source: 'website',
+      event_id,
       user_data
     };
+
+    // Add event_source_url if provided
+    if (options.event_source_url) {
+      eventData.event_source_url = options.event_source_url;
+    }
 
     // Add custom_data if value is provided
     if (options.value !== undefined && options.value !== null) {
@@ -266,24 +283,43 @@ async function sendFacebookEvent(eventName, userData, options = {}) {
       };
     }
 
+    const requestBody = {
+      data: [eventData],
+      access_token: config.page_access_token
+    };
+
+    // Include test_event_code if configured
+    if (config.test_event_code) {
+      requestBody.test_event_code = config.test_event_code;
+    }
+
     const response = await fetch(`https://graph.facebook.com/v21.0/${config.pixel_id}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        data: [eventData],
-        access_token: config.page_access_token
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const result = await response.json();
 
+    // Build sanitized payload for debug storage (exclude access_token)
+    const debugPayloadForError = {
+      data: requestBody.data,
+      test_event_code: requestBody.test_event_code || null
+    };
+
     if (result.error) {
       console.error('Facebook CAPI error:', result.error.message);
-      return { success: false, error: result.error.message };
+      return { success: false, error: result.error.message, payload: debugPayloadForError };
     }
 
-    console.log(`Facebook CAPI: sent "${eventName}" event, events_received: ${result.events_received}`);
-    return { success: true, events_received: result.events_received };
+    // Build sanitized payload for debug storage (exclude access_token)
+    const debugPayload = {
+      data: requestBody.data,
+      test_event_code: requestBody.test_event_code || null
+    };
+
+    console.log(`Facebook CAPI: sent "${eventName}" event, events_received: ${result.events_received}, event_id: ${event_id}`);
+    return { success: true, events_received: result.events_received, event_id, payload: debugPayload };
   } catch (err) {
     console.error('Facebook CAPI request failed:', err);
     return { success: false, error: err.message };
@@ -302,7 +338,7 @@ router.get('/config', authenticateToken, (req, res) => {
  * ADMIN: Save Facebook config
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id } = req.body;
+  const { page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code } = req.body;
 
   const existing = db.prepare('SELECT id FROM facebook_config WHERE id = 1').get();
 
@@ -316,14 +352,15 @@ router.post('/config', authenticateToken, (req, res) => {
         default_landing_page_id = ?,
         pixel_id = ?,
         ad_account_id = ?,
+        test_event_code = ?,
         connected_at = CURRENT_TIMESTAMP
       WHERE id = 1
-    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null);
+    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null);
   } else {
     db.prepare(`
-      INSERT INTO facebook_config (id, page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, connected_at)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null);
+      INSERT INTO facebook_config (id, page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code, connected_at)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'connected', 'facebook', null, 'Facebook config updated', req.ip);
@@ -429,6 +466,226 @@ router.post('/test', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+/**
+ * DEBUG: Get recent Facebook CAPI events with match quality info
+ */
+router.get('/debug/events', authenticateToken, (req, res) => {
+  const { page = 1, limit = 50, status, has_fbc } = req.query;
+  const offset = (page - 1) * limit;
+
+  let where = `WHERE ce.source = 'facebook_capi'`;
+  const params = [];
+
+  if (status) {
+    where += ` AND ce.status = ?`;
+    params.push(status);
+  }
+
+  const query = `
+    SELECT ce.*, l.full_name, l.email, l.phone, l.eli_clickid as lead_eli,
+           v.fbc, v.fbp, v.ip_address, v.user_agent, v.fbclid, v.landing_page
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    ${where}
+    ORDER BY ce.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const countQuery = `
+    SELECT COUNT(*) as total FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    ${where}
+  `;
+
+  let events = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
+  const total = db.prepare(countQuery).get(...params).total;
+
+  // Parse capi_payload and extract match quality fields
+  events = events.map(e => {
+    let payload = null;
+    try { payload = e.capi_payload ? JSON.parse(e.capi_payload) : null; } catch (err) {}
+
+    // Extract match quality from payload or visitor record
+    const userData = payload?.data?.[0]?.user_data || {};
+    return {
+      ...e,
+      capi_payload: payload,
+      match_quality: {
+        fbc: !!(userData.fbc || e.fbc),
+        fbp: !!(userData.fbp || e.fbp),
+        ip: !!(userData.client_ip_address || e.ip_address),
+        ua: !!(userData.client_user_agent || e.user_agent),
+        email: !!(userData.em),
+        phone: !!(userData.ph),
+        event_source_url: !!(payload?.data?.[0]?.event_source_url)
+      }
+    };
+  });
+
+  // Filter by has_fbc after processing
+  if (has_fbc === 'yes') {
+    events = events.filter(e => e.match_quality.fbc);
+  } else if (has_fbc === 'no') {
+    events = events.filter(e => !e.match_quality.fbc);
+  }
+
+  // Summary stats (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const statsRows = db.prepare(`
+    SELECT ce.status, ce.capi_payload,
+           v.fbc, v.fbp, v.ip_address, v.user_agent
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    WHERE ce.source = 'facebook_capi' AND ce.created_at >= ?
+  `).all(thirtyDaysAgo.toISOString());
+
+  let totalEvents = statsRows.length;
+  let sentCount = 0, failedCount = 0, withFbc = 0, withFbp = 0, withIpUa = 0;
+  for (const row of statsRows) {
+    if (row.status === 'sent') sentCount++;
+    if (row.status === 'failed') failedCount++;
+    let p = null;
+    try { p = row.capi_payload ? JSON.parse(row.capi_payload) : null; } catch (err) {}
+    const ud = p?.data?.[0]?.user_data || {};
+    if (ud.fbc || row.fbc) withFbc++;
+    if (ud.fbp || row.fbp) withFbp++;
+    if ((ud.client_ip_address || row.ip_address) && (ud.client_user_agent || row.user_agent)) withIpUa++;
+  }
+
+  res.json({
+    events,
+    pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
+    summary: {
+      total_events: totalEvents,
+      sent: sentCount,
+      failed: failedCount,
+      pct_fbc: totalEvents ? Math.round((withFbc / totalEvents) * 100) : 0,
+      pct_fbp: totalEvents ? Math.round((withFbp / totalEvents) * 100) : 0,
+      pct_ip_ua: totalEvents ? Math.round((withIpUa / totalEvents) * 100) : 0
+    }
+  });
+});
+
+/**
+ * DEBUG: Look up a specific lead's Facebook CAPI data
+ */
+router.get('/debug/lead/:id', authenticateToken, (req, res) => {
+  const identifier = req.params.id;
+
+  // Try by lead ID first, then by eli_clickid
+  let lead = db.prepare(`
+    SELECT l.*, lp.name as landing_page_name, lp.platform
+    FROM leads l
+    LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE l.id = ?
+  `).get(identifier);
+
+  if (!lead) {
+    lead = db.prepare(`
+      SELECT l.*, lp.name as landing_page_name, lp.platform
+      FROM leads l
+      LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+      WHERE l.eli_clickid = ?
+    `).get(identifier);
+  }
+
+  if (!lead) {
+    return res.status(404).json({ error: 'Lead not found' });
+  }
+
+  try { lead.hidden_fields = JSON.parse(lead.hidden_fields || '{}'); } catch (e) { lead.hidden_fields = {}; }
+
+  // Get visitor record
+  const visitor = lead.eli_clickid
+    ? db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(lead.eli_clickid)
+    : null;
+
+  // Get all Facebook CAPI events for this lead
+  let fbEvents = db.prepare(`
+    SELECT * FROM conversion_events
+    WHERE lead_id = ? AND source = 'facebook_capi'
+    ORDER BY created_at DESC
+  `).all(lead.id);
+
+  fbEvents = fbEvents.map(e => {
+    let payload = null;
+    try { payload = e.capi_payload ? JSON.parse(e.capi_payload) : null; } catch (err) {}
+    return { ...e, capi_payload: payload };
+  });
+
+  // Build match quality checklist
+  const nameParts = (lead.full_name || '').trim().split(/\s+/);
+  const matchChecklist = {
+    email: { present: !!lead.email, value: lead.email ? '***' : null },
+    phone: { present: !!lead.phone, value: lead.phone ? '***' : null },
+    fbc: { present: !!(visitor?.fbc), value: visitor?.fbc || null },
+    fbp: { present: !!(visitor?.fbp), value: visitor?.fbp || null },
+    fbclid: { present: !!(visitor?.fbclid), value: visitor?.fbclid || null },
+    client_ip: { present: !!(visitor?.ip_address), value: visitor?.ip_address || null },
+    client_ua: { present: !!(visitor?.user_agent), value: visitor?.user_agent ? visitor.user_agent.substring(0, 80) + '...' : null },
+    event_source_url: { present: !!(visitor?.landing_page), value: visitor?.landing_page || null },
+    first_name: { present: !!(nameParts[0]), value: nameParts[0] || null },
+    last_name: { present: !!(nameParts.slice(1).join(' ')), value: nameParts.slice(1).join(' ') || null }
+  };
+
+  res.json({
+    lead,
+    visitor: visitor ? {
+      eli_clickid: visitor.eli_clickid,
+      fbc: visitor.fbc,
+      fbp: visitor.fbp,
+      fbclid: visitor.fbclid,
+      ip_address: visitor.ip_address,
+      user_agent: visitor.user_agent,
+      landing_page: visitor.landing_page,
+      utm_source: visitor.utm_source,
+      utm_campaign: visitor.utm_campaign,
+      first_visit: visitor.first_visit
+    } : null,
+    fb_events: fbEvents,
+    match_checklist: matchChecklist
+  });
+});
+
+/**
+ * DEBUG: Send a manual test event to Facebook CAPI
+ */
+router.post('/debug/test-event', authenticateToken, async (req, res) => {
+  const { email, phone, first_name, last_name, fbc, fbp, event_name, client_ip, client_ua, event_source_url } = req.body;
+
+  if (!event_name) {
+    return res.status(400).json({ error: 'event_name is required' });
+  }
+
+  const result = await sendFacebookEvent(event_name, {
+    email: email || '',
+    phone: phone || '',
+    firstName: first_name || '',
+    lastName: last_name || '',
+    fbc: fbc || '',
+    fbp: fbp || '',
+    client_ip_address: client_ip || '',
+    client_user_agent: client_ua || ''
+  }, {
+    event_source_url: event_source_url || ''
+  });
+
+  res.json({
+    success: result.success,
+    error: result.error || null,
+    event_id: result.event_id || null,
+    events_received: result.events_received || null,
+    payload_sent: result.payload || null,
+    facebook_response: result.success
+      ? { events_received: result.events_received }
+      : { error: result.error }
+  });
 });
 
 module.exports = router;

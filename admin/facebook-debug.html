@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FB CAPI Debug | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .summary-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .summary-card .value.good { color: #16a34a; }
+    .summary-card .value.warn { color: #f59e0b; }
+    .summary-card .value.bad { color: #dc2626; }
+    .summary-card .label {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .status-sent { color: #16a34a; font-weight: 600; }
+    .status-failed { color: #dc2626; font-weight: 600; }
+    .check-yes { color: #16a34a; font-weight: 700; }
+    .check-no { color: #dc2626; font-weight: 700; }
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .tab {
+      padding: 12px 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab.active {
+      color: #3052FF;
+      border-bottom-color: #3052FF;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .event-row { cursor: pointer; }
+    .event-row:hover { background: #f9fafb; }
+    .payload-row { display: none; }
+    .payload-row.visible { display: table-row; }
+    .payload-cell {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .checklist-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .checklist-item .param-name { font-weight: 600; min-width: 120px; }
+    .checklist-item .param-value { color: #6b7280; font-size: 12px; word-break: break-all; }
+    .diagnostic-msg {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      color: #92400e;
+    }
+    .diagnostic-msg strong { color: #78350f; }
+    .test-form .form-group { margin-bottom: 16px; }
+    .test-form label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 14px; }
+    .test-form input, .test-form select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .test-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .result-box {
+      margin-top: 16px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .result-box .result-header {
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .result-box.success .result-header { background: #d1fae5; color: #065f46; }
+    .result-box.error .result-header { background: #fee2e2; color: #991b1b; }
+    .lead-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .lead-info-item {
+      padding: 10px 14px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+    .lead-info-item .info-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+    .lead-info-item .info-value { font-weight: 600; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/facebook-debug.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          FB Debug
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Facebook CAPI Debug</h1>
+        <p style="color: #6b7280; margin-top: 4px;">Diagnose attribution issues by inspecting what data is sent to Facebook Conversions API</p>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="summary-cards" id="summaryCards">
+        <div class="summary-card">
+          <div class="value" id="statTotal">-</div>
+          <div class="label">Total FB CAPI Events (30d)</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="statFbc">-</div>
+          <div class="label">% with fbc (campaign attribution)</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="statFbp">-</div>
+          <div class="label">% with fbp (browser ID)</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="statIpUa">-</div>
+          <div class="label">% with IP + User Agent</div>
+        </div>
+        <div class="summary-card">
+          <div class="value" id="statSent">-</div>
+          <div class="label">Sent / Failed</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('events')">Recent Events</button>
+        <button class="tab" onclick="showTab('lookup')">Lead Lookup</button>
+        <button class="tab" onclick="showTab('test')">Send Test Event</button>
+      </div>
+
+      <!-- Events Tab -->
+      <div id="tab-events" class="tab-content active">
+        <div class="card">
+          <div class="filter-bar">
+            <select id="filterStatus" onchange="loadEvents(1)">
+              <option value="">All Statuses</option>
+              <option value="sent">Sent</option>
+              <option value="failed">Failed</option>
+            </select>
+            <select id="filterFbc" onchange="loadEvents(1)">
+              <option value="">All fbc</option>
+              <option value="yes">Has fbc</option>
+              <option value="no">Missing fbc</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Event</th>
+                  <th>Status</th>
+                  <th>fbc</th>
+                  <th>fbp</th>
+                  <th>IP</th>
+                  <th>UA</th>
+                  <th>Source URL</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="eventsTable">
+                <tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="eventsPagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center;"></div>
+        </div>
+      </div>
+
+      <!-- Lead Lookup Tab -->
+      <div id="tab-lookup" class="tab-content">
+        <div class="card">
+          <h3 style="margin: 0 0 16px 0;">Look Up Lead</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <input type="text" id="lookupInput" placeholder="Enter Lead ID or eli_clickid" style="flex:1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+            <button class="btn btn-primary" onclick="lookupLead()">Look Up</button>
+          </div>
+          <div id="lookupResult"></div>
+        </div>
+      </div>
+
+      <!-- Test Event Tab -->
+      <div id="tab-test" class="tab-content">
+        <div class="card">
+          <h3 style="margin: 0 0 4px 0;">Send Test Event to Facebook CAPI</h3>
+          <p style="color: #6b7280; margin: 0 0 20px 0;">Test your Facebook CAPI configuration by sending a manual event. The test_event_code from your config will be included automatically.</p>
+          <form class="test-form" id="testEventForm" onsubmit="sendTestEvent(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Event Name</label>
+                <select id="testEventName">
+                  <option value="Lead">Lead</option>
+                  <option value="Purchase">Purchase</option>
+                  <option value="CompleteRegistration">CompleteRegistration</option>
+                  <option value="ViewContent">ViewContent</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="testEmail" placeholder="test@example.com">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" id="testPhone" placeholder="5551234567">
+              </div>
+              <div class="form-group">
+                <label>First Name</label>
+                <input type="text" id="testFirstName" placeholder="John">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" id="testLastName" placeholder="Doe">
+              </div>
+              <div class="form-group">
+                <label>fbc (click ID parameter)</label>
+                <input type="text" id="testFbc" placeholder="fb.1.1234567890.AbCdEfGh">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>fbp (browser ID parameter)</label>
+                <input type="text" id="testFbp" placeholder="fb.1.1234567890.1234567890">
+              </div>
+              <div class="form-group">
+                <label>Event Source URL</label>
+                <input type="url" id="testSourceUrl" placeholder="https://yoursite.com/landing-page">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="testSendBtn">Send Test Event</button>
+          </form>
+          <div id="testResult"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    let currentEventsPage = 1;
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    function checkIcon(val) {
+      return val
+        ? '<span class="check-yes">&#10003;</span>'
+        : '<span class="check-no">&#10007;</span>';
+    }
+
+    // Load events + summary
+    async function loadEvents(page) {
+      currentEventsPage = page || 1;
+      const status = document.getElementById('filterStatus').value;
+      const hasFbc = document.getElementById('filterFbc').value;
+      let url = `/api/facebook/debug/events?page=${currentEventsPage}&limit=25`;
+      if (status) url += `&status=${status}`;
+      if (hasFbc) url += `&has_fbc=${hasFbc}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        // Update summary cards
+        const s = data.summary;
+        document.getElementById('statTotal').textContent = s.total_events;
+        const fbcEl = document.getElementById('statFbc');
+        fbcEl.textContent = s.pct_fbc + '%';
+        fbcEl.className = 'value ' + (s.pct_fbc >= 70 ? 'good' : s.pct_fbc >= 30 ? 'warn' : 'bad');
+        const fbpEl = document.getElementById('statFbp');
+        fbpEl.textContent = s.pct_fbp + '%';
+        fbpEl.className = 'value ' + (s.pct_fbp >= 70 ? 'good' : s.pct_fbp >= 30 ? 'warn' : 'bad');
+        const ipUaEl = document.getElementById('statIpUa');
+        ipUaEl.textContent = s.pct_ip_ua + '%';
+        ipUaEl.className = 'value ' + (s.pct_ip_ua >= 70 ? 'good' : s.pct_ip_ua >= 30 ? 'warn' : 'bad');
+        document.getElementById('statSent').innerHTML = `<span style="color:#16a34a">${s.sent}</span> / <span style="color:#dc2626">${s.failed}</span>`;
+
+        // Render events table
+        const tbody = document.getElementById('eventsTable');
+        if (data.events.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No Facebook CAPI events found</td></tr>';
+        } else {
+          tbody.innerHTML = data.events.map((e, i) => `
+            <tr class="event-row" onclick="togglePayload(${i})">
+              <td>${escapeHtml(e.full_name || e.email || '-')}</td>
+              <td><strong>${escapeHtml(e.conversion_action_name || '-')}</strong></td>
+              <td><span class="status-${e.status}">${e.status}</span></td>
+              <td>${checkIcon(e.match_quality.fbc)}</td>
+              <td>${checkIcon(e.match_quality.fbp)}</td>
+              <td>${checkIcon(e.match_quality.ip)}</td>
+              <td>${checkIcon(e.match_quality.ua)}</td>
+              <td>${checkIcon(e.match_quality.event_source_url)}</td>
+              <td>${formatDate(e.created_at)}</td>
+            </tr>
+            <tr class="payload-row" id="payload-${i}">
+              <td colspan="9">
+                <div class="payload-cell">${e.capi_payload ? JSON.stringify(e.capi_payload, null, 2) : 'No payload stored (event predates payload logging)'}</div>
+                ${e.error_message ? `<div style="color:#dc2626;margin-top:8px;font-size:13px;">Error: ${escapeHtml(e.error_message)}</div>` : ''}
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Pagination
+        const pagination = document.getElementById('eventsPagination');
+        pagination.innerHTML = '';
+        for (let i = 1; i <= data.pagination.pages; i++) {
+          const btn = document.createElement('button');
+          btn.className = `btn btn-small ${i === currentEventsPage ? 'btn-primary' : 'btn-secondary'}`;
+          btn.textContent = i;
+          btn.onclick = () => loadEvents(i);
+          pagination.appendChild(btn);
+        }
+      } catch (err) {
+        document.getElementById('eventsTable').innerHTML = `<tr><td colspan="9" style="color:#dc2626;">Error loading events: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function togglePayload(index) {
+      const row = document.getElementById('payload-' + index);
+      row.classList.toggle('visible');
+    }
+
+    // Lead lookup
+    async function lookupLead() {
+      const input = document.getElementById('lookupInput').value.trim();
+      if (!input) return;
+
+      const container = document.getElementById('lookupResult');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+      try {
+        const res = await fetch(`/api/facebook/debug/lead/${encodeURIComponent(input)}`);
+        if (!res.ok) {
+          const err = await res.json();
+          container.innerHTML = `<div style="color:#dc2626;padding:16px;">${escapeHtml(err.error || 'Not found')}</div>`;
+          return;
+        }
+        const data = await res.json();
+
+        let html = '';
+
+        // Lead info
+        html += '<h3 style="margin: 0 0 12px;">Lead Info</h3>';
+        html += '<div class="lead-info-grid">';
+        html += infoItem('Lead ID', data.lead.id);
+        html += infoItem('Name', data.lead.full_name);
+        html += infoItem('Email', data.lead.email);
+        html += infoItem('Phone', data.lead.phone);
+        html += infoItem('eli_clickid', data.lead.eli_clickid);
+        html += infoItem('Landing Page', data.lead.landing_page_name);
+        html += infoItem('Platform', data.lead.platform);
+        html += infoItem('Created', formatDate(data.lead.created_at));
+        html += '</div>';
+
+        // Visitor info
+        if (data.visitor) {
+          html += '<h3 style="margin: 16px 0 12px;">Visitor Record</h3>';
+          html += '<div class="lead-info-grid">';
+          html += infoItem('fbc', data.visitor.fbc || '<span class="check-no">missing</span>');
+          html += infoItem('fbp', data.visitor.fbp || '<span class="check-no">missing</span>');
+          html += infoItem('fbclid', data.visitor.fbclid || '<span class="check-no">missing</span>');
+          html += infoItem('IP Address', data.visitor.ip_address || '-');
+          html += infoItem('User Agent', data.visitor.user_agent ? data.visitor.user_agent.substring(0, 60) + '...' : '-');
+          html += infoItem('Landing Page URL', data.visitor.landing_page || '-');
+          html += infoItem('UTM Source', data.visitor.utm_source || '-');
+          html += infoItem('UTM Campaign', data.visitor.utm_campaign || '-');
+          html += '</div>';
+        } else {
+          html += '<div style="color:#f59e0b;padding:12px;background:#fef3c7;border-radius:8px;margin:12px 0;">No visitor record found for this lead. This means no browser-side tracking data (fbc, fbp, IP, UA) is available.</div>';
+        }
+
+        // Match quality checklist
+        html += '<h3 style="margin: 16px 0 12px;">Match Quality Checklist</h3>';
+        html += '<div class="checklist">';
+        const mc = data.match_checklist;
+        for (const [key, info] of Object.entries(mc)) {
+          const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          html += `<div class="checklist-item">
+            <span class="icon">${info.present ? '<span class="check-yes">&#10003;</span>' : '<span class="check-no">&#10007;</span>'}</span>
+            <span class="param-name">${escapeHtml(label)}</span>
+            <span class="param-value">${info.present ? (info.value ? escapeHtml(String(info.value)) : 'present') : 'missing'}</span>
+          </div>`;
+        }
+        html += '</div>';
+
+        // Diagnostic message if fbc is missing
+        if (!mc.fbc.present) {
+          html += `<div class="diagnostic-msg">
+            <strong>Campaign Attribution Issue:</strong> The <code>fbc</code> parameter is missing for this lead.
+            Without <code>fbc</code>, Facebook can match this event to a <em>user</em> (via email/phone hash)
+            but <strong>cannot tie it back to the specific ad click or campaign</strong> that generated it.
+            <br><br>
+            <strong>Why this happens:</strong> The <code>fbc</code> parameter is derived from the <code>fbclid</code> URL parameter
+            that Facebook appends to ad click URLs. If the visitor's landing page URL didn't contain <code>fbclid</code>,
+            or the tracking script didn't capture it, <code>fbc</code> will be empty.
+            <br><br>
+            <strong>To fix:</strong> Ensure your Meta ad URLs include <code>fbclid</code> (this is automatic for most placements),
+            and verify your tracking script captures it into a cookie and sends it as <code>fbc</code> via the visitor tracking endpoint.
+          </div>`;
+        }
+
+        // FB CAPI events for this lead
+        html += '<h3 style="margin: 20px 0 12px;">Facebook CAPI Events for This Lead</h3>';
+        if (data.fb_events.length === 0) {
+          html += '<div style="color:#6b7280;padding:12px;background:#f9fafb;border-radius:8px;">No Facebook CAPI events found for this lead.</div>';
+        } else {
+          html += '<div class="table-container"><table><thead><tr><th>Event</th><th>Status</th><th>Error</th><th>Sent At</th><th>Payload</th></tr></thead><tbody>';
+          for (const ev of data.fb_events) {
+            const payload = ev.capi_payload ? JSON.stringify(ev.capi_payload, null, 2) : 'N/A';
+            html += `<tr>
+              <td><strong>${escapeHtml(ev.conversion_action_name)}</strong></td>
+              <td><span class="status-${ev.status}">${ev.status}</span></td>
+              <td style="font-size:12px;color:#dc2626;">${ev.error_message ? escapeHtml(ev.error_message) : '-'}</td>
+              <td>${ev.sent_at ? formatDate(ev.sent_at) : '-'}</td>
+              <td><button class="btn btn-small btn-secondary" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">View</button><div style="display:none"><div class="payload-cell" style="margin-top:8px;max-width:500px;">${escapeHtml(payload)}</div></div></td>
+            </tr>`;
+          }
+          html += '</tbody></table></div>';
+        }
+
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = `<div style="color:#dc2626;padding:16px;">Error: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function infoItem(label, value) {
+      return `<div class="lead-info-item"><div class="info-label">${escapeHtml(label)}</div><div class="info-value">${value || '-'}</div></div>`;
+    }
+
+    // Send test event
+    async function sendTestEvent(e) {
+      e.preventDefault();
+      const btn = document.getElementById('testSendBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/facebook/debug/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_name: document.getElementById('testEventName').value,
+            email: document.getElementById('testEmail').value,
+            phone: document.getElementById('testPhone').value,
+            first_name: document.getElementById('testFirstName').value,
+            last_name: document.getElementById('testLastName').value,
+            fbc: document.getElementById('testFbc').value,
+            fbp: document.getElementById('testFbp').value,
+            event_source_url: document.getElementById('testSourceUrl').value
+          })
+        });
+        const data = await res.json();
+
+        const container = document.getElementById('testResult');
+        const isSuccess = data.success;
+
+        container.innerHTML = `
+          <div class="result-box ${isSuccess ? 'success' : 'error'}">
+            <div class="result-header">${isSuccess ? 'Event sent successfully' : 'Event failed to send'}${data.event_id ? ' (event_id: ' + escapeHtml(data.event_id) + ')' : ''}</div>
+          </div>
+          <h4 style="margin: 16px 0 8px;">Payload Sent</h4>
+          <div class="payload-cell">${data.payload_sent ? JSON.stringify(data.payload_sent, null, 2) : 'N/A'}</div>
+          <h4 style="margin: 16px 0 8px;">Facebook Response</h4>
+          <div class="payload-cell">${JSON.stringify(data.facebook_response, null, 2)}</div>
+        `;
+      } catch (err) {
+        document.getElementById('testResult').innerHTML = `<div style="color:#dc2626;margin-top:16px;">Request failed: ${escapeHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Test Event';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Handle enter key in lookup
+    document.getElementById('lookupInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') lookupLead();
+    });
+
+    // Init
+    loadEvents(1);
+  </script>
+</body>
+</html>

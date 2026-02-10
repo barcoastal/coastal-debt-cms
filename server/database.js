@@ -237,6 +237,17 @@ try {
   db.exec(`ALTER TABLE conversion_events ADD COLUMN revenue REAL`);
 } catch (e) {}
 
+// Add capi_payload to conversion_events for Facebook debug
+try { db.exec(`ALTER TABLE conversion_events ADD COLUMN capi_payload TEXT`); } catch (e) {}
+
+// Add Facebook tracking columns to visitors table
+try { db.exec(`ALTER TABLE visitors ADD COLUMN fbclid TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE visitors ADD COLUMN fbc TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE visitors ADD COLUMN fbp TEXT DEFAULT ''`); } catch (e) {}
+
+// Add test_event_code to facebook_config
+try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
+
 // Add Salesforce tracking columns to leads table
 try { db.exec(`ALTER TABLE leads ADD COLUMN transfer_status TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN five9_dispo TEXT`); } catch (e) {}

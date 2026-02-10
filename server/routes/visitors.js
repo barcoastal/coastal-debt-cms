@@ -11,6 +11,9 @@ router.post('/track', async (req, res) => {
     gclid,
     msclkid,
     rt_clickid: rt_clickid_body,
+    fbclid,
+    fbc,
+    fbp,
     user_agent,
     browser,
     browser_version,
@@ -56,26 +59,32 @@ router.post('/track', async (req, res) => {
         gclid = COALESCE(NULLIF(?, ''), gclid),
         msclkid = COALESCE(NULLIF(?, ''), msclkid),
         rt_clickid = COALESCE(NULLIF(?, ''), rt_clickid),
+        fbclid = COALESCE(NULLIF(?, ''), fbclid),
+        fbc = COALESCE(NULLIF(?, ''), fbc),
+        fbp = COALESCE(NULLIF(?, ''), fbp),
         landing_page = ?
       WHERE eli_clickid = ?
-    `).run(gclid || '', msclkid || '', rt_clickid || '', landing_page || '', eli_clickid);
+    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', eli_clickid);
 
     res.json({ success: true, visitor_id: existing.id, returning: true });
   } else {
     // Create new visitor
     const result = db.prepare(`
       INSERT INTO visitors (
-        eli_clickid, gclid, msclkid, rt_clickid, ip_address,
+        eli_clickid, gclid, msclkid, rt_clickid, fbclid, fbc, fbp, ip_address,
         user_agent, browser, browser_version, os, os_version, device_type,
         screen_width, screen_height, language, timezone,
         referrer_url, landing_page,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eli_clickid,
       gclid || '',
       msclkid || '',
       rt_clickid || '',
+      fbclid || '',
+      fbc || '',
+      fbp || '',
       ip_address,
       user_agent || '',
       browser || '',

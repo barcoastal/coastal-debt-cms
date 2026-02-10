@@ -6,6 +6,23 @@
   <title>Bankruptcy Alternative for Business | Settle Debt for 50-80% Less</title>
   <meta name="description" content="Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.">
   {{HEAD_SCRIPTS}}
+  <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
@@ -632,6 +649,9 @@
             eli_clickid: id,
             gclid: params.get('gclid') || '',
             msclkid: params.get('msclkid') || '',
+            fbclid: params.get('fbclid') || '',
+            fbc: getCookieVal('_fbc') || '',
+            fbp: getCookieVal('_fbp') || '',
             rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
             user_agent: ua,
             browser: browser,
@@ -658,11 +678,18 @@
           var rtId = '';
           try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
           if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
-          if (rtId) {
+          // Also retry fbc/fbp after Facebook Pixel has had time to set cookies
+          var fbcRetry = getCookieVal('_fbc') || '';
+          var fbpRetry = getCookieVal('_fbp') || '';
+          if (rtId || fbcRetry || fbpRetry) {
+            var retryData = { eli_clickid: id };
+            if (rtId) retryData.rt_clickid = rtId;
+            if (fbcRetry) retryData.fbc = fbcRetry;
+            if (fbpRetry) retryData.fbp = fbpRetry;
             fetch('/api/visitors/track', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ eli_clickid: id, rt_clickid: rtId })
+              body: JSON.stringify(retryData)
             }).catch(function(){});
           }
         }, 3000);
@@ -1007,6 +1034,10 @@
         });
 
         if (response.ok) {
+          // Fire Facebook Pixel Lead event for deduplication with server-side CAPI
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
           step2.classList.remove('active');
           stepSuccess.classList.add('active');
         } else {

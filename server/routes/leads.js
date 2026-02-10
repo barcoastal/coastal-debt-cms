@@ -216,22 +216,42 @@ router.post('/', async (req, res) => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // Look up visitor record for fbc/fbp
+    const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
+
+    // Get client IP and user agent from the request
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                     req.headers['x-real-ip'] ||
+                     req.connection?.remoteAddress || req.ip || '';
+    const clientUa = req.headers['user-agent'] || '';
+
+    // Build event_source_url from the landing page slug
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const eventSourceUrl = `${baseUrl}/${page.slug}`;
+
     sendFacebookEvent('Lead', {
       email,
       phone,
       firstName,
-      lastName
+      lastName,
+      fbc: visitor?.fbc || '',
+      fbp: visitor?.fbp || '',
+      client_ip_address: clientIp,
+      client_user_agent: clientUa
+    }, {
+      event_source_url: eventSourceUrl
     }).then(fbResult => {
       db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at)
-        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
+        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
       `).run(
         result.lastInsertRowid,
         eli_clickid || '',
         fbResult.success ? 'sent' : 'failed',
-        fbResult.error || null
+        fbResult.error || null,
+        fbResult.payload ? JSON.stringify(fbResult.payload) : null
       );
-      console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
+      console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}${fbResult.event_id ? ', event_id: ' + fbResult.event_id : ''}`);
     }).catch(err => console.error('Failed to send Facebook CAPI Lead event:', err));
   }
 

@@ -204,18 +204,36 @@ router.all('/conversion', async (req, res) => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      // Look up visitor record for fbc/fbp/IP/UA
+      const visitor = db.prepare('SELECT fbc, fbp, ip_address, user_agent, landing_page FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+
+      // Get client IP: prefer visitor's stored IP (original visitor), fallback to request IP
+      const clientIp = visitor?.ip_address ||
+                       req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                       req.headers['x-real-ip'] ||
+                       req.connection?.remoteAddress || req.ip || '';
+      const clientUa = visitor?.user_agent || req.headers['user-agent'] || '';
+
+      // Build event_source_url from visitor's landing page
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventSourceUrl = visitor?.landing_page ? `${baseUrl}${visitor.landing_page}` : '';
+
       const fbValue = revenue ? parseFloat(revenue) : (debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : undefined));
       fbResult = await sendFacebookEvent(event, {
         email: lead.email,
         phone: lead.phone,
         firstName,
-        lastName
-      }, { value: fbValue, currency });
+        lastName,
+        fbc: visitor?.fbc || '',
+        fbp: visitor?.fbp || '',
+        client_ip_address: clientIp,
+        client_user_agent: clientUa
+      }, { value: fbValue, currency, event_source_url: eventSourceUrl });
 
       // Log Facebook CAPI result in conversion_events
       db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message, sent_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message, sent_at, capi_payload)
+        VALUES (?, ?, ?, ?, ?, ?, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
       `).run(
         lead.id,
         eli_clickid,
@@ -224,7 +242,8 @@ router.all('/conversion', async (req, res) => {
         debt_amount ? parseFloat(debt_amount) : null,
         revenue ? parseFloat(revenue) : null,
         fbResult.success ? 'sent' : 'failed',
-        fbResult.error || null
+        fbResult.error || null,
+        fbResult.payload ? JSON.stringify(fbResult.payload) : null
       );
     } catch (err) {
       console.error('Failed to send Facebook CAPI event:', err);
