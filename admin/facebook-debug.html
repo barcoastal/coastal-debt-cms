@@ -275,6 +275,21 @@
       <!-- Events Tab -->
       <div id="tab-events" class="tab-content active">
         <div class="card">
+          <div class="filter-bar" style="margin-bottom: 12px;">
+            <div class="time-range-btns">
+              <button data-range="today" onclick="setRange('today', this)">Today</button>
+              <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+              <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+              <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+              <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+              <button class="active" data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+              <button data-range="all" onclick="setRange('all', this)">All Time</button>
+              <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+            </div>
+            <input type="date" id="fromDate" class="tr-from" style="display:none;">
+            <input type="date" id="toDate" class="tr-to" style="display:none;">
+            <button class="btn btn-primary" onclick="loadEvents(1)">Apply</button>
+          </div>
           <div class="filter-bar">
             <select id="filterStatus" onchange="loadEvents(1)">
               <option value="">All Statuses</option>
@@ -287,23 +302,14 @@
               <option value="no">Missing fbc</option>
             </select>
           </div>
+          <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
           <div class="table-container">
             <table>
               <thead>
-                <tr>
-                  <th>Lead</th>
-                  <th>Event</th>
-                  <th>Status</th>
-                  <th>fbc</th>
-                  <th>fbp</th>
-                  <th>IP</th>
-                  <th>UA</th>
-                  <th>Source URL</th>
-                  <th>Date</th>
-                </tr>
+                <tr id="tableHead"></tr>
               </thead>
               <tbody id="eventsTable">
-                <tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr>
+                <tr><td colspan="99" class="loading"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -384,7 +390,54 @@
 
   <script src="assets/js/common.js"></script>
   <script>
+    const COLUMNS = [
+      { key: 'lead_name', label: 'Lead', default: true },
+      { key: 'event', label: 'Event', default: true },
+      { key: 'status', label: 'Status', default: true },
+      { key: 'fbc', label: 'fbc', default: true },
+      { key: 'fbp', label: 'fbp', default: true },
+      { key: 'ip', label: 'IP', default: true },
+      { key: 'ua', label: 'UA', default: true },
+      { key: 'source_url', label: 'Source URL', default: true },
+      { key: 'created_at', label: 'Date', default: true }
+    ];
+
+    const cellRenderers = {
+      lead_name: (e) => '<td>' + escapeHtml(e.full_name || e.email || '-') + '</td>',
+      event: (e) => '<td><strong>' + escapeHtml(e.conversion_action_name || '-') + '</strong></td>',
+      status: (e) => '<td><span class="status-' + e.status + '">' + e.status + '</span></td>',
+      fbc: (e) => '<td>' + checkIcon(e.match_quality.fbc) + '</td>',
+      fbp: (e) => '<td>' + checkIcon(e.match_quality.fbp) + '</td>',
+      ip: (e) => '<td>' + checkIcon(e.match_quality.ip) + '</td>',
+      ua: (e) => '<td>' + checkIcon(e.match_quality.ua) + '</td>',
+      source_url: (e) => '<td>' + checkIcon(e.match_quality.event_source_url) + '</td>',
+      created_at: (e) => '<td>' + formatDate(e.created_at) + '</td>'
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'facebook-debug',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: () => { renderTable(); loadEvents(currentEventsPage); }
+    });
+    renderTable();
+
     let currentEventsPage = 1;
+    let currentRange = '30d';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadEvents(1);
+    }
 
     function showTab(tabName) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -404,9 +457,14 @@
       currentEventsPage = page || 1;
       const status = document.getElementById('filterStatus').value;
       const hasFbc = document.getElementById('filterFbc').value;
+      const dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
       let url = `/api/facebook/debug/events?page=${currentEventsPage}&limit=25`;
       if (status) url += `&status=${status}`;
       if (hasFbc) url += `&has_fbc=${hasFbc}`;
+      if (dateRange.from) url += `&from_date=${dateRange.from}`;
+      if (dateRange.to) url += `&to_date=${dateRange.to}`;
 
       try {
         const res = await fetch(url);
@@ -428,28 +486,22 @@
 
         // Render events table
         const tbody = document.getElementById('eventsTable');
+        const cols = columnEditor.getVisibleColumns();
+        const colCount = cols.length;
         if (data.events.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No Facebook CAPI events found</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No Facebook CAPI events found</td></tr>';
         } else {
-          tbody.innerHTML = data.events.map((e, i) => `
-            <tr class="event-row" onclick="togglePayload(${i})">
-              <td>${escapeHtml(e.full_name || e.email || '-')}</td>
-              <td><strong>${escapeHtml(e.conversion_action_name || '-')}</strong></td>
-              <td><span class="status-${e.status}">${e.status}</span></td>
-              <td>${checkIcon(e.match_quality.fbc)}</td>
-              <td>${checkIcon(e.match_quality.fbp)}</td>
-              <td>${checkIcon(e.match_quality.ip)}</td>
-              <td>${checkIcon(e.match_quality.ua)}</td>
-              <td>${checkIcon(e.match_quality.event_source_url)}</td>
-              <td>${formatDate(e.created_at)}</td>
-            </tr>
-            <tr class="payload-row" id="payload-${i}">
-              <td colspan="9">
-                <div class="payload-cell">${e.capi_payload ? JSON.stringify(e.capi_payload, null, 2) : 'No payload stored (event predates payload logging)'}</div>
-                ${e.error_message ? `<div style="color:#dc2626;margin-top:8px;font-size:13px;">Error: ${escapeHtml(e.error_message)}</div>` : ''}
-              </td>
-            </tr>
-          `).join('');
+          tbody.innerHTML = data.events.map((e, i) =>
+            '<tr class="event-row" onclick="togglePayload(' + i + ')">' +
+              cols.map(key => cellRenderers[key](e)).join('') +
+            '</tr>' +
+            '<tr class="payload-row" id="payload-' + i + '">' +
+              '<td colspan="' + colCount + '">' +
+                '<div class="payload-cell">' + (e.capi_payload ? JSON.stringify(e.capi_payload, null, 2) : 'No payload stored (event predates payload logging)') + '</div>' +
+                (e.error_message ? '<div style="color:#dc2626;margin-top:8px;font-size:13px;">Error: ' + escapeHtml(e.error_message) + '</div>' : '') +
+              '</td>' +
+            '</tr>'
+          ).join('');
         }
 
         // Pagination
@@ -463,7 +515,7 @@
           pagination.appendChild(btn);
         }
       } catch (err) {
-        document.getElementById('eventsTable').innerHTML = `<tr><td colspan="9" style="color:#dc2626;">Error loading events: ${escapeHtml(err.message)}</td></tr>`;
+        document.getElementById('eventsTable').innerHTML = '<tr><td colspan="99" style="color:#dc2626;">Error loading events: ' + escapeHtml(err.message) + '</td></tr>';
       }
     }
 

@@ -7,13 +7,6 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .time-range-btns { display: flex; gap: 8px; }
-    .time-range-btns button {
-      padding: 8px 16px; border: 1px solid var(--gray-300); border-radius: 8px;
-      background: var(--white); cursor: pointer; font-size: 0.875rem; color: var(--gray-600); transition: all 0.2s;
-    }
-    .time-range-btns button.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
-    .time-range-btns button:hover:not(.active) { border-color: var(--gray-400); }
     .event-breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
     .event-stat { background: var(--gray-50); border-radius: 8px; padding: 16px; text-align: center; }
     .event-stat .event-count { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); }
@@ -119,11 +112,14 @@
       <div class="card">
         <div class="filters">
           <div class="time-range-btns">
-            <button class="active" onclick="setRange('mtd', this)">MTD</button>
-            <button onclick="setRange('7d', this)">Last 7 Days</button>
-            <button onclick="setRange('30d', this)">Last 30 Days</button>
-            <button onclick="setRange('all', this)">All Time</button>
-            <button onclick="setRange('custom', this)">Custom</button>
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button class="active" data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
           </div>
           <input type="date" id="fromDate" style="display:none;">
           <input type="date" id="toDate" style="display:none;">
@@ -171,24 +167,14 @@
         <div class="card-header">
           <h3 class="card-title">Meta Leads</h3>
         </div>
+        <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
           <table>
             <thead>
-              <tr>
-                <th>Lead ID</th>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Eli Click ID</th>
-                <th>RT Click ID</th>
-                <th>Source</th>
-                <th>Current Status</th>
-                <th>Date</th>
-              </tr>
+              <tr id="tableHead"></tr>
             </thead>
             <tbody id="leadsTable">
-              <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+              <tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -199,27 +185,53 @@
 
   <script src="assets/js/common.js"></script>
   <script>
+    const COLUMNS = [
+      { key: 'id', label: 'Lead ID', default: true },
+      { key: 'full_name', label: 'Name', default: true },
+      { key: 'company_name', label: 'Company', default: true },
+      { key: 'email', label: 'Email', default: true },
+      { key: 'phone', label: 'Phone', default: true },
+      { key: 'eli_clickid', label: 'Eli Click ID', default: false },
+      { key: 'rt_clickid', label: 'RT Click ID', default: false },
+      { key: 'lead_source', label: 'Source', default: true },
+      { key: 'current_status', label: 'Current Status', default: true },
+      { key: 'created_at', label: 'Date', default: true }
+    ];
+
+    const cellRenderers = {
+      id: (lead) => '<td>' + (lead.id || '-') + '</td>',
+      full_name: (lead) => '<td>' + (lead.full_name || '-') + '</td>',
+      company_name: (lead) => '<td>' + (lead.company_name || '-') + '</td>',
+      email: (lead) => '<td>' + (lead.email || '-') + '</td>',
+      phone: (lead) => '<td>' + (lead.phone || '-') + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
+      rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
+      lead_source: (lead) => '<td>' + getSourceBadge(lead.lead_source) + '</td>',
+      current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
+      created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
     let eventsChart = null;
     let currentPage = 1;
     let currentRange = 'mtd';
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'meta-ads',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: () => { renderTable(); loadLeads(currentPage); }
+    });
+    renderTable();
 
     function getDateRange() {
       if (currentRange === 'custom') {
         return { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value };
       }
-      if (currentRange === 'all') {
-        return { from: '', to: '' };
-      }
-      const now = new Date();
-      let from;
-      if (currentRange === 'mtd') {
-        from = new Date(now.getFullYear(), now.getMonth(), 1);
-      } else if (currentRange === '7d') {
-        from = new Date(now.getTime() - 7 * 86400000);
-      } else if (currentRange === '30d') {
-        from = new Date(now.getTime() - 30 * 86400000);
-      }
-      return { from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+      return getDateRangeFromPreset(currentRange);
     }
 
     function setRange(range, btn) {
@@ -310,23 +322,13 @@
         const data = await api('/api/analytics/meta-ads/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
         const tbody = document.getElementById('leadsTable');
 
+        const cols = columnEditor.getVisibleColumns();
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No Meta leads found for this period</td></tr>';
         } else {
-          tbody.innerHTML = data.leads.map(lead => {
-            return '<tr>' +
-              '<td>' + (lead.id || '-') + '</td>' +
-              '<td>' + (lead.full_name || '-') + '</td>' +
-              '<td>' + (lead.company_name || '-') + '</td>' +
-              '<td>' + (lead.email || '-') + '</td>' +
-              '<td>' + (lead.phone || '-') + '</td>' +
-              '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>' +
-              '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>' +
-              '<td>' + getSourceBadge(lead.lead_source) + '</td>' +
-              '<td>' + getStatusBadge(lead.current_status) + '</td>' +
-              '<td>' + formatDate(lead.created_at) + '</td>' +
-              '</tr>';
-          }).join('');
+          tbody.innerHTML = data.leads.map(lead =>
+            '<tr>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
+          ).join('');
         }
 
         const pagination = document.getElementById('pagination');

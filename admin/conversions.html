@@ -227,25 +227,29 @@
       <!-- Events Tab -->
       <div id="tab-events" class="tab-content active">
         <div class="card">
+          <div class="filters" style="margin-bottom: 12px;">
+            <div class="time-range-btns">
+              <button data-range="today" onclick="setRange('today', this)">Today</button>
+              <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+              <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+              <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+              <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+              <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+              <button class="active" data-range="all" onclick="setRange('all', this)">All Time</button>
+              <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+            </div>
+            <input type="date" id="fromDate" class="tr-from" style="display:none;">
+            <input type="date" id="toDate" class="tr-to" style="display:none;">
+            <button class="btn btn-primary" onclick="loadEvents(1)">Apply</button>
+          </div>
+          <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
           <div class="table-container">
             <table>
               <thead>
-                <tr>
-                  <th>Lead</th>
-                  <th>Event</th>
-                  <th>Value</th>
-                  <th>Debt Amount</th>
-                  <th>Revenue</th>
-                  <th>GCLID</th>
-                  <th>Eli Click ID</th>
-                  <th>Source</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
+                <tr id="tableHead"></tr>
               </thead>
               <tbody id="eventsTable">
-                <tr><td colspan="11" class="loading"><div class="spinner"></div></td></tr>
+                <tr><td colspan="99" class="loading"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -329,7 +333,58 @@
 
   <script src="assets/js/common.js"></script>
   <script>
+    const COLUMNS = [
+      { key: 'full_name', label: 'Lead', default: true },
+      { key: 'conversion_action_name', label: 'Event', default: true },
+      { key: 'conversion_value', label: 'Value', default: true },
+      { key: 'debt_amount', label: 'Debt Amount', default: true },
+      { key: 'revenue', label: 'Revenue', default: true },
+      { key: 'gclid', label: 'GCLID', default: false },
+      { key: 'eli_clickid', label: 'Eli Click ID', default: false },
+      { key: 'source', label: 'Source', default: true },
+      { key: 'status', label: 'Status', default: true },
+      { key: 'created_at', label: 'Date', default: true },
+      { key: 'actions', label: 'Actions', locked: true }
+    ];
+
+    const cellRenderers = {
+      full_name: (e) => '<td>' + (e.full_name || e.email || '-') + '</td>',
+      conversion_action_name: (e) => '<td><strong>' + (e.conversion_action_name || '-') + '</strong></td>',
+      conversion_value: (e) => '<td>' + (e.conversion_value ? '$' + Number(e.conversion_value).toLocaleString() : '-') + '</td>',
+      debt_amount: (e) => '<td>' + (e.debt_amount ? '$' + Number(e.debt_amount).toLocaleString() : '-') + '</td>',
+      revenue: (e) => '<td>' + (e.revenue ? '$' + Number(e.revenue).toLocaleString() : '-') + '</td>',
+      gclid: (e) => '<td style="font-size: 11px;">' + (e.gclid || '-') + '</td>',
+      eli_clickid: (e) => '<td style="font-size: 11px;">' + (e.eli_clickid || '-') + '</td>',
+      source: (e) => '<td>' + (e.source) + '</td>',
+      status: (e) => '<td><span class="status-' + e.status + '">' + e.status + '</span></td>',
+      created_at: (e) => '<td>' + formatDate(e.created_at) + '</td>',
+      actions: (e) => '<td>' + (e.status === 'failed' ? '<button class="action-btn action-btn-edit" onclick="retryEvent(' + e.id + ')">Retry</button>' : '') + '</td>'
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'conversions',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: () => { renderTable(); loadEvents(currentEventsPage); }
+    });
+    renderTable();
+
     let currentEventsPage = 1;
+    let currentRange = 'all';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadEvents(1);
+    }
 
     function showTab(tabName) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -353,30 +408,23 @@
 
     async function loadEvents(page = 1) {
       currentEventsPage = page;
-      const res = await fetch(`/api/postback/events?page=${page}&limit=25`);
+      const dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
+      const params = new URLSearchParams({ page, limit: 25 });
+      if (dateRange.from) params.append('from_date', dateRange.from);
+      if (dateRange.to) params.append('to_date', dateRange.to);
+      const res = await fetch(`/api/postback/events?${params}`);
       const data = await res.json();
 
       const tbody = document.getElementById('eventsTable');
+      const cols = columnEditor.getVisibleColumns();
       if (data.events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No conversion events yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No conversion events yet</td></tr>';
       } else {
-        tbody.innerHTML = data.events.map(e => `
-          <tr>
-            <td>${e.full_name || e.email || '-'}</td>
-            <td><strong>${e.conversion_action_name || '-'}</strong></td>
-            <td>${e.conversion_value ? '$' + Number(e.conversion_value).toLocaleString() : '-'}</td>
-            <td>${e.debt_amount ? '$' + Number(e.debt_amount).toLocaleString() : '-'}</td>
-            <td>${e.revenue ? '$' + Number(e.revenue).toLocaleString() : '-'}</td>
-            <td style="font-size: 11px;">${e.gclid || '-'}</td>
-            <td style="font-size: 11px;">${e.eli_clickid || '-'}</td>
-            <td>${e.source}</td>
-            <td><span class="status-${e.status}">${e.status}</span></td>
-            <td>${formatDate(e.created_at)}</td>
-            <td>
-              ${e.status === 'failed' ? `<button class="action-btn action-btn-edit" onclick="retryEvent(${e.id})">Retry</button>` : ''}
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = data.events.map(e =>
+          '<tr>' + cols.map(key => cellRenderers[key](e)).join('') + '</tr>'
+        ).join('');
       }
 
       // Pagination

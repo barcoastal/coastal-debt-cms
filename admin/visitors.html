@@ -126,6 +126,20 @@
 
       <!-- Filters -->
       <div class="card">
+        <div class="filters" style="margin-bottom: 12px;">
+          <div class="time-range-btns">
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button class="active" data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+          </div>
+          <input type="date" id="fromDate" class="tr-from" style="display:none;">
+          <input type="date" id="toDate" class="tr-to" style="display:none;">
+        </div>
         <div class="filters">
           <input type="text" id="searchInput" placeholder="Search by click ID, IP, city...">
           <select id="convertedFilter">
@@ -133,30 +147,18 @@
             <option value="1">Converted Only</option>
             <option value="0">Not Converted</option>
           </select>
-          <input type="date" id="fromDate">
-          <input type="date" id="toDate">
           <button class="btn btn-primary" onclick="loadVisitors()">Apply</button>
         </div>
 
+        <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
           <table>
             <thead>
-              <tr>
-                <th>Eli Click ID</th>
-                <th>RT Click ID</th>
-                <th>Location</th>
-                <th>Device</th>
-                <th>Landing Page</th>
-                <th>UTM Source</th>
-                <th>Visits</th>
-                <th>Converted</th>
-                <th>Last Visit</th>
-                <th>Actions</th>
-              </tr>
+              <tr id="tableHead"></tr>
             </thead>
             <tbody id="visitorsTable">
               <tr>
-                <td colspan="10" class="loading"><div class="spinner"></div></td>
+                <td colspan="99" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -184,7 +186,59 @@
 
   <script src="assets/js/common.js"></script>
   <script>
+    const COLUMNS = [
+      { key: 'eli_clickid', label: 'Eli Click ID', default: true },
+      { key: 'rt_clickid', label: 'RT Click ID', default: true },
+      { key: 'location', label: 'Location', default: true },
+      { key: 'device', label: 'Device', default: true },
+      { key: 'landing_page', label: 'Landing Page', default: true },
+      { key: 'utm_source', label: 'UTM Source', default: true },
+      { key: 'visit_count', label: 'Visits', default: true },
+      { key: 'converted', label: 'Converted', default: true },
+      { key: 'last_visit', label: 'Last Visit', default: true },
+      { key: 'actions', label: 'Actions', locked: true }
+    ];
+
+    const cellRenderers = {
+      eli_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + (v.eli_clickid || '-') + '</td>',
+      rt_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + (v.rt_clickid || '-') + '</td>',
+      location: (v) => '<td>' + ([v.city, v.country].filter(Boolean).join(', ') || '-') + '</td>',
+      device: (v) => '<td><span class="badge badge-gray">' + (v.device_type || '-') + '</span></td>',
+      landing_page: (v) => '<td>' + (v.landing_page || '-') + '</td>',
+      utm_source: (v) => '<td>' + (v.utm_source || '-') + '</td>',
+      visit_count: (v) => '<td>' + (v.visit_count || 1) + '</td>',
+      converted: (v) => '<td class="' + (v.converted ? 'converted' : 'not-converted') + '">' + (v.converted ? 'Yes' : 'No') + '</td>',
+      last_visit: (v) => '<td>' + formatDate(v.last_visit) + '</td>',
+      actions: (v) => '<td class="actions" style="display:flex;flex-direction:column;gap:4px;">' +
+        '<button class="action-btn action-btn-view" onclick="viewVisitor(' + v.id + ')">View</button>' +
+        (v.lead_id ? '<a href="/admin/leads.html" class="action-btn action-btn-edit" style="text-align:center;text-decoration:none;">Lead</a>' : '') +
+        '</td>'
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'visitors',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: () => { renderTable(); loadVisitors(currentPage); }
+    });
+    renderTable();
+
     let currentPage = 1;
+    let currentRange = 'all';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadVisitors();
+    }
 
     async function loadStats() {
       const [allRes, convertedRes] = await Promise.all([
@@ -210,39 +264,27 @@
       currentPage = page;
       const search = document.getElementById('searchInput').value;
       const converted = document.getElementById('convertedFilter').value;
-      const fromDate = document.getElementById('fromDate').value;
-      const toDate = document.getElementById('toDate').value;
+      const dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
 
       const params = new URLSearchParams({ page, limit: 50 });
       if (search) params.append('search', search);
       if (converted !== '') params.append('converted', converted);
-      if (fromDate) params.append('from_date', fromDate);
-      if (toDate) params.append('to_date', toDate);
+      if (dateRange.from) params.append('from_date', dateRange.from);
+      if (dateRange.to) params.append('to_date', dateRange.to);
 
       const res = await fetch(`/api/visitors?${params}`);
       const data = await res.json();
 
       const tbody = document.getElementById('visitorsTable');
+      const cols = columnEditor.getVisibleColumns();
       if (data.visitors.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No visitors found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No visitors found</td></tr>';
       } else {
-        tbody.innerHTML = data.visitors.map(v => `
-          <tr>
-            <td style="font-family:monospace;font-size:11px;">${v.eli_clickid || '-'}</td>
-            <td style="font-family:monospace;font-size:11px;">${v.rt_clickid || '-'}</td>
-            <td>${[v.city, v.country].filter(Boolean).join(', ') || '-'}</td>
-            <td><span class="badge badge-gray">${v.device_type || '-'}</span></td>
-            <td>${v.landing_page || '-'}</td>
-            <td>${v.utm_source || '-'}</td>
-            <td>${v.visit_count || 1}</td>
-            <td class="${v.converted ? 'converted' : 'not-converted'}">${v.converted ? 'Yes' : 'No'}</td>
-            <td>${formatDate(v.last_visit)}</td>
-            <td class="actions" style="display:flex;flex-direction:column;gap:4px;">
-              <button class="action-btn action-btn-view" onclick="viewVisitor(${v.id})">View</button>
-              ${v.lead_id ? `<a href="/admin/leads.html" class="action-btn action-btn-edit" style="text-align:center;text-decoration:none;">Lead</a>` : ''}
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = data.visitors.map(v =>
+          '<tr>' + cols.map(key => cellRenderers[key](v)).join('') + '</tr>'
+        ).join('');
       }
 
       // Pagination
