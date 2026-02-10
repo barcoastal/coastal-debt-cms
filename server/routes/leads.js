@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
 
   // Get rt_clickid from: body → RedTrack cookie
   const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
-  console.log('Lead rt_clickid:', { body: rt_clickid_body, cookie: req.cookies?.['rtkclickid-store'], allCookies: Object.keys(req.cookies || {}), final: rt_clickid });
+  console.log('Lead click IDs:', { gclid: gclid || '', eli_clickid: eli_clickid || '', rt_clickid_body: rt_clickid_body || '', rt_clickid_cookie: req.cookies?.['rtkclickid-store'] || '', rt_clickid_final: rt_clickid, msclkid: msclkid || '', fbclid: fbclid || '', slug: landing_page_slug });
 
   // Find the landing page
   const page = db.prepare('SELECT * FROM landing_pages WHERE slug = ?').get(landing_page_slug);

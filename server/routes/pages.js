@@ -315,26 +315,29 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{HIDDEN_FIELDS}}/g, hiddenFieldsHtml);
   html = html.replace(/{{FB_PIXEL_ID}}/g, fbPixelId);
 
+  // Merge content with defaults so all template placeholders get replaced
+  const mergedContent = { ...defaultContent, ...content };
+
   // Replace content placeholders
-  Object.entries(content).forEach(([key, value]) => {
+  Object.entries(mergedContent).forEach(([key, value]) => {
     if (typeof value === 'string') {
       html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
     }
   });
 
   // Handle colors
-  if (content.colors) {
-    Object.entries(content.colors).forEach(([key, value]) => {
+  if (mergedContent.colors) {
+    Object.entries(mergedContent.colors).forEach(([key, value]) => {
       html = html.replace(new RegExp(`{{colors.${key}}}`, 'g'), value);
     });
   }
 
   // Handle JSON arrays for JavaScript
-  html = html.replace(/{{bulletPointsJson}}/g, JSON.stringify(content.bulletPoints || []));
-  html = html.replace(/{{stepsJson}}/g, JSON.stringify(content.steps || []));
-  html = html.replace(/{{empathyTextJson}}/g, JSON.stringify(content.empathyText || []));
-  html = html.replace(/{{comparisonRowsJson}}/g, JSON.stringify(content.comparisonRows || defaultContent.comparisonRows));
-  html = html.replace(/{{faqItemsJson}}/g, JSON.stringify(content.faqItems || defaultContent.faqItems));
+  html = html.replace(/{{bulletPointsJson}}/g, JSON.stringify(mergedContent.bulletPoints || []));
+  html = html.replace(/{{stepsJson}}/g, JSON.stringify(mergedContent.steps || []));
+  html = html.replace(/{{empathyTextJson}}/g, JSON.stringify(mergedContent.empathyText || []));
+  html = html.replace(/{{comparisonRowsJson}}/g, JSON.stringify(mergedContent.comparisonRows || []));
+  html = html.replace(/{{faqItemsJson}}/g, JSON.stringify(mergedContent.faqItems || []));
 
   // Handle form data
   const formFields = form ? form.fields : defaultFormFields;

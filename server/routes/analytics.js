@@ -368,8 +368,8 @@ router.get('/google-ads/leads', authenticateToken, (req, res) => {
 
   const leads = db.prepare(`
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
-           l.cost_cents, l.cost_currency, l.gclid, l.created_at,
-           l.has_mca, l.transfer_status, l.five9_dispo, l.stage,
+           l.cost_cents, l.cost_currency, l.gclid, l.eli_clickid, l.rt_clickid,
+           l.created_at, l.has_mca, l.transfer_status, l.five9_dispo, l.stage,
            l.contract_sign_date, l.total_debt_sign,
            lp.name as landing_page_name,
            v.utm_campaign,
@@ -491,6 +491,7 @@ router.get('/bing-ads/leads', authenticateToken, (req, res) => {
 
   const leads = db.prepare(`
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+           l.eli_clickid, l.rt_clickid, l.msclkid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
            l.stage, l.contract_sign_date, l.total_debt_sign,
            lp.name as landing_page_name,
