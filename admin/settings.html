@@ -821,15 +821,30 @@
     }
 
     async function fetchAllCosts() {
-      document.getElementById('fetchStatus').textContent = 'Fetching...';
+      const statusEl = document.getElementById('fetchStatus');
+      statusEl.textContent = 'Fetching...';
+      statusEl.style.color = '#6b7280';
 
-      const res = await fetch('/api/google-ads/fetch-all-costs', { method: 'POST' });
-      const data = await res.json();
+      try {
+        const res = await fetch('/api/google-ads/fetch-all-costs', { method: 'POST' });
+        const data = await res.json();
 
-      document.getElementById('fetchStatus').textContent =
-        `Done! Fetched ${data.fetched} of ${data.total} leads`;
-
-      loadCostStats();
+        if (data.total === 0) {
+          statusEl.textContent = 'No leads with GCLIDs found that need cost data.';
+          statusEl.style.color = '#f59e0b';
+        } else if (data.last_error && data.fetched === 0) {
+          statusEl.textContent = `Failed: ${data.last_error}`;
+          statusEl.style.color = '#ef4444';
+        } else {
+          statusEl.textContent = `Done! Fetched ${data.fetched} of ${data.total} leads` +
+            (data.failed ? ` (${data.failed} failed${data.last_error ? ': ' + data.last_error : ''})` : '');
+          statusEl.style.color = data.failed ? '#f59e0b' : '#10b981';
+        }
+        loadCostStats();
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.style.color = '#ef4444';
+      }
     }
 
     checkStatus();

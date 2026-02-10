@@ -361,23 +361,33 @@ async function fetchGclidCost(gclid) {
   const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
 
   if (!config || !config.refresh_token_encrypted || !config.customer_id) {
-    return null;
+    return { error: 'Google Ads not configured' };
   }
 
   try {
     const accessToken = await getValidAccessToken(config);
     const developerToken = getDeveloperToken(config);
 
-    if (!developerToken) return null;
+    if (!developerToken) return { error: 'No developer token' };
 
-    // Query click_view for this GCLID
+    // Sanitize GCLID - only allow alphanumeric, hyphens, underscores
+    const safeGclid = gclid.replace(/[^a-zA-Z0-9_-]/g, '');
+
+    // click_view requires segments.date filter — query last 90 days
+    const today = new Date();
+    const past90 = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const startDate = past90.toISOString().split('T')[0];
+    const endDate = today.toISOString().split('T')[0];
+
     const query = `
       SELECT
         click_view.gclid,
         metrics.cost_micros,
         segments.date
       FROM click_view
-      WHERE click_view.gclid = '${gclid}'
+      WHERE click_view.gclid = '${safeGclid}'
+        AND segments.date >= '${startDate}'
+        AND segments.date <= '${endDate}'
       LIMIT 1
     `;
 
@@ -390,11 +400,18 @@ async function fetchGclidCost(gclid) {
       }
     );
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Google Ads non-JSON response:', response.status, responseText.substring(0, 300));
+      return { error: `API returned non-JSON (status ${response.status})` };
+    }
 
     if (data.error) {
-      console.error('Google Ads API error:', data.error);
-      return null;
+      console.error('Google Ads API error:', JSON.stringify(data.error));
+      return { error: data.error.message || JSON.stringify(data.error) };
     }
 
     // Parse response - cost_micros is in millionths of the account currency
@@ -406,10 +423,10 @@ async function fetchGclidCost(gclid) {
       };
     }
 
-    return null;
+    return { error: 'No cost data found for this GCLID' };
   } catch (err) {
     console.error('Error fetching GCLID cost:', err);
-    return null;
+    return { error: err.message };
   }
 }
 
@@ -425,17 +442,17 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Lead has no GCLID' });
   }
 
-  const cost = await fetchGclidCost(lead.gclid);
+  const result = await fetchGclidCost(lead.gclid);
 
-  if (cost) {
+  if (result.cost_cents !== undefined) {
     db.prepare(`
       UPDATE leads SET cost_cents = ?, cost_currency = ?, cost_fetched_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(cost.cost_cents, cost.currency, lead.id);
+    `).run(result.cost_cents, result.currency, lead.id);
 
-    res.json({ cost_cents: cost.cost_cents, cost_currency: cost.currency });
+    res.json({ cost_cents: result.cost_cents, cost_currency: result.currency });
   } else {
-    res.json({ cost_cents: null, message: 'Could not fetch cost' });
+    res.json({ cost_cents: null, message: result.error || 'Could not fetch cost' });
   }
 });
 
@@ -450,23 +467,34 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
 
   let fetched = 0;
   let failed = 0;
+  let lastError = '';
 
   for (const lead of leads) {
-    const cost = await fetchGclidCost(lead.gclid);
-    if (cost) {
+    const result = await fetchGclidCost(lead.gclid);
+    if (result.cost_cents !== undefined) {
       db.prepare(`
         UPDATE leads SET cost_cents = ?, cost_currency = ?, cost_fetched_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(cost.cost_cents, cost.currency, lead.id);
+      `).run(result.cost_cents, result.currency, lead.id);
       fetched++;
     } else {
       failed++;
+      lastError = result.error || 'Unknown error';
+      // If it's an auth/config error, stop early — all will fail
+      if (lastError.includes('not configured') || lastError.includes('DEVELOPER_TOKEN') ||
+          lastError.includes('PERMISSION_DENIED') || lastError.includes('non-JSON') ||
+          lastError.includes('USER_PERMISSION_DENIED') || lastError.includes('AUTHENTICATION')) {
+        console.error('Stopping batch fetch — auth/config error:', lastError);
+        break;
+      }
     }
     // Small delay to avoid rate limiting
     await new Promise(r => setTimeout(r, 100));
   }
 
-  res.json({ total: leads.length, fetched, failed });
+  const response = { total: leads.length, fetched, failed };
+  if (lastError) response.last_error = lastError;
+  res.json(response);
 });
 
 // Get cost statistics
