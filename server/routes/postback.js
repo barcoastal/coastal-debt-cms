@@ -107,11 +107,11 @@ router.all('/conversion', async (req, res) => {
       });
     }
 
-    // Log the event even without a lead
+    // Log the event even without a lead (include all data)
     db.prepare(`
-      INSERT INTO conversion_events (eli_clickid, gclid, conversion_action_name, conversion_value, source, status, error_message)
-      VALUES (?, ?, ?, ?, 'postback', 'pending', 'No lead found, visitor only')
-    `).run(eli_clickid, visitor.gclid, event, value || null);
+      INSERT INTO conversion_events (eli_clickid, gclid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, 'postback', 'pending', 'No lead found, visitor only')
+    `).run(eli_clickid, visitor.gclid, event, value || null, debt_amount ? parseFloat(debt_amount) : null, revenue ? parseFloat(revenue) : null);
 
     return res.json({
       success: true,
@@ -125,20 +125,6 @@ router.all('/conversion', async (req, res) => {
 
   // Get the msclkid (from lead or visitor)
   const msclkid = lead.msclkid || lead.visitor_msclkid;
-
-  if (!gclid && !msclkid) {
-    // Log the event but can't send to Google or Bing
-    db.prepare(`
-      INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message)
-      VALUES (?, ?, ?, ?, 'postback', 'failed', 'No GCLID or msclkid available')
-    `).run(lead.id, eli_clickid, event, value || null);
-
-    return res.json({
-      success: true,
-      warning: 'Lead found but no GCLID or msclkid - cannot send to ad platforms',
-      lead_id: lead.id
-    });
-  }
 
   // Check for duplicate transaction
   if (transaction_id) {
@@ -165,7 +151,7 @@ router.all('/conversion', async (req, res) => {
   let googleResult = null;
   let status = 'logged';
 
-  // If we have a conversion action configured, send to Google Ads
+  // If we have a conversion action configured and gclid, send to Google Ads
   // Use debt_amount as revenue, fall back to value
   const googleAdsValue = debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : null);
   if (gclid && config && config.conversion_action_id && uploadConversion) {
@@ -177,23 +163,25 @@ router.all('/conversion', async (req, res) => {
       currency
     );
     status = googleResult.success ? 'sent' : 'failed';
+  } else if (!gclid && !msclkid) {
+    status = 'logged';
   }
 
-  // Log the conversion event
+  // Log the conversion event (always log with all data including debt_amount and revenue)
   const eventLog = db.prepare(`
     INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_id, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message, sent_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'postback', ?, ?, ${status === 'sent' ? 'CURRENT_TIMESTAMP' : 'NULL'})
   `).run(
     lead.id,
     eli_clickid,
-    gclid,
+    gclid || null,
     config?.conversion_action_id || null,
     event,
     value || null,
     debt_amount ? parseFloat(debt_amount) : null,
     revenue ? parseFloat(revenue) : null,
     status,
-    googleResult?.error || null
+    googleResult?.error || (!gclid && !msclkid ? 'No GCLID or msclkid - ad platform upload skipped' : null)
   );
 
   // Send to Facebook CAPI if event config has send_to_facebook enabled
