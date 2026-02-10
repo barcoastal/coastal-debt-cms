@@ -232,7 +232,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     console.log('API headers (redacted):', { ...headers, 'Authorization': 'Bearer ***', 'developer-token': '***' });
 
     // List accessible customers
-    const response = await fetch('https://googleads.googleapis.com/v17/customers:listAccessibleCustomers', {
+    const response = await fetch('https://googleads.googleapis.com/v20/customers:listAccessibleCustomers', {
       headers
     });
 
@@ -256,7 +256,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
 
     for (const customerId of customerIds) {
       try {
-        const detailRes = await fetch(`https://googleads.googleapis.com/v17/customers/${customerId}`, {
+        const detailRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}`, {
           headers
         });
         const detailText = await detailRes.text();
@@ -382,7 +382,7 @@ async function fetchGclidCost(gclid) {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken),
@@ -532,7 +532,7 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
     }
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${config.customer_id}:uploadClickConversions`,
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}:uploadClickConversions`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken),
@@ -581,7 +581,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken),
