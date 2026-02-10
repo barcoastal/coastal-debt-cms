@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard | Coastal Debt CMS</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -96,6 +96,20 @@
 
       <!-- Filters -->
       <div class="card">
+        <div class="filters" style="flex-wrap: wrap; margin-bottom: 12px;">
+          <div class="time-range-btns">
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button class="active" data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+          </div>
+          <input type="date" id="fromDate" class="tr-from" style="display:none;">
+          <input type="date" id="toDate" class="tr-to" style="display:none;">
+        </div>
         <div class="filters">
           <select id="platformFilter">
             <option value="">All Platforms</option>
@@ -110,8 +124,6 @@
           <select id="pageFilter">
             <option value="">All Landing Pages</option>
           </select>
-          <input type="date" id="fromDate">
-          <input type="date" id="toDate">
           <button class="btn btn-primary" onclick="loadDashboard()">Apply</button>
         </div>
       </div>
@@ -224,9 +236,20 @@
     </main>
   </div>
 
-  <script src="assets/js/common.js"></script>
+  <script src="assets/js/common.js?v=2"></script>
   <script>
     let leadsChart, platformChart;
+    let currentRange = '30d';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadDashboard();
+    }
 
     // Populate landing pages filter
     async function loadPageFilter() {
@@ -249,13 +272,14 @@
         // Get filter values
         const platform = document.getElementById('platformFilter').value;
         const page = document.getElementById('pageFilter').value;
-        const fromDate = document.getElementById('fromDate').value;
-        const toDate = document.getElementById('toDate').value;
+        const dateRange = currentRange === 'custom'
+          ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+          : getDateRangeFromPreset(currentRange);
         const params = new URLSearchParams();
         if (platform) params.set('platform', platform);
         if (page) params.set('page', page);
-        if (fromDate) params.set('from', fromDate);
-        if (toDate) params.set('to', toDate);
+        if (dateRange.from) params.set('from', dateRange.from);
+        if (dateRange.to) params.set('to', dateRange.to);
         const qs = params.toString() ? '?' + params.toString() : '';
 
         // Load stats
