@@ -216,7 +216,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     }
 
     // List accessible customers
-    const response = await fetch('https://googleads.googleapis.com/v15/customers:listAccessibleCustomers', {
+    const response = await fetch('https://googleads.googleapis.com/v18/customers:listAccessibleCustomers', {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'developer-token': developerToken
@@ -224,17 +224,21 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     });
 
     const data = await response.json();
+    console.log('Accessible customers response:', JSON.stringify(data));
 
     if (data.error) {
       return res.status(400).json({ error: data.error.message });
     }
 
-    // Get details for each customer
+    // Get details for each customer — try each as its own login-customer-id first,
+    // then fall back to using MCC ID if that fails
     const accounts = [];
-    for (const resourceName of (data.resourceNames || [])) {
-      const customerId = resourceName.replace('customers/', '');
+    const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
+
+    for (const customerId of customerIds) {
       try {
-        const detailRes = await fetch(`https://googleads.googleapis.com/v15/${resourceName}`, {
+        // Try fetching customer details directly
+        const detailRes = await fetch(`https://googleads.googleapis.com/v18/customers/${customerId}`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'developer-token': developerToken,
@@ -242,21 +246,51 @@ router.get('/accounts', authenticateToken, async (req, res) => {
           }
         });
         const detail = await detailRes.json();
-        if (detail.descriptiveName) {
+
+        if (detail.error) {
+          // If direct access fails, try using each other customer as login-customer-id (MCC)
+          let found = false;
+          for (const mccId of customerIds) {
+            if (mccId === customerId) continue;
+            try {
+              const mccRes = await fetch(`https://googleads.googleapis.com/v18/customers/${customerId}`, {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'developer-token': developerToken,
+                  'login-customer-id': mccId
+                }
+              });
+              const mccDetail = await mccRes.json();
+              if (mccDetail.descriptiveName) {
+                accounts.push({
+                  customer_id: customerId,
+                  name: mccDetail.descriptiveName,
+                  manager_id: mccId
+                });
+                found = true;
+                break;
+              }
+            } catch (e) {}
+          }
+          if (!found) {
+            accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
+          }
+        } else {
           accounts.push({
             customer_id: customerId,
-            name: detail.descriptiveName
+            name: detail.descriptiveName || `Account ${customerId}`,
+            is_manager: detail.manager || false
           });
         }
       } catch (e) {
-        accounts.push({ customer_id: customerId, name: customerId });
+        accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
       }
     }
 
     res.json({ accounts });
   } catch (err) {
     console.error('Error fetching accounts:', err);
-    res.status(500).json({ error: 'Failed to fetch accounts' });
+    res.status(500).json({ error: 'Failed to fetch accounts: ' + err.message });
   }
 });
 
@@ -357,7 +391,7 @@ async function fetchGclidCost(gclid) {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v15/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v18/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: {
@@ -511,7 +545,7 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
     }
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v15/customers/${config.customer_id}:uploadClickConversions`,
+      `https://googleads.googleapis.com/v18/customers/${config.customer_id}:uploadClickConversions`,
       {
         method: 'POST',
         headers: {
@@ -564,7 +598,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v15/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v18/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: {
