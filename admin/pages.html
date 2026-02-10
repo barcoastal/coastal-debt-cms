@@ -242,6 +242,26 @@
           </div>
         </div>
 
+        <!-- SEO & Browser Tab -->
+        <div class="edit-section">
+          <h3 class="section-header" onclick="toggleSection('seo')">
+            <span>SEO & Browser Tab</span>
+            <span class="toggle-icon">+</span>
+          </h3>
+          <div class="section-content hidden" id="section-seo">
+            <div class="form-group">
+              <label>Page Title (Browser Tab)</label>
+              <input type="text" id="editPageTitle" placeholder="MCA Debt Relief | Settle Debt for 50-80% Less">
+              <small style="color: #666;">Appears in the browser tab and Google search results. 50-60 characters recommended.</small>
+            </div>
+            <div class="form-group">
+              <label>Meta Description</label>
+              <textarea id="editMetaDescription" rows="2" placeholder="Short description for search engines..."></textarea>
+              <small style="color: #666;">Appears below the title in search results. 150-160 characters recommended.</small>
+            </div>
+          </div>
+        </div>
+
         <!-- Hero Section -->
         <div class="edit-section">
           <h3 class="section-header" onclick="toggleSection('hero')">
@@ -318,6 +338,56 @@
             <div class="form-group">
               <label>Step 3 Description</label>
               <textarea id="editStep3Desc" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div class="edit-section">
+          <h3 class="section-header" onclick="toggleSection('comparison')">
+            <span>Comparison Table</span>
+            <span class="toggle-icon">+</span>
+          </h3>
+          <div class="section-content hidden" id="section-comparison">
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="editComparisonTitle" placeholder="Why Business Owners Choose Debt Settlement Over Bankruptcy">
+            </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="editComparisonSubtitle" placeholder="See why thousands of business owners chose us...">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Bad Column Header</label>
+                <input type="text" id="editComparisonColBad" placeholder="Filing Bankruptcy">
+              </div>
+              <div class="form-group">
+                <label>Good Column Header</label>
+                <input type="text" id="editComparisonColGood" placeholder="Debt Settlement">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>CTA Button Text</label>
+              <input type="text" id="editComparisonCtaText" placeholder="See How Much You Could Save">
+            </div>
+          </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="edit-section">
+          <h3 class="section-header" onclick="toggleSection('faq')">
+            <span>FAQ Section</span>
+            <span class="toggle-icon">+</span>
+          </h3>
+          <div class="section-content hidden" id="section-faq">
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="editFaqTitle" placeholder="Frequently Asked Questions">
+            </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="editFaqSubtitle" placeholder="Get the facts before making a decision">
             </div>
           </div>
         </div>
@@ -487,6 +557,10 @@
       document.getElementById('editPhone').value = content.phone || '';
       document.getElementById('editActive').checked = page.is_active;
 
+      // SEO section
+      document.getElementById('editPageTitle').value = content.pageTitle || '';
+      document.getElementById('editMetaDescription').value = content.metaDescription || '';
+
       // Hero section
       document.getElementById('editBadge').value = content.badge || '';
       document.getElementById('editHeadline').value = content.headline || '';
@@ -506,6 +580,17 @@
       document.getElementById('editStep2Desc').value = steps[1]?.description || '';
       document.getElementById('editStep3Title').value = steps[2]?.title || '';
       document.getElementById('editStep3Desc').value = steps[2]?.description || '';
+
+      // Comparison section
+      document.getElementById('editComparisonTitle').value = content.comparisonTitle || '';
+      document.getElementById('editComparisonSubtitle').value = content.comparisonSubtitle || '';
+      document.getElementById('editComparisonColBad').value = content.comparisonColBad || '';
+      document.getElementById('editComparisonColGood').value = content.comparisonColGood || '';
+      document.getElementById('editComparisonCtaText').value = content.comparisonCtaText || '';
+
+      // FAQ section
+      document.getElementById('editFaqTitle').value = content.faqTitle || '';
+      document.getElementById('editFaqSubtitle').value = content.faqSubtitle || '';
 
       // Testimonials section
       document.getElementById('editTestimonialsTitle').value = content.testimonialsTitle || '';
@@ -547,6 +632,8 @@
       // Build content object, merging with existing to preserve fields not in form
       const content = {
         ...currentEditContent, // Preserve existing fields (colors, caseStudiesTitle, etc.)
+        pageTitle: document.getElementById('editPageTitle').value,
+        metaDescription: document.getElementById('editMetaDescription').value,
         phone: document.getElementById('editPhone').value,
         badge: document.getElementById('editBadge').value,
         headline: document.getElementById('editHeadline').value,
@@ -558,6 +645,13 @@
         howItWorksTitle: document.getElementById('editHowItWorksTitle').value,
         howItWorksSubtitle: document.getElementById('editHowItWorksSubtitle').value,
         steps: steps,
+        comparisonTitle: document.getElementById('editComparisonTitle').value,
+        comparisonSubtitle: document.getElementById('editComparisonSubtitle').value,
+        comparisonColBad: document.getElementById('editComparisonColBad').value,
+        comparisonColGood: document.getElementById('editComparisonColGood').value,
+        comparisonCtaText: document.getElementById('editComparisonCtaText').value,
+        faqTitle: document.getElementById('editFaqTitle').value,
+        faqSubtitle: document.getElementById('editFaqSubtitle').value,
         testimonialsTitle: document.getElementById('editTestimonialsTitle').value,
         testimonialsSubtitle: document.getElementById('editTestimonialsSubtitle').value,
         empathyTitle: document.getElementById('editEmpathyTitle').value,
