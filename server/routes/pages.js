@@ -353,6 +353,21 @@ function generateLandingPage(pageId) {
   console.log(`Generated landing page: ${page.slug}`);
 }
 
+// Regenerate all landing pages (useful after template changes)
+router.post('/regenerate-all', authenticateToken, (req, res) => {
+  const pages = db.prepare('SELECT id, slug FROM landing_pages').all();
+  let count = 0;
+  for (const page of pages) {
+    try {
+      generateLandingPage(page.id);
+      count++;
+    } catch (err) {
+      console.error(`Failed to regenerate page ${page.slug}:`, err);
+    }
+  }
+  res.json({ message: `Regenerated ${count} landing pages` });
+});
+
 // Export the generate function
 module.exports = router;
 module.exports.generateLandingPage = generateLandingPage;

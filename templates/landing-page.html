@@ -889,7 +889,7 @@
         `;
       } else if (field.type === 'hidden') {
         // Skip if this hidden field already exists in the form (to avoid duplicates)
-        const existingIds = ['gclid', 'msclkid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        const existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
         if (existingIds.includes(field.name)) return '';
         return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
       } else if (field.type === 'tel') {
