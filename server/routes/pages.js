@@ -58,6 +58,31 @@ const defaultContent = {
   ctaTitle: "Don't Let Bankruptcy Be Your Only Option",
   ctaSubtitle: "Free consultation. See how much you could save without filing.",
   ctaButton: "Get My Free Debt Analysis",
+  pageTitle: "Bankruptcy Alternative for Business | Settle Debt for 50-80% Less",
+  metaDescription: "Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.",
+  comparisonSubtitle: "See why thousands of business owners chose us instead of filing bankruptcy",
+  comparisonColBad: "Filing Bankruptcy",
+  comparisonColGood: "Debt Settlement",
+  comparisonRows: [
+    { label: "Public Record", bad: "Yes - searchable forever", good: "No - private negotiation" },
+    { label: "Credit Impact", bad: "7-10 years", good: "Recovers in 12-24 months" },
+    { label: "Your Business", bad: "May be forced to close", good: "Keep operating" },
+    { label: "Your Assets", bad: "Can be seized", good: "Protected" },
+    { label: "Time to Resolve", bad: "6-18 months in court", good: "3-6 months average" },
+    { label: "Cost", bad: "$10K-50K+ legal fees", good: "No upfront fees" },
+    { label: "Future Financing", bad: "Nearly impossible for years", good: "Possible within months" }
+  ],
+  comparisonCtaText: "See How Much You Could Save Without Bankruptcy",
+  faqTitle: "Bankruptcy Questions? We Have Answers.",
+  faqSubtitle: "Get the facts before making a decision",
+  faqItems: [
+    { question: "Is debt settlement really better than filing bankruptcy?", answer: "For most business owners, yes. Bankruptcy stays on your record for 7-10 years, can force you to close your business, and makes future financing nearly impossible. Debt settlement is private, faster, and lets you keep operating." },
+    { question: "Will this affect my credit like bankruptcy would?", answer: "Settlement does impact credit temporarily, but most clients see their scores recover within 12-24 months. Bankruptcy damage lasts 7-10 years." },
+    { question: "What types of debt can you settle?", answer: "We specialize in Merchant Cash Advances (MCAs), business lines of credit, and unsecured business loans. If you're being sued or facing daily/weekly ACH withdrawals, we can help." },
+    { question: "How long does the process take?", answer: "Most cases settle in 3-6 months. Bankruptcy proceedings can drag on for 6-18 months or longer." },
+    { question: "Do I need a lawyer to file bankruptcy? What about settlement?", answer: "Bankruptcy requires legal representation and court appearances. Debt settlement doesn't — we handle all negotiations directly with your creditors." },
+    { question: "What if I've already talked to a bankruptcy lawyer?", answer: "Get a second opinion. Many business owners come to us after consulting bankruptcy attorneys and discover settlement saves them more money with less damage to their business." }
+  ],
   phone: "(800) 123-4567",
   colors: {
     primary: "#3052FF",
@@ -308,6 +333,8 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{bulletPointsJson}}/g, JSON.stringify(content.bulletPoints || []));
   html = html.replace(/{{stepsJson}}/g, JSON.stringify(content.steps || []));
   html = html.replace(/{{empathyTextJson}}/g, JSON.stringify(content.empathyText || []));
+  html = html.replace(/{{comparisonRowsJson}}/g, JSON.stringify(content.comparisonRows || defaultContent.comparisonRows));
+  html = html.replace(/{{faqItemsJson}}/g, JSON.stringify(content.faqItems || defaultContent.faqItems));
 
   // Handle form data
   const formFields = form ? form.fields : defaultFormFields;

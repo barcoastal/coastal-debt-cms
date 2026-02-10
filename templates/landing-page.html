@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bankruptcy Alternative for Business | Settle Debt for 50-80% Less</title>
-  <meta name="description" content="Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
   {{HEAD_SCRIPTS}}
   <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
   <script>
@@ -393,57 +393,21 @@
   <section class="comparison-section">
     <div class="container">
       <h2 class="section-title">{{comparisonTitle}}</h2>
-      <p class="section-sub">See why thousands of business owners chose us instead of filing bankruptcy</p>
+      <p class="section-sub">{{comparisonSubtitle}}</p>
       <div class="comparison-table-wrapper">
         <table class="comparison-table">
           <thead>
             <tr>
               <th></th>
-              <th>Filing Bankruptcy</th>
-              <th>Debt Settlement</th>
+              <th>{{comparisonColBad}}</th>
+              <th>{{comparisonColGood}}</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Public Record</td>
-              <td class="col-bankruptcy">Yes - searchable forever</td>
-              <td class="col-settlement">No - private negotiation</td>
-            </tr>
-            <tr>
-              <td>Credit Impact</td>
-              <td class="col-bankruptcy">7-10 years</td>
-              <td class="col-settlement">Recovers in 12-24 months</td>
-            </tr>
-            <tr>
-              <td>Your Business</td>
-              <td class="col-bankruptcy">May be forced to close</td>
-              <td class="col-settlement">Keep operating</td>
-            </tr>
-            <tr>
-              <td>Your Assets</td>
-              <td class="col-bankruptcy">Can be seized</td>
-              <td class="col-settlement">Protected</td>
-            </tr>
-            <tr>
-              <td>Time to Resolve</td>
-              <td class="col-bankruptcy">6-18 months in court</td>
-              <td class="col-settlement">3-6 months average</td>
-            </tr>
-            <tr>
-              <td>Cost</td>
-              <td class="col-bankruptcy">$10K-50K+ legal fees</td>
-              <td class="col-settlement">No upfront fees</td>
-            </tr>
-            <tr>
-              <td>Future Financing</td>
-              <td class="col-bankruptcy">Nearly impossible for years</td>
-              <td class="col-settlement">Possible within months</td>
-            </tr>
-          </tbody>
+          <tbody id="comparisonBody"></tbody>
         </table>
       </div>
       <div class="comparison-cta">
-        <a href="#leadForm" onclick="document.getElementById('full_name').focus()">See How Much You Could Save Without Bankruptcy</a>
+        <a href="#leadForm" onclick="document.getElementById('full_name').focus()">{{comparisonCtaText}}</a>
       </div>
     </div>
   </section>
@@ -526,34 +490,9 @@
   <!-- FAQ Section -->
   <section class="faq-section">
     <div class="container">
-      <h2 class="section-title">Bankruptcy Questions? We Have Answers.</h2>
-      <p class="section-sub">Get the facts before making a decision</p>
-      <div class="faq-grid">
-        <div class="faq-item">
-          <div class="faq-question">Is debt settlement really better than filing bankruptcy?</div>
-          <div class="faq-answer">For most business owners, yes. Bankruptcy stays on your record for 7-10 years, can force you to close your business, and makes future financing nearly impossible. Debt settlement is private, faster, and lets you keep operating.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">Will this affect my credit like bankruptcy would?</div>
-          <div class="faq-answer">Settlement does impact credit temporarily, but most clients see their scores recover within 12-24 months. Bankruptcy damage lasts 7-10 years.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">What types of debt can you settle?</div>
-          <div class="faq-answer">We specialize in Merchant Cash Advances (MCAs), business lines of credit, and unsecured business loans. If you're being sued or facing daily/weekly ACH withdrawals, we can help.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">How long does the process take?</div>
-          <div class="faq-answer">Most cases settle in 3-6 months. Bankruptcy proceedings can drag on for 6-18 months or longer.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">Do I need a lawyer to file bankruptcy? What about settlement?</div>
-          <div class="faq-answer">Bankruptcy requires legal representation and court appearances. Debt settlement doesn't — we handle all negotiations directly with your creditors.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">What if I've already talked to a bankruptcy lawyer?</div>
-          <div class="faq-answer">Get a second opinion. Many business owners come to us after consulting bankruptcy attorneys and discover settlement saves them more money with less damage to their business.</div>
-        </div>
-      </div>
+      <h2 class="section-title">{{faqTitle}}</h2>
+      <p class="section-sub">{{faqSubtitle}}</p>
+      <div class="faq-grid" id="faqGrid"></div>
     </div>
   </section>
 
@@ -817,6 +756,25 @@
       return `<p>${text}</p>`;
     }).join('');
     document.getElementById('empathyText').innerHTML = empathyHtml;
+
+    const comparisonRows = {{comparisonRowsJson}};
+    const comparisonHtml = comparisonRows.map(row => `
+      <tr>
+        <td>${row.label}</td>
+        <td class="col-bankruptcy">${row.bad}</td>
+        <td class="col-settlement">${row.good}</td>
+      </tr>
+    `).join('');
+    document.getElementById('comparisonBody').innerHTML = comparisonHtml;
+
+    const faqItems = {{faqItemsJson}};
+    const faqHtml = faqItems.map(item => `
+      <div class="faq-item">
+        <div class="faq-question">${item.question}</div>
+        <div class="faq-answer">${item.answer}</div>
+      </div>
+    `).join('');
+    document.getElementById('faqGrid').innerHTML = faqHtml;
 
     const testimonials = [
       { initials: 'KT', name: 'KMJ Trucking, LLC', title: 'Trucking Company', text: "They were helpful, clear communication, effective results, empathetic towards the situation. I couldn't have asked for a better team to help my trucking company through this difficult time." },
