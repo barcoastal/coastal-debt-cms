@@ -45,11 +45,24 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || '';
 const REDIRECT_URI = process.env.GOOGLE_ADS_REDIRECT_URI || 'http://localhost:3000/api/google-ads/callback';
 const DEVELOPER_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
+const LOGIN_CUSTOMER_ID = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '';
 
 // Scopes needed for Google Ads API
 const SCOPES = [
   'https://www.googleapis.com/auth/adwords'
 ];
+
+// Helper: build standard Google Ads API headers
+function getApiHeaders(accessToken, developerToken, loginCustomerId) {
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+    'developer-token': developerToken,
+    'Content-Type': 'application/json'
+  };
+  const lid = loginCustomerId || LOGIN_CUSTOMER_ID;
+  if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+  return headers;
+}
 
 // Helper: get developer token from env var or DB (backwards compat)
 function getDeveloperToken(config) {
@@ -215,12 +228,11 @@ router.get('/accounts', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Developer token not configured. Set GOOGLE_ADS_DEVELOPER_TOKEN env variable.' });
     }
 
+    const headers = getApiHeaders(accessToken, developerToken);
+
     // List accessible customers
     const response = await fetch('https://googleads.googleapis.com/v18/customers:listAccessibleCustomers', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'developer-token': developerToken
-      }
+      headers
     });
 
     const data = await response.json();
@@ -230,57 +242,25 @@ router.get('/accounts', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: data.error.message });
     }
 
-    // Get details for each customer — try each as its own login-customer-id first,
-    // then fall back to using MCC ID if that fails
+    // Get details for each customer using MCC login-customer-id
     const accounts = [];
     const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
 
     for (const customerId of customerIds) {
       try {
-        // Try fetching customer details directly
         const detailRes = await fetch(`https://googleads.googleapis.com/v18/customers/${customerId}`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'developer-token': developerToken,
-            'login-customer-id': customerId
-          }
+          headers
         });
         const detail = await detailRes.json();
 
-        if (detail.error) {
-          // If direct access fails, try using each other customer as login-customer-id (MCC)
-          let found = false;
-          for (const mccId of customerIds) {
-            if (mccId === customerId) continue;
-            try {
-              const mccRes = await fetch(`https://googleads.googleapis.com/v18/customers/${customerId}`, {
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'developer-token': developerToken,
-                  'login-customer-id': mccId
-                }
-              });
-              const mccDetail = await mccRes.json();
-              if (mccDetail.descriptiveName) {
-                accounts.push({
-                  customer_id: customerId,
-                  name: mccDetail.descriptiveName,
-                  manager_id: mccId
-                });
-                found = true;
-                break;
-              }
-            } catch (e) {}
-          }
-          if (!found) {
-            accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
-          }
-        } else {
+        if (!detail.error && detail.descriptiveName) {
           accounts.push({
             customer_id: customerId,
-            name: detail.descriptiveName || `Account ${customerId}`,
+            name: detail.descriptiveName,
             is_manager: detail.manager || false
           });
+        } else {
+          accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
         }
       } catch (e) {
         accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
@@ -394,11 +374,7 @@ async function fetchGclidCost(gclid) {
       `https://googleads.googleapis.com/v18/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'developer-token': developerToken,
-          'Content-Type': 'application/json'
-        },
+        headers: getApiHeaders(accessToken, developerToken),
         body: JSON.stringify({ query })
       }
     );
@@ -548,11 +524,7 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
       `https://googleads.googleapis.com/v18/customers/${config.customer_id}:uploadClickConversions`,
       {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'developer-token': developerToken,
-          'Content-Type': 'application/json'
-        },
+        headers: getApiHeaders(accessToken, developerToken),
         body: JSON.stringify({
           conversions: [conversion],
           partialFailure: true
@@ -601,11 +573,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
       `https://googleads.googleapis.com/v18/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'developer-token': developerToken,
-          'Content-Type': 'application/json'
-        },
+        headers: getApiHeaders(accessToken, developerToken),
         body: JSON.stringify({ query })
       }
     );
