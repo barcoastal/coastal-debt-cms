@@ -49,6 +49,7 @@ router.post('/', async (req, res) => {
     considered_bankruptcy,
     gclid,
     msclkid,
+    fbclid,
     rt_clickid: rt_clickid_body,
     eli_clickid,
     ...hiddenFields
@@ -75,8 +76,8 @@ router.post('/', async (req, res) => {
   const result = db.prepare(`
     INSERT INTO leads (
       landing_page_id, full_name, company_name, email, phone,
-      debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, rt_clickid, eli_clickid, hidden_fields
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     page.id,
     full_name,
@@ -88,6 +89,7 @@ router.post('/', async (req, res) => {
     considered_bankruptcy,
     gclid || '',
     msclkid || '',
+    fbclid || '',
     rt_clickid || '',
     eli_clickid || '',
     JSON.stringify(hiddenFields)
@@ -216,14 +218,25 @@ router.post('/', async (req, res) => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Look up visitor record for fbc/fbp
-    const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
+    // Look up visitor record for fbc/fbp/fbclid/IP/UA
+    const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
 
-    // Get client IP and user agent from the request
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    // Resolve fbc: visitor cookie → construct from fbclid (form or visitor)
+    let fbc = visitor?.fbc || '';
+    if (!fbc) {
+      const resolvedFbclid = fbclid || visitor?.fbclid || '';
+      if (resolvedFbclid) {
+        // Construct fbc in Facebook's format: fb.1.{timestamp_ms}.{fbclid}
+        fbc = `fb.1.${Date.now()}.${resolvedFbclid}`;
+      }
+    }
+
+    // Get client IP and user agent: prefer visitor's stored values (original browser), fallback to request
+    const clientIp = visitor?.ip_address ||
+                     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
                      req.headers['x-real-ip'] ||
                      req.connection?.remoteAddress || req.ip || '';
-    const clientUa = req.headers['user-agent'] || '';
+    const clientUa = visitor?.user_agent || req.headers['user-agent'] || '';
 
     // Build event_source_url from the landing page slug
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -234,7 +247,7 @@ router.post('/', async (req, res) => {
       phone,
       firstName,
       lastName,
-      fbc: visitor?.fbc || '',
+      fbc,
       fbp: visitor?.fbp || '',
       client_ip_address: clientIp,
       client_user_agent: clientUa

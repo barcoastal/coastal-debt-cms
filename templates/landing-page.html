@@ -354,6 +354,7 @@
             <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
             <input type="hidden" id="gclid" name="gclid" value="">
             <input type="hidden" id="msclkid" name="msclkid" value="">
+            <input type="hidden" id="fbclid" name="fbclid" value="">
             <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
             <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
             <input type="hidden" id="page_url" name="page_url" value="">
@@ -745,6 +746,13 @@
     if (msclkid) {
       setStored('_msclkid', msclkid);
       document.getElementById('msclkid').value = msclkid;
+    }
+
+    // FBCLID: URL param → localStorage
+    let fbclid = _lpParams.get('fbclid') || getStored('_fbclid') || '';
+    if (fbclid) {
+      setStored('_fbclid', fbclid);
+      document.getElementById('fbclid').value = fbclid;
     }
 
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie

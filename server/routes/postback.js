@@ -204,8 +204,17 @@ router.all('/conversion', async (req, res) => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Look up visitor record for fbc/fbp/IP/UA
-      const visitor = db.prepare('SELECT fbc, fbp, ip_address, user_agent, landing_page FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+      // Look up visitor record for fbc/fbp/fbclid/IP/UA
+      const visitor = db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent, landing_page FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+
+      // Resolve fbc: visitor cookie → construct from fbclid (lead or visitor)
+      let visitorFbc = visitor?.fbc || '';
+      if (!visitorFbc) {
+        const resolvedFbclid = lead.fbclid || visitor?.fbclid || '';
+        if (resolvedFbclid) {
+          visitorFbc = `fb.1.${Date.now()}.${resolvedFbclid}`;
+        }
+      }
 
       // Get client IP: prefer visitor's stored IP (original visitor), fallback to request IP
       const clientIp = visitor?.ip_address ||
@@ -224,7 +233,7 @@ router.all('/conversion', async (req, res) => {
         phone: lead.phone,
         firstName,
         lastName,
-        fbc: visitor?.fbc || '',
+        fbc: visitorFbc,
         fbp: visitor?.fbp || '',
         client_ip_address: clientIp,
         client_user_agent: clientUa

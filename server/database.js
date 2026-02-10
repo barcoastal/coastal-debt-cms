@@ -240,6 +240,9 @@ try {
 // Add capi_payload to conversion_events for Facebook debug
 try { db.exec(`ALTER TABLE conversion_events ADD COLUMN capi_payload TEXT`); } catch (e) {}
 
+// Add fbclid to leads table for Facebook attribution
+try { db.exec(`ALTER TABLE leads ADD COLUMN fbclid TEXT DEFAULT ''`); } catch (e) {}
+
 // Add Facebook tracking columns to visitors table
 try { db.exec(`ALTER TABLE visitors ADD COLUMN fbclid TEXT DEFAULT ''`); } catch (e) {}
 try { db.exec(`ALTER TABLE visitors ADD COLUMN fbc TEXT DEFAULT ''`); } catch (e) {}
