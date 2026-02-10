@@ -114,13 +114,19 @@ router.get('/connect', authenticateToken, (req, res) => {
     }
   }
 
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&response_type=code` +
-    `&scope=${encodeURIComponent(SCOPES.join(' '))}` +
-    `&access_type=offline` +
-    `&prompt=select_account%20consent`;
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    scope: SCOPES.join(' '),
+    access_type: 'offline',
+    prompt: 'consent select_account'
+  });
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+  console.log('OAuth URL redirect_uri:', REDIRECT_URI);
+  console.log('OAuth URL client_id:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
 
   res.json({ auth_url: authUrl });
 });
