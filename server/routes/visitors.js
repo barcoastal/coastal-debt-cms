@@ -62,7 +62,7 @@ router.post('/track', async (req, res) => {
         fbclid = COALESCE(NULLIF(?, ''), fbclid),
         fbc = COALESCE(NULLIF(?, ''), fbc),
         fbp = COALESCE(NULLIF(?, ''), fbp),
-        landing_page = ?
+        landing_page = COALESCE(NULLIF(?, ''), landing_page)
       WHERE eli_clickid = ?
     `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', eli_clickid);
 

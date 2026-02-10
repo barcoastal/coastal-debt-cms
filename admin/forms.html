@@ -374,6 +374,7 @@
             </td>
             <td class="actions">
               <button class="action-btn action-btn-edit" onclick="editForm(${form.id})">Edit</button>
+              <button class="action-btn action-btn-view" onclick="duplicateForm(${form.id})">Duplicate</button>
               <button class="action-btn action-btn-delete" onclick="deleteForm(${form.id})">Delete</button>
             </td>
           </tr>
@@ -599,6 +600,15 @@
         alert(err.message);
       }
     });
+
+    async function duplicateForm(id) {
+      try {
+        await api(`/api/forms/${id}/duplicate`, { method: 'POST' });
+        loadForms();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
 
     async function deleteForm(id) {
       if (!confirm('Are you sure you want to delete this form?')) return;

@@ -100,6 +100,28 @@ router.put('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Form updated' });
 });
 
+// Duplicate form
+router.post('/:id/duplicate', authenticateToken, (req, res) => {
+  const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(req.params.id);
+  if (!form) {
+    return res.status(404).json({ error: 'Form not found' });
+  }
+
+  const result = db.prepare(`
+    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(
+    form.name + ' (Copy)',
+    form.platform,
+    form.webhook_url || '',
+    form.fields,
+    form.submit_button_text,
+    form.success_message
+  );
+
+  res.json({ id: result.lastInsertRowid, message: 'Form duplicated' });
+});
+
 // Delete form
 router.delete('/:id', authenticateToken, (req, res) => {
   // Check if form is used by any landing page
