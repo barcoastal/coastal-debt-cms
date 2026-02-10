@@ -229,20 +229,28 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     }
 
     const headers = getApiHeaders(accessToken, developerToken);
+    console.log('API headers (redacted):', { ...headers, 'Authorization': 'Bearer ***', 'developer-token': '***' });
 
     // List accessible customers
     const response = await fetch('https://googleads.googleapis.com/v18/customers:listAccessibleCustomers', {
       headers
     });
 
-    const data = await response.json();
-    console.log('Accessible customers response:', JSON.stringify(data));
+    const responseText = await response.text();
+    console.log('Accessible customers raw response:', response.status, responseText.substring(0, 500));
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      return res.status(400).json({ error: `Google API returned non-JSON (status ${response.status}): ${responseText.substring(0, 200)}` });
+    }
 
     if (data.error) {
       return res.status(400).json({ error: data.error.message });
     }
 
-    // Get details for each customer using MCC login-customer-id
+    // Return accounts with just their IDs if we can't fetch details
     const accounts = [];
     const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
 
@@ -251,7 +259,9 @@ router.get('/accounts', authenticateToken, async (req, res) => {
         const detailRes = await fetch(`https://googleads.googleapis.com/v18/customers/${customerId}`, {
           headers
         });
-        const detail = await detailRes.json();
+        const detailText = await detailRes.text();
+        let detail;
+        try { detail = JSON.parse(detailText); } catch (e) { detail = {}; }
 
         if (!detail.error && detail.descriptiveName) {
           accounts.push({
@@ -260,6 +270,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
             is_manager: detail.manager || false
           });
         } else {
+          console.log(`Account ${customerId} detail error:`, detailText.substring(0, 200));
           accounts.push({ customer_id: customerId, name: `Account ${customerId}` });
         }
       } catch (e) {
