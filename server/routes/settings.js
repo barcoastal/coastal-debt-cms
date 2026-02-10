@@ -21,8 +21,10 @@ function encryptValue(text) {
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads');
+// Ensure uploads directory exists — use persistent volume on Railway so files survive deploys
+const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+  : path.join(__dirname, '..', '..', 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -99,7 +101,23 @@ router.post('/', authenticateToken, (req, res) => {
     }
   });
 
-  saveMany(Object.entries(req.body));
+  const entries = Object.entries(req.body);
+  saveMany(entries);
+
+  // If branding settings changed, regenerate all landing pages so favicon/og tags update
+  const brandingKeys = ['favicon_url', 'meta_image_url', 'site_name'];
+  const brandingChanged = entries.some(([key]) => brandingKeys.includes(key));
+  if (brandingChanged) {
+    try {
+      const { generateLandingPage } = require('./pages');
+      const pages = db.prepare('SELECT id FROM landing_pages').all();
+      for (const page of pages) {
+        try { generateLandingPage(page.id); } catch (e) {}
+      }
+    } catch (e) {
+      console.error('Failed to regenerate pages after branding update:', e.message);
+    }
+  }
 
   logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'settings', null, 'Updated platform settings', req.ip);
 

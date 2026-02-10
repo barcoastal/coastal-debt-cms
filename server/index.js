@@ -45,6 +45,15 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'admin'), {
   etag: true
 }));
 
+// Serve uploaded files from persistent volume (survives Railway deploys)
+const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+  : path.join(__dirname, '..', 'public', 'uploads');
+app.use('/lp/uploads', express.static(uploadsDir, {
+  maxAge: '7d',
+  etag: true
+}));
+
 // Serve generated landing pages with cache headers
 const isProduction = !!process.env.RAILWAY_VOLUME_MOUNT_PATH;
 app.use('/lp', (req, res, next) => {
