@@ -41,9 +41,17 @@ app.use((req, res, next) => {
 });
 
 // Serve admin static files (no cache - always fresh)
-app.use('/admin', express.static(path.join(__dirname, '..', 'admin'), {
+app.use('/admin', (req, res, next) => {
+  if (req.path.endsWith('.html') || req.path === '/' || req.path === '') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+}, express.static(path.join(__dirname, '..', 'admin'), {
   maxAge: 0,
-  etag: true
+  etag: false
 }));
 
 // Serve uploaded files from persistent volume (survives Railway deploys)
