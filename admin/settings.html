@@ -440,6 +440,119 @@
           </ol>
         </div>
       </div>
+      <!-- Inbound Webhooks -->
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <h3 style="margin:0;">Inbound Webhooks</h3>
+            <p style="margin:4px 0 0;">Receive leads from Zapier, Make, or any external platform</p>
+          </div>
+          <button class="btn btn-primary" onclick="openWebhookModal()">+ New Webhook</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Platform</th>
+                <th>Landing Page</th>
+                <th>Webhook URL</th>
+                <th>Leads</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="webhookTable">
+              <tr><td colspan="7" style="text-align:center;padding:30px;color:#9ca3af;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Webhook Modal -->
+      <div class="modal-overlay" id="webhookModal">
+        <div class="modal" style="max-width:700px;">
+          <div class="modal-header">
+            <h2 id="webhookModalTitle">New Webhook</h2>
+            <button class="modal-close" onclick="hideModal('webhookModal')">&times;</button>
+          </div>
+          <form onsubmit="saveWebhook(event)">
+            <input type="hidden" id="whId">
+            <div class="form-group">
+              <label>Webhook Name <span style="color:red">*</span></label>
+              <input type="text" id="whName" required placeholder="e.g. Facebook Instant Forms - Zapier">
+            </div>
+            <div class="form-group">
+              <label>Platform <span style="color:red">*</span></label>
+              <select id="whPlatform" required>
+                <option value="facebook">Facebook / Meta</option>
+                <option value="google">Google</option>
+                <option value="bing">Bing</option>
+                <option value="tiktok">TikTok</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Landing Page</label>
+              <select id="whLandingPage">
+                <option value="">Auto-detect (uses platform default)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Active</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="whActive" checked> Receive leads on this webhook
+              </label>
+            </div>
+
+            <h3 style="margin:24px 0 8px;font-size:15px;border-top:1px solid #e5e7eb;padding-top:16px;">Field Mapping</h3>
+            <p style="color:#6b7280;font-size:13px;margin:0 0 12px;">Map incoming field names to CMS fields. Leave empty for auto-detect.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Full Name field</label>
+                <input type="text" id="mapFullName" placeholder="e.g. full_name (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Email field</label>
+                <input type="text" id="mapEmail" placeholder="e.g. email (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Phone field</label>
+                <input type="text" id="mapPhone" placeholder="e.g. phone_number (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Company field</label>
+                <input type="text" id="mapCompany" placeholder="e.g. company_name (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Debt Amount field</label>
+                <input type="text" id="mapDebt" placeholder="e.g. debt_amount (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Has MCA field</label>
+                <input type="text" id="mapMca" placeholder="e.g. has_mca (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Lead ID field</label>
+                <input type="text" id="mapLeadgenId" placeholder="e.g. id (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Form Name field</label>
+                <input type="text" id="mapFormName" placeholder="e.g. form_name (auto-detect)">
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+              <button type="button" class="btn btn-secondary" onclick="hideModal('webhookModal')">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Webhook</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -861,6 +974,122 @@
     }
 
     checkStatus();
+
+    // ============ INBOUND WEBHOOKS ============
+    let allPages = [];
+
+    async function loadWebhooks() {
+      try {
+        const pagesRes = await api('/api/pages');
+        allPages = pagesRes.pages || pagesRes || [];
+        // Populate landing page dropdown
+        const sel = document.getElementById('whLandingPage');
+        sel.innerHTML = '<option value="">Auto-detect (uses platform default)</option>';
+        allPages.forEach(p => {
+          sel.innerHTML += '<option value="' + p.id + '">' + p.name + ' (' + p.platform + ')</option>';
+        });
+      } catch (e) {}
+
+      try {
+        const webhooks = await api('/api/settings/webhooks');
+        const tbody = document.getElementById('webhookTable');
+        if (!webhooks.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#9ca3af;">No webhooks configured. Click "+ New Webhook" to get started.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = webhooks.map(w => {
+          const statusClass = w.is_active ? 'color:#10b981' : 'color:#9ca3af';
+          const statusText = w.is_active ? 'Active' : 'Inactive';
+          return '<tr>' +
+            '<td><strong>' + w.name + '</strong></td>' +
+            '<td>' + w.platform + '</td>' +
+            '<td>' + (w.landing_page_name || '<em style="color:#9ca3af">Auto</em>') + '</td>' +
+            '<td><div style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:12px;cursor:pointer;" onclick="copyWhUrl(\'' + w.webhook_url.replace(/'/g, "\\'") + '\')" title="Click to copy">' + w.webhook_url + '</div></td>' +
+            '<td>' + (w.leads_received || 0) + '</td>' +
+            '<td><span style="' + statusClass + ';font-weight:600;">' + statusText + '</span></td>' +
+            '<td><div style="display:flex;gap:6px;">' +
+              '<button class="btn btn-secondary btn-small" onclick="editWebhook(' + w.id + ')">Edit</button>' +
+              '<button class="btn btn-secondary btn-small" onclick="copyWhUrl(\'' + w.webhook_url.replace(/'/g, "\\'") + '\')">Copy URL</button>' +
+              '<button class="btn btn-secondary btn-small" onclick="deleteWebhook(' + w.id + ')" style="color:#ef4444;">Delete</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+      } catch (e) {
+        document.getElementById('webhookTable').innerHTML = '<tr><td colspan="7" style="color:#ef4444;">Error loading webhooks</td></tr>';
+      }
+    }
+
+    function copyWhUrl(url) {
+      navigator.clipboard.writeText(url).then(() => alert('Webhook URL copied!'));
+    }
+
+    function openWebhookModal(data) {
+      document.getElementById('whId').value = data?.id || '';
+      document.getElementById('whName').value = data?.name || '';
+      document.getElementById('whPlatform').value = data?.platform || 'facebook';
+      document.getElementById('whLandingPage').value = data?.landing_page_id || '';
+      document.getElementById('whActive').checked = data ? !!data.is_active : true;
+      const m = data?.field_mapping || {};
+      document.getElementById('mapFullName').value = m.full_name || '';
+      document.getElementById('mapEmail').value = m.email || '';
+      document.getElementById('mapPhone').value = m.phone || '';
+      document.getElementById('mapCompany').value = m.company_name || '';
+      document.getElementById('mapDebt').value = m.debt_amount || '';
+      document.getElementById('mapMca').value = m.has_mca || '';
+      document.getElementById('mapLeadgenId').value = m.leadgen_id || '';
+      document.getElementById('mapFormName').value = m.form_name || '';
+      document.getElementById('webhookModalTitle').textContent = data ? 'Edit Webhook' : 'New Webhook';
+      showModal('webhookModal');
+    }
+
+    async function editWebhook(id) {
+      const webhooks = await api('/api/settings/webhooks');
+      const wh = webhooks.find(w => w.id === id);
+      if (wh) openWebhookModal(wh);
+    }
+
+    async function saveWebhook(e) {
+      e.preventDefault();
+      const id = document.getElementById('whId').value;
+      const data = {
+        name: document.getElementById('whName').value,
+        platform: document.getElementById('whPlatform').value,
+        landing_page_id: document.getElementById('whLandingPage').value || null,
+        is_active: document.getElementById('whActive').checked,
+        field_mapping: {}
+      };
+      // Build field mapping (only include non-empty)
+      const mappings = { full_name: 'mapFullName', email: 'mapEmail', phone: 'mapPhone', company_name: 'mapCompany', debt_amount: 'mapDebt', has_mca: 'mapMca', leadgen_id: 'mapLeadgenId', form_name: 'mapFormName' };
+      for (const [key, elId] of Object.entries(mappings)) {
+        const val = document.getElementById(elId).value.trim();
+        if (val) data.field_mapping[key] = val;
+      }
+
+      try {
+        if (id) {
+          await api('/api/settings/webhooks/' + id, { method: 'PUT', body: JSON.stringify(data) });
+        } else {
+          const res = await api('/api/settings/webhooks', { method: 'POST', body: JSON.stringify(data) });
+          alert('Webhook created!\\n\\nWebhook URL:\\n' + res.webhook_url + '\\n\\nUse this URL in Zapier/Make as the webhook destination.');
+        }
+        hideModal('webhookModal');
+        loadWebhooks();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function deleteWebhook(id) {
+      if (!confirm('Delete this webhook? Leads will stop being received.')) return;
+      try {
+        await api('/api/settings/webhooks/' + id, { method: 'DELETE' });
+        loadWebhooks();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    loadWebhooks();
   </script>
 </body>
 </html>

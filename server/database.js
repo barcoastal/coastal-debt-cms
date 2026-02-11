@@ -313,6 +313,20 @@ db.exec(`
   );
 `);
 
+  CREATE TABLE IF NOT EXISTS inbound_webhooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'facebook',
+    api_key TEXT NOT NULL,
+    landing_page_id INTEGER,
+    is_active INTEGER DEFAULT 1,
+    field_mapping TEXT DEFAULT '{}',
+    leads_received INTEGER DEFAULT 0,
+    last_received_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
 // Create default admin user if none exists
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
 if (userCount.count === 0) {

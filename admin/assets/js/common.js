@@ -70,29 +70,34 @@ async function api(endpoint, options = {}) {
   return data;
 }
 
+// Local date helper (avoids UTC timezone issues with toISOString)
+function toLocalDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 // Time range helper
 function getDateRangeFromPreset(range) {
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = toLocalDate(now);
   if (range === 'all') return { from: '', to: '' };
   if (range === 'today') return { from: today, to: today };
   if (range === 'yesterday') {
-    const y = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+    const y = toLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
     return { from: y, to: y };
   }
   let from;
   if (range === 'last_week') {
-    from = new Date(now.getTime() - 7 * 86400000);
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
   } else if (range === '7d') {
-    from = new Date(now.getTime() - 7 * 86400000);
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
   } else if (range === '30d') {
-    from = new Date(now.getTime() - 30 * 86400000);
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
   } else if (range === 'mtd') {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
   } else {
     return { from: '', to: '' };
   }
-  return { from: from.toISOString().split('T')[0], to: today };
+  return { from: toLocalDate(from), to: today };
 }
 
 function initTimeRangeBtns(containerSelector, onApply) {

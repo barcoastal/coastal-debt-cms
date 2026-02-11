@@ -332,7 +332,8 @@ router.get('/', authenticateToken, (req, res) => {
   if (to_date) {
     query += ` AND l.created_at <= ?`;
     countQuery += ` AND l.created_at <= ?`;
-    params.push(to_date);
+    // Append end-of-day time if only a date was provided
+    params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date);
   }
 
   if (event) {
@@ -475,108 +476,90 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Lead deleted' });
 });
 
-// Zapier webhook - receive leads from Zapier (Facebook Instant Forms, etc.)
-// No auth required - uses a simple API key in the URL for Zapier compatibility
-router.post('/zapier', async (req, res) => {
+// Inbound webhook - receive leads from Zapier/Make/any platform
+// Auth via API key in query string: /api/leads/webhook?key=...
+router.post('/webhook', async (req, res) => {
   try {
     const apiKey = req.query.key || req.headers['x-api-key'];
-    // Check env var first, then DB
-    const validKey = process.env.ZAPIER_API_KEY || (() => {
-      let config = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
-      if (!config) {
-        const crypto = require('crypto');
-        const newKey = crypto.randomBytes(24).toString('hex');
-        db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('zapier_api_key', newKey);
-        config = { value: newKey };
-        console.log('Zapier API key auto-generated:', newKey);
-      }
-      return config.value;
-    })();
+    if (!apiKey) return res.status(401).json({ error: 'API key required' });
 
-    if (!apiKey || apiKey !== validKey) {
-      return res.status(401).json({ error: 'Invalid API key' });
-    }
+    // Find webhook config by API key
+    const webhook = db.prepare('SELECT * FROM inbound_webhooks WHERE api_key = ? AND is_active = 1').get(apiKey);
+    if (!webhook) return res.status(401).json({ error: 'Invalid API key' });
 
-    // Log the raw body so we can see exactly what Zapier sends
-    console.log('Zapier raw body:', JSON.stringify(req.body));
-
-    // Flatten: Zapier sometimes nests or uses different field names
     const body = req.body;
+    console.log(`Webhook [${webhook.name}] raw body:`, JSON.stringify(body));
 
-    // Try every possible field name Facebook/Zapier might use
-    const resolvedName = body.full_name || body.name || body.Full_Name || body.fullName
-      || [body.first_name || body.firstName || body.First_Name || '', body.last_name || body.lastName || body.Last_Name || ''].filter(Boolean).join(' ')
-      || '';
-    const resolvedEmail = body.email || body.Email || body.EMAIL || body.e_mail || '';
-    const resolvedPhone = body.phone || body.phone_number || body.Phone || body.Phone_Number || body.phoneNumber || body.tel || '';
-    const resolvedCompany = body.company_name || body.company || body.Company || body.Company_Name || body.companyName || '';
+    // Parse field mapping from webhook config
+    let mapping = {};
+    try { mapping = JSON.parse(webhook.field_mapping || '{}'); } catch (e) {}
 
-    const landing_page_id = body.landing_page_id || null;
-    const landing_page_slug = body.landing_page_slug || null;
-    const platform = body.platform || null;
-    const form_id = body.form_id || body.formId || null;
-    const form_name = body.form_name || body.formName || null;
-    const leadgen_id = body.leadgen_id || body.id || body.leadId || null;
-    const created_time = body.created_time || body.createdTime || null;
-    const debt_amount = body.debt_amount || body.debtAmount || '';
-    const has_mca = body.has_mca || '';
-    const considered_bankruptcy = body.considered_bankruptcy || '';
-
-    // Resolve landing page: by ID, by slug, or use Facebook default
-    let pageId = landing_page_id || null;
-    if (!pageId && landing_page_slug) {
-      const page = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(landing_page_slug);
-      if (page) pageId = page.id;
+    // Resolve fields using mapping, then fallback to common field names
+    function resolve(mappingKey, ...fallbacks) {
+      // First check if there's a configured mapping
+      if (mapping[mappingKey]) {
+        const val = body[mapping[mappingKey]];
+        if (val) return String(val);
+      }
+      // Then try all fallback field names
+      for (const key of fallbacks) {
+        if (body[key]) return String(body[key]);
+      }
+      return '';
     }
+
+    const resolvedName = resolve('full_name', 'full_name', 'name', 'Full_Name', 'fullName', 'full name')
+      || [resolve('first_name', 'first_name', 'firstName', 'First_Name', 'first name'),
+          resolve('last_name', 'last_name', 'lastName', 'Last_Name', 'last name')].filter(Boolean).join(' ')
+      || '';
+    const resolvedEmail = resolve('email', 'email', 'Email', 'EMAIL', 'e_mail', 'e-mail');
+    const resolvedPhone = resolve('phone', 'phone', 'phone_number', 'Phone', 'Phone_Number', 'phoneNumber', 'tel', 'phone number');
+    const resolvedCompany = resolve('company_name', 'company_name', 'company', 'Company', 'Company_Name', 'companyName', 'company name');
+    const debtAmount = resolve('debt_amount', 'debt_amount', 'debtAmount', 'Debt_Amount', 'debt amount', 'how_much_debt', 'How much debt do you have?');
+    const hasMca = resolve('has_mca', 'has_mca', 'mca', 'Has_MCA', 'Do you have an MCA?', 'merchant_cash_advance');
+    const leadgenId = resolve('leadgen_id', 'leadgen_id', 'id', 'leadId', 'lead_id');
+    const formId = resolve('form_id', 'form_id', 'formId', 'Form ID');
+    const formName = resolve('form_name', 'form_name', 'formName', 'Form Name');
+
+    // Resolve landing page
+    let pageId = webhook.landing_page_id;
     if (!pageId) {
-      // Try Facebook default landing page
       const fbConfig = db.prepare('SELECT default_landing_page_id FROM facebook_config WHERE id = 1').get();
       if (fbConfig && fbConfig.default_landing_page_id) pageId = fbConfig.default_landing_page_id;
     }
     if (!pageId) {
-      // Fallback: first Facebook/meta page, then any page
-      const fbPage = db.prepare("SELECT id FROM landing_pages WHERE platform = 'meta' ORDER BY id DESC LIMIT 1").get();
-      if (fbPage) {
-        pageId = fbPage.id;
-      } else {
-        const anyPage = db.prepare('SELECT id FROM landing_pages ORDER BY id DESC LIMIT 1').get();
-        if (anyPage) pageId = anyPage.id;
-      }
+      const fallbackPage = db.prepare("SELECT id FROM landing_pages WHERE platform = ? ORDER BY id DESC LIMIT 1").get(webhook.platform);
+      if (fallbackPage) pageId = fallbackPage.id;
     }
     if (!pageId) {
-      return res.status(400).json({ error: 'No landing pages exist. Create one first.' });
+      const anyPage = db.prepare('SELECT id FROM landing_pages ORDER BY id DESC LIMIT 1').get();
+      if (anyPage) pageId = anyPage.id;
     }
+    if (!pageId) return res.status(400).json({ error: 'No landing pages exist' });
 
-    // Build hidden fields
-    const isFacebook = !platform || platform === 'facebook' || platform === 'meta';
+    const isFacebook = ['facebook', 'meta'].includes(webhook.platform);
     const hiddenFields = {
-      source: isFacebook ? 'facebook_instant_form' : 'zapier',
-      platform: platform || 'facebook',
-      fb_form_id: form_id || '',
-      fb_form_name: form_name || '',
-      fb_leadgen_id: leadgen_id || '',
-      fb_created_time: created_time || ''
+      source: isFacebook ? 'facebook_instant_form' : 'webhook_' + webhook.platform,
+      platform: webhook.platform,
+      webhook_name: webhook.name,
+      fb_form_id: formId,
+      fb_form_name: formName,
+      fb_leadgen_id: leadgenId
     };
+
+    const eliClickid = leadgenId ? 'wh_' + webhook.platform + '_' + leadgenId : 'wh_' + Date.now();
 
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
         debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', ?, ?)
-    `).run(
-      pageId,
-      resolvedName,
-      resolvedCompany,
-      resolvedEmail,
-      resolvedPhone,
-      debt_amount || '',
-      has_mca || '',
-      considered_bankruptcy || '',
-      leadgen_id ? 'zapier_fb_' + leadgen_id : 'zapier_' + Date.now(),
-      JSON.stringify(hiddenFields)
-    );
+    `).run(pageId, resolvedName, resolvedCompany, resolvedEmail, resolvedPhone, debtAmount, hasMca, '', eliClickid, JSON.stringify(hiddenFields));
 
-    console.log(`Zapier lead inserted: ID ${result.lastInsertRowid}, name: ${resolvedName}, email: ${resolvedEmail}, phone: ${resolvedPhone}`);
+    console.log(`Webhook [${webhook.name}] lead inserted: ID ${result.lastInsertRowid}, name: ${resolvedName}, email: ${resolvedEmail}, phone: ${resolvedPhone}`);
+
+    // Update webhook stats
+    db.prepare('UPDATE inbound_webhooks SET leads_received = leads_received + 1, last_received_at = CURRENT_TIMESTAMP WHERE id = ?').run(webhook.id);
 
     // Send notification
     if (sendLeadNotification) {
@@ -584,43 +567,34 @@ router.post('/zapier', async (req, res) => {
       sendLeadNotification({ full_name: resolvedName, company_name: resolvedCompany, email: resolvedEmail, phone: resolvedPhone }, landingPage).catch(() => {});
     }
 
-    // Auto-create lead conversion event
+    // Conversion event
     try {
-      db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status)
-        VALUES (?, ?, 'lead', 'zapier', 'logged')
-      `).run(result.lastInsertRowid, leadgen_id ? 'zapier_fb_' + leadgen_id : '');
-    } catch (err) {
-      console.error('Failed to create conversion event for Zapier lead:', err);
-    }
+      db.prepare(`INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status) VALUES (?, ?, 'lead', ?, 'logged')`).run(result.lastInsertRowid, eliClickid, 'webhook_' + webhook.platform);
+    } catch (err) { console.error('Conversion event error:', err); }
 
-    // Send Facebook CAPI Lead event if from Facebook
-    if (sendFacebookEvent && (!platform || platform === 'facebook' || platform === 'meta')) {
+    // Facebook CAPI if platform is facebook/meta
+    if (sendFacebookEvent && isFacebook) {
       const nameParts = resolvedName.trim().split(/\s+/);
       sendFacebookEvent('Lead', {
-        email: resolvedEmail,
-        phone: resolvedPhone,
-        firstName: body.first_name || body.firstName || body.First_Name || nameParts[0] || '',
-        lastName: body.last_name || body.lastName || body.Last_Name || nameParts.slice(1).join(' ') || ''
+        email: resolvedEmail, phone: resolvedPhone,
+        firstName: nameParts[0] || '', lastName: nameParts.slice(1).join(' ') || ''
       }, {}).then(fbResult => {
-        db.prepare(`
-          INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status, error_message, sent_at, capi_payload)
-          VALUES (?, ?, 'lead', 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
-        `).run(
-          result.lastInsertRowid,
-          leadgen_id ? 'zapier_fb_' + leadgen_id : '',
-          fbResult.success ? 'sent' : 'failed',
-          fbResult.error || null,
-          fbResult.payload ? JSON.stringify(fbResult.payload) : null
-        );
+        db.prepare(`INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status, error_message, sent_at, capi_payload) VALUES (?, ?, 'lead', 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)`)
+          .run(result.lastInsertRowid, eliClickid, fbResult.success ? 'sent' : 'failed', fbResult.error || null, fbResult.payload ? JSON.stringify(fbResult.payload) : null);
       }).catch(() => {});
     }
 
     res.json({ success: true, id: result.lastInsertRowid });
   } catch (err) {
-    console.error('Zapier webhook error:', err);
+    console.error('Webhook error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Keep old /zapier endpoint as alias for backwards compatibility
+router.post('/zapier', (req, res) => {
+  req.url = '/webhook';
+  router.handle(req, res);
 });
 
 // Export leads to CSV
@@ -647,7 +621,7 @@ router.get('/export/csv', authenticateToken, (req, res) => {
 
   if (to_date) {
     query += ` AND l.created_at <= ?`;
-    params.push(to_date);
+    params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date);
   }
 
   query += ` ORDER BY l.created_at DESC`;

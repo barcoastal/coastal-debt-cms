@@ -150,7 +150,7 @@ router.get('/activity', authenticateToken, (req, res) => {
   if (to_date) {
     query += ' AND created_at <= ?';
     countQuery += ' AND created_at <= ?';
-    params.push(to_date);
+    params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date);
   }
 
   if (entity_type) {
@@ -204,7 +204,7 @@ router.get('/activity/export', authenticateToken, (req, res) => {
 
   if (user_id) { query += ' AND user_id = ?'; params.push(user_id); }
   if (from_date) { query += ' AND created_at >= ?'; params.push(from_date); }
-  if (to_date) { query += ' AND created_at <= ?'; params.push(to_date); }
+  if (to_date) { query += ' AND created_at <= ?'; params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date); }
   if (entity_type) { query += ' AND entity_type = ?'; params.push(entity_type); }
 
   query += ' ORDER BY created_at DESC';
@@ -338,6 +338,73 @@ router.post('/zapier-key/regenerate', authenticateToken, (req, res) => {
     api_key: key,
     webhook_url: `${baseUrl}/api/leads/zapier?key=${key}`
   });
+});
+
+// ============ INBOUND WEBHOOKS ============
+
+// List all webhooks
+router.get('/webhooks', authenticateToken, (req, res) => {
+  const webhooks = db.prepare(`
+    SELECT w.*, lp.name as landing_page_name
+    FROM inbound_webhooks w
+    LEFT JOIN landing_pages lp ON w.landing_page_id = lp.id
+    ORDER BY w.created_at DESC
+  `).all();
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  webhooks.forEach(w => {
+    w.webhook_url = `${baseUrl}/api/leads/webhook?key=${w.api_key}`;
+    try { w.field_mapping = JSON.parse(w.field_mapping || '{}'); } catch (e) { w.field_mapping = {}; }
+  });
+  res.json(webhooks);
+});
+
+// Create webhook
+router.post('/webhooks', authenticateToken, (req, res) => {
+  const { name, platform, landing_page_id, field_mapping } = req.body;
+  if (!name || !platform) return res.status(400).json({ error: 'Name and platform required' });
+
+  const apiKey = crypto.randomBytes(24).toString('hex');
+  const result = db.prepare(`
+    INSERT INTO inbound_webhooks (name, platform, api_key, landing_page_id, field_mapping)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(name, platform, apiKey, landing_page_id || null, JSON.stringify(field_mapping || {}));
+
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'webhook', result.lastInsertRowid, `Created webhook: ${name}`, req.ip);
+
+  res.json({
+    id: result.lastInsertRowid,
+    api_key: apiKey,
+    webhook_url: `${baseUrl}/api/leads/webhook?key=${apiKey}`
+  });
+});
+
+// Update webhook
+router.put('/webhooks/:id', authenticateToken, (req, res) => {
+  const { name, platform, landing_page_id, field_mapping, is_active } = req.body;
+  db.prepare(`
+    UPDATE inbound_webhooks SET name = ?, platform = ?, landing_page_id = ?, field_mapping = ?, is_active = ?
+    WHERE id = ?
+  `).run(name, platform, landing_page_id || null, JSON.stringify(field_mapping || {}), is_active ? 1 : 0, req.params.id);
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'webhook', parseInt(req.params.id), `Updated webhook: ${name}`, req.ip);
+  res.json({ success: true });
+});
+
+// Delete webhook
+router.delete('/webhooks/:id', authenticateToken, (req, res) => {
+  const wh = db.prepare('SELECT name FROM inbound_webhooks WHERE id = ?').get(req.params.id);
+  db.prepare('DELETE FROM inbound_webhooks WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'webhook', parseInt(req.params.id), `Deleted webhook: ${wh?.name}`, req.ip);
+  res.json({ success: true });
+});
+
+// Regenerate webhook API key
+router.post('/webhooks/:id/regenerate-key', authenticateToken, (req, res) => {
+  const newKey = crypto.randomBytes(24).toString('hex');
+  db.prepare('UPDATE inbound_webhooks SET api_key = ? WHERE id = ?').run(newKey, req.params.id);
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  res.json({ api_key: newKey, webhook_url: `${baseUrl}/api/leads/webhook?key=${newKey}` });
 });
 
 module.exports = router;
