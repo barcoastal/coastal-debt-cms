@@ -478,7 +478,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
 
 // Inbound webhook - receive leads from Zapier/Make/any platform
 // Auth via API key in query string: /api/leads/webhook?key=...
-router.post('/webhook', async (req, res) => {
+async function handleWebhook(req, res) {
   try {
     const apiKey = req.query.key || req.headers['x-api-key'];
     if (!apiKey) return res.status(401).json({ error: 'API key required' });
@@ -589,13 +589,9 @@ router.post('/webhook', async (req, res) => {
     console.error('Webhook error:', err);
     res.status(500).json({ error: err.message });
   }
-});
-
-// Keep old /zapier endpoint as alias for backwards compatibility
-router.post('/zapier', (req, res) => {
-  req.url = '/webhook';
-  router.handle(req, res);
-});
+}
+router.post('/webhook', handleWebhook);
+router.post('/zapier', handleWebhook);
 
 // Export leads to CSV
 router.get('/export/csv', authenticateToken, (req, res) => {

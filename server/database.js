@@ -311,7 +311,6 @@ db.exec(`
     last_triggered_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-`);
 
   CREATE TABLE IF NOT EXISTS inbound_webhooks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
