@@ -200,12 +200,12 @@
     ];
 
     const cellRenderers = {
-      eli_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + (v.eli_clickid || '-') + '</td>',
-      rt_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + (v.rt_clickid || '-') + '</td>',
-      location: (v) => '<td>' + ([v.city, v.country].filter(Boolean).join(', ') || '-') + '</td>',
-      device: (v) => '<td><span class="badge badge-gray">' + (v.device_type || '-') + '</span></td>',
-      landing_page: (v) => '<td>' + (v.landing_page || '-') + '</td>',
-      utm_source: (v) => '<td>' + (v.utm_source || '-') + '</td>',
+      eli_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + escapeHtml(v.eli_clickid || '-') + '</td>',
+      rt_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + escapeHtml(v.rt_clickid || '-') + '</td>',
+      location: (v) => '<td>' + escapeHtml([v.city, v.country].filter(Boolean).join(', ') || '-') + '</td>',
+      device: (v) => '<td><span class="badge badge-gray">' + escapeHtml(v.device_type || '-') + '</span></td>',
+      landing_page: (v) => '<td>' + escapeHtml(v.landing_page || '-') + '</td>',
+      utm_source: (v) => '<td>' + escapeHtml(v.utm_source || '-') + '</td>',
       visit_count: (v) => '<td>' + (v.visit_count || 1) + '</td>',
       converted: (v) => '<td class="' + (v.converted ? 'converted' : 'not-converted') + '">' + (v.converted ? 'Yes' : 'No') + '</td>',
       last_visit: (v) => '<td>' + formatDate(v.last_visit) + '</td>',

@@ -348,15 +348,15 @@
     ];
 
     const cellRenderers = {
-      full_name: (e) => '<td>' + (e.full_name || e.email || '-') + '</td>',
-      conversion_action_name: (e) => '<td><strong>' + (e.conversion_action_name || '-') + '</strong></td>',
+      full_name: (e) => '<td>' + escapeHtml(e.full_name || e.email || '-') + '</td>',
+      conversion_action_name: (e) => '<td><strong>' + escapeHtml(e.conversion_action_name || '-') + '</strong></td>',
       conversion_value: (e) => '<td>' + (e.conversion_value ? '$' + Number(e.conversion_value).toLocaleString() : '-') + '</td>',
       debt_amount: (e) => '<td>' + (e.debt_amount ? '$' + Number(e.debt_amount).toLocaleString() : '-') + '</td>',
       revenue: (e) => '<td>' + (e.revenue ? '$' + Number(e.revenue).toLocaleString() : '-') + '</td>',
-      gclid: (e) => '<td style="font-size: 11px;">' + (e.gclid || '-') + '</td>',
-      eli_clickid: (e) => '<td style="font-size: 11px;">' + (e.eli_clickid || '-') + '</td>',
-      source: (e) => '<td>' + (e.source) + '</td>',
-      status: (e) => '<td><span class="status-' + e.status + '">' + e.status + '</span></td>',
+      gclid: (e) => '<td style="font-size: 11px;">' + escapeHtml(e.gclid || '-') + '</td>',
+      eli_clickid: (e) => '<td style="font-size: 11px;">' + escapeHtml(e.eli_clickid || '-') + '</td>',
+      source: (e) => '<td>' + escapeHtml(e.source || '-') + '</td>',
+      status: (e) => '<td><span class="status-' + escapeHtml(e.status || '') + '">' + escapeHtml(e.status || '-') + '</span></td>',
       created_at: (e) => '<td>' + formatDate(e.created_at) + '</td>',
       actions: (e) => '<td>' + (e.status === 'failed' ? '<button class="action-btn action-btn-edit" onclick="retryEvent(' + e.id + ')">Retry</button>' : '') + '</td>'
     };

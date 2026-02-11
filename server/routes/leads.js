@@ -486,10 +486,15 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Lead deleted' });
 });
 
-// Simple Zapier webhook - no auth, no config, just send data and it works
-// POST /api/leads/zapier — accepts any JSON body, tries every field name
+// Zapier webhook - validates API key
+// POST /api/leads/zapier?key=xxx — accepts any JSON body, tries every field name
 router.post('/zapier', async (req, res) => {
   try {
+    const apiKey = req.query.key;
+    if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
+    const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+    if (!stored || stored.value !== apiKey) return res.status(403).json({ error: 'Invalid API key' });
+
     const body = req.body;
     console.log('Zapier incoming:', JSON.stringify(body));
 

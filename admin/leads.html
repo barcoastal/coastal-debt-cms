@@ -264,24 +264,24 @@
     ];
 
     const cellRenderers = {
-      full_name: (lead) => '<td>' + (lead.full_name || '-') + '</td>',
-      company_name: (lead) => '<td>' + (lead.company_name || '-') + '</td>',
-      phone: (lead) => '<td>' + (lead.phone || '-') + '</td>',
-      debt_amount: (lead) => '<td>' + (lead.debt_amount || '-') + '</td>',
-      platform: (lead) => '<td><span class="badge badge-blue">' + (lead.platform || '-') + '</span></td>',
-      gclid: (lead) => '<td class="clickid-cell" title="' + (lead.gclid || '') + '">' + (lead.gclid || '-') + '</td>',
-      rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
-      eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
-      fbclid: (lead) => '<td class="clickid-cell" title="' + (lead.fbclid || '') + '">' + (lead.fbclid || '-') + '</td>',
-      msclkid: (lead) => '<td class="clickid-cell" title="' + (lead.msclkid || '') + '">' + (lead.msclkid || '-') + '</td>',
-      utm_campaign: (lead) => '<td>' + (lead.utm_campaign || '-') + '</td>',
+      full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
+      company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
+      phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      debt_amount: (lead) => '<td>' + escapeHtml(lead.debt_amount || '-') + '</td>',
+      platform: (lead) => '<td><span class="badge badge-blue">' + escapeHtml(lead.platform || '-') + '</span></td>',
+      gclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.gclid) + '">' + escapeHtml(lead.gclid || '-') + '</td>',
+      rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid) + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid) + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
+      fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid) + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
+      msclkid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.msclkid) + '">' + escapeHtml(lead.msclkid || '-') + '</td>',
+      utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
       has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
-      transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + (lead.transfer_status || '-') + '</span></td>',
-      five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + (lead.five9_dispo || '-') + '</span></td>',
-      stage: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + (lead.stage || '-') + '</span></td>',
-      contract_sign_date: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + (lead.contract_sign_date || '-') + '</span></td>',
-      total_debt_sign: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + (lead.total_debt_sign || '-') + '</span></td>',
+      transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + escapeHtml(lead.transfer_status || '-') + '</span></td>',
+      five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + escapeHtml(lead.five9_dispo || '-') + '</span></td>',
+      stage: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + escapeHtml(lead.stage || '-') + '</span></td>',
+      contract_sign_date: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + escapeHtml(lead.contract_sign_date || '-') + '</span></td>',
+      total_debt_sign: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + escapeHtml(lead.total_debt_sign || '-') + '</span></td>',
       created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>',
       actions: (lead) => '<td class="actions" style="display:flex;flex-direction:column;gap:4px;">' +
         '<button class="action-btn action-btn-view" onclick="viewLead(' + lead.id + ')">View</button>' +
@@ -437,37 +437,37 @@
         <div class="lead-detail-grid">
           <div class="lead-detail-section">
             <h4>Contact</h4>
-            <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${lead.full_name || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${lead.company_name || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${escapeHtml(lead.full_name || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${escapeHtml(lead.company_name || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(lead.email || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(lead.phone || '-')}</span></div>
           </div>
           <div class="lead-detail-section">
             <h4>Qualification</h4>
             <div class="detail-row"><span class="detail-label">Debt Amount</span><span class="detail-value">${lead.debt_amount || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Has MCA</span><span class="detail-value">${lead.has_mca || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Bankruptcy</span><span class="detail-value">${lead.considered_bankruptcy || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value">${lead.stage || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Transfer</span><span class="detail-value">${lead.transfer_status || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Five9 Dispo</span><span class="detail-value">${lead.five9_dispo || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Has MCA</span><span class="detail-value">${escapeHtml(lead.has_mca || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Bankruptcy</span><span class="detail-value">${escapeHtml(lead.considered_bankruptcy || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value">${escapeHtml(lead.stage || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Transfer</span><span class="detail-value">${escapeHtml(lead.transfer_status || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Five9 Dispo</span><span class="detail-value">${escapeHtml(lead.five9_dispo || '-')}</span></div>
           </div>
           <div class="lead-detail-section">
             <h4>Source</h4>
-            <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value">${lead.platform || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Landing Page</span><span class="detail-value">${lead.landing_page_name || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Traffic Source</span><span class="detail-value">${lead.traffic_source || '-'}</span></div>
-            <div class="detail-row"><span class="detail-label">Campaign</span><span class="detail-value">${lead.utm_campaign || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value">${escapeHtml(lead.platform || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Landing Page</span><span class="detail-value">${escapeHtml(lead.landing_page_name || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Traffic Source</span><span class="detail-value">${escapeHtml(lead.traffic_source || '-')}</span></div>
+            <div class="detail-row"><span class="detail-label">Campaign</span><span class="detail-value">${escapeHtml(lead.utm_campaign || '-')}</span></div>
             <div class="detail-row"><span class="detail-label">Submitted</span><span class="detail-value">${formatDate(lead.created_at)}</span></div>
             ${lead.cost_cents ? '<div class="detail-row"><span class="detail-label">Cost</span><span class="detail-value">$' + (lead.cost_cents/100).toFixed(2) + '</span></div>' : ''}
           </div>
           <div class="lead-detail-section">
             <h4>Tracking IDs</h4>
             ${trackingIds.length ? trackingIds.map(([label, val]) =>
-              '<div class="detail-row"><span class="detail-label">' + label + '</span><span class="detail-value mono" title="' + val + '">' + val + '</span></div>'
+              '<div class="detail-row"><span class="detail-label">' + escapeHtml(label) + '</span><span class="detail-value mono" title="' + escapeHtml(val) + '">' + escapeHtml(val) + '</span></div>'
             ).join('') : '<div style="color:var(--gray-400);font-size:12px;">No tracking IDs</div>'}
           </div>
           ${extraFields.length ? '<div class="lead-detail-section lead-detail-full"><h4>Additional Fields</h4>' +
-            extraFields.map(([k, v]) => '<div class="detail-row"><span class="detail-label">' + k + '</span><span class="detail-value">' + (v || '-') + '</span></div>').join('') +
+            extraFields.map(([k, v]) => '<div class="detail-row"><span class="detail-label">' + escapeHtml(k) + '</span><span class="detail-value">' + escapeHtml(v || '-') + '</span></div>').join('') +
           '</div>' : ''}
           <div class="lead-detail-full">
             ${eventsHtml}

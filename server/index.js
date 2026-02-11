@@ -115,15 +115,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Debug endpoint - check what cookies the server sees (remove after debugging)
-app.get('/api/debug/cookies', (req, res) => {
-  res.json({
-    cookies: req.cookies,
-    rtkclickid: req.cookies?.['rtkclickid-store'] || 'NOT FOUND',
-    allCookieNames: Object.keys(req.cookies || {}),
-    rawCookieHeader: req.headers.cookie || 'NO COOKIE HEADER'
-  });
-});
 
 // Regenerate all landing pages from DB on startup (Railway wipes filesystem on deploy)
 try {

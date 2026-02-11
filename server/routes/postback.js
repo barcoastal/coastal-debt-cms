@@ -283,8 +283,7 @@ router.all('/conversion', async (req, res) => {
   // Update lead status if needed
   db.prepare(`
     UPDATE leads SET
-      hidden_fields = json_set(COALESCE(hidden_fields, '{}'), '$.last_event', ?),
-      hidden_fields = json_set(COALESCE(hidden_fields, '{}'), '$.last_event_time', ?)
+      hidden_fields = json_set(json_set(COALESCE(hidden_fields, '{}'), '$.last_event', ?), '$.last_event_time', ?)
     WHERE id = ?
   `).run(event, new Date().toISOString(), lead.id);
 

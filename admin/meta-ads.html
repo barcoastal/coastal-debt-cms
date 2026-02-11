@@ -200,14 +200,14 @@
     ];
 
     const cellRenderers = {
-      id: (lead) => '<td>' + (lead.id || '-') + '</td>',
-      full_name: (lead) => '<td>' + (lead.full_name || '-') + '</td>',
-      company_name: (lead) => '<td>' + (lead.company_name || '-') + '</td>',
-      email: (lead) => '<td>' + (lead.email || '-') + '</td>',
-      phone: (lead) => '<td>' + (lead.phone || '-') + '</td>',
-      eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
-      rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
-      fbclid: (lead) => '<td class="clickid-cell" title="' + (lead.fbclid || '') + '">' + (lead.fbclid || '-') + '</td>',
+      id: (lead) => '<td>' + escapeHtml(lead.id || '-') + '</td>',
+      full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
+      company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
+      email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
+      phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
+      rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
+      fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid || '') + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
       lead_source: (lead) => '<td>' + getSourceBadge(lead.lead_source) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
       created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'

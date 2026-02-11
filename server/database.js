@@ -248,6 +248,20 @@ try { db.exec(`ALTER TABLE visitors ADD COLUMN fbclid TEXT DEFAULT ''`); } catch
 try { db.exec(`ALTER TABLE visitors ADD COLUMN fbc TEXT DEFAULT ''`); } catch (e) {}
 try { db.exec(`ALTER TABLE visitors ADD COLUMN fbp TEXT DEFAULT ''`); } catch (e) {}
 
+// Create facebook_config table (must be before ALTER TABLE statements below)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS facebook_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    page_access_token TEXT,
+    verify_token TEXT,
+    app_id TEXT,
+    app_secret TEXT,
+    default_landing_page_id INTEGER,
+    connected_at DATETIME,
+    FOREIGN KEY (default_landing_page_id) REFERENCES landing_pages(id)
+  )
+`);
+
 // Add test_event_code to facebook_config
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
 
@@ -270,20 +284,6 @@ try {
 try {
   db.exec(`ALTER TABLE facebook_config ADD COLUMN ad_account_id TEXT`);
 } catch (e) {}
-
-// Create facebook_config table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS facebook_config (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    page_access_token TEXT,
-    verify_token TEXT,
-    app_id TEXT,
-    app_secret TEXT,
-    default_landing_page_id INTEGER,
-    connected_at DATETIME,
-    FOREIGN KEY (default_landing_page_id) REFERENCES landing_pages(id)
-  )
-`);
 
 // Notification and alert tables
 db.exec(`

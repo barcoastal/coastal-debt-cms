@@ -30,6 +30,12 @@ async function logout() {
   window.location.href = '/admin/login.html';
 }
 
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // Format date
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -319,7 +325,7 @@ class ColumnEditor {
   }
 }
 
-// Live clock + date in page header (shows browser + server timezone)
+// Live clock + date in page header (uses timezone from system settings)
 function initClock() {
   const header = document.querySelector('.page-header');
   if (!header) return;
@@ -329,20 +335,16 @@ function initClock() {
   clock.style.cssText = 'text-align:right;font-size:0.85rem;color:var(--gray-500);line-height:1.4;white-space:nowrap;';
   header.appendChild(clock);
 
-  let serverTz = '';
-  fetch('/api/health').then(r => r.json()).then(d => { serverTz = d.timezone || ''; }).catch(() => {});
+  let settingsTz = '';
+  fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => { settingsTz = d.timezone || ''; }).catch(() => {});
 
   function tick() {
     const now = new Date();
-    const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    let tzLine = browserTz;
-    if (serverTz && serverTz !== browserTz) {
-      tzLine += ' <span style="color:var(--orange);font-weight:600;">(Server: ' + serverTz + ')</span>';
-    }
+    const tz = settingsTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: tz });
+    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: tz });
     clock.innerHTML = '<div style="font-weight:600;color:var(--gray-700);font-size:0.95rem;">' + time + '</div>' +
-      '<div>' + date + ' &middot; ' + tzLine + '</div>';
+      '<div>' + date + ' &middot; ' + tz + '</div>';
   }
 
   tick();

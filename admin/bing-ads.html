@@ -206,20 +206,20 @@
     ];
 
     const cellRenderers = {
-      full_name: (lead) => '<td>' + (lead.full_name || '-') + '</td>',
-      company_name: (lead) => '<td>' + (lead.company_name || '-') + '</td>',
-      email: (lead) => '<td>' + (lead.email || '-') + '</td>',
-      phone: (lead) => '<td>' + (lead.phone || '-') + '</td>',
-      eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
-      rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
-      utm_campaign: (lead) => '<td>' + (lead.utm_campaign || '-') + '</td>',
+      full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
+      company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
+      email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
+      phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
+      rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
+      utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
       has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
-      transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + (lead.transfer_status || '-') + '</span></td>',
-      five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + (lead.five9_dispo || '-') + '</span></td>',
-      stage: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + (lead.stage || '-') + '</span></td>',
-      contract_sign_date: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + (lead.contract_sign_date || '-') + '</span></td>',
-      total_debt_sign: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + (lead.total_debt_sign || '-') + '</span></td>',
+      transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + escapeHtml(lead.transfer_status || '-') + '</span></td>',
+      five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + escapeHtml(lead.five9_dispo || '-') + '</span></td>',
+      stage: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + escapeHtml(lead.stage || '-') + '</span></td>',
+      contract_sign_date: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + escapeHtml(lead.contract_sign_date || '-') + '</span></td>',
+      total_debt_sign: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + escapeHtml(lead.total_debt_sign || '-') + '</span></td>',
       created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'
     };
 
