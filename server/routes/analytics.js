@@ -626,7 +626,7 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
 
   const leads = db.prepare(`
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
-           l.eli_clickid, l.rt_clickid, l.fbclid, l.created_at,
+           l.eli_clickid, l.rt_clickid, l.fbclid, l.hidden_fields, l.created_at,
            lp.name as landing_page_name,
            CASE WHEN l.hidden_fields LIKE '%"source":"facebook_instant_form"%' THEN 'Instant Form' ELSE 'Landing Page' END as lead_source,
            (

@@ -185,12 +185,20 @@
 
   <script src="assets/js/common.js?v=4"></script>
   <script>
+    function getFormName(lead) {
+      try {
+        const hf = typeof lead.hidden_fields === 'string' ? JSON.parse(lead.hidden_fields || '{}') : (lead.hidden_fields || {});
+        return hf.fb_form_name || '';
+      } catch (e) { return ''; }
+    }
+
     const COLUMNS = [
       { key: 'id', label: 'Lead ID', default: true },
       { key: 'full_name', label: 'Name', default: true },
       { key: 'company_name', label: 'Company', default: true },
       { key: 'email', label: 'Email', default: true },
       { key: 'phone', label: 'Phone', default: true },
+      { key: 'fb_form_name', label: 'Form Name', default: true },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
       { key: 'fbclid', label: 'FBCLID', default: true },
@@ -205,6 +213,7 @@
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      fb_form_name: (lead) => '<td>' + escapeHtml(getFormName(lead) || '-') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
       fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid || '') + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
