@@ -34,6 +34,11 @@ const FIELD_MAP = {
   phone: 'phone',
   company_name: 'company_name',
   company: 'company_name',
+  how_much_debt: 'debt_amount',
+  debt_amount: 'debt_amount',
+  any_mcas: 'has_mca',
+  has_mca: 'has_mca',
+  considered_bankruptcy: 'considered_bankruptcy',
   job_title: '_job_title',
   city: '_city',
   state: '_state',
@@ -93,6 +98,185 @@ router.post('/webhook', async (req, res) => {
     console.error('Facebook webhook error:', err);
   }
 });
+
+/**
+ * SYNC: Fetch leads directly from Facebook API (no webhook needed)
+ * This polls all active leadgen forms and imports new leads
+ */
+async function syncFacebookLeads() {
+  const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+  if (!config || !config.page_access_token || !config.default_landing_page_id) {
+    return { synced: 0, error: 'Facebook not configured' };
+  }
+
+  // Get page ID from token
+  let pageId;
+  try {
+    const meRes = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${config.page_access_token}`);
+    const meData = await meRes.json();
+    if (meData.error) return { synced: 0, error: meData.error.message };
+    pageId = meData.id;
+  } catch (e) {
+    return { synced: 0, error: 'Failed to get page ID: ' + e.message };
+  }
+  let totalSynced = 0;
+  let errors = [];
+
+  try {
+    // Get all active forms
+    const formsRes = await fetch(
+      `https://graph.facebook.com/v21.0/${pageId}/leadgen_forms?access_token=${config.page_access_token}&limit=50`
+    );
+    const formsData = await formsRes.json();
+    if (formsData.error) {
+      return { synced: 0, error: formsData.error.message };
+    }
+
+    const activeForms = (formsData.data || []).filter(f => f.status === 'ACTIVE');
+
+    for (const form of activeForms) {
+      try {
+        // Fetch recent leads from each form (last 50)
+        const leadsRes = await fetch(
+          `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${config.page_access_token}&limit=50`
+        );
+        const leadsData = await leadsRes.json();
+        if (leadsData.error) {
+          errors.push(`Form ${form.name}: ${leadsData.error.message}`);
+          continue;
+        }
+
+        for (const lead of leadsData.data || []) {
+          // Check if already imported
+          const existing = db.prepare(
+            `SELECT id FROM leads WHERE eli_clickid = ?`
+          ).get('fb_' + lead.id);
+
+          if (existing) continue;
+
+          // Map fields
+          const fields = {};
+          for (const item of lead.field_data || []) {
+            const ourField = FIELD_MAP[item.name];
+            if (ourField) {
+              fields[ourField] = Array.isArray(item.values) ? item.values[0] : item.values;
+            }
+          }
+
+          // Combine first + last name
+          if (!fields.full_name && (fields._first_name || fields._last_name)) {
+            fields.full_name = [fields._first_name, fields._last_name].filter(Boolean).join(' ');
+          }
+
+          // Build hidden fields
+          const hiddenFields = {
+            source: 'facebook_instant_form',
+            fb_leadgen_id: lead.id,
+            fb_form_id: form.id,
+            fb_form_name: form.name,
+            fb_created_time: lead.created_time || '',
+            sync_method: 'api_poll'
+          };
+
+          // Add extra fields to hidden_fields
+          for (const item of lead.field_data || []) {
+            if (!FIELD_MAP[item.name]) {
+              hiddenFields[item.name] = Array.isArray(item.values) ? item.values[0] : item.values;
+            }
+          }
+          for (const [key, val] of Object.entries(fields)) {
+            if (key.startsWith('_')) {
+              hiddenFields[key.slice(1)] = val;
+            }
+          }
+
+          // Insert lead
+          const result = db.prepare(`
+            INSERT INTO leads (
+              landing_page_id, full_name, company_name, email, phone,
+              debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, hidden_fields
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?)
+          `).run(
+            config.default_landing_page_id,
+            fields.full_name || '',
+            fields.company_name || '',
+            fields.email || '',
+            fields.phone || '',
+            fields.debt_amount || '',
+            fields.has_mca || '',
+            fields.considered_bankruptcy || '',
+            'fb_' + lead.id,
+            JSON.stringify(hiddenFields)
+          );
+
+          totalSynced++;
+          console.log(`Facebook sync: imported lead ${result.lastInsertRowid} (fb_${lead.id}) from "${form.name}"`);
+
+          // Send notification
+          if (sendLeadNotification) {
+            const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(config.default_landing_page_id);
+            sendLeadNotification(fields, landingPage).catch(() => {});
+          }
+        }
+      } catch (formErr) {
+        errors.push(`Form ${form.name}: ${formErr.message}`);
+      }
+    }
+  } catch (err) {
+    return { synced: totalSynced, error: err.message };
+  }
+
+  if (totalSynced > 0) {
+    console.log(`Facebook sync complete: ${totalSynced} new leads imported`);
+  }
+
+  return { synced: totalSynced, errors: errors.length ? errors : undefined };
+}
+
+// Manual sync endpoint
+router.post('/sync', authenticateToken, async (req, res) => {
+  try {
+    const result = await syncFacebookLeads();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Background sync - runs every 5 minutes
+let syncInterval = null;
+function startBackgroundSync() {
+  if (syncInterval) return;
+  syncInterval = setInterval(async () => {
+    try {
+      const config = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
+      if (config && config.page_access_token) {
+        await syncFacebookLeads();
+      }
+    } catch (err) {
+      console.error('Facebook background sync error:', err.message);
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+
+  // Run first sync 10 seconds after startup
+  setTimeout(async () => {
+    try {
+      const config = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
+      if (config && config.page_access_token) {
+        console.log('Running initial Facebook lead sync...');
+        const result = await syncFacebookLeads();
+        if (result.synced > 0) {
+          console.log(`Initial sync: imported ${result.synced} leads`);
+        }
+      }
+    } catch (err) {
+      console.error('Initial Facebook sync error:', err.message);
+    }
+  }, 10 * 1000);
+}
+
+// Start background sync
+startBackgroundSync();
 
 /**
  * Fetch lead data from Facebook Graph API and insert into DB
