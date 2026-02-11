@@ -476,122 +476,80 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Lead deleted' });
 });
 
-// Inbound webhook - receive leads from Zapier/Make/any platform
-// Auth via API key in query string: /api/leads/webhook?key=...
-async function handleWebhook(req, res) {
+// Simple Zapier webhook - no auth, no config, just send data and it works
+// POST /api/leads/zapier — accepts any JSON body, tries every field name
+router.post('/zapier', async (req, res) => {
   try {
-    const apiKey = req.query.key || req.headers['x-api-key'];
-    if (!apiKey) return res.status(401).json({ error: 'API key required' });
-
-    // Find webhook config by API key
-    const webhook = db.prepare('SELECT * FROM inbound_webhooks WHERE api_key = ? AND is_active = 1').get(apiKey);
-    if (!webhook) return res.status(401).json({ error: 'Invalid API key' });
-
     const body = req.body;
-    console.log(`Webhook [${webhook.name}] raw body:`, JSON.stringify(body));
+    console.log('Zapier incoming:', JSON.stringify(body));
 
-    // Parse field mapping from webhook config
-    let mapping = {};
-    try { mapping = JSON.parse(webhook.field_mapping || '{}'); } catch (e) {}
-
-    // Resolve fields using mapping, then fallback to common field names
-    function resolve(mappingKey, ...fallbacks) {
-      // First check if there's a configured mapping
-      if (mapping[mappingKey]) {
-        const val = body[mapping[mappingKey]];
-        if (val) return String(val);
-      }
-      // Then try all fallback field names
-      for (const key of fallbacks) {
-        if (body[key]) return String(body[key]);
+    // Grab every value from the body regardless of key name
+    const allValues = Object.entries(body);
+    function find(...keywords) {
+      for (const kw of keywords) {
+        const match = allValues.find(([k]) => k.toLowerCase().replace(/[^a-z]/g, '').includes(kw));
+        if (match && match[1]) return String(match[1]);
       }
       return '';
     }
 
-    const resolvedName = resolve('full_name', 'full_name', 'name', 'Full_Name', 'fullName', 'full name')
-      || [resolve('first_name', 'first_name', 'firstName', 'First_Name', 'first name'),
-          resolve('last_name', 'last_name', 'lastName', 'Last_Name', 'last name')].filter(Boolean).join(' ')
-      || '';
-    const resolvedEmail = resolve('email', 'email', 'Email', 'EMAIL', 'e_mail', 'e-mail');
-    const resolvedPhone = resolve('phone', 'phone', 'phone_number', 'Phone', 'Phone_Number', 'phoneNumber', 'tel', 'phone number');
-    const resolvedCompany = resolve('company_name', 'company_name', 'company', 'Company', 'Company_Name', 'companyName', 'company name');
-    const debtAmount = resolve('debt_amount', 'debt_amount', 'debtAmount', 'Debt_Amount', 'debt amount', 'how_much_debt', 'How much debt do you have?');
-    const hasMca = resolve('has_mca', 'has_mca', 'mca', 'Has_MCA', 'Do you have an MCA?', 'merchant_cash_advance');
-    const leadgenId = resolve('leadgen_id', 'leadgen_id', 'id', 'leadId', 'lead_id');
-    const formId = resolve('form_id', 'form_id', 'formId', 'Form ID');
-    const formName = resolve('form_name', 'form_name', 'formName', 'Form Name');
+    const fullName = find('fullname', 'name') || [find('firstname', 'first'), find('lastname', 'last')].filter(Boolean).join(' ');
+    const email = find('email', 'mail');
+    const phone = find('phone', 'tel', 'mobile', 'cell');
+    const company = find('company', 'business');
+    const debt = find('debt', 'amount', 'howmuch');
+    const mca = find('mca', 'merchant');
 
-    // Resolve landing page
-    let pageId = webhook.landing_page_id;
+    // Find landing page: meta page first, then any
+    let pageId = null;
+    const fbConfig = db.prepare('SELECT default_landing_page_id FROM facebook_config WHERE id = 1').get();
+    if (fbConfig && fbConfig.default_landing_page_id) pageId = fbConfig.default_landing_page_id;
     if (!pageId) {
-      const fbConfig = db.prepare('SELECT default_landing_page_id FROM facebook_config WHERE id = 1').get();
-      if (fbConfig && fbConfig.default_landing_page_id) pageId = fbConfig.default_landing_page_id;
+      const p = db.prepare("SELECT id FROM landing_pages WHERE platform = 'meta' ORDER BY id DESC LIMIT 1").get();
+      if (p) pageId = p.id;
     }
     if (!pageId) {
-      const fallbackPage = db.prepare("SELECT id FROM landing_pages WHERE platform = ? ORDER BY id DESC LIMIT 1").get(webhook.platform);
-      if (fallbackPage) pageId = fallbackPage.id;
-    }
-    if (!pageId) {
-      const anyPage = db.prepare('SELECT id FROM landing_pages ORDER BY id DESC LIMIT 1').get();
-      if (anyPage) pageId = anyPage.id;
+      const p = db.prepare('SELECT id FROM landing_pages ORDER BY id DESC LIMIT 1').get();
+      if (p) pageId = p.id;
     }
     if (!pageId) return res.status(400).json({ error: 'No landing pages exist' });
-
-    const isFacebook = ['facebook', 'meta'].includes(webhook.platform);
-    const hiddenFields = {
-      source: isFacebook ? 'facebook_instant_form' : 'webhook_' + webhook.platform,
-      platform: webhook.platform,
-      webhook_name: webhook.name,
-      fb_form_id: formId,
-      fb_form_name: formName,
-      fb_leadgen_id: leadgenId
-    };
-
-    const eliClickid = leadgenId ? 'wh_' + webhook.platform + '_' + leadgenId : 'wh_' + Date.now();
 
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
         debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', ?, ?)
-    `).run(pageId, resolvedName, resolvedCompany, resolvedEmail, resolvedPhone, debtAmount, hasMca, '', eliClickid, JSON.stringify(hiddenFields));
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', ?, ?)
+    `).run(
+      pageId, fullName, company, email, phone, debt, mca,
+      'zapier_' + Date.now(),
+      JSON.stringify({ source: 'facebook_instant_form', platform: 'facebook', raw: body })
+    );
 
-    console.log(`Webhook [${webhook.name}] lead inserted: ID ${result.lastInsertRowid}, name: ${resolvedName}, email: ${resolvedEmail}, phone: ${resolvedPhone}`);
+    console.log(`Zapier lead #${result.lastInsertRowid}: ${fullName} | ${email} | ${phone}`);
 
-    // Update webhook stats
-    db.prepare('UPDATE inbound_webhooks SET leads_received = leads_received + 1, last_received_at = CURRENT_TIMESTAMP WHERE id = ?').run(webhook.id);
-
-    // Send notification
+    // Notification
     if (sendLeadNotification) {
-      const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(pageId);
-      sendLeadNotification({ full_name: resolvedName, company_name: resolvedCompany, email: resolvedEmail, phone: resolvedPhone }, landingPage).catch(() => {});
+      const lp = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(pageId);
+      sendLeadNotification({ full_name: fullName, company_name: company, email, phone }, lp).catch(() => {});
     }
 
     // Conversion event
     try {
-      db.prepare(`INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status) VALUES (?, ?, 'lead', ?, 'logged')`).run(result.lastInsertRowid, eliClickid, 'webhook_' + webhook.platform);
-    } catch (err) { console.error('Conversion event error:', err); }
+      db.prepare(`INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status) VALUES (?, ?, 'lead', 'zapier', 'logged')`).run(result.lastInsertRowid, '');
+    } catch (e) {}
 
-    // Facebook CAPI if platform is facebook/meta
-    if (sendFacebookEvent && isFacebook) {
-      const nameParts = resolvedName.trim().split(/\s+/);
-      sendFacebookEvent('Lead', {
-        email: resolvedEmail, phone: resolvedPhone,
-        firstName: nameParts[0] || '', lastName: nameParts.slice(1).join(' ') || ''
-      }, {}).then(fbResult => {
-        db.prepare(`INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status, error_message, sent_at, capi_payload) VALUES (?, ?, 'lead', 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)`)
-          .run(result.lastInsertRowid, eliClickid, fbResult.success ? 'sent' : 'failed', fbResult.error || null, fbResult.payload ? JSON.stringify(fbResult.payload) : null);
-      }).catch(() => {});
+    // Facebook CAPI
+    if (sendFacebookEvent) {
+      const parts = fullName.trim().split(/\s+/);
+      sendFacebookEvent('Lead', { email, phone, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' }, {}).catch(() => {});
     }
 
     res.json({ success: true, id: result.lastInsertRowid });
   } catch (err) {
-    console.error('Webhook error:', err);
+    console.error('Zapier error:', err);
     res.status(500).json({ error: err.message });
   }
-}
-router.post('/webhook', handleWebhook);
-router.post('/zapier', handleWebhook);
+});
 
 // Export leads to CSV
 router.get('/export/csv', authenticateToken, (req, res) => {
