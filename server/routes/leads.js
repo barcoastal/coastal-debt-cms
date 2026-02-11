@@ -480,10 +480,18 @@ router.delete('/:id', authenticateToken, (req, res) => {
 router.post('/zapier', async (req, res) => {
   try {
     const apiKey = req.query.key || req.headers['x-api-key'];
-    const config = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+    // Auto-generate key if none exists
+    let config = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+    if (!config) {
+      const crypto = require('crypto');
+      const newKey = crypto.randomBytes(24).toString('hex');
+      db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('zapier_api_key', newKey);
+      config = { value: newKey };
+      console.log('Zapier API key auto-generated:', newKey);
+    }
 
-    if (!config || !apiKey || apiKey !== config.value) {
-      return res.status(401).json({ error: 'Invalid API key' });
+    if (!apiKey || apiKey !== config.value) {
+      return res.status(401).json({ error: 'Invalid API key. Get your key from /api/settings/zapier-key' });
     }
 
     const {

@@ -140,4 +140,17 @@ setTimeout(evaluateAlertRules, 30 * 1000); // Run once 30s after startup
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin`);
+
+  // Print Zapier webhook URL on startup
+  try {
+    const crypto = require('crypto');
+    let zapKey = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+    if (!zapKey) {
+      const newKey = crypto.randomBytes(24).toString('hex');
+      db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('zapier_api_key', newKey);
+      zapKey = { value: newKey };
+    }
+    const base = process.env.BASE_URL || `http://localhost:${PORT}`;
+    console.log(`Zapier webhook: ${base}/api/leads/zapier?key=${zapKey.value}`);
+  } catch (e) {}
 });
