@@ -468,10 +468,18 @@ router.patch('/:id', authenticateToken, (req, res) => {
   res.json({ success: true });
 });
 
-// Delete lead
+// Delete lead (cascades to conversion_events and visitors)
 router.delete('/:id', authenticateToken, (req, res) => {
-  const lead = db.prepare('SELECT full_name FROM leads WHERE id = ?').get(req.params.id);
+  const lead = db.prepare('SELECT full_name, eli_clickid FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  // Delete related records first
+  db.prepare('DELETE FROM conversion_events WHERE lead_id = ?').run(req.params.id);
+  if (lead.eli_clickid) {
+    db.prepare('UPDATE visitors SET lead_id = NULL, converted = 0 WHERE lead_id = ?').run(req.params.id);
+  }
   db.prepare('DELETE FROM leads WHERE id = ?').run(req.params.id);
+
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${lead?.full_name || req.params.id}`, req.ip);
   res.json({ message: 'Lead deleted' });
 });

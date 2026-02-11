@@ -147,10 +147,10 @@ async function syncFacebookLeads() {
         }
 
         for (const lead of leadsData.data || []) {
-          // Check if already imported
+          // Check if already imported by fb_leadgen_id in hidden_fields
           const existing = db.prepare(
-            `SELECT id FROM leads WHERE eli_clickid = ?`
-          ).get('fb_' + lead.id);
+            `SELECT id FROM leads WHERE hidden_fields LIKE ?`
+          ).get(`%"fb_leadgen_id":"${lead.id}"%`);
 
           if (existing) continue;
 
@@ -167,6 +167,9 @@ async function syncFacebookLeads() {
           if (!fields.full_name && (fields._first_name || fields._last_name)) {
             fields.full_name = [fields._first_name, fields._last_name].filter(Boolean).join(' ');
           }
+
+          // Generate unique eli_clickid
+          const eliClickId = 'eli_' + crypto.randomBytes(12).toString('hex');
 
           // Build hidden fields
           const hiddenFields = {
@@ -190,12 +193,12 @@ async function syncFacebookLeads() {
             }
           }
 
-          // Insert lead
+          // Insert lead with unique eli_clickid and fbclid
           const result = db.prepare(`
             INSERT INTO leads (
               landing_page_id, full_name, company_name, email, phone,
-              debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, hidden_fields
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?)
+              debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)
           `).run(
             config.default_landing_page_id,
             fields.full_name || '',
@@ -205,12 +208,13 @@ async function syncFacebookLeads() {
             fields.debt_amount || '',
             fields.has_mca || '',
             fields.considered_bankruptcy || '',
-            'fb_' + lead.id,
+            eliClickId,
+            '', // fbclid - not available from instant forms, stored when available from website clicks
             JSON.stringify(hiddenFields)
           );
 
           totalSynced++;
-          console.log(`Facebook sync: imported lead ${result.lastInsertRowid} (fb_${lead.id}) from "${form.name}"`);
+          console.log(`Facebook sync: imported lead ${result.lastInsertRowid} (${eliClickId}, fb_leadgen=${lead.id}) from "${form.name}"`);
 
           // Send notification
           if (sendLeadNotification) {
@@ -315,12 +319,25 @@ async function processLeadgenEvent(leadgenId, config) {
       return;
     }
 
+    // Check if already imported
+    const existing = db.prepare(
+      `SELECT id FROM leads WHERE hidden_fields LIKE ?`
+    ).get(`%"fb_leadgen_id":"${leadgenId}"%`);
+    if (existing) {
+      console.log(`Facebook lead ${leadgenId} already exists (lead ID ${existing.id}), skipping`);
+      return;
+    }
+
+    // Generate unique eli_clickid
+    const eliClickId = 'eli_' + crypto.randomBytes(12).toString('hex');
+
     // Build hidden fields from unmapped data
     const hiddenFields = {
       source: 'facebook_instant_form',
       fb_leadgen_id: leadgenId,
       fb_form_id: data.form_id || '',
-      fb_created_time: data.created_time || ''
+      fb_created_time: data.created_time || '',
+      sync_method: 'webhook'
     };
 
     // Add extra mapped fields to hidden_fields
@@ -334,22 +351,23 @@ async function processLeadgenEvent(leadgenId, config) {
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
-        debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, hidden_fields
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?)
+        debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)
     `).run(
       landingPageId,
       fields.full_name || '',
       fields.company_name || '',
       fields.email || '',
       fields.phone || '',
-      '',
-      '',
-      '',
-      'fb_' + leadgenId,
+      fields.debt_amount || '',
+      fields.has_mca || '',
+      fields.considered_bankruptcy || '',
+      eliClickId,
+      '', // fbclid
       JSON.stringify(hiddenFields)
     );
 
-    console.log(`Facebook lead inserted: ID ${result.lastInsertRowid}`);
+    console.log(`Facebook lead inserted: ID ${result.lastInsertRowid} (${eliClickId})`);
 
     // Send lead notification email
     if (sendLeadNotification) {
@@ -363,7 +381,7 @@ async function processLeadgenEvent(leadgenId, config) {
       db.prepare(`
         INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_id, conversion_action_name, source, status)
         VALUES (?, ?, ?, 'lead', 'auto', 'logged')
-      `).run(result.lastInsertRowid, 'fb_' + leadgenId, leadConfig?.conversion_action_id || null);
+      `).run(result.lastInsertRowid, eliClickId, leadConfig?.conversion_action_id || null);
     } catch (err) {
       console.error('Failed to create lead event for FB lead:', err);
     }
@@ -387,7 +405,7 @@ async function processLeadgenEvent(leadgenId, config) {
         VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
       `).run(
         result.lastInsertRowid,
-        'fb_' + leadgenId,
+        eliClickId,
         fbResult.success ? 'sent' : 'failed',
         fbResult.error || null,
         fbResult.payload ? JSON.stringify(fbResult.payload) : null
