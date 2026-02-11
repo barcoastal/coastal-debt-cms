@@ -497,11 +497,27 @@ async function processLeadgenEvent(leadgenId, config) {
     // Generate unique eli_clickid
     const eliClickId = 'eli_' + crypto.randomBytes(12).toString('hex');
 
+    // Skip template/placeholder fbclid values like "{{fbclid}}"
+    if (fields._fbclid && fields._fbclid.startsWith('{{')) {
+      delete fields._fbclid;
+    }
+
+    // Fetch form name from API
+    let formName = '';
+    if (data.form_id) {
+      try {
+        const formRes = await fetch(`https://graph.facebook.com/v21.0/${data.form_id}?fields=name&access_token=${config.page_access_token}`);
+        const formData = await formRes.json();
+        if (formData.name) formName = formData.name;
+      } catch (e) {}
+    }
+
     // Build hidden fields from unmapped data
     const hiddenFields = {
       source: 'facebook_instant_form',
       fb_leadgen_id: leadgenId,
       fb_form_id: data.form_id || '',
+      fb_form_name: formName,
       fb_created_time: data.created_time || '',
       sync_method: 'webhook'
     };
@@ -513,7 +529,10 @@ async function processLeadgenEvent(leadgenId, config) {
       }
     }
 
-    // Insert lead (lead ID = fbclid for instant forms)
+    // Use form fbclid if available, otherwise lead ID = fbclid
+    const fbclidValue = fields._fbclid || leadgenId;
+
+    // Insert lead
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
@@ -529,7 +548,7 @@ async function processLeadgenEvent(leadgenId, config) {
       fields.has_mca || '',
       fields.considered_bankruptcy || '',
       eliClickId,
-      leadgenId, // fbclid = Facebook lead ID for instant forms
+      fbclidValue, // fbclid = form fbclid or Facebook lead ID
       JSON.stringify(hiddenFields)
     );
 
