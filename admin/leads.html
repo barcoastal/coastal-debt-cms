@@ -238,6 +238,8 @@
       { key: 'gclid', label: 'GCLID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
+      { key: 'fbclid', label: 'FB Click ID', default: false },
+      { key: 'msclkid', label: 'MS Click ID', default: false },
       { key: 'utm_campaign', label: 'Campaign', default: true },
       { key: 'has_mca', label: 'MCA', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
@@ -259,6 +261,8 @@
       gclid: (lead) => '<td class="clickid-cell" title="' + (lead.gclid || '') + '">' + (lead.gclid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
+      fbclid: (lead) => '<td class="clickid-cell" title="' + (lead.fbclid || '') + '">' + (lead.fbclid || '-') + '</td>',
+      msclkid: (lead) => '<td class="clickid-cell" title="' + (lead.msclkid || '') + '">' + (lead.msclkid || '-') + '</td>',
       utm_campaign: (lead) => '<td>' + (lead.utm_campaign || '-') + '</td>',
       has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
@@ -425,6 +429,8 @@
           <tr><td><strong>GCLID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.gclid || '-'}</td></tr>
           <tr><td><strong>RT Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.rt_clickid || '-'}</td></tr>
           <tr><td><strong>Eli Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.eli_clickid || '-'}</td></tr>
+          <tr><td><strong>FB Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.fbclid || '-'}</td></tr>
+          <tr><td><strong>MS Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.msclkid || '-'}</td></tr>
           <tr><td colspan="2" style="padding-top:15px;"><strong>Source</strong></td></tr>
           <tr><td><strong>Landing Page</strong></td><td>${lead.landing_page_name || '-'}</td></tr>
           <tr><td><strong>Traffic Source</strong></td><td>${lead.traffic_source || '-'}</td></tr>
