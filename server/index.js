@@ -19,6 +19,9 @@ const bingAdsRoutes = require('./routes/bing-ads');
 const settingsRoutes = require('./routes/settings');
 const notificationsRoutes = require('./routes/notifications');
 const aiContentRoutes = require('./routes/ai-content');
+const crmRoutes = require('./routes/crm');
+const emailMarketingRoutes = require('./routes/email-marketing');
+const emailTrackingRoutes = require('./routes/email-tracking');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -99,6 +102,9 @@ app.use('/api/bing-ads', bingAdsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/ai', aiContentRoutes);
+app.use('/api/crm', crmRoutes);
+app.use('/api/email', emailMarketingRoutes);
+app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin
 app.get('/', (req, res) => {
@@ -140,6 +146,10 @@ try {
 const { evaluateAlertRules } = require('./routes/notifications');
 setInterval(evaluateAlertRules, 15 * 60 * 1000);
 setTimeout(evaluateAlertRules, 30 * 1000); // Run once 30s after startup
+
+// Start email worker (background queue processor + campaign scheduler)
+const { startWorker: startEmailWorker } = require('./email-worker');
+startEmailWorker();
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -571,6 +571,24 @@ router.post('/zapier', async (req, res) => {
   }
 });
 
+// Get lead email history
+router.get('/:id/emails', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT id FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  const emails = db.prepare(`
+    SELECT eq.id, eq.subject, eq.status, eq.to_email, eq.sent_at, eq.opened_at, eq.clicked_at,
+           eq.open_count, eq.click_count, eq.error_message,
+           ec.name as campaign_name
+    FROM email_queue eq
+    LEFT JOIN email_campaigns ec ON eq.campaign_id = ec.id
+    WHERE eq.lead_id = ?
+    ORDER BY eq.queued_at DESC
+  `).all(req.params.id);
+
+  res.json(emails);
+});
+
 // Export leads to CSV
 router.get('/export/csv', authenticateToken, (req, res) => {
   const { landing_page_id, from_date, to_date } = req.query;

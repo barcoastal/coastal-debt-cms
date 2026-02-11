@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Campaigns | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <style>
+    .email-subnav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid var(--gray-200); }
+    .email-subnav a { padding: 10px 20px; text-decoration: none; color: var(--gray-500); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .email-subnav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .email-subnav a:hover { color: var(--gray-700); }
+    .campaign-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+    .campaign-stat { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+    .campaign-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); }
+    .campaign-stat-label { font-size: 0.8rem; color: var(--gray-500); margin-top: 4px; }
+    .campaign-actions { display: flex; gap: 8px; margin-bottom: 24px; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+    .badge-purple { background: #f3e8ff; color: #7c3aed; }
+    .badge-draft { background: var(--gray-200); color: var(--gray-600); }
+    .badge-scheduled { background: #dbeafe; color: #1e40af; }
+    .badge-sending { background: #fef3c7; color: #92400e; }
+    .badge-sent { background: #dcfce7; color: #166534; }
+    .badge-paused { background: #ffedd5; color: #9a3412; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--gray-600); text-decoration: none; font-size: 0.9rem; margin-bottom: 16px; cursor: pointer; background: none; border: none; padding: 0; }
+    .back-btn:hover { color: var(--gray-900); }
+    .recipient-status-sent { color: #166534; }
+    .recipient-status-pending { color: #92400e; }
+    .recipient-status-failed { color: #991b1b; }
+    .recipient-status-bounced { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/facebook-debug.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          FB Debug
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Email Campaigns</h1>
+      </div>
+
+      <!-- Sub-nav -->
+      <div class="email-subnav">
+        <a href="email-templates.html">Templates</a>
+        <a href="email-segments.html">Segments</a>
+        <a href="email-campaigns.html" class="active">Campaigns</a>
+      </div>
+
+      <!-- Campaign List View -->
+      <div id="listView">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">All Campaigns</h3>
+            <button class="btn btn-primary" onclick="showModal('createModal')">New Campaign</button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Template</th>
+                  <th>Segment</th>
+                  <th>Sent</th>
+                  <th>Opens</th>
+                  <th>Clicks</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="campaignsTable">
+                <tr>
+                  <td colspan="9" class="loading"><div class="spinner"></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaign Detail View -->
+      <div id="detailView" style="display: none;">
+        <button class="back-btn" onclick="showListView()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Campaigns
+        </button>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 id="detailName" style="margin: 0;"></h2>
+          <span id="detailStatusBadge"></span>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="campaign-stats">
+          <div class="campaign-stat">
+            <div class="campaign-stat-value" id="statSent">0</div>
+            <div class="campaign-stat-label">Sent</div>
+          </div>
+          <div class="campaign-stat">
+            <div class="campaign-stat-value" id="statOpened">0%</div>
+            <div class="campaign-stat-label">Opened</div>
+          </div>
+          <div class="campaign-stat">
+            <div class="campaign-stat-value" id="statClicked">0%</div>
+            <div class="campaign-stat-label">Clicked</div>
+          </div>
+          <div class="campaign-stat">
+            <div class="campaign-stat-value" id="statBounced">0</div>
+            <div class="campaign-stat-label">Bounced</div>
+          </div>
+          <div class="campaign-stat">
+            <div class="campaign-stat-value" id="statUnsubscribed">0</div>
+            <div class="campaign-stat-label">Unsubscribed</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="campaign-actions" id="detailActions"></div>
+
+        <!-- Recipients Table -->
+        <div class="card">
+          <h3 style="margin: 0 0 16px;">Recipients</h3>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Sent At</th>
+                  <th>Opened</th>
+                  <th>Clicked</th>
+                </tr>
+              </thead>
+              <tbody id="recipientsTable">
+                <tr>
+                  <td colspan="6" class="empty-state">No recipients yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="recipientsPagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Campaign Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>New Campaign</h2>
+        <button class="modal-close" onclick="hideModal('createModal')">&times;</button>
+      </div>
+      <form id="createForm" onsubmit="createCampaign(event)">
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" id="campaignName" required placeholder="e.g. March Newsletter">
+        </div>
+        <div class="form-group">
+          <label>Template *</label>
+          <select id="campaignTemplate" required>
+            <option value="">Select a template...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Segment (optional)</label>
+          <select id="campaignSegment">
+            <option value="">All contacts</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subject Override (optional)</label>
+          <input type="text" id="campaignSubject" placeholder="Leave blank to use template subject">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('createModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Campaign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Schedule Modal -->
+  <div class="modal-overlay" id="scheduleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Schedule Campaign</h2>
+        <button class="modal-close" onclick="hideModal('scheduleModal')">&times;</button>
+      </div>
+      <form id="scheduleForm" onsubmit="scheduleCampaign(event)">
+        <div class="form-group">
+          <label>Send Date &amp; Time *</label>
+          <input type="datetime-local" id="scheduleDateTime" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('scheduleModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Schedule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js?v=4"></script>
+  <script>
+    let campaigns = [];
+    let currentCampaignId = null;
+    let currentCampaign = null;
+    let recipientsPage = 1;
+
+    // Status badge helper
+    function statusBadge(status) {
+      const map = {
+        draft: 'badge-draft',
+        scheduled: 'badge-scheduled',
+        sending: 'badge-sending',
+        sent: 'badge-sent',
+        paused: 'badge-paused',
+        cancelled: 'badge-cancelled'
+      };
+      const cls = map[status] || 'badge-draft';
+      return '<span class="badge ' + cls + '">' + escapeHtml(status || 'draft') + '</span>';
+    }
+
+    // Calculate percentage
+    function pct(num, total) {
+      if (!total || total === 0) return '0%';
+      return (num / total * 100).toFixed(1) + '%';
+    }
+
+    // Load campaigns list
+    async function loadCampaigns() {
+      const tbody = document.getElementById('campaignsTable');
+      try {
+        const res = await fetch('/api/email/campaigns');
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        const data = await res.json();
+        campaigns = Array.isArray(data) ? data : (data.campaigns || []);
+
+        if (campaigns.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No campaigns yet. Click "New Campaign" to create one.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = campaigns.map(c => {
+          const sent = c.sent || 0;
+          const opens = c.opens || c.opened || 0;
+          const clicks = c.clicks || c.clicked || 0;
+          return '<tr style="cursor:pointer;" onclick="viewCampaign(' + c.id + ')">' +
+            '<td>' + escapeHtml(c.name) + '</td>' +
+            '<td>' + statusBadge(c.status) + '</td>' +
+            '<td>' + escapeHtml(c.template_name || c.template || '-') + '</td>' +
+            '<td>' + escapeHtml(c.segment_name || c.segment || '-') + '</td>' +
+            '<td>' + sent + '</td>' +
+            '<td>' + pct(opens, sent) + '</td>' +
+            '<td>' + pct(clicks, sent) + '</td>' +
+            '<td>' + formatDate(c.created_at) + '</td>' +
+            '<td class="actions" onclick="event.stopPropagation();">' +
+              '<button class="action-btn action-btn-delete" onclick="deleteCampaign(' + c.id + ')">Delete</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load campaigns:', err);
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Failed to load campaigns: ' + escapeHtml(err.message) + '</td></tr>';
+      }
+    }
+
+    // Load template and segment options for the create modal
+    async function loadFormOptions() {
+      // Load templates
+      try {
+        const res = await fetch('/api/email/templates');
+        if (res.ok) {
+          const data = await res.json();
+          const templates = Array.isArray(data) ? data : (data.templates || []);
+          const select = document.getElementById('campaignTemplate');
+          templates.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.name;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load templates:', e);
+      }
+
+      // Load segments
+      try {
+        const res = await fetch('/api/email/segments');
+        if (res.ok) {
+          const data = await res.json();
+          const segments = Array.isArray(data) ? data : (data.segments || []);
+          const select = document.getElementById('campaignSegment');
+          segments.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name + (s.count !== undefined ? ' (' + s.count + ')' : '');
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load segments:', e);
+      }
+    }
+
+    // Create campaign
+    async function createCampaign(e) {
+      e.preventDefault();
+      const name = document.getElementById('campaignName').value.trim();
+      const template_id = document.getElementById('campaignTemplate').value;
+      const segment_id = document.getElementById('campaignSegment').value;
+      const subject_override = document.getElementById('campaignSubject').value.trim();
+
+      if (!name || !template_id) return;
+
+      const body = { name, template_id };
+      if (segment_id) body.segment_id = segment_id;
+      if (subject_override) body.subject_override = subject_override;
+
+      try {
+        const res = await fetch('/api/email/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to create campaign');
+        }
+        hideModal('createModal');
+        document.getElementById('createForm').reset();
+        loadCampaigns();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Delete campaign
+    async function deleteCampaign(id) {
+      if (!confirm('Are you sure you want to delete this campaign?')) return;
+      try {
+        const res = await fetch('/api/email/campaigns/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+        loadCampaigns();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // View campaign detail
+    async function viewCampaign(id) {
+      currentCampaignId = id;
+      recipientsPage = 1;
+
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+
+      // Load campaign stats
+      try {
+        const res = await fetch('/api/email/campaigns/' + id + '/stats');
+        if (!res.ok) throw new Error('Failed to load stats');
+        const stats = await res.json();
+        currentCampaign = stats;
+
+        document.getElementById('detailName').textContent = stats.name || 'Campaign';
+        document.getElementById('detailStatusBadge').innerHTML = statusBadge(stats.status);
+
+        const sent = stats.sent || 0;
+        const opened = stats.opened || stats.opens || 0;
+        const clicked = stats.clicked || stats.clicks || 0;
+        const bounced = stats.bounced || 0;
+        const unsubscribed = stats.unsubscribed || 0;
+
+        document.getElementById('statSent').textContent = sent;
+        document.getElementById('statOpened').textContent = pct(opened, sent);
+        document.getElementById('statClicked').textContent = pct(clicked, sent);
+        document.getElementById('statBounced').textContent = bounced;
+        document.getElementById('statUnsubscribed').textContent = unsubscribed;
+
+        renderActionButtons(stats.status);
+      } catch (err) {
+        console.error('Failed to load campaign stats:', err);
+        document.getElementById('detailName').textContent = 'Campaign #' + id;
+        document.getElementById('detailStatusBadge').innerHTML = '';
+        renderActionButtons('draft');
+      }
+
+      loadRecipients(1);
+    }
+
+    // Render action buttons based on status
+    function renderActionButtons(status) {
+      const container = document.getElementById('detailActions');
+      let html = '';
+
+      switch (status) {
+        case 'draft':
+          html += '<button class="btn btn-primary" onclick="sendNow()">Send Now</button>';
+          html += '<button class="btn btn-secondary" onclick="showModal(\'scheduleModal\')">Schedule</button>';
+          break;
+        case 'scheduled':
+          html += '<button class="btn btn-primary" onclick="sendNow()">Send Now</button>';
+          html += '<button class="btn btn-secondary" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" onclick="cancelCampaign()">Cancel</button>';
+          break;
+        case 'sending':
+          html += '<button class="btn btn-secondary" style="background:#ffedd5;color:#9a3412;border-color:#fed7aa;" onclick="pauseCampaign()">Pause</button>';
+          html += '<button class="btn btn-secondary" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" onclick="cancelCampaign()">Cancel</button>';
+          break;
+        case 'paused':
+          html += '<button class="btn btn-primary" onclick="resumeCampaign()">Resume</button>';
+          html += '<button class="btn btn-secondary" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;" onclick="cancelCampaign()">Cancel</button>';
+          break;
+        default:
+          break;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Campaign actions
+    async function sendNow() {
+      if (!confirm('Send this campaign now?')) return;
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/send-now', { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to send');
+        }
+        viewCampaign(currentCampaignId);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function scheduleCampaign(e) {
+      e.preventDefault();
+      const scheduledAt = document.getElementById('scheduleDateTime').value;
+      if (!scheduledAt) return;
+
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduled_at: scheduledAt })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to schedule');
+        }
+        hideModal('scheduleModal');
+        document.getElementById('scheduleForm').reset();
+        viewCampaign(currentCampaignId);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function pauseCampaign() {
+      if (!confirm('Pause this campaign?')) return;
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/pause', { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to pause');
+        }
+        viewCampaign(currentCampaignId);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function resumeCampaign() {
+      if (!confirm('Resume sending this campaign?')) return;
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/resume', { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to resume');
+        }
+        viewCampaign(currentCampaignId);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function cancelCampaign() {
+      if (!confirm('Cancel this campaign? This cannot be undone.')) return;
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/cancel', { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to cancel');
+        }
+        viewCampaign(currentCampaignId);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Load recipients
+    async function loadRecipients(page) {
+      recipientsPage = page;
+      const tbody = document.getElementById('recipientsTable');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>';
+
+      try {
+        const res = await fetch('/api/email/campaigns/' + currentCampaignId + '/recipients?page=' + page);
+        if (!res.ok) throw new Error('Failed to load recipients');
+        const data = await res.json();
+        const recipients = Array.isArray(data) ? data : (data.recipients || []);
+        const pagination = data.pagination || null;
+
+        if (recipients.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No recipients yet</td></tr>';
+        } else {
+          tbody.innerHTML = recipients.map(r => {
+            const statusClass = 'recipient-status-' + (r.status || 'pending');
+            return '<tr>' +
+              '<td>' + escapeHtml(r.email) + '</td>' +
+              '<td>' + escapeHtml(r.name || '-') + '</td>' +
+              '<td><span class="' + statusClass + '">' + escapeHtml(r.status || 'pending') + '</span></td>' +
+              '<td>' + (r.sent_at ? formatDate(r.sent_at) : '-') + '</td>' +
+              '<td>' + (r.opened_at ? formatDate(r.opened_at) : (r.opened ? 'Yes' : '-')) + '</td>' +
+              '<td>' + (r.clicked_at ? formatDate(r.clicked_at) : (r.clicked ? 'Yes' : '-')) + '</td>' +
+            '</tr>';
+          }).join('');
+        }
+
+        // Render pagination
+        const paginationEl = document.getElementById('recipientsPagination');
+        paginationEl.innerHTML = '';
+        if (pagination && pagination.pages > 1) {
+          for (let i = 1; i <= pagination.pages; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-small ' + (i === recipientsPage ? 'btn-primary' : 'btn-secondary');
+            btn.textContent = i;
+            btn.onclick = () => loadRecipients(i);
+            paginationEl.appendChild(btn);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load recipients:', err);
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Failed to load recipients: ' + escapeHtml(err.message) + '</td></tr>';
+      }
+    }
+
+    // Switch back to list view
+    function showListView() {
+      currentCampaignId = null;
+      currentCampaign = null;
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('listView').style.display = 'block';
+      loadCampaigns();
+    }
+
+    // Initialize
+    loadCampaigns();
+    loadFormOptions();
+  </script>
+</body>
+</html>

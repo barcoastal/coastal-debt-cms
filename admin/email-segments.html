@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Segments | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <style>
+    .email-subnav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid var(--gray-200); }
+    .email-subnav a { padding: 10px 20px; text-decoration: none; color: var(--gray-500); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .email-subnav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .email-subnav a:hover { color: var(--gray-700); }
+    .filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .filter-row select, .filter-row input { padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 0.85rem; }
+    .filter-row select { min-width: 140px; }
+    .filter-row input { flex: 1; }
+    .filter-remove { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; }
+    .filter-add { background: none; border: 1px dashed var(--gray-300); color: var(--gray-500); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+    .filter-add:hover { border-color: var(--primary); color: var(--primary); }
+    .logic-toggle { display: inline-flex; gap: 0; border: 1px solid var(--gray-300); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    .logic-toggle button { padding: 6px 16px; border: none; background: #fff; cursor: pointer; font-size: 0.85rem; }
+    .logic-toggle button.active { background: var(--primary); color: #fff; }
+    .preview-count { font-weight: 600; color: var(--primary); font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/google-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Google Ads
+        </a>
+        <a href="/admin/bing-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
+          Bing Ads
+        </a>
+        <a href="/admin/meta-ads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          Meta Ads
+        </a>
+        <a href="/admin/facebook-debug.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          FB Debug
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Email Segments</h1>
+        <button class="btn btn-primary" onclick="openModal()">New Segment</button>
+      </div>
+
+      <div class="email-subnav">
+        <a href="/admin/email-templates.html">Templates</a>
+        <a href="/admin/email-segments.html" class="active">Segments</a>
+        <a href="/admin/email-campaigns.html">Campaigns</a>
+      </div>
+
+      <div class="card">
+        <div id="segmentsLoading" style="text-align: center; padding: 60px 0;">
+          <div class="spinner"></div>
+        </div>
+        <table class="data-table" id="segmentsTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Lead Count</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="segmentsBody"></tbody>
+        </table>
+        <div id="segmentsEmpty" class="empty-state" style="display: none;">
+          <p>No segments created yet. Click "New Segment" to get started.</p>
+        </div>
+        <div id="segmentsError" class="empty-state" style="display: none;"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create/Edit Segment Modal -->
+  <div class="modal-overlay" id="segmentModal" style="display: none;">
+    <div class="modal" style="max-width: 640px;">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Segment</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-input" id="segmentName" placeholder="e.g. High-value qualified leads">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-input" id="segmentDescription" placeholder="Brief description of this segment">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Filter Logic</label>
+          <div class="logic-toggle" id="logicToggle">
+            <button class="active" data-logic="AND" onclick="setLogic('AND')">AND</button>
+            <button data-logic="OR" onclick="setLogic('OR')">OR</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Filters</label>
+          <div id="filterRows"></div>
+          <button class="filter-add" onclick="addFilterRow()">+ Add Filter</button>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-secondary" onclick="previewCount()">Preview Count</button>
+          <span class="preview-count" id="previewCountValue"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveSegmentBtn" onclick="saveSegment()">Save Segment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js?v=4"></script>
+  <script>
+    let segments = [];
+    let editingId = null;
+    let currentLogic = 'AND';
+    let filterCounter = 0;
+
+    const FILTER_FIELDS = [
+      { value: 'current_stage', label: 'Current Stage' },
+      { value: 'platform', label: 'Platform' },
+      { value: 'landing_page_id', label: 'Landing Page' },
+      { value: 'has_mca', label: 'Has MCA' },
+      { value: 'debt_amount', label: 'Debt Amount' },
+      { value: 'stage', label: 'Stage' },
+      { value: 'transfer_status', label: 'Transfer Status' },
+      { value: 'created_at', label: 'Created At' },
+      { value: 'assigned_to', label: 'Assigned To' },
+      { value: 'utm_campaign', label: 'UTM Campaign' },
+      { value: 'email', label: 'Email' }
+    ];
+
+    const OPERATORS_BY_FIELD = {
+      current_stage: ['equals', 'in', 'is_null'],
+      platform: ['equals', 'in', 'is_null'],
+      landing_page_id: ['equals', 'in', 'is_null'],
+      has_mca: ['equals', 'is_null'],
+      debt_amount: ['equals', 'between', 'is_null'],
+      stage: ['equals', 'in', 'is_null'],
+      transfer_status: ['equals', 'in', 'is_null'],
+      created_at: ['after', 'before', 'between', 'is_null'],
+      assigned_to: ['equals', 'in', 'is_null'],
+      utm_campaign: ['equals', 'contains', 'in', 'is_null'],
+      email: ['equals', 'contains', 'is_null']
+    };
+
+    const OPERATOR_LABELS = {
+      equals: 'Equals',
+      in: 'In (comma-separated)',
+      contains: 'Contains',
+      between: 'Between',
+      after: 'After',
+      before: 'Before',
+      is_null: 'Is Empty'
+    };
+
+    // Load segments
+    async function loadSegments() {
+      const loadingEl = document.getElementById('segmentsLoading');
+      const tableEl = document.getElementById('segmentsTable');
+      const emptyEl = document.getElementById('segmentsEmpty');
+      const errorEl = document.getElementById('segmentsError');
+
+      try {
+        const res = await fetch('/api/email/segments');
+        if (!res.ok) throw new Error('Failed to load segments: ' + res.status);
+        segments = await res.json();
+
+        loadingEl.style.display = 'none';
+
+        if (segments.length === 0) {
+          emptyEl.style.display = 'block';
+          tableEl.style.display = 'none';
+          return;
+        }
+
+        emptyEl.style.display = 'none';
+        tableEl.style.display = 'table';
+        renderSegments();
+      } catch (err) {
+        console.error('Failed to load segments:', err);
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Failed to load segments: ' + err.message;
+      }
+    }
+
+    function renderSegments() {
+      const tbody = document.getElementById('segmentsBody');
+      tbody.innerHTML = segments.map(seg => {
+        const created = seg.created_at ? new Date(seg.created_at).toLocaleDateString() : '-';
+        return '<tr>' +
+          '<td><strong>' + escapeHtml(seg.name) + '</strong></td>' +
+          '<td>' + escapeHtml(seg.description || '-') + '</td>' +
+          '<td>' + (seg.lead_count != null ? seg.lead_count : '-') + '</td>' +
+          '<td>' + created + '</td>' +
+          '<td>' +
+            '<button class="btn btn-secondary btn-small" onclick="editSegment(' + seg.id + ')" style="margin-right:4px;">Edit</button>' +
+            '<button class="btn btn-secondary btn-small" onclick="deleteSegment(' + seg.id + ')" style="color:var(--red);">Delete</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // Modal management
+    function openModal(segment) {
+      editingId = segment ? segment.id : null;
+      document.getElementById('modalTitle').textContent = segment ? 'Edit Segment' : 'New Segment';
+      document.getElementById('segmentName').value = segment ? segment.name : '';
+      document.getElementById('segmentDescription').value = segment ? segment.description || '' : '';
+      document.getElementById('previewCountValue').textContent = '';
+      document.getElementById('filterRows').innerHTML = '';
+      filterCounter = 0;
+
+      if (segment && segment.filter_criteria) {
+        const criteria = typeof segment.filter_criteria === 'string' ? JSON.parse(segment.filter_criteria) : segment.filter_criteria;
+        currentLogic = criteria.logic || 'AND';
+        if (criteria.filters && criteria.filters.length > 0) {
+          criteria.filters.forEach(f => addFilterRow(f));
+        } else {
+          addFilterRow();
+        }
+      } else {
+        currentLogic = 'AND';
+        addFilterRow();
+      }
+
+      updateLogicToggle();
+      document.getElementById('segmentModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('segmentModal').style.display = 'none';
+      editingId = null;
+    }
+
+    function setLogic(logic) {
+      currentLogic = logic;
+      updateLogicToggle();
+    }
+
+    function updateLogicToggle() {
+      const buttons = document.querySelectorAll('#logicToggle button');
+      buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-logic') === currentLogic);
+      });
+    }
+
+    // Filter rows
+    function addFilterRow(filter) {
+      filterCounter++;
+      const rowId = 'filter-row-' + filterCounter;
+      const container = document.getElementById('filterRows');
+
+      const row = document.createElement('div');
+      row.className = 'filter-row';
+      row.id = rowId;
+
+      // Field select
+      const fieldSelect = document.createElement('select');
+      fieldSelect.className = 'filter-field';
+      fieldSelect.innerHTML = '<option value="">Select field...</option>' +
+        FILTER_FIELDS.map(f => '<option value="' + f.value + '">' + f.label + '</option>').join('');
+      fieldSelect.onchange = function() { onFieldChange(rowId); };
+
+      // Operator select
+      const opSelect = document.createElement('select');
+      opSelect.className = 'filter-operator';
+      opSelect.innerHTML = '<option value="">Select operator...</option>';
+      opSelect.onchange = function() { onOperatorChange(rowId); };
+
+      // Value container
+      const valueContainer = document.createElement('div');
+      valueContainer.className = 'filter-value-container';
+      valueContainer.style.flex = '1';
+      valueContainer.style.display = 'flex';
+      valueContainer.style.gap = '8px';
+
+      const valueInput = document.createElement('input');
+      valueInput.type = 'text';
+      valueInput.className = 'filter-value';
+      valueInput.placeholder = 'Value';
+      valueContainer.appendChild(valueInput);
+
+      // Remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'filter-remove';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.onclick = function() { row.remove(); };
+
+      row.appendChild(fieldSelect);
+      row.appendChild(opSelect);
+      row.appendChild(valueContainer);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+
+      // Pre-fill if editing
+      if (filter) {
+        fieldSelect.value = filter.field || '';
+        onFieldChange(rowId);
+        opSelect.value = filter.operator || '';
+        onOperatorChange(rowId);
+
+        if (filter.operator === 'between' && filter.field === 'created_at') {
+          const dateInputs = valueContainer.querySelectorAll('input[type="date"]');
+          if (Array.isArray(filter.value) && filter.value.length >= 2) {
+            if (dateInputs[0]) dateInputs[0].value = filter.value[0] || '';
+            if (dateInputs[1]) dateInputs[1].value = filter.value[1] || '';
+          }
+        } else if (filter.operator === 'in') {
+          const valInput = valueContainer.querySelector('.filter-value');
+          if (valInput && Array.isArray(filter.value)) {
+            valInput.value = filter.value.join(', ');
+          } else if (valInput) {
+            valInput.value = filter.value || '';
+          }
+        } else if (filter.operator !== 'is_null') {
+          const valInput = valueContainer.querySelector('.filter-value');
+          if (valInput) valInput.value = filter.value || '';
+        }
+      }
+    }
+
+    function onFieldChange(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      const fieldSelect = row.querySelector('.filter-field');
+      const opSelect = row.querySelector('.filter-operator');
+      const field = fieldSelect.value;
+
+      const operators = OPERATORS_BY_FIELD[field] || [];
+      opSelect.innerHTML = '<option value="">Select operator...</option>' +
+        operators.map(op => '<option value="' + op + '">' + (OPERATOR_LABELS[op] || op) + '</option>').join('');
+
+      // Reset value
+      onOperatorChange(rowId);
+    }
+
+    function onOperatorChange(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      const fieldSelect = row.querySelector('.filter-field');
+      const opSelect = row.querySelector('.filter-operator');
+      const valueContainer = row.querySelector('.filter-value-container');
+      const field = fieldSelect.value;
+      const operator = opSelect.value;
+
+      valueContainer.innerHTML = '';
+
+      if (operator === 'is_null') {
+        // No value input needed
+        return;
+      }
+
+      if (operator === 'between' && field === 'created_at') {
+        const dateFrom = document.createElement('input');
+        dateFrom.type = 'date';
+        dateFrom.className = 'filter-value filter-value-from';
+        dateFrom.style.flex = '1';
+        const dateTo = document.createElement('input');
+        dateTo.type = 'date';
+        dateTo.className = 'filter-value filter-value-to';
+        dateTo.style.flex = '1';
+        valueContainer.appendChild(dateFrom);
+        valueContainer.appendChild(dateTo);
+      } else if (operator === 'in') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'filter-value';
+        input.placeholder = 'Comma-separated values';
+        valueContainer.appendChild(input);
+      } else if (operator === 'after' || operator === 'before') {
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.className = 'filter-value';
+        dateInput.style.flex = '1';
+        valueContainer.appendChild(dateInput);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'filter-value';
+        input.placeholder = 'Value';
+        valueContainer.appendChild(input);
+      }
+    }
+
+    function getFilterCriteria() {
+      const rows = document.querySelectorAll('#filterRows .filter-row');
+      const filters = [];
+
+      rows.forEach(row => {
+        const field = row.querySelector('.filter-field').value;
+        const operator = row.querySelector('.filter-operator').value;
+        if (!field || !operator) return;
+
+        let value = null;
+
+        if (operator === 'is_null') {
+          value = null;
+        } else if (operator === 'between' && field === 'created_at') {
+          const from = row.querySelector('.filter-value-from');
+          const to = row.querySelector('.filter-value-to');
+          value = [from ? from.value : '', to ? to.value : ''];
+        } else if (operator === 'in') {
+          const input = row.querySelector('.filter-value');
+          value = input ? input.value.split(',').map(v => v.trim()).filter(v => v) : [];
+        } else {
+          const input = row.querySelector('.filter-value');
+          value = input ? input.value : '';
+        }
+
+        filters.push({ field, operator, value });
+      });
+
+      return { logic: currentLogic, filters };
+    }
+
+    async function previewCount() {
+      const criteria = getFilterCriteria();
+      const countEl = document.getElementById('previewCountValue');
+      countEl.textContent = 'Loading...';
+
+      try {
+        const res = await fetch('/api/email/segments/preview-count', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filter_criteria: criteria })
+        });
+        if (!res.ok) throw new Error('Failed to preview count');
+        const data = await res.json();
+        countEl.textContent = (data.count != null ? data.count : 0) + ' leads match';
+      } catch (err) {
+        console.error('Preview count error:', err);
+        countEl.textContent = 'Error loading count';
+        countEl.style.color = 'var(--red)';
+        setTimeout(() => { countEl.style.color = ''; }, 3000);
+      }
+    }
+
+    async function saveSegment() {
+      const name = document.getElementById('segmentName').value.trim();
+      const description = document.getElementById('segmentDescription').value.trim();
+      const filter_criteria = getFilterCriteria();
+
+      if (!name) {
+        alert('Please enter a segment name.');
+        return;
+      }
+
+      const payload = { name, description, filter_criteria };
+      const btn = document.getElementById('saveSegmentBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        let res;
+        if (editingId) {
+          res = await fetch('/api/email/segments/' + editingId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/email/segments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (!res.ok) throw new Error('Failed to save segment: ' + res.status);
+
+        closeModal();
+        loadSegments();
+      } catch (err) {
+        console.error('Save segment error:', err);
+        alert('Error saving segment: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Segment';
+      }
+    }
+
+    function editSegment(id) {
+      const segment = segments.find(s => s.id === id);
+      if (segment) openModal(segment);
+    }
+
+    async function deleteSegment(id) {
+      if (!confirm('Are you sure you want to delete this segment?')) return;
+
+      try {
+        const res = await fetch('/api/email/segments/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete segment: ' + res.status);
+        loadSegments();
+      } catch (err) {
+        console.error('Delete segment error:', err);
+        alert('Error deleting segment: ' + err.message);
+      }
+    }
+
+    // Initialize
+    loadSegments();
+  </script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Templates | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <style>
+    .email-subnav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid var(--gray-200); }
+    .email-subnav a { padding: 10px 20px; text-decoration: none; color: var(--gray-500); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .email-subnav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .email-subnav a:hover { color: var(--gray-700); }
+    .var-dropdown { position: relative; display: inline-block; }
+    .var-dropdown-content { display: none; position: absolute; background: #fff; border: 1px solid var(--gray-200); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; max-height: 200px; overflow-y: auto; min-width: 200px; }
+    .var-dropdown-content.show { display: block; }
+    .var-dropdown-content div { padding: 8px 12px; cursor: pointer; font-size: 0.85rem; }
+    .var-dropdown-content div:hover { background: var(--gray-50); }
+    .preview-frame { width: 100%; height: 400px; border: 1px solid var(--gray-200); border-radius: 8px; }
+    .badge-active { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
+    .badge-inactive { background: var(--gray-200); color: var(--gray-600); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; }
+    .template-body-field textarea { width: 100%; min-height: 280px; font-family: monospace; font-size: 13px; resize: vertical; }
+    .form-row { margin-bottom: 16px; }
+    .form-row label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; color: var(--gray-700); }
+    .form-row input[type="text"], .form-row textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 0.9rem; }
+    .form-row input[type="text"]:focus, .form-row textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .subject-row { display: flex; gap: 8px; align-items: flex-start; }
+    .subject-row input { flex: 1; }
+    .var-btn { padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.85rem; white-space: nowrap; color: var(--gray-600); }
+    .var-btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
+    .body-toolbar { display: flex; gap: 8px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</a>
+        <a href="/admin/leads.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Leads</a>
+        <a href="/admin/pipeline.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Pipeline</a>
+        <a href="/admin/email-campaigns.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Marketing</a>
+        <a href="/admin/visitors.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Visitors</a>
+        <a href="/admin/conversions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Conversions</a>
+        <a href="/admin/google-ads.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Google Ads</a>
+        <a href="/admin/bing-ads.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>Bing Ads</a>
+        <a href="/admin/meta-ads.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>Meta Ads</a>
+        <a href="/admin/facebook-debug.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>FB Debug</a>
+        <a href="/admin/utm-builder.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>UTM Builder</a>
+        <a href="/admin/organic.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>Organic Traffic</a>
+        <a href="/admin/pages.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Landing Pages</a>
+        <a href="/admin/forms.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>Forms</a>
+        <a href="/admin/scripts.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Scripts</a>
+        <a href="/admin/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Integrations</a>
+        <a href="/admin/platform-settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Email Templates</h1>
+        <button class="btn btn-primary" onclick="openCreateModal()">New Template</button>
+      </div>
+
+      <!-- Sub-nav tabs -->
+      <div class="email-subnav">
+        <a href="/admin/email-templates.html" class="active">Templates</a>
+        <a href="/admin/email-segments.html">Segments</a>
+        <a href="/admin/email-campaigns.html">Campaigns</a>
+      </div>
+
+      <!-- Templates Table -->
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="templatesTable">
+              <tr>
+                <td colspan="5" class="loading"><div class="spinner"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create/Edit Template Modal -->
+  <div class="modal-overlay" id="templateModal">
+    <div class="modal" style="max-width:800px;padding:24px;">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Template</h2>
+        <button class="modal-close" onclick="hideModal('templateModal')">&times;</button>
+      </div>
+      <form id="templateForm" onsubmit="saveTemplate(event)">
+        <input type="hidden" id="templateId">
+        <div class="form-row">
+          <label for="templateName">Name</label>
+          <input type="text" id="templateName" placeholder="e.g. Welcome Email" required>
+        </div>
+        <div class="form-row">
+          <label for="templateSubject">Subject</label>
+          <div class="subject-row">
+            <input type="text" id="templateSubject" placeholder="e.g. Welcome to Coastal Debt, {{first_name}}!" required>
+            <div class="var-dropdown">
+              <button type="button" class="var-btn" onclick="toggleVarDropdown('subjectVarDropdown')">{ } Variables</button>
+              <div class="var-dropdown-content" id="subjectVarDropdown"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row template-body-field">
+          <label for="templateBody">HTML Body</label>
+          <div class="body-toolbar">
+            <div class="var-dropdown">
+              <button type="button" class="var-btn" onclick="toggleVarDropdown('bodyVarDropdown')">{ } Insert Variable</button>
+              <div class="var-dropdown-content" id="bodyVarDropdown"></div>
+            </div>
+          </div>
+          <textarea id="templateBody" placeholder="Enter HTML email body..." required></textarea>
+        </div>
+        <div class="form-row">
+          <label>
+            <input type="checkbox" id="templateActive" checked> Active
+          </label>
+        </div>
+        <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('templateModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Template</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal" style="max-width:800px;padding:24px;">
+      <div class="modal-header">
+        <h2>Template Preview</h2>
+        <button class="modal-close" onclick="hideModal('previewModal')">&times;</button>
+      </div>
+      <iframe id="previewFrame" class="preview-frame" sandbox="allow-same-origin"></iframe>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-secondary" onclick="hideModal('previewModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js?v=4"></script>
+  <script>
+    let templates = [];
+    let variables = [];
+
+    // Load templates
+    async function loadTemplates() {
+      const tbody = document.getElementById('templatesTable');
+      try {
+        const res = await fetch('/api/email/templates');
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        templates = await res.json();
+
+        if (!templates || templates.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No templates yet. Click "New Template" to create one.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = templates.map(t => `
+          <tr>
+            <td>${escapeHtml(t.name)}</td>
+            <td>${escapeHtml(t.subject)}</td>
+            <td><span class="${t.status === 'active' ? 'badge-active' : 'badge-inactive'}">${t.status === 'active' ? 'Active' : 'Inactive'}</span></td>
+            <td>${formatDate(t.created_at)}</td>
+            <td class="actions" style="display:flex;gap:6px;">
+              <button class="action-btn action-btn-view" onclick="editTemplate(${t.id})">Edit</button>
+              <button class="action-btn action-btn-view" onclick="previewTemplate(${t.id})">Preview</button>
+              <button class="action-btn action-btn-view" onclick="sendTest(${t.id})">Send Test</button>
+              <button class="action-btn action-btn-delete" onclick="deleteTemplate(${t.id})">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load templates: ' + escapeHtml(err.message) + '</td></tr>';
+      }
+    }
+
+    // Load variables
+    async function loadVariables() {
+      try {
+        const res = await fetch('/api/email/templates/variables');
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        variables = await res.json();
+        renderVarDropdowns();
+      } catch (err) {
+        console.error('Failed to load variables:', err);
+      }
+    }
+
+    function renderVarDropdowns() {
+      const subjectDropdown = document.getElementById('subjectVarDropdown');
+      const bodyDropdown = document.getElementById('bodyVarDropdown');
+
+      const html = variables.map(v => `<div onclick="insertVariable('${v}', this)">${v}</div>`).join('');
+      subjectDropdown.innerHTML = html || '<div style="color:var(--gray-400);">No variables available</div>';
+      bodyDropdown.innerHTML = html || '<div style="color:var(--gray-400);">No variables available</div>';
+    }
+
+    function toggleVarDropdown(id) {
+      // Close all other dropdowns first
+      document.querySelectorAll('.var-dropdown-content').forEach(el => {
+        if (el.id !== id) el.classList.remove('show');
+      });
+      document.getElementById(id).classList.toggle('show');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.var-dropdown')) {
+        document.querySelectorAll('.var-dropdown-content').forEach(el => el.classList.remove('show'));
+      }
+    });
+
+    function insertVariable(varName, clickedEl) {
+      const tag = '{{' + varName + '}}';
+      const dropdownEl = clickedEl.closest('.var-dropdown-content');
+
+      // Determine which input to target
+      let targetInput;
+      if (dropdownEl.id === 'subjectVarDropdown') {
+        targetInput = document.getElementById('templateSubject');
+      } else {
+        targetInput = document.getElementById('templateBody');
+      }
+
+      // Insert at cursor position
+      const start = targetInput.selectionStart;
+      const end = targetInput.selectionEnd;
+      const text = targetInput.value;
+      targetInput.value = text.substring(0, start) + tag + text.substring(end);
+      targetInput.focus();
+      targetInput.selectionStart = targetInput.selectionEnd = start + tag.length;
+
+      // Close dropdown
+      dropdownEl.classList.remove('show');
+    }
+
+    // Open create modal
+    function openCreateModal() {
+      document.getElementById('modalTitle').textContent = 'New Template';
+      document.getElementById('templateId').value = '';
+      document.getElementById('templateName').value = '';
+      document.getElementById('templateSubject').value = '';
+      document.getElementById('templateBody').value = '';
+      document.getElementById('templateActive').checked = true;
+      showModal('templateModal');
+    }
+
+    // Edit template
+    function editTemplate(id) {
+      const t = templates.find(tpl => tpl.id === id);
+      if (!t) return;
+
+      document.getElementById('modalTitle').textContent = 'Edit Template';
+      document.getElementById('templateId').value = t.id;
+      document.getElementById('templateName').value = t.name || '';
+      document.getElementById('templateSubject').value = t.subject || '';
+      document.getElementById('templateBody').value = t.html_body || t.body || '';
+      document.getElementById('templateActive').checked = t.status === 'active';
+      showModal('templateModal');
+    }
+
+    // Save template (create or update)
+    async function saveTemplate(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('templateId').value;
+      const payload = {
+        name: document.getElementById('templateName').value.trim(),
+        subject: document.getElementById('templateSubject').value.trim(),
+        html_body: document.getElementById('templateBody').value,
+        status: document.getElementById('templateActive').checked ? 'active' : 'inactive'
+      };
+
+      try {
+        let res;
+        if (id) {
+          res = await fetch('/api/email/templates/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/email/templates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (!res.ok) throw new Error('API returned ' + res.status);
+
+        hideModal('templateModal');
+        loadTemplates();
+      } catch (err) {
+        alert('Failed to save template: ' + err.message);
+      }
+    }
+
+    // Delete template
+    async function deleteTemplate(id) {
+      if (!confirm('Are you sure you want to delete this template?')) return;
+
+      try {
+        const res = await fetch('/api/email/templates/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        loadTemplates();
+      } catch (err) {
+        alert('Failed to delete template: ' + err.message);
+      }
+    }
+
+    // Preview template
+    async function previewTemplate(id) {
+      try {
+        const res = await fetch('/api/email/templates/' + id + '/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        const data = await res.json();
+
+        const frame = document.getElementById('previewFrame');
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open();
+        doc.write(data.html || data.rendered || '');
+        doc.close();
+
+        showModal('previewModal');
+      } catch (err) {
+        alert('Failed to preview template: ' + err.message);
+      }
+    }
+
+    // Send test email
+    async function sendTest(id) {
+      const email = prompt('Enter email address to send test to:');
+      if (!email) return;
+
+      try {
+        const res = await fetch('/api/email/templates/' + id + '/send-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        alert('Test email sent to ' + email);
+      } catch (err) {
+        alert('Failed to send test email: ' + err.message);
+      }
+    }
+
+    // Initialize
+    loadTemplates();
+    loadVariables();
+  </script>
+</body>
+</html>

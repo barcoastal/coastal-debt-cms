@@ -293,6 +293,242 @@ try { db.exec(`ALTER TABLE leads ADD COLUMN total_debt_sign TEXT`); } catch (e) 
 // Add permissions column to users if not exist
 try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'`); } catch (e) {}
 
+// CRM + Email Marketing columns on leads
+try { db.exec(`ALTER TABLE leads ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN assigned_to INTEGER`); } catch (e) {}
+
+// CRM: Lead Notes
+db.exec(`
+  CREATE TABLE IF NOT EXISTS lead_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    user_name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lead_notes_lead ON lead_notes(lead_id);
+`);
+
+// CRM: Lead Tasks
+db.exec(`
+  CREATE TABLE IF NOT EXISTS lead_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    due_date DATE,
+    assignee_id INTEGER,
+    assignee_name TEXT,
+    status TEXT DEFAULT 'open' CHECK(status IN ('open', 'done')),
+    created_by_id INTEGER NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    FOREIGN KEY (lead_id) REFERENCES leads(id),
+    FOREIGN KEY (assignee_id) REFERENCES users(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lead_tasks_lead ON lead_tasks(lead_id);
+  CREATE INDEX IF NOT EXISTS idx_lead_tasks_assignee ON lead_tasks(assignee_id);
+  CREATE INDEX IF NOT EXISTS idx_lead_tasks_due ON lead_tasks(due_date);
+`);
+
+// Email Templates
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    html_body TEXT NOT NULL,
+    text_body TEXT,
+    created_by_id INTEGER,
+    created_by_name TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_id) REFERENCES users(id)
+  );
+`);
+
+// Email Segments
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_segments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    filter_criteria TEXT NOT NULL DEFAULT '{}',
+    created_by_id INTEGER,
+    created_by_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_id) REFERENCES users(id)
+  );
+`);
+
+// Email Campaigns
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    template_id INTEGER NOT NULL,
+    segment_id INTEGER,
+    subject_override TEXT,
+    status TEXT DEFAULT 'draft' CHECK(status IN ('draft','scheduled','sending','sent','paused','cancelled')),
+    scheduled_at DATETIME,
+    started_at DATETIME,
+    completed_at DATETIME,
+    total_recipients INTEGER DEFAULT 0,
+    sent_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    open_count INTEGER DEFAULT 0,
+    click_count INTEGER DEFAULT 0,
+    unsubscribe_count INTEGER DEFAULT 0,
+    bounce_count INTEGER DEFAULT 0,
+    created_by_id INTEGER,
+    created_by_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (template_id) REFERENCES email_templates(id),
+    FOREIGN KEY (segment_id) REFERENCES email_segments(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_campaigns_status ON email_campaigns(status);
+`);
+
+// Email Send Queue
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER,
+    lead_id INTEGER NOT NULL,
+    to_email TEXT NOT NULL,
+    to_name TEXT,
+    subject TEXT NOT NULL,
+    html_body TEXT NOT NULL,
+    text_body TEXT,
+    status TEXT DEFAULT 'queued' CHECK(status IN ('queued','sending','sent','failed','bounced')),
+    error_message TEXT,
+    message_id TEXT,
+    queued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sent_at DATETIME,
+    opened_at DATETIME,
+    clicked_at DATETIME,
+    open_count INTEGER DEFAULT 0,
+    click_count INTEGER DEFAULT 0,
+    flow_run_id INTEGER,
+    FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id),
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_queue_campaign ON email_queue(campaign_id);
+  CREATE INDEX IF NOT EXISTS idx_queue_status ON email_queue(status);
+  CREATE INDEX IF NOT EXISTS idx_queue_lead ON email_queue(lead_id);
+`);
+
+// Email Click Tracking
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_clicks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    queue_id INTEGER NOT NULL,
+    campaign_id INTEGER,
+    lead_id INTEGER NOT NULL,
+    original_url TEXT NOT NULL,
+    clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
+    user_agent TEXT,
+    FOREIGN KEY (queue_id) REFERENCES email_queue(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_email_clicks_queue ON email_clicks(queue_id);
+  CREATE INDEX IF NOT EXISTS idx_email_clicks_campaign ON email_clicks(campaign_id);
+`);
+
+// Email Open Tracking
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_opens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    queue_id INTEGER NOT NULL,
+    campaign_id INTEGER,
+    lead_id INTEGER NOT NULL,
+    opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
+    user_agent TEXT,
+    FOREIGN KEY (queue_id) REFERENCES email_queue(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_email_opens_queue ON email_opens(queue_id);
+  CREATE INDEX IF NOT EXISTS idx_email_opens_campaign ON email_opens(campaign_id);
+`);
+
+// Email Unsubscribes
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_unsubscribes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER,
+    email TEXT NOT NULL,
+    campaign_id INTEGER,
+    reason TEXT,
+    unsubscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_unsubscribes_email ON email_unsubscribes(email);
+`);
+
+// Phase 2 placeholders
+db.exec(`
+  CREATE TABLE IF NOT EXISTS automation_flows (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    trigger_type TEXT NOT NULL CHECK(trigger_type IN ('event','scheduled','segment_entry','manual')),
+    trigger_config TEXT DEFAULT '{}',
+    is_active INTEGER DEFAULT 0,
+    created_by_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS automation_flow_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flow_id INTEGER NOT NULL,
+    step_order INTEGER NOT NULL,
+    action_type TEXT NOT NULL CHECK(action_type IN ('send_email','send_sms','wait','condition','update_lead','add_note','assign')),
+    action_config TEXT DEFAULT '{}',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (flow_id) REFERENCES automation_flows(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS automation_flow_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flow_id INTEGER NOT NULL,
+    lead_id INTEGER NOT NULL,
+    current_step_id INTEGER,
+    status TEXT DEFAULT 'running' CHECK(status IN ('running','waiting','completed','failed','cancelled')),
+    next_action_at DATETIME,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    FOREIGN KEY (flow_id) REFERENCES automation_flows(id),
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_flow_runs_status ON automation_flow_runs(status);
+  CREATE INDEX IF NOT EXISTS idx_flow_runs_next ON automation_flow_runs(next_action_at);
+
+  CREATE TABLE IF NOT EXISTS sms_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER,
+    to_phone TEXT NOT NULL,
+    body TEXT NOT NULL,
+    status TEXT DEFAULT 'queued' CHECK(status IN ('queued','sending','sent','delivered','failed')),
+    twilio_sid TEXT,
+    error_message TEXT,
+    direction TEXT DEFAULT 'outbound' CHECK(direction IN ('outbound','inbound')),
+    campaign_id INTEGER,
+    flow_run_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sent_at DATETIME,
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_sms_lead ON sms_messages(lead_id);
+`);
+
 // Add pixel_id to facebook_config if not exist
 try {
   db.exec(`ALTER TABLE facebook_config ADD COLUMN pixel_id TEXT`);

@@ -785,3 +785,186 @@ textarea:focus {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Sidebar Nav Divider */
+.sidebar-nav-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 8px 20px;
+}
+
+/* Pipeline Kanban */
+.pipeline-container {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  min-height: calc(100vh - 200px);
+}
+
+.pipeline-column {
+  min-width: 280px;
+  max-width: 280px;
+  background: var(--gray-100);
+  border-radius: 12px;
+  padding: 16px;
+  flex-shrink: 0;
+}
+
+.pipeline-column-header {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pipeline-count {
+  background: var(--gray-300);
+  color: var(--gray-700);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 50px;
+}
+
+.pipeline-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pipeline-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.pipeline-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pipeline-card-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--gray-900);
+  margin-bottom: 4px;
+}
+
+.pipeline-card-company {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+
+.pipeline-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+/* Detail Tabs */
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 16px;
+}
+
+.detail-tabs button {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.detail-tabs button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.detail-tabs button:hover {
+  color: var(--gray-700);
+}
+
+/* Email Sub-nav */
+.email-subnav {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.email-subnav a {
+  padding: 10px 20px;
+  text-decoration: none;
+  color: var(--gray-500);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.email-subnav a.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.email-subnav a:hover {
+  color: var(--gray-700);
+}
+
+/* Campaign Stats */
+.campaign-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.campaign-stat {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.campaign-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.campaign-stat-label {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+/* Additional Badges */
+.badge-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+@media (max-width: 1200px) {
+  .campaign-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .campaign-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
