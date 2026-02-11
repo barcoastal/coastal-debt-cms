@@ -497,19 +497,30 @@ router.post('/zapier', async (req, res) => {
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
-    const {
-      full_name, first_name, last_name,
-      company_name, company, email, phone, phone_number,
-      debt_amount, has_mca, considered_bankruptcy,
-      landing_page_id, landing_page_slug, platform,
-      form_id, form_name, leadgen_id, created_time,
-      ...extraFields
-    } = req.body;
+    // Log the raw body so we can see exactly what Zapier sends
+    console.log('Zapier raw body:', JSON.stringify(req.body));
 
-    // Resolve name
-    const resolvedName = full_name || [first_name, last_name].filter(Boolean).join(' ') || '';
-    const resolvedPhone = phone || phone_number || '';
-    const resolvedCompany = company_name || company || '';
+    // Flatten: Zapier sometimes nests or uses different field names
+    const body = req.body;
+
+    // Try every possible field name Facebook/Zapier might use
+    const resolvedName = body.full_name || body.name || body.Full_Name || body.fullName
+      || [body.first_name || body.firstName || body.First_Name || '', body.last_name || body.lastName || body.Last_Name || ''].filter(Boolean).join(' ')
+      || '';
+    const resolvedEmail = body.email || body.Email || body.EMAIL || body.e_mail || '';
+    const resolvedPhone = body.phone || body.phone_number || body.Phone || body.Phone_Number || body.phoneNumber || body.tel || '';
+    const resolvedCompany = body.company_name || body.company || body.Company || body.Company_Name || body.companyName || '';
+
+    const landing_page_id = body.landing_page_id || null;
+    const landing_page_slug = body.landing_page_slug || null;
+    const platform = body.platform || null;
+    const form_id = body.form_id || body.formId || null;
+    const form_name = body.form_name || body.formName || null;
+    const leadgen_id = body.leadgen_id || body.id || body.leadId || null;
+    const created_time = body.created_time || body.createdTime || null;
+    const debt_amount = body.debt_amount || body.debtAmount || '';
+    const has_mca = body.has_mca || '';
+    const considered_bankruptcy = body.considered_bankruptcy || '';
 
     // Resolve landing page: by ID, by slug, or use Facebook default
     let pageId = landing_page_id || null;
@@ -543,8 +554,7 @@ router.post('/zapier', async (req, res) => {
       fb_form_id: form_id || '',
       fb_form_name: form_name || '',
       fb_leadgen_id: leadgen_id || '',
-      fb_created_time: created_time || '',
-      ...extraFields
+      fb_created_time: created_time || ''
     };
 
     const result = db.prepare(`
@@ -556,7 +566,7 @@ router.post('/zapier', async (req, res) => {
       pageId,
       resolvedName,
       resolvedCompany,
-      email || '',
+      resolvedEmail,
       resolvedPhone,
       debt_amount || '',
       has_mca || '',
@@ -565,12 +575,12 @@ router.post('/zapier', async (req, res) => {
       JSON.stringify(hiddenFields)
     );
 
-    console.log(`Zapier lead inserted: ID ${result.lastInsertRowid}`);
+    console.log(`Zapier lead inserted: ID ${result.lastInsertRowid}, name: ${resolvedName}, email: ${resolvedEmail}, phone: ${resolvedPhone}`);
 
     // Send notification
     if (sendLeadNotification) {
       const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(pageId);
-      sendLeadNotification({ full_name: resolvedName, company_name: resolvedCompany, email, phone: resolvedPhone }, landingPage).catch(() => {});
+      sendLeadNotification({ full_name: resolvedName, company_name: resolvedCompany, email: resolvedEmail, phone: resolvedPhone }, landingPage).catch(() => {});
     }
 
     // Auto-create lead conversion event
@@ -587,10 +597,10 @@ router.post('/zapier', async (req, res) => {
     if (sendFacebookEvent && (!platform || platform === 'facebook' || platform === 'meta')) {
       const nameParts = resolvedName.trim().split(/\s+/);
       sendFacebookEvent('Lead', {
-        email: email || '',
+        email: resolvedEmail,
         phone: resolvedPhone,
-        firstName: first_name || nameParts[0] || '',
-        lastName: last_name || nameParts.slice(1).join(' ') || ''
+        firstName: body.first_name || body.firstName || body.First_Name || nameParts[0] || '',
+        lastName: body.last_name || body.lastName || body.Last_Name || nameParts.slice(1).join(' ') || ''
       }, {}).then(fbResult => {
         db.prepare(`
           INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status, error_message, sent_at, capi_payload)
