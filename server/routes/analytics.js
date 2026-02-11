@@ -553,12 +553,12 @@ router.get('/meta-ads/summary', authenticateToken, (req, res) => {
     WHERE lp.platform = 'meta' ${dateWhere}
   `).get(...dateParams);
 
-  // Count instant form leads (eli_clickid starts with 'fb_')
+  // Count instant form leads (hidden_fields contains facebook_instant_form source)
   const instantFormCount = db.prepare(`
     SELECT COUNT(*) as count
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE lp.platform = 'meta' AND l.eli_clickid LIKE 'fb_%' ${dateWhere}
+    WHERE lp.platform = 'meta' AND l.hidden_fields LIKE '%"source":"facebook_instant_form"%' ${dateWhere}
   `).get(...dateParams).count;
 
   const eventStats = db.prepare(`
@@ -628,7 +628,7 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid, l.fbclid, l.created_at,
            lp.name as landing_page_name,
-           CASE WHEN l.eli_clickid LIKE 'fb_%' THEN 'Instant Form' ELSE 'Landing Page' END as lead_source,
+           CASE WHEN l.hidden_fields LIKE '%"source":"facebook_instant_form"%' THEN 'Instant Form' ELSE 'Landing Page' END as lead_source,
            (
              SELECT ce.conversion_action_name
              FROM conversion_events ce

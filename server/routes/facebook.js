@@ -221,6 +221,45 @@ async function syncFacebookLeads() {
             const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(config.default_landing_page_id);
             sendLeadNotification(fields, landingPage).catch(() => {});
           }
+
+          // Auto-create "lead" conversion event
+          try {
+            const leadConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+            db.prepare(`
+              INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_id, conversion_action_name, source, status)
+              VALUES (?, ?, ?, 'lead', 'auto', 'logged')
+            `).run(result.lastInsertRowid, eliClickId, leadConfig?.conversion_action_id || null);
+          } catch (evtErr) {
+            console.error('Failed to create lead event for synced FB lead:', evtErr);
+          }
+
+          // Send "Lead" event to Facebook CAPI
+          try {
+            const nameParts = (fields.full_name || '').trim().split(/\s+/);
+            const firstName = fields._first_name || nameParts[0] || '';
+            const lastName = fields._last_name || nameParts.slice(1).join(' ') || '';
+
+            const fbResult = await sendFacebookEvent('Lead', {
+              email: fields.email,
+              phone: fields.phone,
+              firstName,
+              lastName
+            }, {});
+
+            db.prepare(`
+              INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
+              VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
+            `).run(
+              result.lastInsertRowid,
+              eliClickId,
+              fbResult.success ? 'sent' : 'failed',
+              fbResult.error || null,
+              fbResult.payload ? JSON.stringify(fbResult.payload) : null
+            );
+            console.log(`Facebook CAPI Lead event for synced lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
+          } catch (capiErr) {
+            console.error('Failed to send Facebook CAPI Lead event for synced lead:', capiErr);
+          }
         }
       } catch (formErr) {
         errors.push(`Form ${form.name}: ${formErr.message}`);
@@ -299,6 +338,30 @@ try {
   }
 } catch (err) {
   console.error('eli_clickid migration error:', err.message);
+}
+
+// Backfill "lead" conversion events for FB instant form leads that don't have one
+try {
+  const leadsWithoutEvent = db.prepare(`
+    SELECT l.id, l.eli_clickid FROM leads l
+    WHERE l.hidden_fields LIKE '%"source":"facebook_instant_form"%'
+      AND NOT EXISTS (
+        SELECT 1 FROM conversion_events ce
+        WHERE ce.lead_id = l.id AND ce.conversion_action_name = 'lead' AND ce.source = 'auto'
+      )
+  `).all();
+  if (leadsWithoutEvent.length > 0) {
+    const leadConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+    for (const lead of leadsWithoutEvent) {
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_id, conversion_action_name, source, status)
+        VALUES (?, ?, ?, 'lead', 'auto', 'logged')
+      `).run(lead.id, lead.eli_clickid, leadConfig?.conversion_action_id || null);
+    }
+    console.log(`Backfilled "lead" events for ${leadsWithoutEvent.length} Facebook instant form leads`);
+  }
+} catch (err) {
+  console.error('Lead event backfill error:', err.message);
 }
 
 // Start background sync
