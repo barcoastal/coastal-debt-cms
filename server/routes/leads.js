@@ -449,7 +449,7 @@ router.get('/:id/events', authenticateToken, (req, res) => {
 
 // Update lead fields (Salesforce tracking)
 router.patch('/:id', authenticateToken, (req, res) => {
-  const { transfer_status, five9_dispo, stage, contract_sign_date, total_debt_sign } = req.body;
+  const { transfer_status, five9_dispo, stage, contract_sign_date, total_debt_sign, eli_clickid, fbclid } = req.body;
   const fields = [];
   const params = [];
 
@@ -458,6 +458,8 @@ router.patch('/:id', authenticateToken, (req, res) => {
   if (stage !== undefined) { fields.push('stage = ?'); params.push(stage); }
   if (contract_sign_date !== undefined) { fields.push('contract_sign_date = ?'); params.push(contract_sign_date); }
   if (total_debt_sign !== undefined) { fields.push('total_debt_sign = ?'); params.push(total_debt_sign); }
+  if (eli_clickid !== undefined) { fields.push('eli_clickid = ?'); params.push(eli_clickid); }
+  if (fbclid !== undefined) { fields.push('fbclid = ?'); params.push(fbclid); }
 
   if (!fields.length) {
     return res.status(400).json({ error: 'No fields to update' });

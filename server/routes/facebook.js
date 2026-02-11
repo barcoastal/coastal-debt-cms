@@ -279,6 +279,28 @@ function startBackgroundSync() {
   }, 10 * 1000);
 }
 
+// Migrate old leads that have fb_ prefix in eli_clickid — give them unique IDs
+try {
+  const oldLeads = db.prepare(`SELECT id, eli_clickid FROM leads WHERE eli_clickid LIKE 'fb_%'`).all();
+  if (oldLeads.length > 0) {
+    const update = db.prepare(`UPDATE leads SET eli_clickid = ? WHERE id = ?`);
+    for (const lead of oldLeads) {
+      const newEli = 'eli_' + crypto.randomBytes(12).toString('hex');
+      update.run(newEli, lead.id);
+    }
+    // Also update conversion_events that reference old eli_clickids
+    for (const lead of oldLeads) {
+      const newEli = db.prepare(`SELECT eli_clickid FROM leads WHERE id = ?`).get(lead.id)?.eli_clickid;
+      if (newEli) {
+        db.prepare(`UPDATE conversion_events SET eli_clickid = ? WHERE eli_clickid = ?`).run(newEli, lead.eli_clickid);
+      }
+    }
+    console.log(`Migrated ${oldLeads.length} leads from fb_ to unique eli_clickid`);
+  }
+} catch (err) {
+  console.error('eli_clickid migration error:', err.message);
+}
+
 // Start background sync
 startBackgroundSync();
 
