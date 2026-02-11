@@ -193,8 +193,8 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
           const result = db.prepare(`
             INSERT INTO leads (
               landing_page_id, full_name, company_name, email, phone,
-              debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)
+              debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
           `).run(
             config.default_landing_page_id,
             fields.full_name || '',
@@ -206,7 +206,8 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             fields.considered_bankruptcy || '',
             eliClickId,
             fbclidValue,
-            JSON.stringify(hiddenFields)
+            JSON.stringify(hiddenFields),
+            lead.created_time || new Date().toISOString()
           );
 
           synced++;
@@ -445,6 +446,33 @@ try {
   console.error('fbclid backfill error:', err.message);
 }
 
+// Backfill created_at from fb_created_time for FB leads that were imported with wrong date
+try {
+  const fbLeads = db.prepare(`
+    SELECT id, hidden_fields, created_at FROM leads
+    WHERE hidden_fields LIKE '%"fb_created_time":"%'
+  `).all();
+  let dateFixed = 0;
+  const updateDate = db.prepare('UPDATE leads SET created_at = ? WHERE id = ?');
+  for (const lead of fbLeads) {
+    try {
+      const hf = JSON.parse(lead.hidden_fields || '{}');
+      if (hf.fb_created_time && hf.fb_created_time !== lead.created_at) {
+        // Only fix if the FB time differs significantly (more than 5 min) from stored time
+        const fbTime = new Date(hf.fb_created_time).getTime();
+        const storedTime = new Date(lead.created_at).getTime();
+        if (Math.abs(fbTime - storedTime) > 5 * 60 * 1000) {
+          updateDate.run(hf.fb_created_time, lead.id);
+          dateFixed++;
+        }
+      }
+    } catch (e) {}
+  }
+  if (dateFixed > 0) console.log(`Fixed created_at dates for ${dateFixed} Facebook leads`);
+} catch (err) {
+  console.error('Date backfill error:', err.message);
+}
+
 // Start background sync
 startBackgroundSync();
 
@@ -536,8 +564,8 @@ async function processLeadgenEvent(leadgenId, config) {
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
-        debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)
+        debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
     `).run(
       landingPageId,
       fields.full_name || '',
@@ -549,7 +577,8 @@ async function processLeadgenEvent(leadgenId, config) {
       fields.considered_bankruptcy || '',
       eliClickId,
       fbclidValue, // fbclid = form fbclid or Facebook lead ID
-      JSON.stringify(hiddenFields)
+      JSON.stringify(hiddenFields),
+      data.created_time || new Date().toISOString()
     );
 
     console.log(`Facebook lead inserted: ID ${result.lastInsertRowid} (${eliClickId})`);
