@@ -16,6 +16,40 @@
     .toggle-icon { font-weight: bold; color: #6b7280; }
     .section-content { padding: 16px; }
     .section-content.hidden { display: none; }
+    .ai-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      color: white;
+    }
+    .ai-section h4 { color: white; margin: 0 0 10px; font-size: 14px; }
+    .ai-section input {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 6px;
+      padding: 8px 12px;
+      width: 100%;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .ai-section input::placeholder { color: rgba(255,255,255,0.5); }
+    .ai-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .ai-btn:hover:not(:disabled) { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .ai-msg { margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.9); }
+    .ai-err { margin-top: 8px; font-size: 12px; color: #fca5a5; }
   </style>
 </head>
 <body>
@@ -188,6 +222,15 @@
       </div>
       <form id="editForm">
         <input type="hidden" id="editId">
+
+        <!-- AI Content Generator -->
+        <div class="ai-section">
+          <h4>AI Content Generator</h4>
+          <input type="text" id="aiKeywordsEdit" placeholder="Enter keywords: e.g. MCA debt relief, business debt settlement">
+          <button type="button" class="ai-btn" id="aiGenBtn" onclick="generateAI()">Generate Content for This Page</button>
+          <div class="ai-msg" id="aiMsg" style="display:none"></div>
+          <div class="ai-err" id="aiErr" style="display:none"></div>
+        </div>
 
         <!-- Basic Settings -->
         <div class="edit-section">
@@ -698,6 +741,74 @@
         .replace(/\s+/g, '-');
       document.getElementById('createSlug').value = slug;
     });
+
+    async function generateAI() {
+      const input = document.getElementById('aiKeywordsEdit').value.trim();
+      if (!input) { document.getElementById('aiErr').textContent = 'Enter keywords first.'; document.getElementById('aiErr').style.display = 'block'; return; }
+
+      const keywords = input.split(',').map(k => k.trim()).filter(Boolean);
+      const platform = document.getElementById('editPlatform').value || 'other';
+      const btn = document.getElementById('aiGenBtn');
+      const msg = document.getElementById('aiMsg');
+      const err = document.getElementById('aiErr');
+
+      btn.disabled = true; btn.textContent = 'Generating...';
+      msg.style.display = 'block'; msg.textContent = 'Generating content for ' + platform + '...';
+      err.style.display = 'none';
+
+      try {
+        const res = await api('/api/ai/generate-content', {
+          method: 'POST',
+          body: JSON.stringify({ keywords, platform })
+        });
+        const c = res.content;
+
+        // Fill hero fields
+        if (c.hero) {
+          document.getElementById('editHeadline').value = c.hero.headline || '';
+          document.getElementById('editSubheadline').value = c.hero.subheadline || '';
+          if (c.hero.cta) document.getElementById('editCtaButton').value = c.hero.cta;
+        }
+
+        // Fill benefits as bullet points
+        if (c.benefits) {
+          document.getElementById('editBulletPoints').value = (c.benefits.items || []).join('\n');
+        }
+
+        // Fill empathy
+        if (c.empathy) {
+          document.getElementById('editEmpathyTitle').value = c.empathy.title || '';
+          document.getElementById('editEmpathyText').value = c.empathy.content || '';
+        }
+
+        // Fill testimonials title
+        if (c.testimonials) {
+          document.getElementById('editTestimonialsTitle').value = 'Real People. Real Results.';
+        }
+
+        // Fill FAQ title
+        if (c.faq) {
+          document.getElementById('editFaqTitle').value = 'Frequently Asked Questions';
+        }
+
+        // Fill case studies title
+        if (c.caseStudies) {
+          document.getElementById('editComparisonTitle').value = c.caseStudies.title || '';
+        }
+
+        // Fill footer disclaimer into empathy as additional context
+        if (c.footer && c.footer.disclaimer) {
+          // Store in currentEditContent for save
+          currentEditContent.footerDisclaimer = c.footer.disclaimer;
+        }
+
+        msg.innerHTML = 'Done! Review the sections below, then click <strong>Save Changes</strong>.';
+      } catch (e) {
+        err.textContent = e.message || 'Generation failed'; err.style.display = 'block'; msg.style.display = 'none';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Generate Content for This Page';
+      }
+    }
 
     loadPages();
   </script>
