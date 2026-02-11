@@ -261,7 +261,7 @@
       <div id="tab-config" class="tab-content">
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin: 0;">Event to Google Ads Mapping</h3>
+            <h3 style="margin: 0;">Event Configuration</h3>
             <button class="btn btn-primary" onclick="editingConfigId=null;document.querySelector('#addConfigModal h2').textContent='Add Event Mapping';document.getElementById('addConfigForm').reset();showModal('addConfigModal')">+ Add Event</button>
           </div>
 
@@ -305,11 +305,24 @@
           <small style="color: #666;">The conversion action resource name from Google Ads API</small>
         </div>
         <div class="form-group">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="configSendToFacebook" style="width:auto;">
-            Send to Facebook CAPI
-          </label>
-          <small style="color: #666;">When enabled, this event will also be sent to Facebook Conversions API</small>
+          <label>Facebook CAPI Event</label>
+          <select id="configFacebookEventName">
+            <option value="">-- Don't send to Facebook --</option>
+            <option value="Lead">Lead</option>
+            <option value="CompleteRegistration">CompleteRegistration</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Schedule">Schedule</option>
+            <option value="Contact">Contact</option>
+            <option value="SubmitApplication">SubmitApplication</option>
+            <option value="AddPaymentInfo">AddPaymentInfo</option>
+            <option value="Subscribe">Subscribe</option>
+            <option value="StartTrial">StartTrial</option>
+            <option value="InitiateCheckout">InitiateCheckout</option>
+            <option value="ViewContent">ViewContent</option>
+            <option value="Search">Search</option>
+            <option value="AddToCart">AddToCart</option>
+          </select>
+          <small style="color: #666;">Select the Facebook standard event to send via Conversions API</small>
         </div>
         <div class="form-group">
           <label>Bing Ads Conversion Goal Name</label>
@@ -467,14 +480,13 @@
                 CRM Event: <span class="event-name">${c.event_name}</span>
                 ${c.google_ads_event_name ? ` → Google Ads: <span class="event-name" style="background:#dcfce7;color:#166534;">${c.google_ads_event_name}</span>` : ''}
                 ${c.conversion_action_id ? ` (ID: <span style="font-size:12px;color:#666;">${c.conversion_action_id}</span>)` : ''}
-                ${c.send_to_facebook ? ' <span class="event-name" style="background:#dbeafe;color:#1d4ed8;">Facebook CAPI</span>' : ''}
-                ${c.send_to_bing ? ' <span class="event-name" style="background:#fff3cd;color:#856404;">Bing Ads</span>' : ''}
-                ${c.bing_conversion_goal_id && !c.send_to_bing ? ` Bing Goal: <span style="font-size:12px;color:#666;">${c.bing_conversion_goal_id}</span>` : ''}
-                ${!c.google_ads_event_name && !c.conversion_action_id && !c.send_to_facebook && !c.send_to_bing ? ' <span style="color: #f59e0b;">(No routing configured)</span>' : ''}
+                ${c.facebook_event_name ? ` | Facebook: <span class="event-name" style="background:#dbeafe;color:#1d4ed8;">${c.facebook_event_name}</span>` : ''}
+                ${c.send_to_bing && c.bing_conversion_goal_id ? ` | Bing: <span class="event-name" style="background:#fff3cd;color:#856404;">${c.bing_conversion_goal_id}</span>` : ''}
+                ${!c.google_ads_event_name && !c.conversion_action_id && !c.facebook_event_name && !c.send_to_bing ? ' <span style="color: #f59e0b;">(No routing configured)</span>' : ''}
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="action-btn action-btn-edit" onclick="editConfig(${c.id}, '${c.name}', '${c.event_name}', '${c.google_ads_event_name || ''}', '${c.conversion_action_id || ''}', ${c.send_to_facebook ? 1 : 0}, '${c.bing_conversion_goal_id || ''}', ${c.send_to_bing ? 1 : 0})">Edit</button>
+              <button class="action-btn action-btn-edit" onclick="editConfig(${c.id}, '${c.name}', '${c.event_name}', '${c.google_ads_event_name || ''}', '${c.conversion_action_id || ''}', '${c.facebook_event_name || ''}', '${c.bing_conversion_goal_id || ''}', ${c.send_to_bing ? 1 : 0})">Edit</button>
               <button class="action-btn action-btn-delete" onclick="deleteConfig(${c.id})">Delete</button>
             </div>
           </div>
@@ -494,7 +506,7 @@
         event_name: document.getElementById('configEventName').value,
         google_ads_event_name: document.getElementById('configGoogleAdsEventName').value || null,
         conversion_action_id: document.getElementById('configConversionAction').value || null,
-        send_to_facebook: document.getElementById('configSendToFacebook').checked ? 1 : 0,
+        facebook_event_name: document.getElementById('configFacebookEventName').value || null,
         bing_conversion_goal_id: document.getElementById('configBingConversionGoalId').value || null,
         send_to_bing: document.getElementById('configSendToBing').checked ? 1 : 0
       };
@@ -520,14 +532,14 @@
       }
     });
 
-    function editConfig(id, name, eventName, googleAdsEventName, conversionActionId, sendToFacebook, bingConversionGoalId, sendToBing) {
+    function editConfig(id, name, eventName, googleAdsEventName, conversionActionId, facebookEventName, bingConversionGoalId, sendToBing) {
       editingConfigId = id;
       document.querySelector('#addConfigModal h2').textContent = 'Edit Event Mapping';
       document.getElementById('configName').value = name;
       document.getElementById('configEventName').value = eventName;
       document.getElementById('configGoogleAdsEventName').value = googleAdsEventName;
       document.getElementById('configConversionAction').value = conversionActionId;
-      document.getElementById('configSendToFacebook').checked = !!sendToFacebook;
+      document.getElementById('configFacebookEventName').value = facebookEventName || '';
       document.getElementById('configBingConversionGoalId').value = bingConversionGoalId || '';
       document.getElementById('configSendToBing').checked = !!sendToBing;
       showModal('addConfigModal');

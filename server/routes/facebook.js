@@ -239,11 +239,14 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
 
           // Send "Lead" event to Facebook CAPI
           try {
+            const syncLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+            const fbLeadEvent = syncLeadConfig?.facebook_event_name || 'Lead';
+
             const nameParts = (fields.full_name || '').trim().split(/\s+/);
             const firstName = fields._first_name || nameParts[0] || '';
             const lastName = fields._last_name || nameParts.slice(1).join(' ') || '';
 
-            const fbResult = await sendFacebookEvent('Lead', {
+            const fbResult = await sendFacebookEvent(fbLeadEvent, {
               email: fields.email,
               phone: fields.phone,
               firstName,
@@ -260,7 +263,7 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
               fbResult.error || null,
               fbResult.payload ? JSON.stringify(fbResult.payload) : null
             );
-            console.log(`Facebook CAPI Lead event for synced lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
+            console.log(`Facebook CAPI ${fbLeadEvent} event for synced lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
           } catch (capiErr) {
             console.error('Failed to send Facebook CAPI Lead event for synced lead:', capiErr);
           }
@@ -608,11 +611,14 @@ async function processLeadgenEvent(leadgenId, config) {
     // Send "Lead" event to Facebook CAPI — Instant Form leads are always from Facebook
     // Note: Instant form leads come from Facebook directly, so no fbc/fbp/IP/UA available
     try {
+      const webhookLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+      const fbLeadEvent = webhookLeadConfig?.facebook_event_name || 'Lead';
+
       const nameParts = (fields.full_name || '').trim().split(/\s+/);
       const firstName = fields._first_name || nameParts[0] || '';
       const lastName = fields._last_name || nameParts.slice(1).join(' ') || '';
 
-      const fbResult = await sendFacebookEvent('Lead', {
+      const fbResult = await sendFacebookEvent(fbLeadEvent, {
         email: fields.email,
         phone: fields.phone,
         firstName,
@@ -629,7 +635,7 @@ async function processLeadgenEvent(leadgenId, config) {
         fbResult.error || null,
         fbResult.payload ? JSON.stringify(fbResult.payload) : null
       );
-      console.log(`Facebook CAPI Lead event for instant form lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
+      console.log(`Facebook CAPI ${fbLeadEvent} event for instant form lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
     } catch (err) {
       console.error('Failed to send Facebook CAPI Lead event for instant form:', err);
     }

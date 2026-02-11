@@ -214,6 +214,9 @@ router.post('/', async (req, res) => {
 
   // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
   if (page.platform === 'meta' && sendFacebookEvent) {
+    const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+    const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
+
     const nameParts = (full_name || '').trim().split(/\s+/);
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
@@ -242,7 +245,7 @@ router.post('/', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const eventSourceUrl = `${baseUrl}/${page.slug}`;
 
-    sendFacebookEvent('Lead', {
+    sendFacebookEvent(fbLeadEvent, {
       email,
       phone,
       firstName,
@@ -555,8 +558,10 @@ router.post('/zapier', async (req, res) => {
 
     // Facebook CAPI
     if (sendFacebookEvent) {
+      const zapierLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+      const fbLeadEvent = zapierLeadConfig?.facebook_event_name || 'Lead';
       const parts = fullName.trim().split(/\s+/);
-      sendFacebookEvent('Lead', { email, phone, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' }, {}).catch(() => {});
+      sendFacebookEvent(fbLeadEvent, { email, phone, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' }, {}).catch(() => {});
     }
 
     res.json({ success: true, id: result.lastInsertRowid });

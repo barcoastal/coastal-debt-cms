@@ -184,10 +184,11 @@ router.all('/conversion', async (req, res) => {
     googleResult?.error || (!gclid && !msclkid ? 'No GCLID or msclkid - ad platform upload skipped' : null)
   );
 
-  // Send to Facebook CAPI if event config has send_to_facebook enabled
+  // Send to Facebook CAPI if event config has facebook_event_name set
   let fbResult = null;
-  if (config && config.send_to_facebook && sendFacebookEvent) {
+  if (config && config.facebook_event_name && sendFacebookEvent) {
     try {
+      const fbEventName = config.facebook_event_name;
       const nameParts = (lead.full_name || '').trim().split(/\s+/);
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
@@ -216,7 +217,7 @@ router.all('/conversion', async (req, res) => {
       const eventSourceUrl = visitor?.landing_page ? `${baseUrl}${visitor.landing_page}` : '';
 
       const fbValue = revenue ? parseFloat(revenue) : (debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : undefined));
-      fbResult = await sendFacebookEvent(event, {
+      fbResult = await sendFacebookEvent(fbEventName, {
         email: lead.email,
         phone: lead.phone,
         firstName,
@@ -352,16 +353,16 @@ router.get('/config', authenticateToken, (req, res) => {
  * ADMIN: Create postback configuration
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, bing_conversion_goal_id, send_to_bing } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, facebook_event_name, bing_conversion_goal_id, send_to_bing } = req.body;
 
   if (!name || !event_name) {
     return res.status(400).json({ error: 'Name and event_name required' });
   }
 
   const result = db.prepare(`
-    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, bing_conversion_goal_id, send_to_bing)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, send_to_facebook ? 1 : 0, bing_conversion_goal_id || null, send_to_bing ? 1 : 0);
+    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, facebook_event_name, bing_conversion_goal_id, send_to_bing)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, facebook_event_name ? 1 : 0, facebook_event_name || null, bing_conversion_goal_id || null, send_to_bing ? 1 : 0);
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'postback_config', result.lastInsertRowid, `Created postback config: ${name}`, req.ip);
   res.json({ id: result.lastInsertRowid, message: 'Config created' });
@@ -371,7 +372,7 @@ router.post('/config', authenticateToken, (req, res) => {
  * ADMIN: Update postback configuration
  */
 router.put('/config/:id', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, send_to_facebook, bing_conversion_goal_id, send_to_bing } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, facebook_event_name, bing_conversion_goal_id, send_to_bing } = req.body;
 
   db.prepare(`
     UPDATE postback_config SET
@@ -380,11 +381,12 @@ router.put('/config/:id', authenticateToken, (req, res) => {
       google_ads_event_name = ?,
       conversion_action_id = ?,
       is_active = COALESCE(?, is_active),
-      send_to_facebook = COALESCE(?, send_to_facebook),
+      facebook_event_name = ?,
+      send_to_facebook = ?,
       bing_conversion_goal_id = ?,
       send_to_bing = COALESCE(?, send_to_bing)
     WHERE id = ?
-  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, send_to_facebook != null ? (send_to_facebook ? 1 : 0) : null, bing_conversion_goal_id || null, send_to_bing != null ? (send_to_bing ? 1 : 0) : null, req.params.id);
+  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, facebook_event_name || null, facebook_event_name ? 1 : 0, bing_conversion_goal_id || null, send_to_bing != null ? (send_to_bing ? 1 : 0) : null, req.params.id);
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'postback_config', parseInt(req.params.id), `Updated postback config: ${name || req.params.id}`, req.ip);
   res.json({ message: 'Config updated' });

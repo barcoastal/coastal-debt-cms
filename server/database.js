@@ -229,6 +229,21 @@ try {
   db.exec(`ALTER TABLE postback_config ADD COLUMN send_to_facebook INTEGER DEFAULT 0`);
 } catch (e) {}
 
+// Add facebook_event_name to postback_config if not exist
+try { db.exec(`ALTER TABLE postback_config ADD COLUMN facebook_event_name TEXT`); } catch (e) {}
+
+// Migrate existing rows with send_to_facebook = 1 but no facebook_event_name
+try {
+  const INTERNAL_TO_FB = { lead: 'Lead', qualified: 'Lead', appointment: 'Schedule',
+    contract_signed: 'CompleteRegistration', sale: 'Purchase', closed: 'Purchase' };
+  const fbRows = db.prepare(`SELECT id, event_name FROM postback_config WHERE send_to_facebook = 1 AND (facebook_event_name IS NULL OR facebook_event_name = '')`).all();
+  for (const row of fbRows) {
+    const fbName = INTERNAL_TO_FB[row.event_name] || 'Lead';
+    db.prepare(`UPDATE postback_config SET facebook_event_name = ? WHERE id = ?`).run(fbName, row.id);
+  }
+  if (fbRows.length > 0) console.log(`Migrated ${fbRows.length} postback configs to facebook_event_name`);
+} catch (e) { console.error('facebook_event_name migration error:', e.message); }
+
 // Add debt_amount and revenue to conversion_events if not exist
 try {
   db.exec(`ALTER TABLE conversion_events ADD COLUMN debt_amount REAL`);
