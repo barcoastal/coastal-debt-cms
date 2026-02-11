@@ -36,14 +36,17 @@ const FIELD_MAP = {
   company: 'company_name',
   how_much_debt: 'debt_amount',
   debt_amount: 'debt_amount',
+  'how_much_debt_does_your_business_have?': 'debt_amount',
   any_mcas: 'has_mca',
   has_mca: 'has_mca',
+  'do_you_have_any_unsecured_business_loans_or_mcas_(merchant_cash_advances)?': 'has_mca',
   considered_bankruptcy: 'considered_bankruptcy',
   job_title: '_job_title',
   city: '_city',
   state: '_state',
   zip_code: '_zip',
-  street_address: '_street'
+  street_address: '_street',
+  fbclid: '_fbclid'
 };
 
 /**
@@ -100,54 +103,41 @@ router.post('/webhook', async (req, res) => {
 });
 
 /**
- * SYNC: Fetch leads directly from Facebook API (no webhook needed)
- * This polls all active leadgen forms and imports new leads
+ * Sync leads from a single Facebook page
+ * @param {string} pageId - Facebook page ID
+ * @param {string} pageToken - Page access token
+ * @param {string} pageName - Page name (for logging)
+ * @param {object} config - facebook_config row
+ * @returns {{ synced: number, errors: string[] }}
  */
-async function syncFacebookLeads() {
-  const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
-  if (!config || !config.page_access_token || !config.default_landing_page_id) {
-    return { synced: 0, error: 'Facebook not configured' };
-  }
-
-  // Get page ID from token
-  let pageId;
-  try {
-    const meRes = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${config.page_access_token}`);
-    const meData = await meRes.json();
-    if (meData.error) return { synced: 0, error: meData.error.message };
-    pageId = meData.id;
-  } catch (e) {
-    return { synced: 0, error: 'Failed to get page ID: ' + e.message };
-  }
-  let totalSynced = 0;
-  let errors = [];
+async function syncPageLeads(pageId, pageToken, pageName, config) {
+  let synced = 0;
+  const errors = [];
 
   try {
-    // Get all active forms
     const formsRes = await fetch(
-      `https://graph.facebook.com/v21.0/${pageId}/leadgen_forms?access_token=${config.page_access_token}&limit=50`
+      `https://graph.facebook.com/v21.0/${pageId}/leadgen_forms?access_token=${pageToken}&limit=50`
     );
     const formsData = await formsRes.json();
     if (formsData.error) {
-      return { synced: 0, error: formsData.error.message };
+      errors.push(`[${pageName}] ${formsData.error.message}`);
+      return { synced, errors };
     }
 
     const activeForms = (formsData.data || []).filter(f => f.status === 'ACTIVE');
 
     for (const form of activeForms) {
       try {
-        // Fetch recent leads from each form (last 50)
         const leadsRes = await fetch(
-          `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${config.page_access_token}&limit=50`
+          `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${pageToken}&limit=50`
         );
         const leadsData = await leadsRes.json();
         if (leadsData.error) {
-          errors.push(`Form ${form.name}: ${leadsData.error.message}`);
+          errors.push(`[${pageName}] Form ${form.name}: ${leadsData.error.message}`);
           continue;
         }
 
         for (const lead of leadsData.data || []) {
-          // Check if already imported by fb_leadgen_id in hidden_fields
           const existing = db.prepare(
             `SELECT id FROM leads WHERE hidden_fields LIKE ?`
           ).get(`%"fb_leadgen_id":"${lead.id}"%`);
@@ -168,20 +158,24 @@ async function syncFacebookLeads() {
             fields.full_name = [fields._first_name, fields._last_name].filter(Boolean).join(' ');
           }
 
-          // Generate unique eli_clickid
+          // Skip template/placeholder fbclid values like "{{fbclid}}"
+          if (fields._fbclid && fields._fbclid.startsWith('{{')) {
+            delete fields._fbclid;
+          }
+
           const eliClickId = 'eli_' + crypto.randomBytes(12).toString('hex');
 
-          // Build hidden fields
           const hiddenFields = {
             source: 'facebook_instant_form',
             fb_leadgen_id: lead.id,
+            fb_page_id: pageId,
+            fb_page_name: pageName,
             fb_form_id: form.id,
             fb_form_name: form.name,
             fb_created_time: lead.created_time || '',
             sync_method: 'api_poll'
           };
 
-          // Add extra fields to hidden_fields
           for (const item of lead.field_data || []) {
             if (!FIELD_MAP[item.name]) {
               hiddenFields[item.name] = Array.isArray(item.values) ? item.values[0] : item.values;
@@ -193,7 +187,9 @@ async function syncFacebookLeads() {
             }
           }
 
-          // Insert lead with unique eli_clickid and fbclid (lead ID = fbclid for instant forms)
+          // Use form fbclid if available, otherwise use lead ID
+          const fbclidValue = fields._fbclid || lead.id;
+
           const result = db.prepare(`
             INSERT INTO leads (
               landing_page_id, full_name, company_name, email, phone,
@@ -209,14 +205,13 @@ async function syncFacebookLeads() {
             fields.has_mca || '',
             fields.considered_bankruptcy || '',
             eliClickId,
-            lead.id, // fbclid = Facebook lead ID for instant forms
+            fbclidValue,
             JSON.stringify(hiddenFields)
           );
 
-          totalSynced++;
-          console.log(`Facebook sync: imported lead ${result.lastInsertRowid} (${eliClickId}, fb_leadgen=${lead.id}) from "${form.name}"`);
+          synced++;
+          console.log(`Facebook sync [${pageName}]: imported lead ${result.lastInsertRowid} (${eliClickId}, fb_leadgen=${lead.id}) from "${form.name}"`);
 
-          // Send notification
           if (sendLeadNotification) {
             const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(config.default_landing_page_id);
             sendLeadNotification(fields, landingPage).catch(() => {});
@@ -262,18 +257,79 @@ async function syncFacebookLeads() {
           }
         }
       } catch (formErr) {
-        errors.push(`Form ${form.name}: ${formErr.message}`);
+        errors.push(`[${pageName}] Form ${form.name}: ${formErr.message}`);
       }
     }
   } catch (err) {
-    return { synced: totalSynced, error: err.message };
+    errors.push(`[${pageName}] ${err.message}`);
   }
 
-  if (totalSynced > 0) {
-    console.log(`Facebook sync complete: ${totalSynced} new leads imported`);
+  return { synced, errors };
+}
+
+/**
+ * SYNC: Fetch leads from ALL connected Facebook pages
+ * Uses user_access_token to discover all pages, or falls back to single page_access_token
+ */
+async function syncFacebookLeads() {
+  const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+  if (!config || !config.default_landing_page_id) {
+    return { synced: 0, error: 'Facebook not configured' };
+  }
+  if (!config.page_access_token && !config.user_access_token) {
+    return { synced: 0, error: 'No Facebook access token configured' };
   }
 
-  return { synced: totalSynced, errors: errors.length ? errors : undefined };
+  let totalSynced = 0;
+  let allErrors = [];
+
+  // If user_access_token is set, discover ALL pages and sync each
+  if (config.user_access_token) {
+    try {
+      const acctRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&limit=100&access_token=${config.user_access_token}`);
+      const acctData = await acctRes.json();
+      if (acctData.error) {
+        // User token might be expired, fall through to page token
+        console.error('User token error, falling back to page token:', acctData.error.message);
+      } else {
+        const pages = acctData.data || [];
+        console.log(`Facebook sync: found ${pages.length} page(s) via user token`);
+        for (const page of pages) {
+          const result = await syncPageLeads(page.id, page.access_token, page.name, config);
+          totalSynced += result.synced;
+          allErrors.push(...result.errors);
+        }
+        if (totalSynced > 0) {
+          console.log(`Facebook sync complete: ${totalSynced} new leads from ${pages.length} pages`);
+        }
+        return { synced: totalSynced, errors: allErrors.length ? allErrors : undefined };
+      }
+    } catch (e) {
+      console.error('Failed to use user token for multi-page sync:', e.message);
+    }
+  }
+
+  // Fallback: single page using page_access_token
+  if (config.page_access_token) {
+    let pageId, pageName;
+    try {
+      const meRes = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${config.page_access_token}`);
+      const meData = await meRes.json();
+      if (meData.error) return { synced: 0, error: meData.error.message };
+      pageId = meData.id;
+      pageName = meData.name || pageId;
+    } catch (e) {
+      return { synced: 0, error: 'Failed to get page ID: ' + e.message };
+    }
+
+    const result = await syncPageLeads(pageId, config.page_access_token, pageName, config);
+    if (result.synced > 0) {
+      console.log(`Facebook sync complete: ${result.synced} new leads from ${pageName}`);
+    }
+    return { synced: result.synced, errors: result.errors.length ? result.errors : undefined };
+  }
+
+  return { synced: 0, error: 'No valid access token' };
 }
 
 // Manual sync endpoint
@@ -292,8 +348,8 @@ function startBackgroundSync() {
   if (syncInterval) return;
   syncInterval = setInterval(async () => {
     try {
-      const config = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
-      if (config && config.page_access_token) {
+      const config = db.prepare('SELECT page_access_token, user_access_token FROM facebook_config WHERE id = 1').get();
+      if (config && (config.page_access_token || config.user_access_token)) {
         await syncFacebookLeads();
       }
     } catch (err) {
@@ -304,8 +360,8 @@ function startBackgroundSync() {
   // Run first sync 10 seconds after startup
   setTimeout(async () => {
     try {
-      const config = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
-      if (config && config.page_access_token) {
+      const config = db.prepare('SELECT page_access_token, user_access_token FROM facebook_config WHERE id = 1').get();
+      if (config && (config.page_access_token || config.user_access_token)) {
         console.log('Running initial Facebook lead sync...');
         const result = await syncFacebookLeads();
         if (result.synced > 0) {
@@ -650,7 +706,7 @@ router.get('/config', authenticateToken, (req, res) => {
  * ADMIN: Save Facebook config
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code } = req.body;
+  const { page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code, user_access_token } = req.body;
 
   const existing = db.prepare('SELECT id FROM facebook_config WHERE id = 1').get();
 
@@ -665,14 +721,15 @@ router.post('/config', authenticateToken, (req, res) => {
         pixel_id = ?,
         ad_account_id = ?,
         test_event_code = ?,
+        user_access_token = ?,
         connected_at = CURRENT_TIMESTAMP
       WHERE id = 1
-    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null);
+    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null, user_access_token || null);
   } else {
     db.prepare(`
-      INSERT INTO facebook_config (id, page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code, connected_at)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null);
+      INSERT INTO facebook_config (id, page_access_token, verify_token, app_id, app_secret, default_landing_page_id, pixel_id, ad_account_id, test_event_code, user_access_token, connected_at)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(page_access_token, verify_token, app_id || null, app_secret || null, default_landing_page_id || null, pixel_id || null, ad_account_id || null, test_event_code || null, user_access_token || null);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'connected', 'facebook', null, 'Facebook config updated', req.ip);

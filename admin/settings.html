@@ -355,9 +355,15 @@
 
         <!-- Config Form -->
         <div class="form-group">
+          <label>User Access Token <span style="color:#10b981;font-size:11px;">(Multi-Page Sync)</span></label>
+          <input type="password" id="fbUserToken" placeholder="Enter your Facebook User Access Token">
+          <small style="color: #666;">Optional. Enables syncing leads from ALL your Facebook pages. Get it from <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a> with <code>leads_retrieval</code>, <code>pages_show_list</code>, and <code>pages_read_engagement</code> permissions</small>
+        </div>
+
+        <div class="form-group">
           <label>Page Access Token</label>
           <input type="password" id="fbPageToken" placeholder="Enter your Facebook Page Access Token">
-          <small style="color: #666;">Get it from <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a> with <code>leads_retrieval</code> and <code>pages_manage_ads</code> permissions</small>
+          <small style="color: #666;">Used for CAPI events and single-page fallback. Get it from <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a> with <code>leads_retrieval</code> and <code>pages_manage_ads</code> permissions</small>
         </div>
 
         <div class="form-group">
@@ -579,8 +585,9 @@
       // Load existing config
       try {
         const config = await api('/api/facebook/config');
-        if (config.page_access_token) {
-          document.getElementById('fbPageToken').value = config.page_access_token;
+        if (config.page_access_token || config.user_access_token) {
+          document.getElementById('fbPageToken').value = config.page_access_token || '';
+          document.getElementById('fbUserToken').value = config.user_access_token || '';
           document.getElementById('fbVerifyToken').value = config.verify_token || '';
           document.getElementById('fbPixelId').value = config.pixel_id || '';
           document.getElementById('fbAdAccountId').value = config.ad_account_id || '';
@@ -608,14 +615,19 @@
 
     async function saveFbConfig() {
       const token = document.getElementById('fbPageToken').value;
+      const userToken = document.getElementById('fbUserToken').value;
       const verify = document.getElementById('fbVerifyToken').value;
       const pixelId = document.getElementById('fbPixelId').value;
       const adAccountId = document.getElementById('fbAdAccountId').value;
       const testEventCode = document.getElementById('fbTestEventCode').value;
       const pageId = document.getElementById('fbDefaultPage').value;
 
-      if (!token || !verify) {
-        alert('Page Access Token and Verify Token are required');
+      if (!verify) {
+        alert('Verify Token is required');
+        return;
+      }
+      if (!token && !userToken) {
+        alert('At least one access token (User or Page) is required');
         return;
       }
 
@@ -624,7 +636,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            page_access_token: token,
+            page_access_token: token || null,
+            user_access_token: userToken || null,
             verify_token: verify,
             pixel_id: pixelId || null,
             ad_account_id: adAccountId || null,

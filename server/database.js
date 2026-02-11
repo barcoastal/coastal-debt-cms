@@ -265,6 +265,9 @@ db.exec(`
 // Add test_event_code to facebook_config
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
 
+// Add user_access_token to facebook_config (for multi-page sync)
+try { db.exec(`ALTER TABLE facebook_config ADD COLUMN user_access_token TEXT`); } catch (e) {}
+
 // Add Salesforce tracking columns to leads table
 try { db.exec(`ALTER TABLE leads ADD COLUMN transfer_status TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN five9_dispo TEXT`); } catch (e) {}
