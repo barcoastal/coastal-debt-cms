@@ -193,7 +193,7 @@ async function syncFacebookLeads() {
             }
           }
 
-          // Insert lead with unique eli_clickid and fbclid
+          // Insert lead with unique eli_clickid and fbclid (lead ID = fbclid for instant forms)
           const result = db.prepare(`
             INSERT INTO leads (
               landing_page_id, full_name, company_name, email, phone,
@@ -209,7 +209,7 @@ async function syncFacebookLeads() {
             fields.has_mca || '',
             fields.considered_bankruptcy || '',
             eliClickId,
-            '', // fbclid - not available from instant forms, stored when available from website clicks
+            lead.id, // fbclid = Facebook lead ID for instant forms
             JSON.stringify(hiddenFields)
           );
 
@@ -364,6 +364,31 @@ try {
   console.error('Lead event backfill error:', err.message);
 }
 
+// Backfill fbclid from fb_leadgen_id for existing instant form leads
+try {
+  const leadsNoFbclid = db.prepare(`
+    SELECT id, hidden_fields FROM leads
+    WHERE (fbclid IS NULL OR fbclid = '')
+      AND hidden_fields LIKE '%"fb_leadgen_id":"%'
+  `).all();
+  if (leadsNoFbclid.length > 0) {
+    const update = db.prepare('UPDATE leads SET fbclid = ? WHERE id = ?');
+    let count = 0;
+    for (const lead of leadsNoFbclid) {
+      try {
+        const hf = JSON.parse(lead.hidden_fields || '{}');
+        if (hf.fb_leadgen_id) {
+          update.run(hf.fb_leadgen_id, lead.id);
+          count++;
+        }
+      } catch (e) {}
+    }
+    if (count > 0) console.log(`Backfilled fbclid (lead ID) for ${count} Facebook instant form leads`);
+  }
+} catch (err) {
+  console.error('fbclid backfill error:', err.message);
+}
+
 // Start background sync
 startBackgroundSync();
 
@@ -432,7 +457,7 @@ async function processLeadgenEvent(leadgenId, config) {
       }
     }
 
-    // Insert lead
+    // Insert lead (lead ID = fbclid for instant forms)
     const result = db.prepare(`
       INSERT INTO leads (
         landing_page_id, full_name, company_name, email, phone,
@@ -448,7 +473,7 @@ async function processLeadgenEvent(leadgenId, config) {
       fields.has_mca || '',
       fields.considered_bankruptcy || '',
       eliClickId,
-      '', // fbclid
+      leadgenId, // fbclid = Facebook lead ID for instant forms
       JSON.stringify(hiddenFields)
     );
 
