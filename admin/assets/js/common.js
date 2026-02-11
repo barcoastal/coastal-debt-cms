@@ -314,5 +314,36 @@ class ColumnEditor {
   }
 }
 
-// Run auth check on page load
+// Live clock + date in page header (shows browser + server timezone)
+function initClock() {
+  const header = document.querySelector('.page-header');
+  if (!header) return;
+
+  const clock = document.createElement('div');
+  clock.id = 'liveClock';
+  clock.style.cssText = 'text-align:right;font-size:0.85rem;color:var(--gray-500);line-height:1.4;white-space:nowrap;';
+  header.appendChild(clock);
+
+  let serverTz = '';
+  fetch('/api/health').then(r => r.json()).then(d => { serverTz = d.timezone || ''; }).catch(() => {});
+
+  function tick() {
+    const now = new Date();
+    const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let tzLine = browserTz;
+    if (serverTz && serverTz !== browserTz) {
+      tzLine += ' <span style="color:var(--orange);font-weight:600;">(Server: ' + serverTz + ')</span>';
+    }
+    clock.innerHTML = '<div style="font-weight:600;color:var(--gray-700);font-size:0.95rem;">' + time + '</div>' +
+      '<div>' + date + ' &middot; ' + tzLine + '</div>';
+  }
+
+  tick();
+  setInterval(tick, 1000);
+}
+
+// Run auth check and clock on page load
 checkAuth();
+initClock();

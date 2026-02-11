@@ -99,7 +99,12 @@ app.get('/', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    server_time: new Date().toLocaleString('en-US', { timeZoneName: 'short' })
+  });
 });
 
 // Debug endpoint - check what cookies the server sees (remove after debugging)
