@@ -144,24 +144,64 @@
             <input type="text" id="baseUrl" placeholder="Select a landing page or enter a custom URL" oninput="updatePreview()">
           </div>
           <div class="form-group">
-            <label>utm_source <span style="color:var(--red)">*</span></label>
-            <input type="text" id="utmSource" placeholder="e.g. google, facebook, newsletter" oninput="updatePreview()">
+            <label>Campaign ID (cmpid)</label>
+            <input type="text" id="paramCmpid" placeholder="e.g. 6855272ea2fde3e964e81fb6" oninput="updatePreview()">
           </div>
           <div class="form-group">
-            <label>utm_medium <span style="color:var(--red)">*</span></label>
-            <input type="text" id="utmMedium" placeholder="e.g. organic, cpc, email, social" oninput="updatePreview()">
+            <label>utm_source <span style="color:var(--red)">*</span></label>
+            <input type="text" id="utmSource" placeholder="e.g. Google, Facebook" oninput="updatePreview()">
           </div>
           <div class="form-group">
             <label>utm_campaign</label>
-            <input type="text" id="utmCampaign" placeholder="e.g. spring_sale, brand_awareness" oninput="updatePreview()">
+            <input type="text" id="utmCampaign" placeholder="e.g. {replace} or campaign name" oninput="updatePreview()">
           </div>
           <div class="form-group">
-            <label>utm_term</label>
-            <input type="text" id="utmTerm" placeholder="e.g. debt+relief, paid+keyword" oninput="updatePreview()">
+            <label>sub2 (Keyword)</label>
+            <input type="text" id="paramSub2" placeholder="e.g. {keyword}" oninput="updatePreview()">
           </div>
-          <div class="form-group full-width">
-            <label>utm_content</label>
-            <input type="text" id="utmContent" placeholder="e.g. ad_variation_a, header_link" oninput="updatePreview()">
+          <div class="form-group">
+            <label>sub3 (Match Type)</label>
+            <input type="text" id="paramSub3" placeholder="e.g. {matchtype}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub4 (Ad Group ID)</label>
+            <input type="text" id="paramSub4" placeholder="e.g. {adgroupid}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub5 (Creative)</label>
+            <input type="text" id="paramSub5" placeholder="e.g. {creative}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub6 (Campaign ID)</label>
+            <input type="text" id="paramSub6" placeholder="e.g. {campaignid}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub7 (Device)</label>
+            <input type="text" id="paramSub7" placeholder="e.g. {device}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub8 (Ad Position)</label>
+            <input type="text" id="paramSub8" placeholder="e.g. {adposition}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub9 (Network)</label>
+            <input type="text" id="paramSub9" placeholder="e.g. {network}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>sub10 (Placement)</label>
+            <input type="text" id="paramSub10" placeholder="e.g. {placement}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>wbraid</label>
+            <input type="text" id="paramWbraid" placeholder="e.g. {wbraid}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>gbraid</label>
+            <input type="text" id="paramGbraid" placeholder="e.g. {gbraid}" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>ref_id (Click ID)</label>
+            <input type="text" id="paramRefId" placeholder="e.g. {gclid} or {fbclid}" oninput="updatePreview()">
           </div>
         </div>
       </div>
@@ -172,16 +212,11 @@
           <h3 class="card-title">Quick Presets</h3>
         </div>
         <div class="presets-grid">
-          <button class="preset-btn" onclick="applyPreset('google','organic','','','')">Google Organic</button>
-          <button class="preset-btn" onclick="applyPreset('google','cpc','','','')">Google CPC</button>
-          <button class="preset-btn" onclick="applyPreset('facebook','social','','','')">Facebook Social</button>
-          <button class="preset-btn" onclick="applyPreset('facebook','cpc','','','')">Facebook CPC</button>
-          <button class="preset-btn" onclick="applyPreset('instagram','social','','','')">Instagram Social</button>
-          <button class="preset-btn" onclick="applyPreset('newsletter','email','','','')">Email Campaign</button>
-          <button class="preset-btn" onclick="applyPreset('linkedin','social','','','')">LinkedIn Social</button>
-          <button class="preset-btn" onclick="applyPreset('tiktok','social','','','')">TikTok Social</button>
-          <button class="preset-btn" onclick="applyPreset('bing','cpc','','','')">Bing CPC</button>
-          <button class="preset-btn" onclick="applyPreset('youtube','video','','','')">YouTube Video</button>
+          <button class="preset-btn" onclick="applyPreset('google-ads')" style="border-color:var(--primary);color:var(--primary);font-weight:600;">Google Ads (Full Tracking)</button>
+          <button class="preset-btn" onclick="applyPreset('bing-ads')">Bing Ads (Full Tracking)</button>
+          <button class="preset-btn" onclick="applyPreset('facebook-ads')">Facebook/Meta Ads</button>
+          <button class="preset-btn" onclick="applyPreset('tiktok-ads')">TikTok Ads</button>
+          <button class="preset-btn" onclick="applyPreset('linkedin-ads')">LinkedIn Ads</button>
         </div>
       </div>
 
@@ -210,14 +245,13 @@
               <tr>
                 <th>URL</th>
                 <th>Source</th>
-                <th>Medium</th>
                 <th>Campaign</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="historyTable">
-              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>
+              <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>
             </tbody>
           </table>
         </div>
@@ -230,6 +264,117 @@
   <script src="assets/js/common.js?v=2"></script>
   <script>
     let currentUrl = '';
+
+    // All param field IDs
+    const paramFields = [
+      'paramCmpid', 'utmSource', 'utmCampaign',
+      'paramSub2', 'paramSub3', 'paramSub4', 'paramSub5', 'paramSub6',
+      'paramSub7', 'paramSub8', 'paramSub9', 'paramSub10',
+      'paramWbraid', 'paramGbraid', 'paramRefId'
+    ];
+
+    // Map field IDs to URL param names
+    const fieldToParam = {
+      paramCmpid: 'cmpid',
+      utmSource: 'utm_source',
+      utmCampaign: 'utm_campaign',
+      paramSub2: 'sub2',
+      paramSub3: 'sub3',
+      paramSub4: 'sub4',
+      paramSub5: 'sub5',
+      paramSub6: 'sub6',
+      paramSub7: 'sub7',
+      paramSub8: 'sub8',
+      paramSub9: 'sub9',
+      paramSub10: 'sub10',
+      paramWbraid: 'wbraid',
+      paramGbraid: 'gbraid',
+      paramRefId: 'ref_id'
+    };
+
+    // Platform presets with all tracking macros
+    const presets = {
+      'google-ads': {
+        utmSource: 'Google',
+        utmCampaign: '{replace}',
+        paramSub2: '{keyword}',
+        paramSub3: '{matchtype}',
+        paramSub4: '{adgroupid}',
+        paramSub5: '{creative}',
+        paramSub6: '{campaignid}',
+        paramSub7: '{device}',
+        paramSub8: '{adposition}',
+        paramSub9: '{network}',
+        paramSub10: '{placement}',
+        paramWbraid: '{wbraid}',
+        paramGbraid: '{gbraid}',
+        paramRefId: '{gclid}'
+      },
+      'bing-ads': {
+        utmSource: 'Bing',
+        utmCampaign: '{Campaign}',
+        paramSub2: '{keyword}',
+        paramSub3: '{MatchType}',
+        paramSub4: '{AdGroupId}',
+        paramSub5: '{AdId}',
+        paramSub6: '{CampaignId}',
+        paramSub7: '{Device}',
+        paramSub8: '{AdPosition}',
+        paramSub9: '{Network}',
+        paramSub10: '{QueryString}',
+        paramWbraid: '',
+        paramGbraid: '',
+        paramRefId: '{msclkid}'
+      },
+      'facebook-ads': {
+        utmSource: 'Facebook',
+        utmCampaign: '{{campaign.name}}',
+        paramSub2: '{{ad.name}}',
+        paramSub3: '',
+        paramSub4: '{{adset.id}}',
+        paramSub5: '{{ad.id}}',
+        paramSub6: '{{campaign.id}}',
+        paramSub7: '{{placement}}',
+        paramSub8: '',
+        paramSub9: '',
+        paramSub10: '{{site_source_name}}',
+        paramWbraid: '',
+        paramGbraid: '',
+        paramRefId: '{{fbclid}}'
+      },
+      'tiktok-ads': {
+        utmSource: 'TikTok',
+        utmCampaign: '__CAMPAIGN_NAME__',
+        paramSub2: '__AID_NAME__',
+        paramSub3: '',
+        paramSub4: '__AID__',
+        paramSub5: '__CID_NAME__',
+        paramSub6: '__CAMPAIGN_ID__',
+        paramSub7: '__PLACEMENT__',
+        paramSub8: '',
+        paramSub9: '',
+        paramSub10: '',
+        paramWbraid: '',
+        paramGbraid: '',
+        paramRefId: '__CLICKID__'
+      },
+      'linkedin-ads': {
+        utmSource: 'LinkedIn',
+        utmCampaign: '{{CAMPAIGN_NAME}}',
+        paramSub2: '',
+        paramSub3: '',
+        paramSub4: '{{CAMPAIGN_GROUP_ID}}',
+        paramSub5: '{{CREATIVE_ID}}',
+        paramSub6: '{{CAMPAIGN_ID}}',
+        paramSub7: '',
+        paramSub8: '',
+        paramSub9: '',
+        paramSub10: '',
+        paramWbraid: '',
+        paramGbraid: '',
+        paramRefId: '{{li_click_id}}'
+      }
+    };
 
     async function loadPages() {
       try {
@@ -257,17 +402,13 @@
     function updatePreview() {
       const base = document.getElementById('baseUrl').value.trim();
       const source = document.getElementById('utmSource').value.trim();
-      const medium = document.getElementById('utmMedium').value.trim();
-      const campaign = document.getElementById('utmCampaign').value.trim();
-      const term = document.getElementById('utmTerm').value.trim();
-      const content = document.getElementById('utmContent').value.trim();
 
       const box = document.getElementById('urlPreview');
       const copyBtn = document.getElementById('copyBtn');
       const saveBtn = document.getElementById('saveBtn');
 
-      if (!base || !source || !medium) {
-        box.textContent = 'Fill in Base URL, utm_source, and utm_medium to generate a tagged URL';
+      if (!base || !source) {
+        box.textContent = 'Fill in Base URL and utm_source to generate a tagged URL';
         box.classList.remove('has-url');
         copyBtn.disabled = true;
         saveBtn.disabled = true;
@@ -275,27 +416,35 @@
         return;
       }
 
-      const params = new URLSearchParams();
-      params.set('utm_source', source);
-      params.set('utm_medium', medium);
-      if (campaign) params.set('utm_campaign', campaign);
-      if (term) params.set('utm_term', term);
-      if (content) params.set('utm_content', content);
+      // Build params in order
+      const parts = [];
+      for (const fieldId of paramFields) {
+        const val = document.getElementById(fieldId).value.trim();
+        if (val) {
+          parts.push(fieldToParam[fieldId] + '=' + encodeURIComponent(val));
+        }
+      }
 
       const separator = base.includes('?') ? '&' : '?';
-      currentUrl = base + separator + params.toString();
+      currentUrl = base + separator + parts.join('&');
       box.textContent = currentUrl;
       box.classList.add('has-url');
       copyBtn.disabled = false;
       saveBtn.disabled = false;
     }
 
-    function applyPreset(source, medium, campaign, term, content) {
-      document.getElementById('utmSource').value = source;
-      document.getElementById('utmMedium').value = medium;
-      document.getElementById('utmCampaign').value = campaign;
-      document.getElementById('utmTerm').value = term;
-      document.getElementById('utmContent').value = content;
+    function applyPreset(presetName) {
+      const preset = presets[presetName];
+      if (!preset) return;
+      // Clear all fields first
+      for (const fieldId of paramFields) {
+        document.getElementById(fieldId).value = '';
+      }
+      // Apply preset values
+      for (const [fieldId, value] of Object.entries(preset)) {
+        const el = document.getElementById(fieldId);
+        if (el) el.value = value;
+      }
       updatePreview();
     }
 
@@ -320,11 +469,9 @@
       history.unshift({
         url: currentUrl,
         source: document.getElementById('utmSource').value.trim(),
-        medium: document.getElementById('utmMedium').value.trim(),
         campaign: document.getElementById('utmCampaign').value.trim(),
         created: new Date().toISOString()
       });
-      // Keep last 50
       if (history.length > 50) history.length = 50;
       localStorage.setItem('utm_history', JSON.stringify(history));
       renderHistory();
@@ -334,11 +481,9 @@
     function clearForm() {
       document.getElementById('pageSelect').value = '';
       document.getElementById('baseUrl').value = '';
-      document.getElementById('utmSource').value = '';
-      document.getElementById('utmMedium').value = '';
-      document.getElementById('utmCampaign').value = '';
-      document.getElementById('utmTerm').value = '';
-      document.getElementById('utmContent').value = '';
+      for (const fieldId of paramFields) {
+        document.getElementById(fieldId).value = '';
+      }
       updatePreview();
     }
 
@@ -359,7 +504,7 @@
       const tbody = document.getElementById('historyTable');
 
       if (!history.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400);">No saved URLs yet</td></tr>';
         return;
       }
 
@@ -369,7 +514,6 @@
         return '<tr>' +
           '<td><div class="history-url" title="' + item.url.replace(/"/g, '&quot;') + '">' + item.url + '</div></td>' +
           '<td>' + (item.source || '-') + '</td>' +
-          '<td>' + (item.medium || '-') + '</td>' +
           '<td>' + (item.campaign || '-') + '</td>' +
           '<td>' + dateStr + '</td>' +
           '<td><div class="history-actions">' +
