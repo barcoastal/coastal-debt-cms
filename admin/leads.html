@@ -27,11 +27,22 @@
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-red { background: #fee2e2; color: #991b1b; }
 
+    /* Lead Detail Layout */
+    .lead-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .lead-detail-section { background: var(--gray-50); border-radius: 10px; padding: 16px; }
+    .lead-detail-section h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-500); margin: 0 0 10px; font-weight: 600; }
+    .lead-detail-section .detail-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--gray-200); font-size: 13px; }
+    .lead-detail-section .detail-row:last-child { border-bottom: none; }
+    .lead-detail-section .detail-label { color: var(--gray-500); flex-shrink: 0; margin-right: 12px; }
+    .lead-detail-section .detail-value { color: var(--gray-900); font-weight: 500; text-align: right; word-break: break-all; }
+    .lead-detail-section .detail-value.mono { font-family: monospace; font-size: 11px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lead-detail-full { grid-column: 1 / -1; }
+
     /* Event Timeline */
-    .event-timeline { margin-top: 20px; padding: 0 0 0 20px; border-left: 2px solid var(--gray-200); }
-    .event-timeline-title { font-weight: 600; font-size: 14px; margin: 20px 0 10px; color: var(--gray-800); }
-    .timeline-item { position: relative; padding: 8px 0 16px 20px; }
-    .timeline-dot { position: absolute; left: -27px; top: 12px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
+    .event-timeline { padding: 0 0 0 20px; border-left: 2px solid var(--gray-200); }
+    .event-timeline-title { font-weight: 600; font-size: 14px; margin: 0 0 10px; color: var(--gray-800); }
+    .timeline-item { position: relative; padding: 6px 0 12px 20px; }
+    .timeline-dot { position: absolute; left: -27px; top: 10px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
     .timeline-dot.dot-blue { background: #3b82f6; }
     .timeline-dot.dot-yellow { background: #f59e0b; }
     .timeline-dot.dot-orange { background: #f97316; }
@@ -214,7 +225,7 @@
 
   <!-- Lead Detail Modal -->
   <div class="modal-overlay" id="leadModal">
-    <div class="modal">
+    <div class="modal" style="max-width:860px;padding:24px;">
       <div class="modal-header">
         <h2>Lead Details</h2>
         <button class="modal-close" onclick="hideModal('leadModal')">&times;</button>
@@ -377,10 +388,6 @@
       const res = await fetch(`/api/leads/${id}`);
       const lead = await res.json();
 
-      const hiddenFields = Object.entries(lead.hidden_fields || {})
-        .map(([k, v]) => `<tr><td><strong>${k}</strong></td><td>${v}</td></tr>`)
-        .join('');
-
       const hf = lead.hidden_fields || {};
 
       const eventsHtml = (lead.events && lead.events.length > 0) ? `
@@ -414,38 +421,58 @@
         </div>
       ` : '<div class="event-timeline-title" style="color:var(--gray-600);font-size:12px;margin-top:15px;">No events recorded</div>';
 
+      // Build tracking IDs - only show non-empty ones
+      const trackingIds = [
+        ['GCLID', lead.gclid],
+        ['RT Click ID', lead.rt_clickid],
+        ['Eli Click ID', lead.eli_clickid],
+        ['FB Click ID', lead.fbclid],
+        ['MS Click ID', lead.msclkid]
+      ].filter(([, v]) => v && v !== '-');
+
+      const extraFields = Object.entries(hf)
+        .filter(([k]) => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug');
+
       document.getElementById('leadDetails').innerHTML = `
-        <table style="width: 100%;">
-          <tr><td colspan="2" style="padding-top:10px;"><strong>Contact Info</strong></td></tr>
-          <tr><td><strong>Name</strong></td><td>${lead.full_name || '-'}</td></tr>
-          <tr><td><strong>Company</strong></td><td>${lead.company_name || '-'}</td></tr>
-          <tr><td><strong>Email</strong></td><td>${lead.email || '-'}</td></tr>
-          <tr><td><strong>Phone</strong></td><td>${lead.phone || '-'}</td></tr>
-          <tr><td colspan="2" style="padding-top:15px;"><strong>Qualification</strong></td></tr>
-          <tr><td><strong>Debt Amount</strong></td><td>${lead.debt_amount || '-'}</td></tr>
-          <tr><td><strong>Has MCA</strong></td><td>${lead.has_mca || '-'}</td></tr>
-          <tr><td><strong>Considered Bankruptcy</strong></td><td>${lead.considered_bankruptcy || '-'}</td></tr>
-          <tr><td colspan="2" style="padding-top:15px;"><strong>Tracking IDs</strong></td></tr>
-          <tr><td><strong>GCLID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.gclid || '-'}</td></tr>
-          <tr><td><strong>RT Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.rt_clickid || '-'}</td></tr>
-          <tr><td><strong>Eli Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.eli_clickid || '-'}</td></tr>
-          <tr><td><strong>FB Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.fbclid || '-'}</td></tr>
-          <tr><td><strong>MS Click ID</strong></td><td style="font-family:monospace;font-size:12px;word-break:break-all;">${lead.msclkid || '-'}</td></tr>
-          <tr><td colspan="2" style="padding-top:15px;"><strong>Source</strong></td></tr>
-          <tr><td><strong>Landing Page</strong></td><td>${lead.landing_page_name || '-'}</td></tr>
-          <tr><td><strong>Traffic Source</strong></td><td>${lead.traffic_source || '-'}</td></tr>
-          <tr><td><strong>Platform</strong></td><td>${lead.platform || '-'}</td></tr>
-          <tr><td><strong>Page URL</strong></td><td style="word-break:break-all;">${hf.page_url || '-'}</td></tr>
-          <tr><td><strong>Referrer URL</strong></td><td style="word-break:break-all;">${hf.referrer_url || '-'}</td></tr>
-          <tr><td colspan="2" style="padding-top:15px;"><strong>Cost & Date</strong></td></tr>
-          <tr><td><strong>Cost</strong></td><td>${lead.cost_cents ? '$' + (lead.cost_cents/100).toFixed(2) + ' ' + (lead.cost_currency || 'USD') : '-'}</td></tr>
-          <tr><td><strong>Submitted</strong></td><td>${formatDate(lead.created_at)}</td></tr>
-          ${Object.keys(hf).filter(k => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug').length > 0 ? `
-          <tr><td colspan="2" style="padding-top:15px;"><strong>Additional Fields</strong></td></tr>
-          ${Object.entries(hf).filter(([k]) => k !== 'page_url' && k !== 'referrer_url' && k !== 'landing_page_slug').map(([k, v]) => `<tr><td><strong>${k}</strong></td><td style="word-break:break-all;">${v || '-'}</td></tr>`).join('')}
-          ` : ''}
-        </table>
-        ${eventsHtml}
+        <div class="lead-detail-grid">
+          <div class="lead-detail-section">
+            <h4>Contact</h4>
+            <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${lead.full_name || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${lead.company_name || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone || '-'}</span></div>
+          </div>
+          <div class="lead-detail-section">
+            <h4>Qualification</h4>
+            <div class="detail-row"><span class="detail-label">Debt Amount</span><span class="detail-value">${lead.debt_amount || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Has MCA</span><span class="detail-value">${lead.has_mca || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Bankruptcy</span><span class="detail-value">${lead.considered_bankruptcy || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value">${lead.stage || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Transfer</span><span class="detail-value">${lead.transfer_status || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Five9 Dispo</span><span class="detail-value">${lead.five9_dispo || '-'}</span></div>
+          </div>
+          <div class="lead-detail-section">
+            <h4>Source</h4>
+            <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value">${lead.platform || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Landing Page</span><span class="detail-value">${lead.landing_page_name || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Traffic Source</span><span class="detail-value">${lead.traffic_source || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Campaign</span><span class="detail-value">${lead.utm_campaign || '-'}</span></div>
+            <div class="detail-row"><span class="detail-label">Submitted</span><span class="detail-value">${formatDate(lead.created_at)}</span></div>
+            ${lead.cost_cents ? '<div class="detail-row"><span class="detail-label">Cost</span><span class="detail-value">$' + (lead.cost_cents/100).toFixed(2) + '</span></div>' : ''}
+          </div>
+          <div class="lead-detail-section">
+            <h4>Tracking IDs</h4>
+            ${trackingIds.length ? trackingIds.map(([label, val]) =>
+              '<div class="detail-row"><span class="detail-label">' + label + '</span><span class="detail-value mono" title="' + val + '">' + val + '</span></div>'
+            ).join('') : '<div style="color:var(--gray-400);font-size:12px;">No tracking IDs</div>'}
+          </div>
+          ${extraFields.length ? '<div class="lead-detail-section lead-detail-full"><h4>Additional Fields</h4>' +
+            extraFields.map(([k, v]) => '<div class="detail-row"><span class="detail-label">' + k + '</span><span class="detail-value">' + (v || '-') + '</span></div>').join('') +
+          '</div>' : ''}
+          <div class="lead-detail-full">
+            ${eventsHtml}
+          </div>
+        </div>
       `;
 
       showModal('leadModal');
