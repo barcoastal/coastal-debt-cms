@@ -309,5 +309,36 @@ router.post('/upload', authenticateToken, (req, res) => {
   });
 });
 
+// GET Zapier API key (generate if not exists)
+router.get('/zapier-key', authenticateToken, (req, res) => {
+  let row = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+  if (!row) {
+    const key = crypto.randomBytes(24).toString('hex');
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('zapier_api_key', key);
+    row = { value: key };
+  }
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  res.json({
+    api_key: row.value,
+    webhook_url: `${baseUrl}/api/leads/zapier?key=${row.value}`
+  });
+});
+
+// Regenerate Zapier API key
+router.post('/zapier-key/regenerate', authenticateToken, (req, res) => {
+  const key = crypto.randomBytes(24).toString('hex');
+  const existing = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+  if (existing) {
+    db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(key, 'zapier_api_key');
+  } else {
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('zapier_api_key', key);
+  }
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  res.json({
+    api_key: key,
+    webhook_url: `${baseUrl}/api/leads/zapier?key=${key}`
+  });
+});
+
 module.exports = router;
 module.exports.logActivity = logActivity;

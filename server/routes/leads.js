@@ -475,6 +475,122 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Lead deleted' });
 });
 
+// Zapier webhook - receive leads from Zapier (Facebook Instant Forms, etc.)
+// No auth required - uses a simple API key in the URL for Zapier compatibility
+router.post('/zapier', async (req, res) => {
+  try {
+    const apiKey = req.query.key || req.headers['x-api-key'];
+    const config = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+
+    if (!config || !apiKey || apiKey !== config.value) {
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+
+    const {
+      full_name, first_name, last_name,
+      company_name, company, email, phone, phone_number,
+      debt_amount, has_mca, considered_bankruptcy,
+      landing_page_id, landing_page_slug, platform,
+      form_id, form_name, leadgen_id, created_time,
+      ...extraFields
+    } = req.body;
+
+    // Resolve name
+    const resolvedName = full_name || [first_name, last_name].filter(Boolean).join(' ') || '';
+    const resolvedPhone = phone || phone_number || '';
+    const resolvedCompany = company_name || company || '';
+
+    // Resolve landing page: by ID, by slug, or use Facebook default
+    let pageId = landing_page_id || null;
+    if (!pageId && landing_page_slug) {
+      const page = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(landing_page_slug);
+      if (page) pageId = page.id;
+    }
+    if (!pageId) {
+      // Try Facebook default landing page
+      const fbConfig = db.prepare('SELECT default_landing_page_id FROM facebook_config WHERE id = 1').get();
+      if (fbConfig) pageId = fbConfig.default_landing_page_id;
+    }
+    if (!pageId) {
+      return res.status(400).json({ error: 'No landing_page_id, landing_page_slug, or default Facebook page configured' });
+    }
+
+    // Build hidden fields
+    const hiddenFields = {
+      source: 'zapier',
+      platform: platform || 'facebook',
+      fb_form_id: form_id || '',
+      fb_form_name: form_name || '',
+      fb_leadgen_id: leadgen_id || '',
+      fb_created_time: created_time || '',
+      ...extraFields
+    };
+
+    const result = db.prepare(`
+      INSERT INTO leads (
+        landing_page_id, full_name, company_name, email, phone,
+        debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', ?, ?)
+    `).run(
+      pageId,
+      resolvedName,
+      resolvedCompany,
+      email || '',
+      resolvedPhone,
+      debt_amount || '',
+      has_mca || '',
+      considered_bankruptcy || '',
+      leadgen_id ? 'zapier_fb_' + leadgen_id : 'zapier_' + Date.now(),
+      JSON.stringify(hiddenFields)
+    );
+
+    console.log(`Zapier lead inserted: ID ${result.lastInsertRowid}`);
+
+    // Send notification
+    if (sendLeadNotification) {
+      const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(pageId);
+      sendLeadNotification({ full_name: resolvedName, company_name: resolvedCompany, email, phone: resolvedPhone }, landingPage).catch(() => {});
+    }
+
+    // Auto-create lead conversion event
+    try {
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status)
+        VALUES (?, ?, 'lead', 'zapier', 'logged')
+      `).run(result.lastInsertRowid, leadgen_id ? 'zapier_fb_' + leadgen_id : '');
+    } catch (err) {
+      console.error('Failed to create conversion event for Zapier lead:', err);
+    }
+
+    // Send Facebook CAPI Lead event if from Facebook
+    if (sendFacebookEvent && (!platform || platform === 'facebook' || platform === 'meta')) {
+      const nameParts = resolvedName.trim().split(/\s+/);
+      sendFacebookEvent('Lead', {
+        email: email || '',
+        phone: resolvedPhone,
+        firstName: first_name || nameParts[0] || '',
+        lastName: last_name || nameParts.slice(1).join(' ') || ''
+      }, {}).then(fbResult => {
+        db.prepare(`
+          INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, source, status, error_message, sent_at, capi_payload)
+          VALUES (?, ?, 'lead', 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
+        `).run(
+          result.lastInsertRowid,
+          leadgen_id ? 'zapier_fb_' + leadgen_id : '',
+          fbResult.success ? 'sent' : 'failed',
+          fbResult.error || null,
+          fbResult.payload ? JSON.stringify(fbResult.payload) : null
+        );
+      }).catch(() => {});
+    }
+
+    res.json({ success: true, id: result.lastInsertRowid });
+  } catch (err) {
+    console.error('Zapier webhook error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Export leads to CSV
 router.get('/export/csv', authenticateToken, (req, res) => {
   const { landing_page_id, from_date, to_date } = req.query;
