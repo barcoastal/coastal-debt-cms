@@ -193,6 +193,7 @@
       { key: 'phone', label: 'Phone', default: true },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
+      { key: 'fbclid', label: 'FBCLID', default: true },
       { key: 'lead_source', label: 'Source', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
       { key: 'created_at', label: 'Date', default: true }
@@ -206,6 +207,7 @@
       phone: (lead) => '<td>' + (lead.phone || '-') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.eli_clickid || '') + '">' + (lead.eli_clickid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + (lead.rt_clickid || '') + '">' + (lead.rt_clickid || '-') + '</td>',
+      fbclid: (lead) => '<td class="clickid-cell" title="' + (lead.fbclid || '') + '">' + (lead.fbclid || '-') + '</td>',
       lead_source: (lead) => '<td>' + getSourceBadge(lead.lead_source) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
       created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'
