@@ -520,10 +520,20 @@ router.post('/zapier', async (req, res) => {
     if (!pageId) {
       // Try Facebook default landing page
       const fbConfig = db.prepare('SELECT default_landing_page_id FROM facebook_config WHERE id = 1').get();
-      if (fbConfig) pageId = fbConfig.default_landing_page_id;
+      if (fbConfig && fbConfig.default_landing_page_id) pageId = fbConfig.default_landing_page_id;
     }
     if (!pageId) {
-      return res.status(400).json({ error: 'No landing_page_id, landing_page_slug, or default Facebook page configured' });
+      // Fallback: first Facebook/meta page, then any page
+      const fbPage = db.prepare("SELECT id FROM landing_pages WHERE platform = 'meta' ORDER BY id DESC LIMIT 1").get();
+      if (fbPage) {
+        pageId = fbPage.id;
+      } else {
+        const anyPage = db.prepare('SELECT id FROM landing_pages ORDER BY id DESC LIMIT 1').get();
+        if (anyPage) pageId = anyPage.id;
+      }
+    }
+    if (!pageId) {
+      return res.status(400).json({ error: 'No landing pages exist. Create one first.' });
     }
 
     // Build hidden fields
