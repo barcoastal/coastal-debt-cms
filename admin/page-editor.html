@@ -144,6 +144,52 @@
       font-size: 12px;
     }
 
+    .ai-generator {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      color: white;
+    }
+    .ai-generator h3 { color: white; margin-bottom: 12px; font-size: 15px; }
+    .ai-generator .form-group label { color: rgba(255,255,255,0.9); font-size: 12px; }
+    .ai-generator input, .ai-generator select {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 6px;
+      padding: 8px 12px;
+      width: 100%;
+      font-size: 14px;
+    }
+    .ai-generator input::placeholder { color: rgba(255,255,255,0.5); }
+    .ai-generator select option { color: #333; background: white; }
+    .ai-generate-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    .ai-generate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .ai-generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .ai-status { margin-top: 10px; font-size: 13px; color: rgba(255,255,255,0.9); display: none; }
+    .ai-error { margin-top: 10px; font-size: 13px; color: #fca5a5; display: none; }
+    .ai-platform-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+
     .save-bar {
       position: fixed;
       bottom: 0;
@@ -255,6 +301,21 @@
       <div class="editor-layout">
         <!-- Editor Panel -->
         <div class="editor-panel">
+          <!-- AI Content Generator -->
+          <div class="ai-generator">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:inline;vertical-align:middle"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              AI Content Generator <span class="ai-platform-tag" id="aiPlatformTag"></span>
+            </h3>
+            <div class="form-group">
+              <label>Target Keywords (comma-separated)</label>
+              <input type="text" id="aiKeywords" placeholder="e.g. business debt relief, MCA settlement, avoid bankruptcy">
+            </div>
+            <button class="ai-generate-btn" id="aiGenerateBtn" onclick="generateAIContent()">Generate Content for This Page</button>
+            <div class="ai-status" id="aiStatus">Generating content tailored for <strong id="aiPlatformName"></strong>...</div>
+            <div class="ai-error" id="aiError"></div>
+          </div>
+
           <!-- Colors Section -->
           <div class="editor-section">
             <h3>
@@ -799,6 +860,98 @@
         alert(err.message);
       }
     }
+
+    async function generateAIContent() {
+      const keywordsInput = document.getElementById('aiKeywords').value.trim();
+      if (!keywordsInput) {
+        document.getElementById('aiError').textContent = 'Please enter at least one keyword.';
+        document.getElementById('aiError').style.display = 'block';
+        return;
+      }
+
+      const keywords = keywordsInput.split(',').map(k => k.trim()).filter(Boolean);
+      const platform = pageData?.platform || 'other';
+      const btn = document.getElementById('aiGenerateBtn');
+      const status = document.getElementById('aiStatus');
+      const errorEl = document.getElementById('aiError');
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      status.style.display = 'block';
+      errorEl.style.display = 'none';
+      document.getElementById('aiPlatformName').textContent = platform;
+
+      try {
+        const res = await api('/api/ai/generate-content', {
+          method: 'POST',
+          body: JSON.stringify({ keywords, platform })
+        });
+
+        const generated = res.content;
+
+        // Fill hero
+        if (generated.hero) {
+          document.getElementById('heroHeadline').value = generated.hero.headline || '';
+          document.getElementById('heroSubheadline').value = generated.hero.subheadline || '';
+          document.getElementById('heroCta').value = generated.hero.cta || '';
+        }
+
+        // Fill benefits
+        if (generated.benefits) {
+          document.getElementById('benefitsTitle').value = generated.benefits.title || '';
+          document.getElementById('benefitsList').value = (generated.benefits.items || []).join('\n');
+        }
+
+        // Fill empathy
+        if (generated.empathy) {
+          document.getElementById('empathyTitle').value = generated.empathy.title || '';
+          document.getElementById('empathyContent').value = generated.empathy.content || '';
+        }
+
+        // Fill testimonials
+        if (generated.testimonials && generated.testimonials.length) {
+          renderTestimonials(generated.testimonials);
+        }
+
+        // Fill FAQ
+        if (generated.faq && generated.faq.length) {
+          renderFaqs(generated.faq);
+        }
+
+        // Fill case studies title
+        if (generated.caseStudies) {
+          document.getElementById('caseStudiesTitle').value = generated.caseStudies.title || '';
+        }
+
+        // Fill footer disclaimer
+        if (generated.footer) {
+          document.getElementById('footerDisclaimer').value = generated.footer.disclaimer || '';
+        }
+
+        status.innerHTML = 'Content generated! Review the fields below, then click <strong>Save & Regenerate</strong>.';
+      } catch (err) {
+        errorEl.textContent = err.message || 'Failed to generate content';
+        errorEl.style.display = 'block';
+        status.style.display = 'none';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Content for This Page';
+      }
+    }
+
+    // Show platform in AI generator header
+    function updatePlatformTag() {
+      if (pageData?.platform) {
+        const tag = document.getElementById('aiPlatformTag');
+        tag.textContent = pageData.platform.toUpperCase();
+      }
+    }
+
+    const origLoadPage = loadPage;
+    loadPage = async function() {
+      await origLoadPage();
+      updatePlatformTag();
+    };
 
     loadPage();
   </script>

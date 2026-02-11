@@ -18,6 +18,7 @@ const facebookRoutes = require('./routes/facebook');
 const bingAdsRoutes = require('./routes/bing-ads');
 const settingsRoutes = require('./routes/settings');
 const notificationsRoutes = require('./routes/notifications');
+const aiContentRoutes = require('./routes/ai-content');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -89,6 +90,7 @@ app.use('/api/facebook', facebookRoutes);
 app.use('/api/bing-ads', bingAdsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/ai', aiContentRoutes);
 
 // Redirect root to admin
 app.get('/', (req, res) => {
