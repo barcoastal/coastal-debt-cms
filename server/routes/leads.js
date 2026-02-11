@@ -548,8 +548,9 @@ router.post('/zapier', async (req, res) => {
     }
 
     // Build hidden fields
+    const isFacebook = !platform || platform === 'facebook' || platform === 'meta';
     const hiddenFields = {
-      source: 'zapier',
+      source: isFacebook ? 'facebook_instant_form' : 'zapier',
       platform: platform || 'facebook',
       fb_form_id: form_id || '',
       fb_form_name: form_name || '',
