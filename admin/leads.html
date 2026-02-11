@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leads | Coastal Debt CMS</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=3">
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
   <style>
     .table-container { overflow-x: auto; }
     table td { font-size: 12px; white-space: nowrap; }
@@ -238,7 +238,7 @@
     </div>
   </div>
 
-  <script src="assets/js/common.js?v=3"></script>
+  <script src="assets/js/common.js?v=4"></script>
   <script>
     const COLUMNS = [
       { key: 'full_name', label: 'Name', default: true },
@@ -358,28 +358,36 @@
       if (stage) params.append('stage', stage);
       if (transferStatus) params.append('transfer_status', transferStatus);
 
-      const res = await fetch(`/api/leads?${params}`);
-      const data = await res.json();
-
       const tbody = document.getElementById('leadsTable');
-      const cols = columnEditor.getVisibleColumns();
-      if (data.leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No leads found</td></tr>';
-      } else {
-        tbody.innerHTML = data.leads.map(lead =>
-          '<tr>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
-        ).join('');
-      }
+      try {
+        const res = await fetch(`/api/leads?${params}`);
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        const data = await res.json();
 
-      // Pagination
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-      for (let i = 1; i <= data.pagination.pages; i++) {
-        const btn = document.createElement('button');
-        btn.className = `btn btn-small ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
-        btn.textContent = i;
-        btn.onclick = () => loadLeads(i);
-        pagination.appendChild(btn);
+        const cols = columnEditor.getVisibleColumns();
+        if (!data.leads || data.leads.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No leads found</td></tr>';
+        } else {
+          tbody.innerHTML = data.leads.map(lead =>
+            '<tr>' + cols.map(key => cellRenderers[key] ? cellRenderers[key](lead) : '<td>-</td>').join('') + '</tr>'
+          ).join('');
+        }
+
+        // Pagination
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        if (data.pagination) {
+          for (let i = 1; i <= data.pagination.pages; i++) {
+            const btn = document.createElement('button');
+            btn.className = `btn btn-small ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
+            btn.textContent = i;
+            btn.onclick = () => loadLeads(i);
+            pagination.appendChild(btn);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load leads:', err);
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">Failed to load leads: ' + escapeHtml(err.message) + '</td></tr>';
       }
     }
 
