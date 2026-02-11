@@ -5,6 +5,14 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
+// Convert Facebook ISO time (2026-02-11T16:49:12+0000) to SQLite format (2026-02-11 16:49:12)
+function fbTimeToSqlite(fbTime) {
+  if (!fbTime) return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  const d = new Date(fbTime);
+  if (isNaN(d.getTime())) return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  return d.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+}
+
 // Import logActivity (loaded after initialization to avoid circular deps)
 let logActivity = null;
 setTimeout(() => {
@@ -207,7 +215,7 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             eliClickId,
             fbclidValue,
             JSON.stringify(hiddenFields),
-            lead.created_time || new Date().toISOString()
+            fbTimeToSqlite(lead.created_time)
           );
 
           synced++;
@@ -446,7 +454,7 @@ try {
   console.error('fbclid backfill error:', err.message);
 }
 
-// Backfill created_at from fb_created_time for FB leads that were imported with wrong date
+// Backfill created_at from fb_created_time for FB leads — normalize to SQLite format
 try {
   const fbLeads = db.prepare(`
     SELECT id, hidden_fields, created_at FROM leads
@@ -457,14 +465,11 @@ try {
   for (const lead of fbLeads) {
     try {
       const hf = JSON.parse(lead.hidden_fields || '{}');
-      if (hf.fb_created_time && hf.fb_created_time !== lead.created_at) {
-        // Only fix if the FB time differs significantly (more than 5 min) from stored time
-        const fbTime = new Date(hf.fb_created_time).getTime();
-        const storedTime = new Date(lead.created_at).getTime();
-        if (Math.abs(fbTime - storedTime) > 5 * 60 * 1000) {
-          updateDate.run(hf.fb_created_time, lead.id);
-          dateFixed++;
-        }
+      if (!hf.fb_created_time) continue;
+      const correctDate = fbTimeToSqlite(hf.fb_created_time);
+      if (correctDate !== lead.created_at) {
+        updateDate.run(correctDate, lead.id);
+        dateFixed++;
       }
     } catch (e) {}
   }
@@ -578,7 +583,7 @@ async function processLeadgenEvent(leadgenId, config) {
       eliClickId,
       fbclidValue, // fbclid = form fbclid or Facebook lead ID
       JSON.stringify(hiddenFields),
-      data.created_time || new Date().toISOString()
+      fbTimeToSqlite(data.created_time)
     );
 
     console.log(`Facebook lead inserted: ID ${result.lastInsertRowid} (${eliClickId})`);
