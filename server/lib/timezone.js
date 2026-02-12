@@ -13,7 +13,11 @@ function localDateToUtcRange(dateStr, tz) {
   const startUtc = new Date(dateStr + 'T00:00:00Z');
   startUtc.setTime(startUtc.getTime() - offsetHours * 3600000);
   const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000 - 1);
-  return { start: startUtc.toISOString(), end: endUtc.toISOString() };
+  // Return in SQLite-compatible format (space separator, no Z) to match how timestamps are stored
+  return {
+    start: startUtc.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ''),
+    end: endUtc.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '')
+  };
 }
 
 // Get "today" as YYYY-MM-DD in configured timezone

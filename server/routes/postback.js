@@ -2,7 +2,6 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -129,11 +128,10 @@ router.all('/conversion', async (req, res) => {
 
   // Check for duplicate transaction
   if (transaction_id) {
-    const tz = getConfiguredTimezone();
     const existing = db.prepare(`
       SELECT id FROM conversion_events
       WHERE eli_clickid = ? AND conversion_action_name = ? AND source = 'postback'
-      AND created_at > datetime('now', '${getSqliteOffsetStr(tz)}', '-24 hours')
+      AND created_at > datetime('now', '-24 hours')
     `).get(eli_clickid, event);
 
     if (existing) {
