@@ -312,7 +312,7 @@
         leadsChart = new Chart(ctx1, {
           type: 'line',
           data: {
-            labels: timeData.map(d => new Date(d.date).toLocaleDateString()),
+            labels: timeData.map(d => parseUtcDate(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: getConfiguredTz() })),
             datasets: [{
               label: 'Leads',
               data: timeData.map(d => d.count),

@@ -36,9 +36,22 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// Ensure a date string from the DB (UTC) is parsed as UTC, not local time
+function parseUtcDate(dateStr) {
+  if (!dateStr) return new Date(NaN);
+  let s = String(dateStr).trim();
+  // SQLite format "2026-02-12 11:45:00" → treat as UTC
+  if (!s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  return new Date(s);
+}
+
 // Format date
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const d = parseUtcDate(dateStr);
+  if (isNaN(d)) return '-';
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
