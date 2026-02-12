@@ -384,6 +384,10 @@
               <input type="text" id="heroHeadline" placeholder="Don't File Bankruptcy.">
             </div>
             <div class="form-group">
+              <label>Headline Line 2</label>
+              <input type="text" id="heroLine2" placeholder="Settle Your Business Debt for">
+            </div>
+            <div class="form-group">
               <label>Headline Highlight (colored text)</label>
               <input type="text" id="heroHighlight" placeholder="Up to 80% Less.">
             </div>
@@ -720,6 +724,7 @@
       document.getElementById('showHero').checked = content._show?.hero !== false;
       document.getElementById('heroBadge').value = content.badge || '';
       document.getElementById('heroHeadline').value = content.headline || '';
+      document.getElementById('heroLine2').value = content.headlineLine2 || '';
       document.getElementById('heroHighlight').value = content.headlineHighlight || '';
       document.getElementById('heroSubheadline').value = content.subheadline || '';
       document.getElementById('heroBulletPoints').value = (content.bulletPoints || []).join('\n');
@@ -989,6 +994,7 @@
         // Hero
         badge: document.getElementById('heroBadge').value,
         headline: document.getElementById('heroHeadline').value,
+        headlineLine2: document.getElementById('heroLine2').value,
         headlineHighlight: document.getElementById('heroHighlight').value,
         subheadline: document.getElementById('heroSubheadline').value,
         bulletPoints: document.getElementById('heroBulletPoints').value.split('\n').filter(l => l.trim()),

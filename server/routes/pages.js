@@ -25,6 +25,7 @@ const defaultFormFields = [
 const defaultContent = {
   badge: "Bankruptcy Alternative",
   headline: "Don't File Bankruptcy.",
+  headlineLine2: "Settle Your Business Debt for",
   headlineHighlight: "Up to 80% Less.",
   subheadline: "Thousands of business owners avoided bankruptcy by settling their debt through us. No court. No public record. Keep your business running.",
   bulletPoints: [
