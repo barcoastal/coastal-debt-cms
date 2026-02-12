@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google Ads | Coastal Debt CMS</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .event-breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
@@ -63,22 +63,17 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
         </a>
-        <a href="/admin/google-ads.html" class="active">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          Google Ads
-        </a>
-        <a href="/admin/bing-ads.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18l5-3 9 4V4L10 0z"/></svg>
-          Bing Ads
-        </a>
-        <a href="/admin/meta-ads.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-          Meta Ads
-        </a>
-        <a href="/admin/facebook-debug.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          FB Debug
-        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+        </div>
         <a href="/admin/utm-builder.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           UTM Builder
@@ -404,5 +399,21 @@
 
     loadAll();
   </script>
+<script>
+(function(){
+  var path = location.pathname;
+  var sub = document.querySelector('.nav-submenu');
+  if (!sub) return;
+  var links = sub.querySelectorAll('a');
+  for (var i = 0; i < links.length; i++) {
+    if (path.includes(links[i].getAttribute('href').replace('/admin/',''))) {
+      links[i].classList.add('active');
+      sub.classList.add('open');
+      sub.previousElementSibling.classList.add('open', 'active');
+      break;
+    }
+  }
+})();
+</script>
 </body>
 </html>

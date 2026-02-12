@@ -132,18 +132,21 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
       return { synced, errors };
     }
 
-    const activeForms = (formsData.data || []).filter(f => f.status === 'ACTIVE');
+    const allForms = formsData.data || [];
 
-    for (const form of activeForms) {
+    for (const form of allForms) {
       try {
-        const leadsRes = await fetch(
-          `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${pageToken}&limit=50`
-        );
+        let nextUrl = `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${pageToken}&limit=50`;
+
+        while (nextUrl) {
+        const leadsRes = await fetch(nextUrl);
         const leadsData = await leadsRes.json();
         if (leadsData.error) {
           errors.push(`[${pageName}] Form ${form.name}: ${leadsData.error.message}`);
-          continue;
+          break;
         }
+
+        nextUrl = leadsData.paging?.next || null;
 
         for (const lead of leadsData.data || []) {
           const existing = db.prepare(
@@ -268,6 +271,7 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             console.error('Failed to send Facebook CAPI Lead event for synced lead:', capiErr);
           }
         }
+        } // end while (pagination)
       } catch (formErr) {
         errors.push(`[${pageName}] Form ${form.name}: ${formErr.message}`);
       }
