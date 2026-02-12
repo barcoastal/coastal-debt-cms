@@ -354,12 +354,20 @@ router.post('/sync', authenticateToken, async (req, res) => {
   }
 });
 
-// Public sync trigger - uses zapier_api_key for auth (for cron/external triggers)
+// Public sync trigger - accepts zapier_api_key OR facebook app_secret as auth
 router.post('/cron-sync', async (req, res) => {
   const apiKey = req.query.key;
   if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
+
+  // Check against zapier_api_key
   const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
-  if (!stored || stored.value !== apiKey) return res.status(403).json({ error: 'Invalid API key' });
+  const zapierOk = stored && stored.value === apiKey;
+
+  // Check against facebook app_secret
+  const fbConfig = db.prepare('SELECT app_secret FROM facebook_config WHERE id = 1').get();
+  const fbOk = fbConfig && fbConfig.app_secret && fbConfig.app_secret === apiKey;
+
+  if (!zapierOk && !fbOk) return res.status(403).json({ error: 'Invalid API key' });
 
   try {
     const result = await syncFacebookLeads();
