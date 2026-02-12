@@ -324,6 +324,10 @@
               <input type="text" id="editHeadline" placeholder="Don't File Bankruptcy.">
             </div>
             <div class="form-group">
+              <label>Headline Line 2</label>
+              <input type="text" id="editHeadlineLine2" placeholder="Settle Your Business Debt for">
+            </div>
+            <div class="form-group">
               <label>Headline Highlight</label>
               <input type="text" id="editHeadlineHighlight" placeholder="Up to 80% Less.">
             </div>
@@ -610,6 +614,7 @@
       // Hero section
       document.getElementById('editBadge').value = content.badge || '';
       document.getElementById('editHeadline').value = content.headline || '';
+      document.getElementById('editHeadlineLine2').value = content.headlineLine2 || '';
       document.getElementById('editHeadlineHighlight').value = content.headlineHighlight || '';
       document.getElementById('editSubheadline').value = content.subheadline || '';
       document.getElementById('editBulletPoints').value = (content.bulletPoints || []).join('\n');
@@ -683,6 +688,7 @@
         phone: document.getElementById('editPhone').value,
         badge: document.getElementById('editBadge').value,
         headline: document.getElementById('editHeadline').value,
+        headlineLine2: document.getElementById('editHeadlineLine2').value,
         headlineHighlight: document.getElementById('editHeadlineHighlight').value,
         subheadline: document.getElementById('editSubheadline').value,
         bulletPoints: bulletPoints,
