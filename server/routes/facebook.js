@@ -546,11 +546,14 @@ try {
 
 // Ensure verify_token exists for webhook subscription
 try {
-  const fbConf = db.prepare('SELECT verify_token FROM facebook_config WHERE id = 1').get();
-  if (fbConf && !fbConf.verify_token) {
-    const defaultToken = 'coastal_fb_verify_' + crypto.randomBytes(8).toString('hex');
-    db.prepare('UPDATE facebook_config SET verify_token = ? WHERE id = 1').run(defaultToken);
-    console.log('Set default Facebook verify_token');
+  const fbConf = db.prepare('SELECT verify_token, app_id FROM facebook_config WHERE id = 1').get();
+  if (fbConf) {
+    // Set verify_token to a deterministic value based on app_id if not set
+    const desiredToken = 'coastal_verify_' + crypto.createHash('sha256').update(fbConf.app_id || 'coastaldebt').digest('hex').substring(0, 16);
+    if (!fbConf.verify_token || fbConf.verify_token !== desiredToken) {
+      db.prepare('UPDATE facebook_config SET verify_token = ? WHERE id = 1').run(desiredToken);
+      console.log('Set Facebook verify_token for webhook registration');
+    }
   }
 } catch (e) {}
 
