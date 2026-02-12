@@ -68,32 +68,87 @@ router.get('/dashboard', authenticateToken, (req, res) => {
     return `SELECT COUNT(*) as count FROM leads l ${join} ${allConditions}`;
   };
 
+  // --- Always-shown stats: platform/page filters only, NO date filter ---
+  const { platform, page } = req.query;
+  const fixedConds = [];
+  const fixedParams = [];
+  if (platform) { fixedConds.push(`lp.platform = ?`); fixedParams.push(platform); }
+  if (page) { fixedConds.push(`lp.slug = ?`); fixedParams.push(page); }
+  const fixedNeedsJoin = fixedConds.length > 0;
+  const fixedJoin = fixedNeedsJoin ? 'LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id' : '';
+
+  const fixedCount = (dateWhere) => {
+    const all = [...fixedConds, dateWhere].filter(Boolean);
+    const w = all.length ? 'WHERE ' + all.join(' AND ') : '';
+    return `SELECT COUNT(*) as count FROM leads l ${fixedJoin} ${w}`;
+  };
+
+  // Revenue query helper (joins conversion_events through leads)
+  const fixedRevenue = (dateWhere) => {
+    const all = [...(fixedNeedsJoin ? fixedConds : []), dateWhere].filter(Boolean);
+    const w = all.length ? 'WHERE ' + all.join(' AND ') : '';
+    const ceJoin = fixedNeedsJoin
+      ? 'JOIN leads l ON ce.lead_id = l.id LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id'
+      : '';
+    return `SELECT COALESCE(SUM(ce.revenue), 0) as total FROM conversion_events ce ${ceJoin} ${w}`;
+  };
+
+  // Cost query helper
+  const fixedCost = (dateWhere) => {
+    const all = [...fixedConds, dateWhere].filter(Boolean);
+    const w = all.length ? 'WHERE ' + all.join(' AND ') : '';
+    return `SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l ${fixedJoin} ${w}`;
+  };
+
+  // Compute timezone-aware Today, WTD start, MTD start
   const tz = getConfiguredTimezone();
   const todayStr = getTodayInTz(tz);
   const { start: todayStart, end: todayEnd } = localDateToUtcRange(todayStr, tz);
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const leadsToday = db.prepare(countQuery(`l.created_at >= ? AND l.created_at <= ?`)).get(...params, todayStart, todayEnd).count;
-  const leadsThisWeek = db.prepare(countQuery(`l.created_at >= ?`)).get(...params, weekAgo).count;
-  const leadsThisMonth = db.prepare(countQuery(`l.created_at >= ?`)).get(...params, monthAgo).count;
+  // WTD: start of calendar week (Sunday) in configured timezone
+  const todayDate = new Date(todayStr + 'T00:00:00');
+  const dayOfWeek = todayDate.getDay(); // 0=Sun
+  const wtdDate = new Date(todayDate);
+  wtdDate.setDate(wtdDate.getDate() - dayOfWeek);
+  const wtdStr = wtdDate.toISOString().split('T')[0];
+  const { start: wtdStart } = localDateToUtcRange(wtdStr, tz);
+
+  // MTD: first of current month in configured timezone
+  const mtdStr = todayStr.substring(0, 8) + '01';
+  const { start: mtdStart } = localDateToUtcRange(mtdStr, tz);
+
+  // Lead counts — always shown, not affected by date range filter
+  const leadsToday = db.prepare(fixedCount(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, todayStart, todayEnd).count;
+  const leadsWTD = db.prepare(fixedCount(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, wtdStart, todayEnd).count;
+  const leadsMTD = db.prepare(fixedCount(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, mtdStart, todayEnd).count;
   const activePages = db.prepare('SELECT COUNT(*) as count FROM landing_pages WHERE is_active = 1').get().count;
 
-  // Revenue metrics
-  const totalRevenue = db.prepare('SELECT COALESCE(SUM(revenue), 0) as total FROM conversion_events WHERE revenue IS NOT NULL').get().total;
-  const revenueThisMonth = db.prepare('SELECT COALESCE(SUM(revenue), 0) as total FROM conversion_events WHERE revenue IS NOT NULL AND created_at >= ?').get(monthAgo).total;
-  const totalCostCents = db.prepare(`SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l ${join} ${where}`).get(...params).total;
+  // Revenue — always shown, timezone-aware
+  const revenueToday = db.prepare(fixedRevenue(`ce.created_at >= ? AND ce.created_at <= ?`)).get(...fixedParams, todayStart, todayEnd).total;
+  const revenueWTD = db.prepare(fixedRevenue(`ce.created_at >= ? AND ce.created_at <= ?`)).get(...fixedParams, wtdStart, todayEnd).total;
+  const revenueMTD = db.prepare(fixedRevenue(`ce.created_at >= ? AND ce.created_at <= ?`)).get(...fixedParams, mtdStart, todayEnd).total;
+
+  // Cost — always shown, timezone-aware
+  const costToday = db.prepare(fixedCost(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, todayStart, todayEnd).total;
+  const costWTD = db.prepare(fixedCost(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, wtdStart, todayEnd).total;
+  const costMTD = db.prepare(fixedCost(`l.created_at >= ? AND l.created_at <= ?`)).get(...fixedParams, mtdStart, todayEnd).total;
+
+  // Filtered total (respects user date range)
+  const totalLeads = db.prepare(`SELECT COUNT(*) as count FROM leads l ${join} ${where}`).get(...params).count;
 
   res.json({
-    totalLeads: db.prepare(`SELECT COUNT(*) as count FROM leads l ${join} ${where}`).get(...params).count,
+    totalLeads,
     leadsToday,
-    leadsThisWeek,
-    leadsThisMonth,
+    leadsWTD,
+    leadsMTD,
     activePages,
     totalPages: db.prepare('SELECT COUNT(*) as count FROM landing_pages').get().count,
-    totalRevenue,
-    revenueThisMonth,
-    totalCostCents
+    revenueToday,
+    revenueWTD,
+    revenueMTD,
+    costToday,
+    costWTD,
+    costMTD
   });
 });
 

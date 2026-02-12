@@ -139,11 +139,11 @@
         </div>
         <div class="stat-card">
           <div class="stat-value" id="statLeadsWeek">-</div>
-          <div class="stat-label">Leads This Week</div>
+          <div class="stat-label">Leads WTD</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="statLeadsMonth">-</div>
-          <div class="stat-label">Leads This Month</div>
+          <div class="stat-label">Leads MTD</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="statActivePages">-</div>
@@ -154,16 +154,16 @@
       <!-- Revenue Stats -->
       <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
         <div class="stat-card">
-          <div class="stat-value" id="statTotalRevenue">-</div>
-          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" id="statRevenueToday">-</div>
+          <div class="stat-label">Revenue Today</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statTotalCost">-</div>
-          <div class="stat-label">Total Cost (30d)</div>
+          <div class="stat-value" id="statRevenueMTD">-</div>
+          <div class="stat-label">Revenue MTD</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statProfit" style="color: #10b981;">-</div>
-          <div class="stat-label">Profit (30d)</div>
+          <div class="stat-value" id="statProfitMTD" style="color: #10b981;">-</div>
+          <div class="stat-label">Profit MTD</div>
         </div>
       </div>
 
@@ -290,19 +290,18 @@
         const stats = await statsRes.json();
 
         document.getElementById('statLeadsToday').textContent = stats.leadsToday;
-        document.getElementById('statLeadsWeek').textContent = stats.leadsThisWeek;
-        document.getElementById('statLeadsMonth').textContent = stats.leadsThisMonth;
+        document.getElementById('statLeadsWeek').textContent = stats.leadsWTD;
+        document.getElementById('statLeadsMonth').textContent = stats.leadsMTD;
         document.getElementById('statActivePages').textContent = stats.activePages;
 
         // Revenue stats
         const fmtMoney = (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('statTotalRevenue').textContent = fmtMoney(stats.totalRevenue);
-        const totalCost30d = (stats.totalCostCents || 0) / 100;
-        document.getElementById('statTotalCost').textContent = fmtMoney(totalCost30d);
-        const profit = (stats.revenueThisMonth || 0) - totalCost30d;
-        const profitEl = document.getElementById('statProfit');
-        profitEl.textContent = fmtMoney(profit);
-        profitEl.style.color = profit >= 0 ? '#10b981' : '#ef4444';
+        document.getElementById('statRevenueToday').textContent = fmtMoney(stats.revenueToday);
+        document.getElementById('statRevenueMTD').textContent = fmtMoney(stats.revenueMTD);
+        const profitMTD = (stats.revenueMTD || 0) - ((stats.costMTD || 0) / 100);
+        const profitEl = document.getElementById('statProfitMTD');
+        profitEl.textContent = fmtMoney(profitMTD);
+        profitEl.style.color = profitMTD >= 0 ? '#10b981' : '#ef4444';
 
         // Load leads over time
         const timeRes = await fetch('/api/analytics/over-time?days=30' + (qs ? '&' + params.toString() : ''));
@@ -367,7 +366,7 @@
               <td>${lead.email || '-'}</td>
               <td>${lead.phone || '-'}</td>
               <td><span class="badge badge-blue">${lead.traffic_source || '-'}</span></td>
-              <td>${new Date(lead.created_at).toLocaleString()}</td>
+              <td>${formatDate(lead.created_at)}</td>
             </tr>
           `).join('');
         }
