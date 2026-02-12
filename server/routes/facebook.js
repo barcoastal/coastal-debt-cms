@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -439,12 +440,15 @@ router.get('/sync-status', (req, res) => {
     WHERE lp.platform = 'meta'
   `).get();
 
-  // Diagnostic: count today's leads by DATE comparison (what the frontend "Today" filter uses)
+  // Diagnostic: count today's leads by timezone-aware comparison
+  const tz = getConfiguredTimezone();
+  const todayStr = getTodayInTz(tz);
+  const { start: todayStart, end: todayEnd } = localDateToUtcRange(todayStr, tz);
   const todayLeads = db.prepare(`
     SELECT COUNT(*) as cnt FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE lp.platform = 'meta' AND DATE(l.created_at) = DATE('now')
-  `).get();
+    WHERE lp.platform = 'meta' AND l.created_at >= ? AND l.created_at <= ?
+  `).get(todayStart, todayEnd);
 
   // Diagnostic: show the default landing page details
   const defaultLP = config.default_landing_page_id

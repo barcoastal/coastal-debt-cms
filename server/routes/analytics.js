@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -18,13 +19,14 @@ function buildFilters(req, tableAlias = 'l', pageAlias = 'lp') {
     conditions.push(`${pageAlias}.slug = ?`);
     params.push(page);
   }
+  const tz = getConfiguredTimezone();
   if (from) {
-    conditions.push(`DATE(${tableAlias}.created_at) >= DATE(?)`);
-    params.push(from);
+    conditions.push(`${tableAlias}.created_at >= ?`);
+    params.push(localDateToUtcRange(from, tz).start);
   }
   if (to) {
-    conditions.push(`DATE(${tableAlias}.created_at) <= DATE(?)`);
-    params.push(to);
+    conditions.push(`${tableAlias}.created_at <= ?`);
+    params.push(localDateToUtcRange(to, tz).end);
   }
 
   return { conditions, params };
@@ -66,11 +68,13 @@ router.get('/dashboard', authenticateToken, (req, res) => {
     return `SELECT COUNT(*) as count FROM leads l ${join} ${allConditions}`;
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const tz = getConfiguredTimezone();
+  const todayStr = getTodayInTz(tz);
+  const { start: todayStart, end: todayEnd } = localDateToUtcRange(todayStr, tz);
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const leadsToday = db.prepare(countQuery(`DATE(l.created_at) = DATE(?)`)).get(...params, today).count;
+  const leadsToday = db.prepare(countQuery(`l.created_at >= ? AND l.created_at <= ?`)).get(...params, todayStart, todayEnd).count;
   const leadsThisWeek = db.prepare(countQuery(`l.created_at >= ?`)).get(...params, weekAgo).count;
   const leadsThisMonth = db.prepare(countQuery(`l.created_at >= ?`)).get(...params, monthAgo).count;
   const activePages = db.prepare('SELECT COUNT(*) as count FROM landing_pages WHERE is_active = 1').get().count;
@@ -158,12 +162,14 @@ router.get('/over-time', authenticateToken, (req, res) => {
   const join = needsJoin ? 'LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id' : '';
   const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
+  const tzOffset = getTimezoneOffsetHours(getConfiguredTimezone());
+  const offsetStr = (tzOffset >= 0 ? '+' : '') + tzOffset.toFixed(1) + ' hours';
   const data = db.prepare(`
-    SELECT DATE(l.created_at) as date, COUNT(*) as count
+    SELECT DATE(l.created_at, '${offsetStr}') as date, COUNT(*) as count
     FROM leads l
     ${join}
     ${where}
-    GROUP BY DATE(l.created_at)
+    GROUP BY DATE(l.created_at, '${offsetStr}')
     ORDER BY date ASC
   `).all(...params);
 
@@ -271,22 +277,23 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
 // Google Ads: Summary stats
 router.get('/google-ads/summary', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
   const eventDateConds = [];
   const eventDateParams = [];
 
   if (from) {
-    dateConds.push(`DATE(l.created_at) >= DATE(?)`);
-    dateParams.push(from);
-    eventDateConds.push(`DATE(ce.created_at) >= DATE(?)`);
-    eventDateParams.push(from);
+    dateConds.push(`l.created_at >= ?`);
+    dateParams.push(localDateToUtcRange(from, tz).start);
+    eventDateConds.push(`ce.created_at >= ?`);
+    eventDateParams.push(localDateToUtcRange(from, tz).start);
   }
   if (to) {
-    dateConds.push(`DATE(l.created_at) <= DATE(?)`);
-    dateParams.push(to);
-    eventDateConds.push(`DATE(ce.created_at) <= DATE(?)`);
-    eventDateParams.push(to);
+    dateConds.push(`l.created_at <= ?`);
+    dateParams.push(localDateToUtcRange(to, tz).end);
+    eventDateConds.push(`ce.created_at <= ?`);
+    eventDateParams.push(localDateToUtcRange(to, tz).end);
   }
 
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
@@ -324,11 +331,12 @@ router.get('/google-ads/summary', authenticateToken, (req, res) => {
 // Google Ads: Conversion events breakdown by type
 router.get('/google-ads/events-breakdown', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(ce.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(ce.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`ce.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`ce.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -351,11 +359,12 @@ router.get('/google-ads/events-breakdown', authenticateToken, (req, res) => {
 router.get('/google-ads/leads', authenticateToken, (req, res) => {
   const { from, to, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(l.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(l.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -402,22 +411,23 @@ router.get('/google-ads/leads', authenticateToken, (req, res) => {
 // Bing Ads: Summary stats
 router.get('/bing-ads/summary', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
   const eventDateConds = [];
   const eventDateParams = [];
 
   if (from) {
-    dateConds.push(`DATE(l.created_at) >= DATE(?)`);
-    dateParams.push(from);
-    eventDateConds.push(`DATE(ce.created_at) >= DATE(?)`);
-    eventDateParams.push(from);
+    dateConds.push(`l.created_at >= ?`);
+    dateParams.push(localDateToUtcRange(from, tz).start);
+    eventDateConds.push(`ce.created_at >= ?`);
+    eventDateParams.push(localDateToUtcRange(from, tz).start);
   }
   if (to) {
-    dateConds.push(`DATE(l.created_at) <= DATE(?)`);
-    dateParams.push(to);
-    eventDateConds.push(`DATE(ce.created_at) <= DATE(?)`);
-    eventDateParams.push(to);
+    dateConds.push(`l.created_at <= ?`);
+    dateParams.push(localDateToUtcRange(to, tz).end);
+    eventDateConds.push(`ce.created_at <= ?`);
+    eventDateParams.push(localDateToUtcRange(to, tz).end);
   }
 
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
@@ -447,11 +457,12 @@ router.get('/bing-ads/summary', authenticateToken, (req, res) => {
 // Bing Ads: Conversion events breakdown by type
 router.get('/bing-ads/events-breakdown', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(ce.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(ce.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`ce.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`ce.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -474,11 +485,12 @@ router.get('/bing-ads/events-breakdown', authenticateToken, (req, res) => {
 router.get('/bing-ads/leads', authenticateToken, (req, res) => {
   const { from, to, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(l.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(l.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -525,22 +537,23 @@ router.get('/bing-ads/leads', authenticateToken, (req, res) => {
 // Meta Ads: Summary stats
 router.get('/meta-ads/summary', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
   const eventDateConds = [];
   const eventDateParams = [];
 
   if (from) {
-    dateConds.push(`DATE(l.created_at) >= DATE(?)`);
-    dateParams.push(from);
-    eventDateConds.push(`DATE(ce.created_at) >= DATE(?)`);
-    eventDateParams.push(from);
+    dateConds.push(`l.created_at >= ?`);
+    dateParams.push(localDateToUtcRange(from, tz).start);
+    eventDateConds.push(`ce.created_at >= ?`);
+    eventDateParams.push(localDateToUtcRange(from, tz).start);
   }
   if (to) {
-    dateConds.push(`DATE(l.created_at) <= DATE(?)`);
-    dateParams.push(to);
-    eventDateConds.push(`DATE(ce.created_at) <= DATE(?)`);
-    eventDateParams.push(to);
+    dateConds.push(`l.created_at <= ?`);
+    dateParams.push(localDateToUtcRange(to, tz).end);
+    eventDateConds.push(`ce.created_at <= ?`);
+    eventDateParams.push(localDateToUtcRange(to, tz).end);
   }
 
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
@@ -582,11 +595,12 @@ router.get('/meta-ads/summary', authenticateToken, (req, res) => {
 // Meta Ads: Conversion events breakdown by type
 router.get('/meta-ads/events-breakdown', authenticateToken, (req, res) => {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(ce.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(ce.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`ce.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`ce.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -609,11 +623,12 @@ router.get('/meta-ads/events-breakdown', authenticateToken, (req, res) => {
 router.get('/meta-ads/leads', authenticateToken, (req, res) => {
   const { from, to, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
+  const tz = getConfiguredTimezone();
   const conds = [];
   const params = [];
 
-  if (from) { conds.push(`DATE(l.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conds.push(`DATE(l.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conds.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
@@ -690,10 +705,11 @@ function trafficTypeParams() {
 
 function buildVisitorDateFilters(req) {
   const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
   const conditions = [];
   const params = [];
-  if (from) { conditions.push(`DATE(v.first_visit) >= DATE(?)`); params.push(from); }
-  if (to) { conditions.push(`DATE(v.first_visit) <= DATE(?)`); params.push(to); }
+  if (from) { conditions.push(`v.first_visit >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conditions.push(`v.first_visit <= ?`); params.push(localDateToUtcRange(to, tz).end); }
   return { conditions, params };
 }
 
@@ -752,11 +768,13 @@ router.get('/organic/over-time', authenticateToken, (req, res) => {
 
   const where = 'WHERE ' + conditions.join(' AND ');
 
+  const tzOffset = getTimezoneOffsetHours(getConfiguredTimezone());
+  const offsetStr = (tzOffset >= 0 ? '+' : '') + tzOffset.toFixed(1) + ' hours';
   const data = db.prepare(`
-    SELECT DATE(v.first_visit) as date, COUNT(*) as count
+    SELECT DATE(v.first_visit, '${offsetStr}') as date, COUNT(*) as count
     FROM visitors v
     ${where}
-    GROUP BY DATE(v.first_visit)
+    GROUP BY DATE(v.first_visit, '${offsetStr}')
     ORDER BY date ASC
   `).all(...params);
 
@@ -801,11 +819,12 @@ router.get('/organic/top-referrers', authenticateToken, (req, res) => {
 router.get('/organic/leads', authenticateToken, (req, res) => {
   const { from, to, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
+  const tz = getConfiguredTimezone();
   const conditions = [];
   const params = [];
 
-  if (from) { conditions.push(`DATE(l.created_at) >= DATE(?)`); params.push(from); }
-  if (to) { conditions.push(`DATE(l.created_at) <= DATE(?)`); params.push(to); }
+  if (from) { conditions.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conditions.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
   // Exclude paid: join visitors via eli_clickid, filter non-paid
   conditions.push(`(v.gclid IS NULL OR v.gclid = '')`);

@@ -43,7 +43,8 @@ function formatDate(dateStr) {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: getConfiguredTz()
   });
 }
 
@@ -76,9 +77,9 @@ async function api(endpoint, options = {}) {
   return data;
 }
 
-// Local date helper (avoids UTC timezone issues with toISOString)
+// Local date helper (uses configured timezone)
 function toLocalDate(d) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  return d.toLocaleDateString('en-CA', { timeZone: getConfiguredTz() });
 }
 
 // Time range helper
@@ -325,6 +326,11 @@ class ColumnEditor {
   }
 }
 
+// Global timezone loader — fetched once, shared by all functions
+let __tz = '';
+const __tzReady = fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => { __tz = d.timezone || ''; }).catch(() => {});
+function getConfiguredTz() { return __tz || 'America/New_York'; }
+
 // Live clock + date in page header (uses timezone from system settings)
 function initClock() {
   const header = document.querySelector('.page-header');
@@ -335,12 +341,9 @@ function initClock() {
   clock.style.cssText = 'text-align:right;font-size:0.85rem;color:var(--gray-500);line-height:1.4;white-space:nowrap;';
   header.appendChild(clock);
 
-  let settingsTz = '';
-  fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => { settingsTz = d.timezone || ''; }).catch(() => {});
-
   function tick() {
     const now = new Date();
-    const tz = settingsTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tz = getConfiguredTz();
     const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: tz });
     const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: tz });
     clock.innerHTML = '<div style="font-weight:600;color:var(--gray-700);font-size:0.95rem;">' + time + '</div>' +

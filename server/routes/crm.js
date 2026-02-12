@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, getTodayInTz } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -232,7 +233,7 @@ router.get('/tasks/my', authenticateToken, (req, res) => {
 
 // GET /tasks/overdue — all overdue open tasks
 router.get('/tasks/overdue', authenticateToken, (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayInTz(getConfiguredTimezone());
   const tasks = db.prepare(`
     SELECT t.*, l.full_name as lead_name, l.company_name as lead_company
     FROM lead_tasks t
