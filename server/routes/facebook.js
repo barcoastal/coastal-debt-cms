@@ -302,23 +302,56 @@ async function syncFacebookLeads() {
   // If user_access_token is set, discover ALL pages and sync each
   if (config.user_access_token) {
     try {
+      // Try me/accounts first (works for personal page admins)
       const acctRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&limit=100&access_token=${config.user_access_token}`);
       const acctData = await acctRes.json();
       if (acctData.error) {
-        // User token might be expired, fall through to page token
         console.error('User token error, falling back to page token:', acctData.error.message);
       } else {
-        const pages = acctData.data || [];
-        console.log(`Facebook sync: found ${pages.length} page(s) via user token`);
-        for (const page of pages) {
-          const result = await syncPageLeads(page.id, page.access_token, page.name, config);
-          totalSynced += result.synced;
-          allErrors.push(...result.errors);
+        let pages = (acctData.data || []).map(p => ({ id: p.id, name: p.name, token: p.access_token }));
+
+        // If me/accounts returned empty, try debug_token to discover pages from granular_scopes
+        if (pages.length === 0 && config.app_id && config.app_secret) {
+          console.log('Facebook sync: me/accounts empty, trying debug_token for page discovery...');
+          try {
+            const debugRes = await fetch(`https://graph.facebook.com/v21.0/debug_token?input_token=${config.user_access_token}&access_token=${config.app_id}|${config.app_secret}`);
+            const debugData = await debugRes.json();
+            if (debugData.data?.granular_scopes) {
+              const pageIds = new Set();
+              for (const scope of debugData.data.granular_scopes) {
+                for (const id of scope.target_ids || []) pageIds.add(id);
+              }
+              console.log(`Facebook sync: found ${pageIds.size} page(s) via debug_token`);
+              for (const pageId of pageIds) {
+                try {
+                  const pageRes = await fetch(`https://graph.facebook.com/v21.0/${pageId}?fields=id,name,access_token&access_token=${config.user_access_token}`);
+                  const pageData = await pageRes.json();
+                  if (!pageData.error && pageData.access_token) {
+                    pages.push({ id: pageData.id, name: pageData.name, token: pageData.access_token });
+                  }
+                } catch (e) {
+                  allErrors.push(`Failed to get page ${pageId}: ${e.message}`);
+                }
+              }
+            }
+          } catch (e) {
+            console.error('debug_token fallback failed:', e.message);
+          }
         }
-        if (totalSynced > 0) {
-          console.log(`Facebook sync complete: ${totalSynced} new leads from ${pages.length} pages`);
+
+        if (pages.length > 0) {
+          console.log(`Facebook sync: syncing ${pages.length} page(s)`);
+          for (const page of pages) {
+            const result = await syncPageLeads(page.id, page.token, page.name, config);
+            totalSynced += result.synced;
+            allErrors.push(...result.errors);
+          }
+          if (totalSynced > 0) {
+            console.log(`Facebook sync complete: ${totalSynced} new leads from ${pages.length} pages`);
+          }
+          return { synced: totalSynced, errors: allErrors.length ? allErrors : undefined };
         }
-        return { synced: totalSynced, errors: allErrors.length ? allErrors : undefined };
+        console.log('Facebook sync: no pages found via user token, falling back to page token');
       }
     } catch (e) {
       console.error('Failed to use user token for multi-page sync:', e.message);

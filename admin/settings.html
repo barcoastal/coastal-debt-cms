@@ -370,6 +370,18 @@
         </div>
 
         <div class="form-group">
+          <label>App ID</label>
+          <input type="text" id="fbAppId" placeholder="Enter your Facebook App ID">
+          <small style="color: #666;">Required for page discovery with Business Manager pages. Find it in <a href="https://developers.facebook.com/apps/" target="_blank">App Settings</a> &rarr; Basic</small>
+        </div>
+
+        <div class="form-group">
+          <label>App Secret</label>
+          <input type="password" id="fbAppSecret" placeholder="Enter your Facebook App Secret">
+          <small style="color: #666;">Required for page discovery. Find it in <a href="https://developers.facebook.com/apps/" target="_blank">App Settings</a> &rarr; Basic &rarr; Show</small>
+        </div>
+
+        <div class="form-group">
           <label>Webhook Verify Token</label>
           <input type="text" id="fbVerifyToken" placeholder="A secret token to verify webhook requests">
           <small style="color: #666;">Enter any random string. You'll use the same value when setting up the webhook in Facebook App</small>
@@ -401,9 +413,10 @@
           <small style="color: #666;">Facebook instant form leads will be associated with this landing page</small>
         </div>
 
-        <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
           <button class="btn btn-primary" onclick="saveFbConfig()">Save Configuration</button>
           <button class="btn btn-secondary" onclick="testFbConnection()">Test Connection</button>
+          <button class="btn btn-secondary" onclick="syncFbNow()" id="fbSyncBtn">Sync Leads Now</button>
         </div>
         <span id="fbSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
 
@@ -591,6 +604,8 @@
         if (config.page_access_token || config.user_access_token) {
           document.getElementById('fbPageToken').value = config.page_access_token || '';
           document.getElementById('fbUserToken').value = config.user_access_token || '';
+          document.getElementById('fbAppId').value = config.app_id || '';
+          document.getElementById('fbAppSecret').value = config.app_secret || '';
           document.getElementById('fbVerifyToken').value = config.verify_token || '';
           document.getElementById('fbPixelId').value = config.pixel_id || '';
           document.getElementById('fbAdAccountId').value = config.ad_account_id || '';
@@ -619,6 +634,8 @@
     async function saveFbConfig() {
       const token = document.getElementById('fbPageToken').value;
       const userToken = document.getElementById('fbUserToken').value;
+      const appId = document.getElementById('fbAppId').value;
+      const appSecret = document.getElementById('fbAppSecret').value;
       const verify = document.getElementById('fbVerifyToken').value;
       const pixelId = document.getElementById('fbPixelId').value;
       const adAccountId = document.getElementById('fbAdAccountId').value;
@@ -641,6 +658,8 @@
           body: JSON.stringify({
             page_access_token: token || null,
             user_access_token: userToken || null,
+            app_id: appId || null,
+            app_secret: appSecret || null,
             verify_token: verify,
             pixel_id: pixelId || null,
             ad_account_id: adAccountId || null,
@@ -654,6 +673,23 @@
       } catch (e) {
         document.getElementById('fbSaveStatus').textContent = 'Failed to save';
         document.getElementById('fbSaveStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function syncFbNow() {
+      const btn = document.getElementById('fbSyncBtn');
+      btn.disabled = true;
+      btn.textContent = 'Syncing...';
+      try {
+        const res = await api('/api/facebook/sync', { method: 'POST' });
+        const msg = res.synced > 0 ? 'Synced ' + res.synced + ' new lead(s)!' : 'No new leads found.';
+        const errMsg = res.errors?.length ? '\n\nErrors:\n' + res.errors.join('\n') : '';
+        alert(msg + errMsg);
+      } catch (e) {
+        alert('Sync failed: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sync Leads Now';
       }
     }
 
