@@ -344,7 +344,7 @@ async function syncFacebookLeads() {
   return { synced: 0, error: 'No valid access token' };
 }
 
-// Manual sync endpoint
+// Manual sync endpoint (authenticated)
 router.post('/sync', authenticateToken, async (req, res) => {
   try {
     const result = await syncFacebookLeads();
@@ -352,6 +352,37 @@ router.post('/sync', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Public sync trigger - uses zapier_api_key for auth (for cron/external triggers)
+router.post('/cron-sync', async (req, res) => {
+  const apiKey = req.query.key;
+  if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
+  const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
+  if (!stored || stored.value !== apiKey) return res.status(403).json({ error: 'Invalid API key' });
+
+  try {
+    const result = await syncFacebookLeads();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public sync status - shows config health without exposing secrets
+router.get('/sync-status', (req, res) => {
+  const config = db.prepare('SELECT page_access_token, user_access_token, verify_token, default_landing_page_id, pixel_id, connected_at FROM facebook_config WHERE id = 1').get();
+  if (!config) return res.json({ configured: false });
+
+  res.json({
+    configured: true,
+    has_page_token: !!config.page_access_token,
+    has_user_token: !!config.user_access_token,
+    has_verify_token: !!config.verify_token,
+    has_pixel_id: !!config.pixel_id,
+    has_default_landing_page: !!config.default_landing_page_id,
+    connected_at: config.connected_at
+  });
 });
 
 // Background sync - runs every 5 minutes
@@ -480,6 +511,16 @@ try {
 } catch (err) {
   console.error('Date backfill error:', err.message);
 }
+
+// Ensure verify_token exists for webhook subscription
+try {
+  const fbConf = db.prepare('SELECT verify_token FROM facebook_config WHERE id = 1').get();
+  if (fbConf && !fbConf.verify_token) {
+    const defaultToken = 'coastal_fb_verify_' + crypto.randomBytes(8).toString('hex');
+    db.prepare('UPDATE facebook_config SET verify_token = ? WHERE id = 1').run(defaultToken);
+    console.log('Set default Facebook verify_token');
+  }
+} catch (e) {}
 
 // Start background sync
 startBackgroundSync();
