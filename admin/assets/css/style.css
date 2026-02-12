@@ -793,6 +793,52 @@ textarea:focus {
   margin: 8px 20px;
 }
 
+/* Sidebar Collapsible Submenu */
+.sidebar-nav .nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+}
+.sidebar-nav .nav-group-toggle:hover,
+.sidebar-nav .nav-group-toggle.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+}
+.sidebar-nav .nav-group-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+.sidebar-nav .nav-group-toggle .nav-chevron {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+.sidebar-nav .nav-group-toggle.open .nav-chevron {
+  transform: rotate(90deg);
+}
+.sidebar-nav .nav-submenu {
+  display: none;
+  background: rgba(0, 0, 0, 0.15);
+}
+.sidebar-nav .nav-submenu.open {
+  display: block;
+}
+.sidebar-nav .nav-submenu a {
+  padding-left: 52px;
+  font-size: 0.9em;
+}
+
 /* Pipeline Kanban */
 .pipeline-container {
   display: flex;
