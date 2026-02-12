@@ -406,6 +406,45 @@ router.get('/sync-status', (req, res) => {
     WHERE lp.platform = 'meta'
   `).get();
 
+  // Diagnostic: count today's leads by DATE comparison (what the frontend "Today" filter uses)
+  const todayLeads = db.prepare(`
+    SELECT COUNT(*) as cnt FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta' AND DATE(l.created_at) = DATE('now')
+  `).get();
+
+  // Diagnostic: show the default landing page details
+  const defaultLP = config.default_landing_page_id
+    ? db.prepare('SELECT id, name, platform FROM landing_pages WHERE id = ?').get(config.default_landing_page_id)
+    : null;
+
+  // Diagnostic: most recent 5 meta leads with dates
+  const recentLeadsList = db.prepare(`
+    SELECT l.id, l.full_name, l.email, l.created_at, l.hidden_fields,
+           lp.name as lp_name, lp.platform as lp_platform
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta'
+    ORDER BY l.created_at DESC
+    LIMIT 5
+  `).all().map(r => ({
+    id: r.id,
+    name: r.full_name,
+    email: r.email ? r.email.substring(0, 3) + '***' : '',
+    created_at: r.created_at,
+    lp_name: r.lp_name,
+    lp_platform: r.lp_platform,
+    source: (() => { try { return JSON.parse(r.hidden_fields || '{}').source || 'unknown'; } catch(e) { return 'unknown'; } })(),
+    sync_method: (() => { try { return JSON.parse(r.hidden_fields || '{}').sync_method || 'unknown'; } catch(e) { return 'unknown'; } })()
+  }));
+
+  // Count instant form leads
+  const instantFormCount = db.prepare(`
+    SELECT COUNT(*) as cnt FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta' AND l.hidden_fields LIKE '%"source":"facebook_instant_form"%'
+  `).get();
+
   res.json({
     configured: true,
     has_page_token: !!config.page_access_token,
@@ -417,8 +456,103 @@ router.get('/sync-status', (req, res) => {
     has_app_secret: !!(db.prepare('SELECT app_secret FROM facebook_config WHERE id = 1').get()?.app_secret),
     connected_at: config.connected_at,
     meta_leads_last_24h: recentLeads?.cnt || 0,
-    meta_leads_total: totalMetaLeads?.cnt || 0
+    meta_leads_today_date: todayLeads?.cnt || 0,
+    meta_leads_total: totalMetaLeads?.cnt || 0,
+    instant_form_leads_total: instantFormCount?.cnt || 0,
+    default_landing_page: defaultLP,
+    server_time_utc: new Date().toISOString(),
+    server_date_utc: new Date().toISOString().split('T')[0],
+    sqlite_now: db.prepare("SELECT datetime('now') as now, DATE('now') as today").get(),
+    recent_leads: recentLeadsList,
+    code_version: 'v2-pagination-allforms'
   });
+});
+
+// Diagnostic: dry-run sync that shows forms and leads found on Facebook without importing
+router.get('/sync-debug', async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+    if (!config || (!config.page_access_token && !config.user_access_token)) {
+      return res.json({ error: 'No access token configured' });
+    }
+
+    const results = [];
+
+    // Get pages
+    let pages = [];
+    if (config.user_access_token) {
+      const acctRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&limit=100&access_token=${config.user_access_token}`);
+      const acctData = await acctRes.json();
+      if (acctData.error) {
+        results.push({ error: 'User token error: ' + acctData.error.message });
+      } else {
+        pages = (acctData.data || []).map(p => ({ id: p.id, name: p.name, token: p.access_token }));
+      }
+    }
+    if (pages.length === 0 && config.page_access_token) {
+      const meRes = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${config.page_access_token}`);
+      const me = await meRes.json();
+      if (!me.error) pages.push({ id: me.id, name: me.name, token: config.page_access_token });
+    }
+
+    for (const page of pages) {
+      const pageResult = { page_id: page.id, page_name: page.name, forms: [] };
+
+      const formsRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}/leadgen_forms?access_token=${page.token}&limit=50&fields=id,name,status,leads_count`);
+      const formsData = await formsRes.json();
+      if (formsData.error) {
+        pageResult.error = formsData.error.message;
+        results.push(pageResult);
+        continue;
+      }
+
+      for (const form of formsData.data || []) {
+        const formResult = {
+          form_id: form.id,
+          form_name: form.name,
+          form_status: form.status,
+          fb_leads_count: form.leads_count,
+          leads_preview: [],
+          already_imported: 0,
+          not_imported: 0
+        };
+
+        // Fetch first 10 leads from this form
+        const leadsRes = await fetch(`https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${page.token}&limit=10`);
+        const leadsData = await leadsRes.json();
+        if (leadsData.error) {
+          formResult.leads_error = leadsData.error.message;
+        } else {
+          for (const lead of leadsData.data || []) {
+            const existing = db.prepare(`SELECT id FROM leads WHERE hidden_fields LIKE ?`).get(`%"fb_leadgen_id":"${lead.id}"%`);
+            if (existing) {
+              formResult.already_imported++;
+            } else {
+              formResult.not_imported++;
+            }
+            formResult.leads_preview.push({
+              fb_lead_id: lead.id,
+              created_time: lead.created_time,
+              imported: !!existing,
+              fields: (lead.field_data || []).map(f => ({ name: f.name, value: f.values?.[0] ? f.values[0].substring(0, 3) + '***' : '' }))
+            });
+          }
+        }
+
+        pageResult.forms.push(formResult);
+      }
+      results.push(pageResult);
+    }
+
+    res.json({
+      code_version: 'v2-pagination-allforms',
+      default_landing_page_id: config.default_landing_page_id,
+      pages_found: pages.length,
+      results
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Background sync - runs every 5 minutes
