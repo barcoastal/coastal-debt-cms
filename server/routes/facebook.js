@@ -363,14 +363,16 @@ router.post('/cron-sync', async (req, res) => {
   const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
   const zapierOk = stored && stored.value === apiKey;
 
-  // Check against facebook app_secret or app_id|app_secret format
+  // Check against facebook verify_token, app_secret, or app_id|secret format
   const fbConfig = db.prepare('SELECT app_id, app_secret, verify_token FROM facebook_config WHERE id = 1').get();
-  const fbOk = fbConfig && (
-    (fbConfig.app_secret && fbConfig.app_secret === apiKey) ||
-    (fbConfig.verify_token && fbConfig.verify_token === apiKey) ||
-    (fbConfig.app_id && apiKey === fbConfig.app_id + '|' + (fbConfig.app_secret || '')) ||
-    (fbConfig.app_id && apiKey.startsWith(fbConfig.app_id + '|'))
-  );
+  let fbOk = false;
+  if (fbConfig) {
+    if (fbConfig.verify_token && fbConfig.verify_token === apiKey) fbOk = true;
+    if (fbConfig.app_secret && fbConfig.app_secret === apiKey) fbOk = true;
+    if (fbConfig.app_id && apiKey.includes('|') && apiKey.startsWith(fbConfig.app_id)) fbOk = true;
+    // Also accept just the app_id as a key
+    if (fbConfig.app_id && fbConfig.app_id === apiKey) fbOk = true;
+  }
 
   if (!zapierOk && !fbOk) return res.status(403).json({ error: 'Invalid API key' });
 
@@ -387,6 +389,19 @@ router.get('/sync-status', (req, res) => {
   const config = db.prepare('SELECT page_access_token, user_access_token, verify_token, default_landing_page_id, pixel_id, connected_at FROM facebook_config WHERE id = 1').get();
   if (!config) return res.json({ configured: false });
 
+  // Also show recent leads count for diagnostics
+  const recentLeads = db.prepare(`
+    SELECT COUNT(*) as cnt FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta' AND l.created_at >= datetime('now', '-24 hours')
+  `).get();
+
+  const totalMetaLeads = db.prepare(`
+    SELECT COUNT(*) as cnt FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta'
+  `).get();
+
   res.json({
     configured: true,
     has_page_token: !!config.page_access_token,
@@ -394,7 +409,11 @@ router.get('/sync-status', (req, res) => {
     has_verify_token: !!config.verify_token,
     has_pixel_id: !!config.pixel_id,
     has_default_landing_page: !!config.default_landing_page_id,
-    connected_at: config.connected_at
+    has_app_id: !!(db.prepare('SELECT app_id FROM facebook_config WHERE id = 1').get()?.app_id),
+    has_app_secret: !!(db.prepare('SELECT app_secret FROM facebook_config WHERE id = 1').get()?.app_secret),
+    connected_at: config.connected_at,
+    meta_leads_last_24h: recentLeads?.cnt || 0,
+    meta_leads_total: totalMetaLeads?.cnt || 0
   });
 });
 
