@@ -557,6 +557,37 @@ try {
   }
 } catch (e) {}
 
+// Subscribe page to app for leadgen webhook events (runs on startup)
+setTimeout(async () => {
+  try {
+    const fbConf = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
+    if (!fbConf || !fbConf.page_access_token) return;
+
+    // Get the page ID
+    const meRes = await fetch('https://graph.facebook.com/v21.0/me?access_token=' + fbConf.page_access_token);
+    const me = await meRes.json();
+    if (me.error || !me.id) return;
+
+    // Subscribe the page to the app for leadgen events
+    const subRes = await fetch('https://graph.facebook.com/v21.0/' + me.id + '/subscribed_apps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscribed_fields: ['leadgen'],
+        access_token: fbConf.page_access_token
+      })
+    });
+    const sub = await subRes.json();
+    if (sub.success) {
+      console.log('Facebook page "' + me.name + '" subscribed to leadgen webhook');
+    } else {
+      console.error('Failed to subscribe page to leadgen:', sub.error?.message || JSON.stringify(sub));
+    }
+  } catch (e) {
+    console.error('Page webhook subscription error:', e.message);
+  }
+}, 5000);
+
 // Start background sync
 startBackgroundSync();
 
