@@ -363,9 +363,14 @@ router.post('/cron-sync', async (req, res) => {
   const stored = db.prepare('SELECT value FROM settings WHERE key = ?').get('zapier_api_key');
   const zapierOk = stored && stored.value === apiKey;
 
-  // Check against facebook app_secret
-  const fbConfig = db.prepare('SELECT app_secret FROM facebook_config WHERE id = 1').get();
-  const fbOk = fbConfig && fbConfig.app_secret && fbConfig.app_secret === apiKey;
+  // Check against facebook app_secret or app_id|app_secret format
+  const fbConfig = db.prepare('SELECT app_id, app_secret, verify_token FROM facebook_config WHERE id = 1').get();
+  const fbOk = fbConfig && (
+    (fbConfig.app_secret && fbConfig.app_secret === apiKey) ||
+    (fbConfig.verify_token && fbConfig.verify_token === apiKey) ||
+    (fbConfig.app_id && apiKey === fbConfig.app_id + '|' + (fbConfig.app_secret || '')) ||
+    (fbConfig.app_id && apiKey.startsWith(fbConfig.app_id + '|'))
+  );
 
   if (!zapierOk && !fbOk) return res.status(403).json({ error: 'Invalid API key' });
 
