@@ -318,6 +318,9 @@ function generateLandingPage(pageId) {
   // Merge content with defaults so all template placeholders get replaced
   const mergedContent = { ...defaultContent, ...content };
 
+  // Deep merge colors so partial overrides don't lose defaults
+  mergedContent.colors = { ...defaultContent.colors, ...(content.colors || {}) };
+
   // Replace content placeholders
   Object.entries(mergedContent).forEach(([key, value]) => {
     if (typeof value === 'string') {

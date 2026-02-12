@@ -346,6 +346,22 @@
             </div>
           </div>
 
+          <!-- SEO Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              SEO &amp; Meta
+            </h3>
+            <div class="form-group">
+              <label>Page Title (browser tab)</label>
+              <input type="text" id="pageTitle" placeholder="Bankruptcy Alternative for Business | Settle Debt for 50-80% Less">
+            </div>
+            <div class="form-group">
+              <label>Meta Description</label>
+              <textarea id="metaDescription" rows="2" placeholder="Don't file bankruptcy. Resolve business debt for a fraction of what you owe."></textarea>
+            </div>
+          </div>
+
           <!-- Hero Section -->
           <div class="editor-section">
             <h3>
@@ -360,16 +376,48 @@
               </label>
             </div>
             <div class="form-group">
+              <label>Badge Text</label>
+              <input type="text" id="heroBadge" placeholder="Bankruptcy Alternative">
+            </div>
+            <div class="form-group">
               <label>Headline</label>
-              <input type="text" id="heroHeadline" placeholder="Main headline...">
+              <input type="text" id="heroHeadline" placeholder="Don't File Bankruptcy.">
+            </div>
+            <div class="form-group">
+              <label>Headline Highlight (colored text)</label>
+              <input type="text" id="heroHighlight" placeholder="Up to 80% Less.">
             </div>
             <div class="form-group">
               <label>Subheadline</label>
               <textarea id="heroSubheadline" rows="2" placeholder="Supporting text..."></textarea>
             </div>
             <div class="form-group">
-              <label>CTA Button Text</label>
-              <input type="text" id="heroCta" placeholder="Get Started">
+              <label>Bullet Points (one per line)</label>
+              <textarea id="heroBulletPoints" rows="4" placeholder="No public bankruptcy record&#10;Keep your business & assets&#10;Credit recovers in months"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" id="heroPhone" placeholder="(800) 123-4567">
+            </div>
+          </div>
+
+          <!-- Form Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+              Form Headlines
+            </h3>
+            <div class="form-group">
+              <label>Form Title</label>
+              <input type="text" id="formTitle" placeholder="See If You Qualify">
+            </div>
+            <div class="form-group">
+              <label>Form Subtitle</label>
+              <input type="text" id="formSubtitle" placeholder="Takes 60 seconds. No obligation.">
+            </div>
+            <div class="form-group">
+              <label>Form Button Text</label>
+              <input type="text" id="formButton" placeholder="Get My Free Debt Analysis">
             </div>
           </div>
 
@@ -377,14 +425,18 @@
           <div class="editor-section">
             <h3>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Trust Logos
+              Trust Bar
             </h3>
             <div class="section-toggle">
-              <label>Show Trust Logos</label>
+              <label>Show Trust Bar</label>
               <label class="toggle">
                 <input type="checkbox" id="showTrustLogos" checked>
                 <span class="toggle-slider"></span>
               </label>
+            </div>
+            <div class="form-group">
+              <label>Trust Label</label>
+              <input type="text" id="trustLabel" placeholder="As Seen In & Trusted By">
             </div>
             <div class="form-group">
               <label>Logo URLs (one per line)</label>
@@ -392,7 +444,53 @@
             </div>
           </div>
 
-          <!-- Benefits Section -->
+          <!-- Comparison Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              Comparison Section
+            </h3>
+            <div class="section-toggle">
+              <label>Show Comparison</label>
+              <label class="toggle">
+                <input type="checkbox" id="showComparison" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="comparisonTitle" placeholder="Why Business Owners Choose Debt Settlement Over Bankruptcy">
+            </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="comparisonSubtitle" placeholder="See why thousands of business owners chose us">
+            </div>
+          </div>
+
+          <!-- How It Works Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              How It Works
+            </h3>
+            <div class="section-toggle">
+              <label>Show How It Works</label>
+              <label class="toggle">
+                <input type="checkbox" id="showHowItWorks" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="howItWorksTitle" placeholder="How It Works">
+            </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="howItWorksSubtitle" placeholder="Our proven 3-step process">
+            </div>
+          </div>
+
+          <!-- Benefits / Bullet Points Section -->
           <div class="editor-section">
             <h3>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -432,29 +530,12 @@
               <label>Section Title</label>
               <input type="text" id="caseStudiesTitle" placeholder="Real Results">
             </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="caseStudiesSubtitle" placeholder="These are actual settlement agreements we negotiated">
+            </div>
             <div id="caseStudiesList"></div>
             <button type="button" class="add-item-btn" onclick="addCaseStudy()">+ Add Case Study</button>
-          </div>
-
-          <!-- Testimonials Section -->
-          <div class="editor-section">
-            <h3>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-              Testimonials
-            </h3>
-            <div class="section-toggle">
-              <label>Show Testimonials</label>
-              <label class="toggle">
-                <input type="checkbox" id="showTestimonials" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="form-group">
-              <label>Section Title</label>
-              <input type="text" id="testimonialsTitle" placeholder="What Our Clients Say">
-            </div>
-            <div id="testimonialsList"></div>
-            <button type="button" class="add-item-btn" onclick="addTestimonial()">+ Add Testimonial</button>
           </div>
 
           <!-- Empathy Section -->
@@ -480,6 +561,31 @@
             </div>
           </div>
 
+          <!-- Testimonials Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              Testimonials
+            </h3>
+            <div class="section-toggle">
+              <label>Show Testimonials</label>
+              <label class="toggle">
+                <input type="checkbox" id="showTestimonials" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Section Title</label>
+              <input type="text" id="testimonialsTitle" placeholder="What Our Clients Say">
+            </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="testimonialsSubtitle" placeholder="Hear from business owners who found relief">
+            </div>
+            <div id="testimonialsList"></div>
+            <button type="button" class="add-item-btn" onclick="addTestimonial()">+ Add Testimonial</button>
+          </div>
+
           <!-- FAQ Section -->
           <div class="editor-section">
             <h3>
@@ -497,8 +603,32 @@
               <label>Section Title</label>
               <input type="text" id="faqTitle" placeholder="Frequently Asked Questions">
             </div>
+            <div class="form-group">
+              <label>Section Subtitle</label>
+              <input type="text" id="faqSubtitle" placeholder="Get the facts before making a decision">
+            </div>
             <div id="faqList"></div>
             <button type="button" class="add-item-btn" onclick="addFaq()">+ Add FAQ</button>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="editor-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+              Call-to-Action Footer
+            </h3>
+            <div class="form-group">
+              <label>CTA Title</label>
+              <input type="text" id="ctaTitle" placeholder="Don't Let Bankruptcy Be Your Only Option">
+            </div>
+            <div class="form-group">
+              <label>CTA Subtitle</label>
+              <input type="text" id="ctaSubtitle" placeholder="Free consultation. See how much you could save.">
+            </div>
+            <div class="form-group">
+              <label>CTA Button Text</label>
+              <input type="text" id="ctaButton" placeholder="Get My Free Debt Analysis">
+            </div>
           </div>
 
           <!-- Footer Section -->
@@ -582,44 +712,75 @@
       document.getElementById('colorSecondary').value = content.colors?.secondary || '#10b981';
       document.getElementById('colorSecondaryText').value = content.colors?.secondary || '#10b981';
 
-      // Hero
-      document.getElementById('showHero').checked = content.hero?.show !== false;
-      document.getElementById('heroHeadline').value = content.hero?.headline || '';
-      document.getElementById('heroSubheadline').value = content.hero?.subheadline || '';
-      document.getElementById('heroCta').value = content.hero?.cta || '';
+      // SEO
+      document.getElementById('pageTitle').value = content.pageTitle || '';
+      document.getElementById('metaDescription').value = content.metaDescription || '';
 
-      // Trust Logos
-      document.getElementById('showTrustLogos').checked = content.trustLogos?.show !== false;
+      // Hero
+      document.getElementById('showHero').checked = content._show?.hero !== false;
+      document.getElementById('heroBadge').value = content.badge || '';
+      document.getElementById('heroHeadline').value = content.headline || '';
+      document.getElementById('heroHighlight').value = content.headlineHighlight || '';
+      document.getElementById('heroSubheadline').value = content.subheadline || '';
+      document.getElementById('heroBulletPoints').value = (content.bulletPoints || []).join('\n');
+      document.getElementById('heroPhone').value = content.phone || '';
+
+      // Form
+      document.getElementById('formTitle').value = content.formTitle || '';
+      document.getElementById('formSubtitle').value = content.formSubtitle || '';
+      document.getElementById('formButton').value = content.formButton || '';
+
+      // Trust Bar
+      document.getElementById('showTrustLogos').checked = content._show?.trustBar !== false;
+      document.getElementById('trustLabel').value = content.trustLabel || '';
       document.getElementById('trustLogos').value = (content.trustLogos?.logos || []).join('\n');
 
+      // Comparison
+      document.getElementById('showComparison').checked = content._show?.comparison !== false;
+      document.getElementById('comparisonTitle').value = content.comparisonTitle || '';
+      document.getElementById('comparisonSubtitle').value = content.comparisonSubtitle || '';
+
+      // How It Works
+      document.getElementById('showHowItWorks').checked = content._show?.howItWorks !== false;
+      document.getElementById('howItWorksTitle').value = content.howItWorksTitle || '';
+      document.getElementById('howItWorksSubtitle').value = content.howItWorksSubtitle || '';
+
       // Benefits
-      document.getElementById('showBenefits').checked = content.benefits?.show !== false;
-      document.getElementById('benefitsTitle').value = content.benefits?.title || '';
-      document.getElementById('benefitsList').value = (content.benefits?.items || []).join('\n');
+      document.getElementById('showBenefits').checked = content._show?.benefits !== false;
+      document.getElementById('benefitsTitle').value = content.benefitsTitle || '';
+      document.getElementById('benefitsList').value = (content.bulletPoints || []).join('\n');
 
       // Case Studies
-      document.getElementById('showCaseStudies').checked = content.caseStudies?.show !== false;
-      document.getElementById('caseStudiesTitle').value = content.caseStudies?.title || '';
-      renderCaseStudies(content.caseStudies?.items || []);
-
-      // Testimonials
-      document.getElementById('showTestimonials').checked = content.testimonials?.show !== false;
-      document.getElementById('testimonialsTitle').value = content.testimonials?.title || '';
-      renderTestimonials(content.testimonials?.items || []);
+      document.getElementById('showCaseStudies').checked = content._show?.caseStudies !== false;
+      document.getElementById('caseStudiesTitle').value = content.caseStudiesTitle || '';
+      document.getElementById('caseStudiesSubtitle').value = content.caseStudiesSubtitle || '';
+      renderCaseStudies(content.caseStudiesItems || []);
 
       // Empathy
-      document.getElementById('showEmpathy').checked = content.empathy?.show !== false;
-      document.getElementById('empathyTitle').value = content.empathy?.title || '';
-      document.getElementById('empathyContent').value = content.empathy?.content || '';
+      document.getElementById('showEmpathy').checked = content._show?.empathy !== false;
+      document.getElementById('empathyTitle').value = content.empathyTitle || '';
+      document.getElementById('empathyContent').value = (content.empathyText || []).join('\n\n');
+
+      // Testimonials
+      document.getElementById('showTestimonials').checked = content._show?.testimonials !== false;
+      document.getElementById('testimonialsTitle').value = content.testimonialsTitle || '';
+      document.getElementById('testimonialsSubtitle').value = content.testimonialsSubtitle || '';
+      renderTestimonials(content.testimonialItems || []);
 
       // FAQ
-      document.getElementById('showFaq').checked = content.faq?.show !== false;
-      document.getElementById('faqTitle').value = content.faq?.title || '';
-      renderFaqs(content.faq?.items || []);
+      document.getElementById('showFaq').checked = content._show?.faq !== false;
+      document.getElementById('faqTitle').value = content.faqTitle || '';
+      document.getElementById('faqSubtitle').value = content.faqSubtitle || '';
+      renderFaqs(content.faqItems || []);
+
+      // CTA
+      document.getElementById('ctaTitle').value = content.ctaTitle || '';
+      document.getElementById('ctaSubtitle').value = content.ctaSubtitle || '';
+      document.getElementById('ctaButton').value = content.ctaButton || '';
 
       // Footer
-      document.getElementById('footerCompany').value = content.footer?.company || '';
-      document.getElementById('footerDisclaimer').value = content.footer?.disclaimer || '';
+      document.getElementById('footerCompany').value = content.footerCompany || '';
+      document.getElementById('footerDisclaimer').value = content.footerDisclaimer || '';
     }
 
     function renderCaseStudies(items) {
@@ -805,50 +966,72 @@
         });
       });
 
+      // Flat keys matching template placeholders
       return {
         colors: {
           primary: document.getElementById('colorPrimary').value,
           secondary: document.getElementById('colorSecondary').value
         },
-        hero: {
-          show: document.getElementById('showHero').checked,
-          headline: document.getElementById('heroHeadline').value,
-          subheadline: document.getElementById('heroSubheadline').value,
-          cta: document.getElementById('heroCta').value
+        _show: {
+          hero: document.getElementById('showHero').checked,
+          trustBar: document.getElementById('showTrustLogos').checked,
+          comparison: document.getElementById('showComparison').checked,
+          howItWorks: document.getElementById('showHowItWorks').checked,
+          benefits: document.getElementById('showBenefits').checked,
+          caseStudies: document.getElementById('showCaseStudies').checked,
+          empathy: document.getElementById('showEmpathy').checked,
+          testimonials: document.getElementById('showTestimonials').checked,
+          faq: document.getElementById('showFaq').checked
         },
+        // SEO
+        pageTitle: document.getElementById('pageTitle').value,
+        metaDescription: document.getElementById('metaDescription').value,
+        // Hero
+        badge: document.getElementById('heroBadge').value,
+        headline: document.getElementById('heroHeadline').value,
+        headlineHighlight: document.getElementById('heroHighlight').value,
+        subheadline: document.getElementById('heroSubheadline').value,
+        bulletPoints: document.getElementById('heroBulletPoints').value.split('\n').filter(l => l.trim()),
+        phone: document.getElementById('heroPhone').value,
+        // Form
+        formTitle: document.getElementById('formTitle').value,
+        formSubtitle: document.getElementById('formSubtitle').value,
+        formButton: document.getElementById('formButton').value,
+        // Trust Bar
+        trustLabel: document.getElementById('trustLabel').value,
         trustLogos: {
-          show: document.getElementById('showTrustLogos').checked,
           logos: document.getElementById('trustLogos').value.split('\n').filter(l => l.trim())
         },
-        benefits: {
-          show: document.getElementById('showBenefits').checked,
-          title: document.getElementById('benefitsTitle').value,
-          items: document.getElementById('benefitsList').value.split('\n').filter(l => l.trim())
-        },
-        caseStudies: {
-          show: document.getElementById('showCaseStudies').checked,
-          title: document.getElementById('caseStudiesTitle').value,
-          items: caseStudies
-        },
-        testimonials: {
-          show: document.getElementById('showTestimonials').checked,
-          title: document.getElementById('testimonialsTitle').value,
-          items: testimonials
-        },
-        empathy: {
-          show: document.getElementById('showEmpathy').checked,
-          title: document.getElementById('empathyTitle').value,
-          content: document.getElementById('empathyContent').value
-        },
-        faq: {
-          show: document.getElementById('showFaq').checked,
-          title: document.getElementById('faqTitle').value,
-          items: faqs
-        },
-        footer: {
-          company: document.getElementById('footerCompany').value,
-          disclaimer: document.getElementById('footerDisclaimer').value
-        }
+        // Comparison
+        comparisonTitle: document.getElementById('comparisonTitle').value,
+        comparisonSubtitle: document.getElementById('comparisonSubtitle').value,
+        // How It Works
+        howItWorksTitle: document.getElementById('howItWorksTitle').value,
+        howItWorksSubtitle: document.getElementById('howItWorksSubtitle').value,
+        // Benefits title (bulletPoints already captured above)
+        benefitsTitle: document.getElementById('benefitsTitle').value,
+        // Case Studies
+        caseStudiesTitle: document.getElementById('caseStudiesTitle').value,
+        caseStudiesSubtitle: document.getElementById('caseStudiesSubtitle').value,
+        caseStudiesItems: caseStudies,
+        // Empathy
+        empathyTitle: document.getElementById('empathyTitle').value,
+        empathyText: document.getElementById('empathyContent').value.split('\n\n').filter(l => l.trim()),
+        // Testimonials
+        testimonialsTitle: document.getElementById('testimonialsTitle').value,
+        testimonialsSubtitle: document.getElementById('testimonialsSubtitle').value,
+        testimonialItems: testimonials,
+        // FAQ
+        faqTitle: document.getElementById('faqTitle').value,
+        faqSubtitle: document.getElementById('faqSubtitle').value,
+        faqItems: faqs,
+        // CTA
+        ctaTitle: document.getElementById('ctaTitle').value,
+        ctaSubtitle: document.getElementById('ctaSubtitle').value,
+        ctaButton: document.getElementById('ctaButton').value,
+        // Footer
+        footerCompany: document.getElementById('footerCompany').value,
+        footerDisclaimer: document.getElementById('footerDisclaimer').value
       };
     }
 
@@ -899,21 +1082,23 @@
 
         // Fill hero
         if (generated.hero) {
-          document.getElementById('heroHeadline').value = generated.hero.headline || '';
-          document.getElementById('heroSubheadline').value = generated.hero.subheadline || '';
-          document.getElementById('heroCta').value = generated.hero.cta || '';
+          if (generated.hero.badge) document.getElementById('heroBadge').value = generated.hero.badge;
+          if (generated.hero.headline) document.getElementById('heroHeadline').value = generated.hero.headline;
+          if (generated.hero.headlineHighlight) document.getElementById('heroHighlight').value = generated.hero.headlineHighlight;
+          if (generated.hero.subheadline) document.getElementById('heroSubheadline').value = generated.hero.subheadline;
+          if (generated.hero.bulletPoints) document.getElementById('heroBulletPoints').value = generated.hero.bulletPoints.join('\n');
         }
 
         // Fill benefits
         if (generated.benefits) {
-          document.getElementById('benefitsTitle').value = generated.benefits.title || '';
-          document.getElementById('benefitsList').value = (generated.benefits.items || []).join('\n');
+          if (generated.benefits.title) document.getElementById('benefitsTitle').value = generated.benefits.title;
+          if (generated.benefits.items) document.getElementById('benefitsList').value = generated.benefits.items.join('\n');
         }
 
         // Fill empathy
         if (generated.empathy) {
-          document.getElementById('empathyTitle').value = generated.empathy.title || '';
-          document.getElementById('empathyContent').value = generated.empathy.content || '';
+          if (generated.empathy.title) document.getElementById('empathyTitle').value = generated.empathy.title;
+          if (generated.empathy.content) document.getElementById('empathyContent').value = generated.empathy.content;
         }
 
         // Fill testimonials
@@ -926,14 +1111,22 @@
           renderFaqs(generated.faq);
         }
 
-        // Fill case studies title
+        // Fill case studies
         if (generated.caseStudies) {
-          document.getElementById('caseStudiesTitle').value = generated.caseStudies.title || '';
+          if (generated.caseStudies.title) document.getElementById('caseStudiesTitle').value = generated.caseStudies.title;
+          if (generated.caseStudies.subtitle) document.getElementById('caseStudiesSubtitle').value = generated.caseStudies.subtitle;
+        }
+
+        // Fill CTA
+        if (generated.cta) {
+          if (generated.cta.title) document.getElementById('ctaTitle').value = generated.cta.title;
+          if (generated.cta.subtitle) document.getElementById('ctaSubtitle').value = generated.cta.subtitle;
+          if (generated.cta.button) document.getElementById('ctaButton').value = generated.cta.button;
         }
 
         // Fill footer disclaimer
         if (generated.footer) {
-          document.getElementById('footerDisclaimer').value = generated.footer.disclaimer || '';
+          if (generated.footer.disclaimer) document.getElementById('footerDisclaimer').value = generated.footer.disclaimer;
         }
 
         status.innerHTML = 'Content generated! Review the fields below, then click <strong>Save & Regenerate</strong>.';
