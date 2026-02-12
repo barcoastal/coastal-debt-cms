@@ -134,7 +134,9 @@ router.get('/:id', authenticateToken, (req, res) => {
   }
 
   try {
-    page.content = JSON.parse(page.content || '{}');
+    const saved = JSON.parse(page.content || '{}');
+    // Merge with defaults so editor fields show actual values
+    page.content = { ...defaultContent, ...saved, colors: { ...defaultContent.colors, ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
     page.hidden_fields = JSON.parse(page.hidden_fields || '{}');
   } catch (e) {}
