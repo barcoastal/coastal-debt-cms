@@ -7,13 +7,13 @@ function getConfiguredTimezone() {
 
 // Convert a YYYY-MM-DD in configured timezone to UTC datetime boundaries
 function localDateToUtcRange(dateStr, tz) {
-  const dt = new Date(dateStr + 'T00:00:00');
-  const localStr = dt.toLocaleString('en-US', { timeZone: tz });
-  const utcStr = dt.toLocaleString('en-US', { timeZone: 'UTC' });
-  const offsetMs = new Date(utcStr) - new Date(localStr);
-  const start = new Date(dt.getTime() + offsetMs);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
-  return { start: start.toISOString(), end: end.toISOString() };
+  // Create midnight in the target timezone by finding the UTC equivalent
+  const offsetHours = getTimezoneOffsetHours(tz);
+  // Midnight local = midnight UTC minus the offset
+  const startUtc = new Date(dateStr + 'T00:00:00Z');
+  startUtc.setTime(startUtc.getTime() - offsetHours * 3600000);
+  const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000 - 1);
+  return { start: startUtc.toISOString(), end: endUtc.toISOString() };
 }
 
 // Get "today" as YYYY-MM-DD in configured timezone
@@ -21,7 +21,7 @@ function getTodayInTz(tz) {
   return new Date().toLocaleDateString('en-CA', { timeZone: tz });
 }
 
-// Get timezone offset in hours (for SQLite date grouping)
+// Get timezone offset in hours (e.g. -5 for EST, -4 for EDT)
 function getTimezoneOffsetHours(tz) {
   const now = new Date();
   const localStr = now.toLocaleString('en-US', { timeZone: tz });
@@ -29,4 +29,17 @@ function getTimezoneOffsetHours(tz) {
   return (new Date(localStr) - new Date(utcStr)) / 3600000;
 }
 
-module.exports = { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours };
+// Get SQLite offset string like '+5 hours' or '-5 hours' for converting UTC to local in queries
+function getSqliteOffsetStr(tz) {
+  const offset = getTimezoneOffsetHours(tz);
+  const sign = offset >= 0 ? '+' : '';
+  return `${sign}${offset} hours`;
+}
+
+// Get "now" in the configured timezone as ISO string (for SQLite comparisons)
+function getNowInTz(tz) {
+  const now = new Date();
+  return now.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');
+}
+
+module.exports = { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr, getNowInTz };

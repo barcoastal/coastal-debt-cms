@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -499,6 +500,7 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
 
 // Get cost statistics
 router.get('/stats', authenticateToken, (req, res) => {
+  const tz = getConfiguredTimezone();
   const stats = db.prepare(`
     SELECT
       COUNT(*) as total_leads,
@@ -506,7 +508,7 @@ router.get('/stats', authenticateToken, (req, res) => {
       SUM(cost_cents) as total_cost_cents,
       AVG(cost_cents) as avg_cost_cents
     FROM leads
-    WHERE created_at >= date('now', '-30 days')
+    WHERE created_at >= date('now', '${getSqliteOffsetStr(tz)}', '-30 days')
   `).get();
 
   const byPage = db.prepare(`
@@ -517,7 +519,7 @@ router.get('/stats', authenticateToken, (req, res) => {
       AVG(l.cost_cents) as avg_cost_cents
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE l.created_at >= date('now', '-30 days')
+    WHERE l.created_at >= date('now', '${getSqliteOffsetStr(tz)}', '-30 days')
     GROUP BY lp.id
     ORDER BY lead_count DESC
   `).all();

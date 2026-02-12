@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz } = require('../lib/timezone');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -427,11 +427,13 @@ router.get('/sync-status', (req, res) => {
   const config = db.prepare('SELECT page_access_token, user_access_token, verify_token, default_landing_page_id, pixel_id, connected_at FROM facebook_config WHERE id = 1').get();
   if (!config) return res.json({ configured: false });
 
-  // Also show recent leads count for diagnostics
+  // Also show recent leads count for diagnostics (timezone-aware)
+  const tz24 = getConfiguredTimezone();
+  const offsetStr24 = getSqliteOffsetStr(tz24);
   const recentLeads = db.prepare(`
     SELECT COUNT(*) as cnt FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE lp.platform = 'meta' AND l.created_at >= datetime('now', '-24 hours')
+    WHERE lp.platform = 'meta' AND l.created_at >= datetime('now', '${offsetStr24}', '-24 hours')
   `).get();
 
   const totalMetaLeads = db.prepare(`
@@ -499,7 +501,7 @@ router.get('/sync-status', (req, res) => {
     default_landing_page: defaultLP,
     server_time_utc: new Date().toISOString(),
     server_date_utc: new Date().toISOString().split('T')[0],
-    sqlite_now: db.prepare("SELECT datetime('now') as now, DATE('now') as today").get(),
+    sqlite_now: db.prepare(`SELECT datetime('now', '${offsetStr24}') as now, DATE('now', '${offsetStr24}') as today`).get(),
     recent_leads: recentLeadsList,
     code_version: 'v2-pagination-allforms'
   });

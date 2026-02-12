@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -146,6 +147,8 @@ async function fetchGeoInfo(ip, visitorId) {
 
 // Get all visitors (admin)
 router.get('/', authenticateToken, (req, res) => {
+  const tz = getConfiguredTimezone();
+  const offsetStr = getSqliteOffsetStr(tz);
   const { page = 1, limit = 50, converted, search, from_date, to_date } = req.query;
   const offset = (page - 1) * limit;
 
@@ -166,14 +169,14 @@ router.get('/', authenticateToken, (req, res) => {
   }
 
   if (from_date) {
-    query += ` AND DATE(last_visit) >= DATE(?)`;
-    countQuery += ` AND DATE(last_visit) >= DATE(?)`;
+    query += ` AND DATE(last_visit, '${offsetStr}') >= DATE(?)`;
+    countQuery += ` AND DATE(last_visit, '${offsetStr}') >= DATE(?)`;
     params.push(from_date);
   }
 
   if (to_date) {
-    query += ` AND DATE(last_visit) <= DATE(?)`;
-    countQuery += ` AND DATE(last_visit) <= DATE(?)`;
+    query += ` AND DATE(last_visit, '${offsetStr}') <= DATE(?)`;
+    countQuery += ` AND DATE(last_visit, '${offsetStr}') <= DATE(?)`;
     params.push(to_date);
   }
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours } = require('../lib/timezone');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -207,18 +207,25 @@ router.get('/by-page', authenticateToken, (req, res) => {
 router.get('/over-time', authenticateToken, (req, res) => {
   const days = parseInt(req.query.days) || 30;
   const { conditions, params } = buildFilters(req);
+  const tz = getConfiguredTimezone();
+  const offsetStr = getSqliteOffsetStr(tz);
 
   // Add date range default if no from/to specified
   if (!req.query.from) {
-    conditions.push(`l.created_at >= DATE('now', '-${days} days')`);
+    const todayStr = getTodayInTz(tz);
+    const todayDate = new Date(todayStr + 'T00:00:00');
+    const startDate = new Date(todayDate);
+    startDate.setDate(startDate.getDate() - days);
+    const startStr = startDate.toISOString().split('T')[0];
+    const { start } = localDateToUtcRange(startStr, tz);
+    conditions.push(`l.created_at >= ?`);
+    params.push(start);
   }
 
   const needsJoin = req.query.platform || req.query.page;
   const join = needsJoin ? 'LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id' : '';
   const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-  const tzOffset = getTimezoneOffsetHours(getConfiguredTimezone());
-  const offsetStr = (tzOffset >= 0 ? '+' : '') + tzOffset.toFixed(1) + ' hours';
   const data = db.prepare(`
     SELECT DATE(l.created_at, '${offsetStr}') as date, COUNT(*) as count
     FROM leads l
@@ -810,6 +817,8 @@ router.get('/organic/summary', authenticateToken, (req, res) => {
 router.get('/organic/over-time', authenticateToken, (req, res) => {
   const days = parseInt(req.query.days) || 30;
   const { conditions, params } = buildVisitorDateFilters(req);
+  const tz = getConfiguredTimezone();
+  const offsetStr = getSqliteOffsetStr(tz);
 
   // Exclude paid traffic
   conditions.push(`(v.gclid IS NULL OR v.gclid = '')`);
@@ -817,14 +826,18 @@ router.get('/organic/over-time', authenticateToken, (req, res) => {
   params.push(...PAID_MEDIUMS);
 
   if (!req.query.from) {
-    conditions.push(`v.first_visit >= DATE('now', '-' || ? || ' days')`);
-    params.push(days);
+    const todayStr = getTodayInTz(tz);
+    const todayDate = new Date(todayStr + 'T00:00:00');
+    const startDate = new Date(todayDate);
+    startDate.setDate(startDate.getDate() - days);
+    const startStr = startDate.toISOString().split('T')[0];
+    const { start } = localDateToUtcRange(startStr, tz);
+    conditions.push(`v.first_visit >= ?`);
+    params.push(start);
   }
 
   const where = 'WHERE ' + conditions.join(' AND ');
 
-  const tzOffset = getTimezoneOffsetHours(getConfiguredTimezone());
-  const offsetStr = (tzOffset >= 0 ? '+' : '') + tzOffset.toFixed(1) + ' hours';
   const data = db.prepare(`
     SELECT DATE(v.first_visit, '${offsetStr}') as date, COUNT(*) as count
     FROM visitors v
