@@ -1019,6 +1019,7 @@
           }
           step2.classList.remove('active');
           stepSuccess.classList.add('active');
+          document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           throw new Error('Submission failed');
         }
