@@ -76,6 +76,7 @@ db.exec(`
     submit_button_text TEXT DEFAULT 'Submit',
     success_message TEXT DEFAULT 'Thank you! We will contact you shortly.',
     is_active INTEGER DEFAULT 1,
+    skip_pre_qual INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -292,6 +293,9 @@ try { db.exec(`ALTER TABLE leads ADD COLUMN total_debt_sign TEXT`); } catch (e) 
 
 // Add permissions column to users if not exist
 try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'`); } catch (e) {}
+
+// Form: skip pre-qualification steps (debt amount + MCA question)
+try { db.exec(`ALTER TABLE forms ADD COLUMN skip_pre_qual INTEGER DEFAULT 0`); } catch (e) {}
 
 // CRM + Email Marketing columns on leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch (e) {}

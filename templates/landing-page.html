@@ -473,7 +473,7 @@
       <div class="empathy-content">
         <h2>{{empathyTitle}}</h2>
         <div id="empathyText"></div>
-        <a href="#leadForm" class="empathy-cta" onclick="document.getElementById('debt_amount').focus()">Get Your Free Consultation</a>
+        <a href="#leadForm" class="empathy-cta" onclick="var el = document.getElementById('debt_amount'); if (el && el.offsetParent) el.focus(); else { var fi = document.querySelector('#dynamicFormFields input'); if (fi) fi.focus(); }">Get Your Free Consultation</a>
       </div>
     </div>
   </section>
@@ -720,6 +720,7 @@
     document.getElementById('referrer_url').value = document.referrer || '';
 
     // Form step elements
+    const skipPreQual = {{skipPreQual}};
     const step1 = document.querySelector('.form-step-1');
     const stepSorry = document.querySelector('.form-step-sorry');
     const stepMca = document.querySelector('.form-step-mca');
@@ -728,6 +729,18 @@
     const stepSuccess = document.querySelector('.form-success');
     const debtSelect = document.getElementById('debt_amount');
     const checkDebtBtn = document.getElementById('checkDebtBtn');
+
+    // Skip pre-qualification: hide debt/MCA steps, show form directly
+    if (skipPreQual) {
+      step1.classList.remove('active');
+      step1.style.display = 'none';
+      stepSorry.style.display = 'none';
+      stepMca.style.display = 'none';
+      stepSorryMca.style.display = 'none';
+      step2.querySelector('.form-title').textContent = '{{formTitle}}';
+      step2.querySelector('.form-subtitle').textContent = '{{formSubtitle}}';
+      step2.classList.add('active');
+    }
 
     // Populate dynamic content
     const bulletPoints = {{bulletPointsJson}};

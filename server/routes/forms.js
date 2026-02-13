@@ -47,22 +47,23 @@ router.get('/:id', authenticateToken, (req, res) => {
 
 // Create form
 router.post('/', authenticateToken, (req, res) => {
-  const { name, platform, webhook_url, fields, submit_button_text, success_message } = req.body;
+  const { name, platform, webhook_url, fields, submit_button_text, success_message, skip_pre_qual } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: 'Form name required' });
   }
 
   const result = db.prepare(`
-    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message, skip_pre_qual)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     name,
     platform || 'other',
     webhook_url || '',
     JSON.stringify(fields || defaultFields),
     submit_button_text || 'Get My Free Debt Analysis',
-    success_message || 'Thank you! A debt specialist will call you within 15 minutes.'
+    success_message || 'Thank you! A debt specialist will call you within 15 minutes.',
+    skip_pre_qual ? 1 : 0
   );
 
   res.json({ id: result.lastInsertRowid, message: 'Form created' });
@@ -70,7 +71,7 @@ router.post('/', authenticateToken, (req, res) => {
 
 // Update form
 router.put('/:id', authenticateToken, (req, res) => {
-  const { name, platform, webhook_url, fields, submit_button_text, success_message, is_active } = req.body;
+  const { name, platform, webhook_url, fields, submit_button_text, success_message, is_active, skip_pre_qual } = req.body;
 
   const form = db.prepare('SELECT * FROM forms WHERE id = ?').get(req.params.id);
   if (!form) {
@@ -80,7 +81,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   db.prepare(`
     UPDATE forms SET
       name = ?, platform = ?, webhook_url = ?, fields = ?,
-      submit_button_text = ?, success_message = ?, is_active = ?
+      submit_button_text = ?, success_message = ?, is_active = ?, skip_pre_qual = ?
     WHERE id = ?
   `).run(
     name || form.name,
@@ -90,6 +91,7 @@ router.put('/:id', authenticateToken, (req, res) => {
     submit_button_text || form.submit_button_text,
     success_message || form.success_message,
     is_active !== undefined ? (is_active ? 1 : 0) : form.is_active,
+    skip_pre_qual !== undefined ? (skip_pre_qual ? 1 : 0) : form.skip_pre_qual,
     req.params.id
   );
 
@@ -108,15 +110,16 @@ router.post('/:id/duplicate', authenticateToken, (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message, skip_pre_qual)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     form.name + ' (Copy)',
     form.platform,
     form.webhook_url || '',
     form.fields,
     form.submit_button_text,
-    form.success_message
+    form.success_message,
+    form.skip_pre_qual || 0
   );
 
   res.json({ id: result.lastInsertRowid, message: 'Form duplicated' });

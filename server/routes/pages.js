@@ -351,10 +351,13 @@ function generateLandingPage(pageId) {
   const formSubmitText = form ? form.submit_button_text : content.formButton || 'Get My Free Debt Analysis';
   const formSuccessMsg = form ? form.success_message : 'Thank you! A debt specialist will call you within 15 minutes.';
 
+  const skipPreQual = form ? (form.skip_pre_qual ? true : false) : false;
+
   html = html.replace(/{{formFieldsJson}}/g, JSON.stringify(formFields));
   html = html.replace(/{{formWebhook}}/g, formWebhook);
   html = html.replace(/{{formSubmitText}}/g, formSubmitText);
   html = html.replace(/{{formSuccessMsg}}/g, formSuccessMsg);
+  html = html.replace(/{{skipPreQual}}/g, String(skipPreQual));
 
   // Inject branding from settings
   try {
