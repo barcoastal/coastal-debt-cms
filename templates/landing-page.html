@@ -407,7 +407,7 @@
         </table>
       </div>
       <div class="comparison-cta">
-        <a href="#leadForm" onclick="document.getElementById('full_name').focus()">{{comparisonCtaText}}</a>
+        <a href="#leadForm" onclick="var fc = document.querySelector('.form-card'); if (fc) fc.scrollIntoView({behavior:'smooth',block:'center'});">{{comparisonCtaText}}</a>
       </div>
     </div>
   </section>

@@ -319,7 +319,14 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{FB_PIXEL_ID}}/g, fbPixelId);
 
   // Merge content with defaults so all template placeholders get replaced
-  const mergedContent = { ...defaultContent, ...content };
+  // Empty strings in page content should not override defaults
+  const filteredContent = {};
+  Object.entries(content).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      filteredContent[key] = value;
+    }
+  });
+  const mergedContent = { ...defaultContent, ...filteredContent };
 
   // Deep merge colors so partial overrides don't lose defaults
   mergedContent.colors = { ...defaultContent.colors, ...(content.colors || {}) };
