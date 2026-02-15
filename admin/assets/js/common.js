@@ -102,22 +102,22 @@ function getDateRangeFromPreset(range) {
   if (range === 'all') return { from: '', to: '' };
   if (range === 'today') return { from: today, to: today };
   if (range === 'yesterday') {
-    const y = toLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+    const y = toLocalDate(new Date(now.getTime() - 86400000));
     return { from: y, to: y };
   }
-  let from;
-  if (range === 'last_week') {
-    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-  } else if (range === '7d') {
-    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-  } else if (range === '30d') {
-    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
-  } else if (range === 'mtd') {
-    from = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Use time subtraction to avoid browser-timezone date component issues
+  var daysBack;
+  if (range === 'last_week') daysBack = 7;
+  else if (range === '7d') daysBack = 7;
+  else if (range === '30d') daysBack = 30;
+  else if (range === 'mtd') {
+    // Derive first-of-month from the configured timezone date string
+    var parts = today.split('-');
+    return { from: parts[0] + '-' + parts[1] + '-01', to: today };
   } else {
     return { from: '', to: '' };
   }
-  return { from: toLocalDate(from), to: today };
+  return { from: toLocalDate(new Date(now.getTime() - daysBack * 86400000)), to: today };
 }
 
 function initTimeRangeBtns(containerSelector, onApply) {
