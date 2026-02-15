@@ -639,4 +639,102 @@ if (pageCount.count === 0) {
   console.log('Default landing pages created');
 }
 
+// Outbrain: Business Debt landing page + direct form (no pre-qual)
+const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
+if (!obFormExists) {
+  const obFields = JSON.stringify([
+    {"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},
+    {"name":"company_name","label":"Company Name","type":"text","placeholder":"Your Company","options":"","required":true},
+    {"name":"email","label":"Email","type":"email","placeholder":"john@company.com","options":"","required":true},
+    {"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},
+    {"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
+  ]);
+  const obForm = db.prepare(`
+    INSERT INTO forms (name, platform, webhook_url, fields, submit_button_text, success_message, skip_pre_qual)
+    VALUES (?, ?, ?, ?, ?, ?, 1)
+  `).run('Outbrain Business Debt Form', 'outbrain', 'https://hooks.zapier.com/hooks/catch/23550212/ulvkpuf/', obFields, 'Get My Free Consultation', 'Thank you! A debt relief specialist will contact you shortly.');
+  console.log('Outbrain form created (ID: ' + obForm.lastInsertRowid + ')');
+
+  const obContent = JSON.stringify({
+    badge: "Business Debt Relief",
+    headline: "Drowning in Business Debt?",
+    headlineLine2: "We Help You",
+    headlineHighlight: "Resolve It for Less.",
+    subheadline: "Our expert negotiators work directly with your creditors to reduce what you owe — so you can get back to running your business.",
+    bulletPoints: [
+      "Reduce your total debt by 50-80%",
+      "Stop creditor harassment & collection calls",
+      "One affordable monthly payment",
+      "No upfront fees — pay only when we settle"
+    ],
+    formTitle: "Get Your Free Debt Analysis",
+    formSubtitle: "See how much you could save. Takes 60 seconds.",
+    formButton: "Get My Free Consultation",
+    trustLabel: "As Seen In & Trusted By",
+    comparisonTitle: "DIY vs. Professional Debt Relief",
+    comparisonSubtitle: "See why business owners trust Coastal Debt to handle their debt",
+    comparisonColBad: "Going It Alone",
+    comparisonColGood: "Coastal Debt Relief",
+    comparisonRows: [
+      {"label":"Creditor Calls","bad":"Non-stop harassment","good":"We handle all communication"},
+      {"label":"Debt Reduction","bad":"Pay full amount + interest","good":"Settle for 50-80% less"},
+      {"label":"Monthly Payments","bad":"Multiple payments to many lenders","good":"One simple monthly payment"},
+      {"label":"Legal Protection","bad":"Risk of lawsuits & garnishment","good":"Legal team on your side"},
+      {"label":"Time to Resolve","bad":"Years of minimum payments","good":"3-6 months average"},
+      {"label":"Your Business","bad":"Struggling to stay open","good":"Keep operating & growing"}
+    ],
+    comparisonCtaText: "See How Much You Could Save",
+    howItWorksTitle: "How It Works",
+    howItWorksSubtitle: "Our proven 3-step process has helped over 1,500 businesses get out of debt",
+    steps: [
+      {"title":"Free Debt Analysis","description":"Tell us about your business debt. We'll review your situation and show you exactly how much you could save."},
+      {"title":"We Negotiate for You","description":"Our team contacts your creditors directly and negotiates to reduce what you owe — often by 50-80%."},
+      {"title":"Debt Resolved","description":"Pay a fraction of what you owed. Get back to focusing on what matters — your business."}
+    ],
+    caseStudiesTitle: "Real Settlements. Real Savings.",
+    caseStudiesSubtitle: "These are actual settlement agreements we negotiated for our clients",
+    empathyTitle: "Business Debt Is Overwhelming. We Get It.",
+    empathyText: [
+      "When you started your business, you never imagined debt would become this heavy. The daily stress of creditor calls, the anxiety of not knowing if you can make payroll, the fear of losing what you've worked so hard to build.",
+      "But here's what we want you to know: there is another way. You don't have to drain your savings, close your doors, or file bankruptcy. Every day, we help business owners just like you negotiate their way out of debt.",
+      "Let us take this weight off your shoulders. Your first consultation is completely free."
+    ],
+    testimonialsTitle: "Real People. Real Results.",
+    testimonialsSubtitle: "Hear from business owners who found relief with Coastal Debt",
+    ctaTitle: "Your Business Deserves a Fresh Start",
+    ctaSubtitle: "Free consultation. No obligation. See how much you could save today.",
+    ctaButton: "Get My Free Consultation",
+    faqTitle: "Common Questions About Business Debt Relief",
+    faqSubtitle: "Get the answers you need before making a decision",
+    faqItems: [
+      {"question":"What types of business debt can you help with?","answer":"We help with merchant cash advances (MCAs), business loans, lines of credit, equipment financing, and most unsecured business debts. If creditors are calling, we can likely help."},
+      {"question":"How much can I actually save?","answer":"Most of our clients settle their debt for 50-80% less than what they owe. The exact amount depends on your specific situation, which is why we offer a free analysis."},
+      {"question":"Will this affect my credit score?","answer":"There may be a temporary impact, but most clients see their scores recover within 12-24 months. Compare this to the years of damage from defaulting or filing bankruptcy."},
+      {"question":"How long does the process take?","answer":"Most cases are resolved in 3-6 months. This is significantly faster than trying to pay off debt on your own or going through bankruptcy proceedings."},
+      {"question":"Do I have to stop paying my creditors?","answer":"We'll work with you to develop the best strategy for your situation. Our goal is to negotiate the lowest possible settlement while protecting your business."},
+      {"question":"Is there any upfront cost?","answer":"No. We don't charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}
+    ],
+    pageTitle: "Business Debt Relief | Reduce What You Owe by 50-80%",
+    metaDescription: "Struggling with business debt? Our experts negotiate with your creditors to reduce what you owe by 50-80%. No upfront fees. Free consultation.",
+    phone: "(800) 123-4567",
+    colors: {
+      primary: "#3052FF",
+      primaryLight: "#4a6aff",
+      navy: "#1a2e4a",
+      navyDark: "#0f1c2e"
+    }
+  });
+  const obSections = JSON.stringify({trustBar:true,comparison:true,howItWorks:true,caseStudies:true,empathy:true,testimonials:true,faq:true,cta:true});
+
+  db.prepare(`
+    INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields)
+    VALUES (?, ?, 'outbrain', 'Outbrain - Business Debt', ?, ?, ?, '{}')
+  `).run('business-debt-solutions', 'Business Debt Solutions - Outbrain', obForm.lastInsertRowid, obContent, obSections);
+  console.log('Outbrain landing page created');
+}
+
 module.exports = db;
