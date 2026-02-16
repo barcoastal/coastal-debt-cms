@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{META_TITLE}}</title>
+  <meta name="description" content="{{META_DESCRIPTION}}">
+  <meta property="og:title" content="{{META_TITLE}}">
+  <meta property="og:description" content="{{META_DESCRIPTION}}">
+  <meta property="og:type" content="article">
+  {{HEAD_SCRIPTS}}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.8;
+      font-size: 18px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Masthead */
+    .masthead {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 16px 0;
+      text-align: center;
+    }
+    .masthead-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .masthead-name {
+      font-family: Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -0.5px;
+    }
+    .masthead-tagline {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    /* Article container */
+    .article-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Category tag */
+    .article-category {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #1a6dff;
+      margin-top: 40px;
+      margin-bottom: 16px;
+    }
+
+    /* Headline */
+    .article-headline {
+      font-family: Georgia, serif;
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    /* Subheadline / deck */
+    .article-subheadline {
+      font-family: Georgia, serif;
+      font-size: 22px;
+      line-height: 1.5;
+      color: #555;
+      margin-bottom: 24px;
+      font-weight: 400;
+    }
+
+    /* Byline */
+    .article-byline {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #666;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e5e5e5;
+      margin-bottom: 32px;
+    }
+    .article-byline .author-name {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .article-byline .author-title {
+      color: #888;
+    }
+
+    /* Article body */
+    .article-body {
+      margin-bottom: 48px;
+    }
+    .article-body p {
+      margin-bottom: 24px;
+    }
+    .article-body h2 {
+      font-family: Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 40px;
+      margin-bottom: 16px;
+      line-height: 1.3;
+      color: #1a1a1a;
+    }
+    .article-body h3 {
+      font-family: Georgia, serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .article-body ul, .article-body ol {
+      margin-bottom: 24px;
+      padding-left: 28px;
+    }
+    .article-body li {
+      margin-bottom: 8px;
+    }
+    .article-body blockquote {
+      border-left: 3px solid #1a6dff;
+      padding-left: 20px;
+      margin: 32px 0;
+      font-style: italic;
+      color: #444;
+    }
+    .article-body strong {
+      font-weight: 700;
+    }
+    .article-body em {
+      font-style: italic;
+    }
+    .article-body a {
+      color: #1a6dff;
+      text-decoration: underline;
+    }
+
+    /* Mid-article form callout */
+    .article-form-callout {
+      background: #f8f9fb;
+      border: 1px solid #e0e4ea;
+      border-radius: 8px;
+      padding: 32px;
+      margin: 40px 0;
+    }
+    .article-form-callout .form-callout-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .article-form-callout .form-callout-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* End-of-article form */
+    .article-end-form {
+      background: #f8f9fb;
+      border: 1px solid #e0e4ea;
+      border-radius: 8px;
+      padding: 40px 32px;
+      margin: 48px 0 32px;
+    }
+    .article-end-form .form-callout-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .article-end-form .form-callout-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    /* Form styles */
+    .article-form {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .article-form .form-field {
+      margin-bottom: 12px;
+    }
+    .article-form input[type="text"],
+    .article-form input[type="email"],
+    .article-form input[type="tel"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #1a1a1a;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+    .article-form input:focus {
+      outline: none;
+      border-color: #1a6dff;
+      box-shadow: 0 0 0 3px rgba(26, 109, 255, 0.1);
+    }
+    .article-form input::placeholder {
+      color: #9ca3af;
+    }
+    .article-form .form-submit {
+      width: 100%;
+      padding: 14px;
+      background: #1a6dff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .article-form .form-submit:hover {
+      background: #1558cc;
+    }
+    .article-form .form-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .article-form .form-consent {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 11px;
+      color: #888;
+      margin-top: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .form-success {
+      text-align: center;
+      padding: 24px;
+      display: none;
+    }
+    .form-success h3 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 20px;
+      color: #16a34a;
+      margin-bottom: 8px;
+    }
+    .form-success p {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #555;
+    }
+
+    /* Footer */
+    .article-footer {
+      border-top: 1px solid #e5e5e5;
+      padding: 24px 0 48px;
+      margin-top: 48px;
+    }
+    .article-disclosure {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      color: #999;
+      line-height: 1.6;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .article-disclosure strong {
+      color: #777;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      body { font-size: 17px; }
+      .masthead-name { font-size: 22px; }
+      .article-headline { font-size: 30px; }
+      .article-subheadline { font-size: 19px; }
+      .article-body h2 { font-size: 24px; }
+      .article-form-callout,
+      .article-end-form { padding: 24px 20px; margin-left: -20px; margin-right: -20px; border-radius: 0; border-left: none; border-right: none; }
+      .article-category { margin-top: 24px; }
+    }
+
+    @media (max-width: 480px) {
+      .article-headline { font-size: 26px; }
+      .article-subheadline { font-size: 17px; }
+      .article-form-callout .form-callout-title,
+      .article-end-form .form-callout-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  {{BODY_SCRIPTS}}
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-name">National Business Report</div>
+      <div class="masthead-tagline">Business &bull; Finance &bull; Economy</div>
+    </div>
+  </header>
+
+  <!-- Article -->
+  <article class="article-container">
+    <div class="article-category">Business &amp; Finance</div>
+    <h1 class="article-headline">{{HEADLINE}}</h1>
+    <p class="article-subheadline">{{SUBHEADLINE}}</p>
+    <div class="article-byline">
+      By <span class="author-name">{{AUTHOR_NAME}}</span>, <span class="author-title">{{AUTHOR_TITLE}}</span>
+      &nbsp;&bull;&nbsp; {{PUBLISH_DATE}}
+    </div>
+
+    <div class="article-body">
+      {{BODY_BEFORE_FORM}}
+
+      <!-- Mid-article form -->
+      <div class="article-form-callout" id="midFormSection">
+        <div class="form-callout-title">{{FORM_TITLE}}</div>
+        <div class="form-callout-subtitle">{{FORM_SUBTITLE}}</div>
+        <form class="article-form" id="midArticleForm" onsubmit="return submitArticleForm(event, 'mid')">
+          <div id="midFormFields"></div>
+          {{HIDDEN_FIELDS}}
+          <input type="hidden" name="article_slug" value="{{SLUG}}">
+          <input type="hidden" name="eli_clickid" class="eli-field">
+          <input type="hidden" name="gclid" class="gclid-field">
+          <input type="hidden" name="msclkid" class="msclkid-field">
+          <input type="hidden" name="fbclid" class="fbclid-field">
+          <input type="hidden" name="rt_clickid" class="rt-field">
+          <input type="hidden" name="page_url" class="pageurl-field">
+          <input type="hidden" name="referrer_url" class="referrer-field">
+          <button type="submit" class="form-submit">{{FORM_SUBMIT_TEXT}}</button>
+          <div class="form-consent">By submitting, you agree to be contacted about debt relief options. Your information is secure and will never be sold.</div>
+        </form>
+        <div class="form-success" id="midFormSuccess">
+          <h3>Thank You!</h3>
+          <p>{{FORM_SUCCESS_MSG}}</p>
+        </div>
+      </div>
+
+      {{BODY_AFTER_FORM}}
+    </div>
+
+    <!-- End-of-article form -->
+    <div class="article-end-form" id="endFormSection">
+      <div class="form-callout-title">{{END_FORM_TITLE}}</div>
+      <div class="form-callout-subtitle">{{END_FORM_SUBTITLE}}</div>
+      <form class="article-form" id="endArticleForm" onsubmit="return submitArticleForm(event, 'end')">
+        <div id="endFormFields"></div>
+        {{HIDDEN_FIELDS}}
+        <input type="hidden" name="article_slug" value="{{SLUG}}">
+        <input type="hidden" name="eli_clickid" class="eli-field">
+        <input type="hidden" name="gclid" class="gclid-field">
+        <input type="hidden" name="msclkid" class="msclkid-field">
+        <input type="hidden" name="fbclid" class="fbclid-field">
+        <input type="hidden" name="rt_clickid" class="rt-field">
+        <input type="hidden" name="page_url" class="pageurl-field">
+        <input type="hidden" name="referrer_url" class="referrer-field">
+        <button type="submit" class="form-submit">{{FORM_SUBMIT_TEXT}}</button>
+        <div class="form-consent">By submitting, you agree to be contacted about debt relief options. Your information is secure and will never be sold.</div>
+      </form>
+      <div class="form-success" id="endFormSuccess">
+        <h3>Thank You!</h3>
+        <p>{{FORM_SUCCESS_MSG}}</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- Footer -->
+  <footer class="article-footer">
+    <div class="article-disclosure">
+      <strong>Advertiser Disclosure:</strong> This article is a sponsored advertisement for debt relief services. The stories presented are based on composites of real client experiences; individual results may vary. This content is provided for informational purposes only and does not constitute financial or legal advice. Coastal Debt Resolve is a debt settlement company and is not a law firm or government agency. Consult with a qualified financial advisor before making decisions about your debt.
+    </div>
+  </footer>
+
+  <script>
+    // ============= Visitor Tracking (eli_clickid) =============
+    const ARTICLE_SLUG = '{{SLUG}}';
+
+    function getOrCreateVisitorId() {
+      let vid = localStorage.getItem('_vid_');
+      if (!vid) {
+        vid = 'eli_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('_vid_', vid);
+      }
+      return vid;
+    }
+
+    function getUrlParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+
+    function getGclid() {
+      let gclid = getUrlParam('gclid');
+      if (gclid) { localStorage.setItem('gclid', gclid); return gclid; }
+      gclid = localStorage.getItem('gclid');
+      if (gclid) return gclid;
+      try {
+        const cookies = document.cookie.split(';');
+        for (const c of cookies) {
+          const [name, val] = c.trim().split('=');
+          if (name === '_gcl_aw' && val) {
+            const parts = val.split('.');
+            return parts[parts.length - 1] || '';
+          }
+        }
+      } catch (e) {}
+      return '';
+    }
+
+    function getMsclkid() {
+      let v = getUrlParam('msclkid');
+      if (v) { localStorage.setItem('msclkid', v); return v; }
+      return localStorage.getItem('msclkid') || '';
+    }
+
+    function getFbclid() {
+      let v = getUrlParam('fbclid');
+      if (v) { localStorage.setItem('fbclid', v); return v; }
+      return localStorage.getItem('fbclid') || '';
+    }
+
+    function getRtClickid() {
+      let v = getUrlParam('rt_clickid');
+      if (v) { sessionStorage.setItem('rt_clickid', v); localStorage.setItem('rt_clickid', v); return v; }
+      v = sessionStorage.getItem('rt_clickid') || localStorage.getItem('rt_clickid') || '';
+      if (!v) {
+        try {
+          const cookies = document.cookie.split(';');
+          for (const c of cookies) {
+            const [name, val] = c.trim().split('=');
+            if (name.trim() === 'rtkclickid-store' && val) return val;
+          }
+        } catch (e) {}
+      }
+      return v;
+    }
+
+    // Set hidden fields on all forms
+    function setHiddenFields() {
+      const eli = getOrCreateVisitorId();
+      const gclid = getGclid();
+      const msclkid = getMsclkid();
+      const fbclid = getFbclid();
+      const rt = getRtClickid();
+
+      document.querySelectorAll('.eli-field').forEach(f => f.value = eli);
+      document.querySelectorAll('.gclid-field').forEach(f => f.value = gclid);
+      document.querySelectorAll('.msclkid-field').forEach(f => f.value = msclkid);
+      document.querySelectorAll('.fbclid-field').forEach(f => f.value = fbclid);
+      document.querySelectorAll('.rt-field').forEach(f => f.value = rt);
+      document.querySelectorAll('.pageurl-field').forEach(f => f.value = window.location.href);
+      document.querySelectorAll('.referrer-field').forEach(f => f.value = document.referrer);
+    }
+
+    // Track visitor
+    function trackVisitor() {
+      const eli = getOrCreateVisitorId();
+      const data = {
+        eli_clickid: eli,
+        gclid: getGclid(),
+        rt_clickid: getRtClickid(),
+        msclkid: getMsclkid(),
+        fbclid: getFbclid(),
+        landing_page: window.location.pathname,
+        referrer_url: document.referrer,
+        screen_width: screen.width,
+        screen_height: screen.height,
+        language: navigator.language,
+        user_agent: navigator.userAgent,
+        utm_source: getUrlParam('utm_source'),
+        utm_medium: getUrlParam('utm_medium'),
+        utm_campaign: getUrlParam('utm_campaign'),
+        utm_term: getUrlParam('utm_term'),
+        utm_content: getUrlParam('utm_content')
+      };
+
+      fetch('/api/visitors/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(() => {});
+    }
+
+    // ============= Form Rendering =============
+    const formFields = {{FORM_FIELDS_JSON}};
+
+    function renderFormFields(containerId) {
+      const container = document.getElementById(containerId);
+      const visibleFields = formFields.filter(f => f.type !== 'hidden');
+      container.innerHTML = visibleFields.map(f => `
+        <div class="form-field">
+          <input type="${f.type}" name="${f.name}" placeholder="${f.placeholder || f.label}"
+                 ${f.required ? 'required' : ''}>
+        </div>
+      `).join('');
+    }
+
+    // ============= Form Submission =============
+    async function submitArticleForm(e, formType) {
+      e.preventDefault();
+      const form = formType === 'mid' ? document.getElementById('midArticleForm') : document.getElementById('endArticleForm');
+      const btn = form.querySelector('.form-submit');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((val, key) => { data[key] = val; });
+
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          // Show success on both forms
+          document.getElementById('midArticleForm').style.display = 'none';
+          document.getElementById('midFormSuccess').style.display = 'block';
+          document.getElementById('endArticleForm').style.display = 'none';
+          document.getElementById('endFormSuccess').style.display = 'block';
+
+          // Fire Facebook Pixel if available
+          if (typeof fbq === 'function') {
+            fbq('track', 'Lead', { content_name: ARTICLE_SLUG });
+          }
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Something went wrong. Please try again.');
+          btn.disabled = false;
+          btn.textContent = '{{FORM_SUBMIT_TEXT}}';
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = '{{FORM_SUBMIT_TEXT}}';
+      }
+    }
+
+    // ============= Init =============
+    renderFormFields('midFormFields');
+    renderFormFields('endFormFields');
+    setHiddenFields();
+    trackVisitor();
+
+    // Retry tracking after 3s (for late-loading cookies)
+    setTimeout(() => {
+      setHiddenFields();
+      trackVisitor();
+    }, 3000);
+  </script>
+</body>
+</html>

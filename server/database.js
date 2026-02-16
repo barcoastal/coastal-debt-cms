@@ -639,6 +639,35 @@ if (pageCount.count === 0) {
   console.log('Default landing pages created');
 }
 
+// Articles table for Outbrain advertorial pages
+db.exec(`
+  CREATE TABLE IF NOT EXISTS articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    headline TEXT,
+    subheadline TEXT,
+    body_html TEXT,
+    author_name TEXT DEFAULT 'Sarah Mitchell',
+    author_title TEXT DEFAULT 'Senior Business Correspondent',
+    publish_date TEXT,
+    platform TEXT DEFAULT 'outbrain' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'other')),
+    traffic_source TEXT,
+    form_id INTEGER,
+    content TEXT DEFAULT '{}',
+    meta_title TEXT,
+    meta_description TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (form_id) REFERENCES forms(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
+`);
+
+// Add article_id to leads table
+try { db.exec(`ALTER TABLE leads ADD COLUMN article_id INTEGER`); } catch (e) {}
+
 // Outbrain: Business Debt landing page + direct form (no pre-qual)
 const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
 if (!obFormExists) {
@@ -735,6 +764,114 @@ if (!obFormExists) {
     VALUES (?, ?, 'outbrain', 'Outbrain - Business Debt', ?, ?, ?, '{}')
   `).run('business-debt-solutions', 'Business Debt Solutions - Outbrain', obForm.lastInsertRowid, obContent, obSections);
   console.log('Outbrain landing page created');
+}
+
+// Seed article: Outbrain advertorial
+const articleExists = db.prepare("SELECT id FROM articles WHERE slug = 'business-debt-settlement-guide'").get();
+if (!articleExists) {
+  // Find the Outbrain form
+  const obForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
+  const articleFormId = obForm ? obForm.id : null;
+
+  const articleBodyHtml = `
+<p>When Mike Torres opened his construction company in Phoenix twelve years ago, he never imagined he'd one day owe $169,000 in business debt that was threatening to destroy everything he'd built.</p>
+
+<p>"I was getting five, six calls a day from creditors," Torres recalls. "My wife was terrified. I couldn't sleep. I genuinely thought the only option was bankruptcy."</p>
+
+<p>But Torres didn't file bankruptcy. Instead, he discovered a legal process that allowed him to settle his entire debt for roughly 30% less than what he owed — without a single court appearance, without a public record, and without closing his business.</p>
+
+<p>He's far from alone. Across the country, thousands of business owners are quietly using the same approach to resolve crushing debt loads while keeping their companies intact.</p>
+
+<h2>The Settlement Alternative Most Business Owners Don't Know About</h2>
+
+<p>Business debt settlement is a negotiation process where experienced professionals work directly with creditors to reduce the total amount owed. Unlike bankruptcy — which creates a public record, can force business closure, and damages credit for 7-10 years — settlement is private, typically resolves in 3-6 months, and allows business owners to keep operating.</p>
+
+<p>"Most people assume bankruptcy is their only option when debt becomes unmanageable," explains David Chen, a financial restructuring consultant. "But creditors often prefer settlement because they recover more than they would in a bankruptcy proceeding. It's a win-win that most business owners simply aren't aware of."</p>
+
+<p>The process works because creditors face a simple calculation: accept a reduced payment now, or risk getting even less (or nothing) through lengthy bankruptcy proceedings. For business owners with merchant cash advances (MCAs), lines of credit, or unsecured business loans, this dynamic creates significant leverage.</p>
+
+<p>According to industry data, businesses that pursue professional debt settlement typically reduce their total debt obligation by 30% to 50%, with some cases achieving even greater reductions depending on the circumstances.</p>
+
+{{MID_ARTICLE_FORM}}
+
+<h2>A Restaurant Owner's Fresh Start</h2>
+
+<p>Jennifer Okafor's story mirrors what many small business owners experience. Her Atlanta restaurant had taken on multiple merchant cash advances during the pandemic to stay afloat. By 2023, the daily ACH withdrawals were consuming nearly 40% of her revenue.</p>
+
+<p>"I was making money, but the MCA payments were eating me alive," Okafor says. "I'd taken out new advances to pay old ones. It was a cycle I couldn't break."</p>
+
+<p>After working with a debt settlement firm, Okafor was able to consolidate and settle her combined MCA debt — originally totaling over $200,000 — for significantly less. Her daily ACH withdrawals stopped, replaced by a single manageable monthly payment.</p>
+
+<p>"Within six months, it was resolved. My restaurant is still open, my credit is recovering, and I actually sleep at night now," she says.</p>
+
+<h2>Why Creditors Agree to Settle</h2>
+
+<p>The economics of debt settlement favor both parties. For creditors, the alternative to settlement is often bankruptcy — where unsecured creditors may receive pennies on the dollar after months or years of proceedings. A negotiated settlement, even at a significant discount, typically recovers more money faster.</p>
+
+<p>For business owners, the advantages over bankruptcy are substantial:</p>
+
+<ul>
+<li><strong>No public record</strong> — Settlement agreements are private. Bankruptcy filings are searchable public records forever.</li>
+<li><strong>Business continues operating</strong> — There's no court-ordered restructuring or forced closure.</li>
+<li><strong>Faster resolution</strong> — Most settlements complete in 3-6 months versus 6-18 months for bankruptcy.</li>
+<li><strong>Credit recovery</strong> — Credit scores typically begin recovering within 12-24 months, compared to 7-10 years of bankruptcy impact.</li>
+<li><strong>No legal complexity</strong> — No attorneys, court appearances, or judges involved.</li>
+</ul>
+
+<h2>Who Qualifies?</h2>
+
+<p>Not every business debt situation is ideal for settlement, and reputable firms will tell you that upfront. Generally, good candidates have:</p>
+
+<ul>
+<li>At least $30,000 in unsecured business debt (MCAs, business loans, lines of credit)</li>
+<li>A business that is still operating or generating some revenue</li>
+<li>Debt that has become unmanageable but hasn't yet resulted in legal judgments</li>
+<li>A willingness to work with professionals rather than attempting DIY negotiation</li>
+</ul>
+
+<p>Professional debt settlement firms typically charge no upfront fees — they only get paid when they successfully negotiate a reduction. This performance-based model aligns the firm's interests with the business owner's outcome.</p>
+
+<h2>The Numbers Behind the Trend</h2>
+
+<p>The business debt settlement industry has grown significantly as more owners discover the alternative. Firms like Coastal Debt Resolve have helped over 1,500 businesses resolve their debt obligations, maintaining a strong track record on both the BBB and Trustpilot.</p>
+
+<p>Industry data suggests that the average business owner who pursues professional settlement saves between 30-50% of their total debt obligation. For someone owing $150,000, that can mean keeping $45,000 to $75,000 in their pocket — money that can be reinvested in the business.</p>
+
+<h2>Taking the First Step</h2>
+
+<p>For Mike Torres, the hardest part was making the initial call. "I felt ashamed about the debt," he admits. "But within 15 minutes of my first consultation, I felt a weight lift off my shoulders. Someone finally had a plan."</p>
+
+<p>Torres's construction company is still operating today. He's taken on two new employees and recently won his largest contract ever.</p>
+
+<p>"If I had filed bankruptcy, none of this would exist," he says. "That one phone call changed everything."</p>
+
+<p><em>Business owners interested in exploring whether debt settlement is right for their situation can request a free, no-obligation analysis to understand their options.</em></p>`;
+
+  const articleContent = JSON.stringify({
+    formTitle: 'See If Your Business Qualifies',
+    formSubtitle: 'Free, no-obligation analysis. Takes 60 seconds.',
+    endFormTitle: 'Find Out How Much You Could Save',
+    endFormSubtitle: 'Join 1,500+ business owners who resolved their debt without bankruptcy.'
+  });
+
+  db.prepare(`
+    INSERT INTO articles (slug, name, headline, subheadline, body_html, author_name, author_title, publish_date, platform, traffic_source, form_id, content, meta_title, meta_description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbrain', 'Outbrain - Advertorial', ?, ?, ?, ?)
+  `).run(
+    'business-debt-settlement-guide',
+    'Business Debt Settlement Advertorial',
+    'How Business Owners Are Legally Settling Debt for Pennies on the Dollar',
+    'A growing number of business owners are discovering a legal alternative to bankruptcy that can reduce their debt by 30-50% — without a single court appearance.',
+    articleBodyHtml,
+    'Sarah Mitchell',
+    'Senior Business Correspondent',
+    '2025-01-15',
+    articleFormId,
+    articleContent,
+    'How Business Owners Are Legally Settling Debt for Pennies on the Dollar',
+    'Thousands of business owners are using debt settlement to resolve crushing debt loads for a fraction of what they owe. No bankruptcy, no court, no public record.'
+  );
+  console.log('Seed article created: business-debt-settlement-guide');
 }
 
 module.exports = db;

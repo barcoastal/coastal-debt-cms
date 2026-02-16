@@ -40,6 +40,7 @@ setTimeout(() => {
 router.post('/', async (req, res) => {
   const {
     landing_page_slug,
+    article_slug,
     full_name,
     company_name,
     email,
@@ -57,29 +58,36 @@ router.post('/', async (req, res) => {
 
   // Get rt_clickid from: body → RedTrack cookie
   const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
-  console.log('Lead click IDs:', { gclid: gclid || '', eli_clickid: eli_clickid || '', rt_clickid_body: rt_clickid_body || '', rt_clickid_cookie: req.cookies?.['rtkclickid-store'] || '', rt_clickid_final: rt_clickid, msclkid: msclkid || '', fbclid: fbclid || '', slug: landing_page_slug });
+  console.log('Lead click IDs:', { gclid: gclid || '', eli_clickid: eli_clickid || '', rt_clickid_body: rt_clickid_body || '', rt_clickid_cookie: req.cookies?.['rtkclickid-store'] || '', rt_clickid_final: rt_clickid, msclkid: msclkid || '', fbclid: fbclid || '', slug: landing_page_slug || article_slug });
 
-  // Find the landing page
-  const page = db.prepare('SELECT * FROM landing_pages WHERE slug = ?').get(landing_page_slug);
+  // Find the landing page or article
+  let page = null;
+  let article = null;
 
-  if (!page) {
-    return res.status(400).json({ error: 'Invalid landing page' });
+  if (article_slug) {
+    article = db.prepare('SELECT * FROM articles WHERE slug = ?').get(article_slug);
+    if (!article) return res.status(400).json({ error: 'Invalid article' });
+  } else {
+    page = db.prepare('SELECT * FROM landing_pages WHERE slug = ?').get(landing_page_slug);
+    if (!page) return res.status(400).json({ error: 'Invalid landing page' });
   }
 
   // Get the form if assigned
   let form = null;
-  if (page.form_id) {
-    form = db.prepare('SELECT * FROM forms WHERE id = ?').get(page.form_id);
+  const formId = article ? article.form_id : page.form_id;
+  if (formId) {
+    form = db.prepare('SELECT * FROM forms WHERE id = ?').get(formId);
   }
 
   // Insert lead
   const result = db.prepare(`
     INSERT INTO leads (
-      landing_page_id, full_name, company_name, email, phone,
+      landing_page_id, article_id, full_name, company_name, email, phone,
       debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    page.id,
+    page ? page.id : null,
+    article ? article.id : null,
     full_name,
     company_name,
     email,
@@ -95,8 +103,9 @@ router.post('/', async (req, res) => {
     JSON.stringify(hiddenFields)
   );
 
-  // Determine webhook URL: page webhook overrides form webhook
-  const webhookUrl = page.webhook_url || (form ? form.webhook_url : null);
+  // Determine webhook URL: page/article webhook overrides form webhook
+  const sourceEntity = page || article;
+  const webhookUrl = (page ? page.webhook_url : null) || (form ? form.webhook_url : null);
 
   // Send to webhook if configured
   if (webhookUrl) {
@@ -113,8 +122,9 @@ router.post('/', async (req, res) => {
         msclkid: msclkid || '',
         rt_clickid: rt_clickid || '',
         eli_clickid: eli_clickid || '',
-        traffic_source: page.traffic_source,
-        landing_page: page.name,
+        traffic_source: sourceEntity.traffic_source,
+        landing_page: sourceEntity.name,
+        source_type: article ? 'article' : 'landing_page',
         ...hiddenFields,
         submitted_at: new Date().toISOString()
       };
@@ -213,7 +223,7 @@ router.post('/', async (req, res) => {
   }
 
   // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
-  if (page.platform === 'meta' && sendFacebookEvent) {
+  if (sourceEntity.platform === 'meta' && sendFacebookEvent) {
     const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
     const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
 
@@ -243,7 +253,7 @@ router.post('/', async (req, res) => {
 
     // Build event_source_url from the landing page slug
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const eventSourceUrl = `${baseUrl}/${page.slug}`;
+    const eventSourceUrl = article ? `${baseUrl}/a/${article.slug}` : `${baseUrl}/${page.slug}`;
 
     sendFacebookEvent(fbLeadEvent, {
       email,
@@ -275,7 +285,7 @@ router.post('/', async (req, res) => {
 
   // Send lead notification email (async, don't block)
   if (sendLeadNotification) {
-    sendLeadNotification({ full_name, company_name, email, phone }, page).catch(() => {});
+    sendLeadNotification({ full_name, company_name, email, phone }, sourceEntity).catch(() => {});
   }
 });
 
@@ -287,6 +297,9 @@ router.get('/', authenticateToken, (req, res) => {
 
   let query = `
     SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform,
+           a.name as article_name, a.platform as article_platform,
+           COALESCE(lp.name, a.name) as source_name,
+           COALESCE(lp.platform, a.platform) as source_platform,
            v.utm_campaign,
            (
              SELECT ce.conversion_action_name
@@ -297,12 +310,14 @@ router.get('/', authenticateToken, (req, res) => {
            ) as current_status
     FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN articles a ON l.article_id = a.id
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE 1=1
   `;
   let countQuery = `
     SELECT COUNT(*) as total FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN articles a ON l.article_id = a.id
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE 1=1
   `;
@@ -404,9 +419,11 @@ router.get('/', authenticateToken, (req, res) => {
 // Get single lead (with events timeline)
 router.get('/:id', authenticateToken, (req, res) => {
   const lead = db.prepare(`
-    SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform
+    SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform,
+           a.name as article_name, a.platform as article_platform
     FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN articles a ON l.article_id = a.id
     WHERE l.id = ?
   `).get(req.params.id);
 

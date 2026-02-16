@@ -22,6 +22,7 @@ const aiContentRoutes = require('./routes/ai-content');
 const crmRoutes = require('./routes/crm');
 const emailMarketingRoutes = require('./routes/email-marketing');
 const emailTrackingRoutes = require('./routes/email-tracking');
+const articlesRoutes = require('./routes/articles');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,6 +88,24 @@ app.use('/lp', (req, res, next) => {
   lastModified: true
 }));
 
+// Serve generated article pages at /a/[slug]/
+app.use('/a', (req, res, next) => {
+  if (isProduction) {
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+    res.setHeader('CDN-Cache-Control', 'max-age=86400');
+  } else {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  res.setHeader('Vary', 'Accept-Encoding');
+  next();
+}, express.static(path.join(__dirname, '..', 'public', 'articles'), {
+  maxAge: isProduction ? '1h' : 0,
+  etag: true,
+  lastModified: true
+}));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -104,6 +123,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/ai', aiContentRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/email', emailMarketingRoutes);
+app.use('/api/articles', articlesRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin
@@ -140,6 +160,26 @@ try {
   }
 } catch (err) {
   console.error('Failed to regenerate landing pages on startup:', err.message);
+}
+
+// Regenerate all articles from DB on startup
+try {
+  const { generateArticlePage } = require('./routes/articles');
+  const articles = db.prepare('SELECT id, slug FROM articles').all();
+  let articleCount = 0;
+  for (const article of articles) {
+    try {
+      generateArticlePage(article.id);
+      articleCount++;
+    } catch (err) {
+      console.error(`Failed to regenerate article "${article.slug}":`, err.message);
+    }
+  }
+  if (articleCount > 0) {
+    console.log(`Regenerated ${articleCount}/${articles.length} articles on startup`);
+  }
+} catch (err) {
+  console.error('Failed to regenerate articles on startup:', err.message);
 }
 
 // Background alert rule evaluation - every 15 minutes
