@@ -84,7 +84,7 @@ const defaultContent = {
     { question: "Do I need a lawyer to file bankruptcy? What about settlement?", answer: "Bankruptcy requires legal representation and court appearances. Debt settlement doesn't — we handle all negotiations directly with your creditors." },
     { question: "What if I've already talked to a bankruptcy lawyer?", answer: "Get a second opinion. Many business owners come to us after consulting bankruptcy attorneys and discover settlement saves them more money with less damage to their business." }
   ],
-  phone: "(800) 123-4567",
+  phone: "",
   colors: {
     primary: "#3052FF",
     primaryLight: "#4a6aff",
@@ -364,6 +364,14 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{formSubmitText}}/g, formSubmitText);
   html = html.replace(/{{formSuccessMsg}}/g, formSuccessMsg);
   html = html.replace(/{{skipPreQual}}/g, String(skipPreQual));
+
+  // Remove phone elements if no phone number is set
+  if (!mergedContent.phone) {
+    // Remove all elements with phone-element class (handles multi-line blocks)
+    html = html.replace(/<a[^>]*phone-element[\s\S]*?<\/a>/g, '');
+    html = html.replace(/<p[^>]*phone-element[\s\S]*?<\/p>/g, '');
+    html = html.replace(/<div[^>]*phone-element[\s\S]*?<\/div>/g, '');
+  }
 
   // Inject branding from settings
   try {
