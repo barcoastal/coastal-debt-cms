@@ -766,7 +766,7 @@ if (!obFormExists) {
   console.log('Outbrain landing page created');
 }
 
-// Seed article: Outbrain advertorial
+// Seed article: MCA Debt Relief (Facebook/Social)
 const articleExists = db.prepare("SELECT id FROM articles WHERE slug = 'business-debt-settlement-guide'").get();
 if (!articleExists) {
   // Find the Outbrain form
@@ -774,104 +774,162 @@ if (!articleExists) {
   const articleFormId = obForm ? obForm.id : null;
 
   const articleBodyHtml = `
-<p>When Mike Torres opened his construction company in Phoenix twelve years ago, he never imagined he'd one day owe $169,000 in business debt that was threatening to destroy everything he'd built.</p>
+<p>If you're a small business owner drowning in Merchant Cash Advance (MCA) debt, you're not alone. Thousands of business owners across the country took on MCAs to keep their businesses running — only to find themselves trapped in a cycle of daily withdrawals that eat up 30-50% of their revenue.</p>
 
-<figure>
-<img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=720&q=80&auto=format" alt="Construction business owner reviewing financial documents at a job site">
-<figcaption>Business owners across industries are discovering alternatives to bankruptcy. Photo: Getty Images</figcaption>
-</figure>
-
-<p>"I was getting five, six calls a day from creditors," Torres recalls. "My wife was terrified. I couldn't sleep. I genuinely thought the only option was bankruptcy."</p>
-
-<p>But Torres didn't file bankruptcy. Instead, he discovered a legal process that allowed him to settle his entire debt for roughly 30% less than what he owed — without a single court appearance, without a public record, and without closing his business.</p>
-
-<p>He's far from alone. Across the country, thousands of business owners are quietly using the same approach to resolve crushing debt loads while keeping their companies intact.</p>
+<p>But there's a proven way out. A growing number of business owners are discovering that they can legally settle their MCA debt for a fraction of what they owe — keeping their doors open and their credit intact.</p>
 
 <div class="article-stat-box">
-<div class="stat-number">1,500+</div>
-<div class="stat-label">Businesses have resolved their debt through professional settlement in the past 24 months alone</div>
+<div class="stat-number">Up to 80%</div>
+<div class="stat-label">Reduction on MCA debt payments through professional debt settlement — no bankruptcy required</div>
 </div>
 
-<h2>The Settlement Alternative Most Business Owners Don't Know About</h2>
+<h2>Keep Your Business Open</h2>
 
-<p>Business debt settlement is a negotiation process where experienced professionals work directly with creditors to reduce the total amount owed. Unlike bankruptcy — which creates a public record, can force business closure, and damages credit for 7-10 years — settlement is private, typically resolves in 3-6 months, and allows business owners to keep operating.</p>
+<div class="article-benefits">
+<div class="benefits-grid">
+  <div class="benefit-card">
+    <div class="benefit-icon"><svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20m-7-7l7 7 7-7"/></svg></div>
+    <div>
+      <h4>Increase Cashflow Immediately</h4>
+      <p>Upon signup, breathe easier with comfortable weekly payments instead of crushing daily ACH withdrawals eating your revenue.</p>
+    </div>
+  </div>
+  <div class="benefit-card">
+    <div class="benefit-icon"><svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v4m0 14v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M1 12h4m14 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+    <div>
+      <h4>Get Up to 80% Off Your MCA Debt</h4>
+      <p>Pay off your Merchant Cash Advance debt completely in 6-8 months — for a fraction of what you currently owe.</p>
+    </div>
+  </div>
+  <div class="benefit-card">
+    <div class="benefit-icon"><svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg></div>
+    <div>
+      <h4>Dedicated Expert Team</h4>
+      <p>Get a dedicated Debt Settlement Advisor and a team of trusted attorneys working on your behalf to get the best results.</p>
+    </div>
+  </div>
+</div>
+</div>
 
-<p>"Most people assume bankruptcy is their only option when debt becomes unmanageable," explains David Chen, a financial restructuring consultant. "But creditors often prefer settlement because they recover more than they would in a bankruptcy proceeding. It's a win-win that most business owners simply aren't aware of."</p>
-
-<figure>
-<img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=720&q=80&auto=format" alt="Financial chart showing debt reduction comparison between bankruptcy and settlement">
-<figcaption>Settlement vs. bankruptcy: a comparison of timeline, cost, and credit impact. Source: National Debt Relief Association</figcaption>
-</figure>
-
-<p>The process works because creditors face a simple calculation: accept a reduced payment now, or risk getting even less (or nothing) through lengthy bankruptcy proceedings. For business owners with merchant cash advances (MCAs), lines of credit, or unsecured business loans, this dynamic creates significant leverage.</p>
-
-<p>According to industry data, businesses that pursue professional debt settlement typically reduce their total debt obligation by 30% to 50%, with some cases achieving even greater reductions depending on the circumstances.</p>
-
-<div class="article-inline-cta"><a href="#midFormSection">Check if your business qualifies for debt settlement &rarr;</a></div>
+<div class="article-inline-cta"><a href="#midFormSection">Register for a free consultation &rarr;</a></div>
 
 {{MID_ARTICLE_FORM}}
 
-<h2>A Restaurant Owner's Fresh Start</h2>
+<h2>Our Numbers Speak for Themselves</h2>
 
-<p>Jennifer Okafor's story mirrors what many small business owners experience. Her Atlanta restaurant had taken on multiple merchant cash advances during the pandemic to stay afloat. By 2023, the daily ACH withdrawals were consuming nearly 40% of her revenue.</p>
-
-<figure>
-<img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=720&q=80&auto=format" alt="Restaurant interior with warm lighting">
-<figcaption>After settling her MCA debt, Jennifer Okafor's restaurant continues to thrive in Atlanta.</figcaption>
-</figure>
-
-<p>"I was making money, but the MCA payments were eating me alive," Okafor says. "I'd taken out new advances to pay old ones. It was a cycle I couldn't break."</p>
-
-<p>After working with a debt settlement firm, Okafor was able to consolidate and settle her combined MCA debt — originally totaling over $200,000 — for significantly less. Her daily ACH withdrawals stopped, replaced by a single manageable monthly payment.</p>
-
-<p>"Within six months, it was resolved. My restaurant is still open, my credit is recovering, and I actually sleep at night now," she says.</p>
-
-<div class="article-stat-box">
-<div class="stat-number">30-50%</div>
-<div class="stat-label">Average debt reduction achieved through professional settlement — without filing bankruptcy</div>
+<div class="case-studies-section">
+<div class="case-studies-subtitle">These are actual settlement agreements we negotiated for our clients</div>
+<div class="case-studies-grid">
+  <div class="case-card">
+    <div class="case-savings">49% Savings</div>
+    <div class="case-company">Mulligan</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$107,684</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$55,000</span></div>
+  </div>
+  <div class="case-card">
+    <div class="case-savings">61% Savings</div>
+    <div class="case-company">DLP Funding</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$12,791</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$5,000</span></div>
+  </div>
+  <div class="case-card">
+    <div class="case-savings">56% Savings</div>
+    <div class="case-company">ByzFunder</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$40,569</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$18,000</span></div>
+  </div>
+  <div class="case-card">
+    <div class="case-savings">30% Savings</div>
+    <div class="case-company">AMA B-Squared Carpentry</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$169,006</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$117,955</span></div>
+  </div>
+  <div class="case-card">
+    <div class="case-savings">44% Savings</div>
+    <div class="case-company">Balboa</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$400,000</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$225,000</span></div>
+  </div>
+  <div class="case-card">
+    <div class="case-savings">73% Savings</div>
+    <div class="case-company">Global Solution / Everest Funding</div>
+    <div class="case-row"><span class="label">Original Debt</span><span class="value">$23,000</span></div>
+    <div class="case-row"><span class="label">Settled For</span><span class="value saved">$6,110</span></div>
+  </div>
 </div>
-
-<h2>Why Creditors Agree to Settle</h2>
-
-<p>The economics of debt settlement favor both parties. For creditors, the alternative to settlement is often bankruptcy — where unsecured creditors may receive pennies on the dollar after months or years of proceedings. A negotiated settlement, even at a significant discount, typically recovers more money faster.</p>
-
-<p>For business owners, the advantages over bankruptcy are substantial:</p>
-
-<ul>
-<li><strong>No public record</strong> — Settlement agreements are private. Bankruptcy filings are searchable public records forever.</li>
-<li><strong>Business continues operating</strong> — There's no court-ordered restructuring or forced closure.</li>
-<li><strong>Faster resolution</strong> — Most settlements complete in 3-6 months versus 6-18 months for bankruptcy.</li>
-<li><strong>Credit recovery</strong> — Credit scores typically begin recovering within 12-24 months, compared to 7-10 years of bankruptcy impact.</li>
-<li><strong>No legal complexity</strong> — No attorneys, court appearances, or judges involved.</li>
-</ul>
+</div>
 
 <div class="article-cta-banner">
-<div class="cta-text">Could your business qualify for debt settlement?</div>
+<div class="cta-text">Could your business be next?</div>
 <div class="cta-sub">Free analysis. No obligation. Takes 60 seconds.</div>
-<a href="#midFormSection" class="cta-button">Get Your Free Debt Analysis</a>
+<a href="#midFormSection" class="cta-button">Check Your Eligibility</a>
 </div>
 
-<h2>Who Qualifies?</h2>
+<h2>What Our Clients Are Saying</h2>
 
-<p>Not every business debt situation is ideal for settlement, and reputable firms will tell you that upfront. Generally, good candidates have:</p>
+<div class="testimonials-section">
+<div class="testimonials-grid">
+  <div class="testimonial-card">
+    <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    <div class="testimonial-text">"Christopher Ayala from Coastal Debt was honest, patient, and truly humane in his approach. He took the time to understand my situation and never made me feel rushed. I finally feel like I can breathe again."</div>
+    <div class="testimonial-author">Rajesh C.</div>
+    <div class="testimonial-date">March 23, 2024</div>
+  </div>
+  <div class="testimonial-card">
+    <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    <div class="testimonial-text">"Craig Caliph was an absolute game changer for my business. His professionalism and patience throughout the entire process made all the difference. I would recommend Coastal Debt to any business owner struggling with MCA debt."</div>
+    <div class="testimonial-author">Jim T.</div>
+    <div class="testimonial-date">April 3, 2024</div>
+  </div>
+  <div class="testimonial-card">
+    <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    <div class="testimonial-text">"Nathan Moe was incredibly knowledgeable and walked me through every step. He explained exactly what would happen and delivered on every promise. My restaurant is still open today because of Coastal Debt."</div>
+    <div class="testimonial-author">Cindy V.</div>
+    <div class="testimonial-date">February 14, 2024</div>
+  </div>
+  <div class="testimonial-card">
+    <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    <div class="testimonial-text">"Jake and his team made me feel comfortable and confident from day one. They handled everything with the lenders so I could focus on running my business. The results exceeded my expectations."</div>
+    <div class="testimonial-author">Norm R.</div>
+    <div class="testimonial-date">February 13, 2024</div>
+  </div>
+  <div class="testimonial-card">
+    <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    <div class="testimonial-text">"Chris showed incredible integrity and kindness in an industry that desperately needs it. He fought for me like it was his own money on the line. I went from multiple daily ACH pulls to one affordable payment."</div>
+    <div class="testimonial-author">R.L.</div>
+    <div class="testimonial-date">May 30, 2024</div>
+  </div>
+</div>
+</div>
 
-<ul>
-<li>At least $30,000 in unsecured business debt (MCAs, business loans, lines of credit)</li>
-<li>A business that is still operating or generating some revenue</li>
-<li>Debt that has become unmanageable but hasn't yet resulted in legal judgments</li>
-<li>A willingness to work with professionals rather than attempting DIY negotiation</li>
-</ul>
+<h2>How It Works</h2>
 
-<p>Professional debt settlement firms typically charge no upfront fees — they only get paid when they successfully negotiate a reduction. This performance-based model aligns the firm's interests with the business owner's outcome.</p>
-
-<h2>The Numbers Behind the Trend</h2>
-
-<figure>
-<img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=720&q=80&auto=format" alt="Business analytics dashboard showing positive financial trends">
-<figcaption>The business debt settlement industry has seen significant growth as more owners discover the bankruptcy alternative.</figcaption>
-</figure>
-
-<p>The business debt settlement industry has grown significantly as more owners discover the alternative. Firms like Coastal Debt Resolve have helped over 1,500 businesses resolve their debt obligations, maintaining a strong track record on both the BBB and Trustpilot.</p>
+<div class="process-section">
+<div class="process-subtitle">We've perfected our proven process to get over 1,000 businesses out of MCA debt. We craft customized solutions for each client to get the best results.</div>
+<div class="process-steps">
+  <div class="process-step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <h4>Free, Confidential Consultation</h4>
+      <p>Our expert advisors will call you to quickly determine whether your business is qualified for our debt relief program. We need to ensure that this will be the best solution for your business.</p>
+    </div>
+  </div>
+  <div class="process-step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <h4>Expert Debt Analysis</h4>
+      <p>Our trusted team will do a deep-dive analysis of your MCA debt and lender agreements. They will work on a plan based on your unique situation to ensure the best outcome for your business.</p>
+    </div>
+  </div>
+  <div class="process-step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h4>Same-Day Sign Up</h4>
+      <p>Not all businesses qualify for our program, but we hope we can help yours. If your business does qualify, we can sign you up on the spot and get you fast-tracked on the road to financial freedom.</p>
+    </div>
+  </div>
+</div>
+</div>
 
 <div class="article-trust-badges">
 <span class="trust-text">Trusted By</span>
@@ -880,52 +938,37 @@ if (!articleExists) {
 <img src="/lp/assets/trust-logos/inc.svg" alt="Inc. 5000" onerror="this.style.display='none'">
 </div>
 
-<p>Industry data suggests that the average business owner who pursues professional settlement saves between 30-50% of their total debt obligation. For someone owing $150,000, that can mean keeping $45,000 to $75,000 in their pocket — money that can be reinvested in the business.</p>
-
-<h2>Taking the First Step</h2>
-
-<p>For Mike Torres, the hardest part was making the initial call. "I felt ashamed about the debt," he admits. "But within 15 minutes of my first consultation, I felt a weight lift off my shoulders. Someone finally had a plan."</p>
-
-<figure>
-<img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=720&q=80&auto=format" alt="Confident business owner standing in front of his company">
-<figcaption>Mike Torres's construction company is thriving today — with two new employees and his largest contract ever.</figcaption>
-</figure>
-
-<p>Torres's construction company is still operating today. He's taken on two new employees and recently won his largest contract ever.</p>
-
-<p>"If I had filed bankruptcy, none of this would exist," he says. "That one phone call changed everything."</p>
-
 <div class="article-cta-banner">
-<div class="cta-text">Ready to explore your options?</div>
-<div class="cta-sub">Join 1,500+ business owners who resolved their debt without bankruptcy.</div>
-<a href="#endFormSection" class="cta-button">Get My Free Consultation</a>
+<div class="cta-text">Get Out of MCA Debt for Good</div>
+<div class="cta-sub">Join 1,500+ business owners who resolved their MCA debt without bankruptcy.</div>
+<a href="#endFormSection" class="cta-button">Get Started</a>
 </div>
 
-<p><em>Business owners interested in exploring whether debt settlement is right for their situation can request a free, no-obligation analysis to understand their options.</em></p>`;
+<p><em>Only businesses with $20,000+ in MCA debt qualify for this program. Consultation is free and confidential.</em></p>`;
 
   const articleContent = JSON.stringify({
     formTitle: 'See If Your Business Qualifies',
-    formSubtitle: 'Free, no-obligation analysis. Takes 60 seconds.',
-    endFormTitle: 'Find Out How Much You Could Save',
-    endFormSubtitle: 'Join 1,500+ business owners who resolved their debt without bankruptcy.'
+    formSubtitle: 'Only $20K+ MCA Debt. No loans or other debt. Takes 60 seconds.',
+    endFormTitle: 'Get Up to 80% Off Your MCA Debt',
+    endFormSubtitle: 'Free, confidential consultation. No obligation.'
   });
 
   db.prepare(`
     INSERT INTO articles (slug, name, headline, subheadline, body_html, author_name, author_title, publish_date, platform, traffic_source, form_id, content, meta_title, meta_description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outbrain', 'Outbrain - Advertorial', ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'meta', 'Facebook - Social', ?, ?, ?, ?)
   `).run(
     'business-debt-settlement-guide',
-    'Business Debt Settlement Advertorial',
-    'How Business Owners Are Legally Settling Debt for Pennies on the Dollar',
-    'A growing number of business owners are discovering a legal alternative to bankruptcy that can reduce their debt by 30-50% — without a single court appearance.',
+    'MCA Debt Relief - Social Advertorial',
+    'Get Up to 80% Off Your MCA Debt Payments',
+    'Small businesses are discovering a proven MCA debt relief program that can reduce what you owe by up to 80%. No bankruptcy. No court. Keep your business open.',
     articleBodyHtml,
     'Sarah Mitchell',
     'Senior Business Correspondent',
-    '2025-01-15',
+    '2026-02-15',
     articleFormId,
     articleContent,
-    'How Business Owners Are Legally Settling Debt for Pennies on the Dollar',
-    'Thousands of business owners are using debt settlement to resolve crushing debt loads for a fraction of what they owe. No bankruptcy, no court, no public record.'
+    'Get Up to 80% Off Your MCA Debt Payments | Coastal Debt Resolve',
+    'Discover if you qualify for our proven MCA Debt Relief program. Get up to 80% off your Merchant Cash Advance debt. Free consultation. No upfront fees.'
   );
   console.log('Seed article created: business-debt-settlement-guide');
 }

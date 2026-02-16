@@ -294,12 +294,245 @@
       font-weight: 600;
     }
 
+    /* Benefits section */
+    .article-benefits {
+      margin: 40px 0;
+    }
+    .article-benefits-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a2e4a;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .benefit-card {
+      background: #f0f7ff;
+      border-radius: 10px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .benefit-icon {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #1a6dff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .benefit-card h4 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a2e4a;
+      margin-bottom: 4px;
+    }
+    .benefit-card p {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+
+    /* Case studies grid */
+    .case-studies-section {
+      margin: 48px 0;
+    }
+    .case-studies-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a2e4a;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .case-studies-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .case-studies-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .case-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      transition: box-shadow 0.2s;
+    }
+    .case-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .case-savings {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: inline-block;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 22px;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .case-company {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .case-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .case-row:last-child { border-bottom: none; }
+    .case-row .label { color: #888; }
+    .case-row .value { font-weight: 600; color: #1a2e4a; }
+    .case-row .value.saved { color: #15803d; }
+
+    /* Testimonials section */
+    .testimonials-section {
+      margin: 48px 0;
+    }
+    .testimonials-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a2e4a;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .testimonial-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .testimonial-stars {
+      color: #f59e0b;
+      font-size: 16px;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+    .testimonial-text {
+      font-family: Georgia, serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #333;
+      margin-bottom: 14px;
+      font-style: italic;
+    }
+    .testimonial-author {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a2e4a;
+    }
+    .testimonial-date {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* Process / How it works steps */
+    .process-section {
+      margin: 48px 0;
+    }
+    .process-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a2e4a;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .process-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 32px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .process-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .process-step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .step-number {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      background: #1a6dff;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .step-content h4 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a2e4a;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
     @media (max-width: 768px) {
       .article-stat-box { padding: 20px 22px; }
       .article-stat-box .stat-number { font-size: 28px; }
       .article-cta-banner { padding: 24px 20px; margin-left: -20px; margin-right: -20px; border-radius: 0; }
       .article-trust-badges { gap: 20px; }
       .article-trust-badges img { height: 28px; }
+      .case-studies-grid { grid-template-columns: 1fr; }
+      .case-savings { font-size: 18px; }
+      .benefit-card { padding: 20px; }
     }
 
     /* Mid-article form callout */
