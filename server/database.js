@@ -767,9 +767,7 @@ if (!obFormExists) {
 }
 
 // Seed article: MCA Debt Relief (Facebook/Social)
-const articleExists = db.prepare("SELECT id FROM articles WHERE slug = 'business-debt-settlement-guide'").get();
-if (!articleExists) {
-  // Find the Outbrain form
+{
   const obForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
   const articleFormId = obForm ? obForm.id : null;
 
@@ -953,24 +951,48 @@ if (!articleExists) {
     endFormSubtitle: 'Free, confidential consultation. No obligation.'
   });
 
-  db.prepare(`
-    INSERT INTO articles (slug, name, headline, subheadline, body_html, author_name, author_title, publish_date, platform, traffic_source, form_id, content, meta_title, meta_description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'meta', 'Facebook - Social', ?, ?, ?, ?)
-  `).run(
-    'business-debt-settlement-guide',
-    'MCA Debt Relief - Social Advertorial',
-    'Get Up to 80% Off Your MCA Debt Payments',
-    'Small businesses are discovering a proven MCA debt relief program that can reduce what you owe by up to 80%. No bankruptcy. No court. Keep your business open.',
-    articleBodyHtml,
-    'Sarah Mitchell',
-    'Senior Business Correspondent',
-    '2026-02-15',
-    articleFormId,
-    articleContent,
-    'Get Up to 80% Off Your MCA Debt Payments | Coastal Debt Resolve',
-    'Discover if you qualify for our proven MCA Debt Relief program. Get up to 80% off your Merchant Cash Advance debt. Free consultation. No upfront fees.'
-  );
-  console.log('Seed article created: business-debt-settlement-guide');
+  const articleExists = db.prepare("SELECT id FROM articles WHERE slug = 'business-debt-settlement-guide'").get();
+  if (articleExists) {
+    db.prepare(`
+      UPDATE articles SET name = ?, headline = ?, subheadline = ?, body_html = ?,
+        author_name = ?, author_title = ?, publish_date = ?, platform = 'meta',
+        traffic_source = 'Facebook - Social', form_id = ?, content = ?,
+        meta_title = ?, meta_description = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE slug = 'business-debt-settlement-guide'
+    `).run(
+      'MCA Debt Relief - Social Advertorial',
+      'Get Up to 80% Off Your MCA Debt Payments',
+      'Small businesses are discovering a proven MCA debt relief program that can reduce what you owe by up to 80%. No bankruptcy. No court. Keep your business open.',
+      articleBodyHtml,
+      'Sarah Mitchell',
+      'Senior Business Correspondent',
+      '2026-02-15',
+      articleFormId,
+      articleContent,
+      'Get Up to 80% Off Your MCA Debt Payments | Coastal Debt Resolve',
+      'Discover if you qualify for our proven MCA Debt Relief program. Get up to 80% off your Merchant Cash Advance debt. Free consultation. No upfront fees.'
+    );
+    console.log('Updated article: business-debt-settlement-guide');
+  } else {
+    db.prepare(`
+      INSERT INTO articles (slug, name, headline, subheadline, body_html, author_name, author_title, publish_date, platform, traffic_source, form_id, content, meta_title, meta_description)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'meta', 'Facebook - Social', ?, ?, ?, ?)
+    `).run(
+      'business-debt-settlement-guide',
+      'MCA Debt Relief - Social Advertorial',
+      'Get Up to 80% Off Your MCA Debt Payments',
+      'Small businesses are discovering a proven MCA debt relief program that can reduce what you owe by up to 80%. No bankruptcy. No court. Keep your business open.',
+      articleBodyHtml,
+      'Sarah Mitchell',
+      'Senior Business Correspondent',
+      '2026-02-15',
+      articleFormId,
+      articleContent,
+      'Get Up to 80% Off Your MCA Debt Payments | Coastal Debt Resolve',
+      'Discover if you qualify for our proven MCA Debt Relief program. Get up to 80% off your Merchant Cash Advance debt. Free consultation. No upfront fees.'
+    );
+    console.log('Seed article created: business-debt-settlement-guide');
+  }
 }
 
 module.exports = db;
