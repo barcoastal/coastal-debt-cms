@@ -766,6 +766,99 @@ if (!obFormExists) {
   console.log('Outbrain landing page created');
 }
 
+// Facebook / Social: MCA Debt Relief landing page
+{
+  const fbForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
+  const fbFormId = fbForm ? fbForm.id : null;
+
+  const fbContent = JSON.stringify({
+    badge: "MCA Debt Relief",
+    headline: "Get Up to 80% Off Your",
+    headlineLine2: "MCA Debt Payments!",
+    headlineHighlight: "MCA Debt Payments!",
+    subheadline: "Small businesses are discovering a proven MCA Debt Relief program. Pay less than you owe. Only $20K+ MCA Debt Relief. No Loans or Other Debt.",
+    bulletPoints: [
+      "Increase cashflow immediately — comfortable weekly payments",
+      "Get up to 80% off your MCA debt in 6-8 months",
+      "Dedicated expert Debt Settlement Advisor & legal team",
+      "No upfront fees — pay only when we settle"
+    ],
+    formTitle: "See If Your Business Qualifies",
+    formSubtitle: "Only $20K+ MCA Debt. Takes 60 seconds.",
+    formButton: "Get My Free Consultation",
+    trustLabel: "As Seen In & Trusted By",
+    comparisonTitle: "Why Business Owners Choose MCA Debt Settlement",
+    comparisonSubtitle: "See why thousands trust Coastal Debt to handle their MCA debt",
+    comparisonColBad: "Struggling Alone",
+    comparisonColGood: "Coastal Debt Relief",
+    comparisonRows: [
+      {"label":"Daily ACH Payments","bad":"30-50% of revenue withdrawn daily","good":"One comfortable weekly payment"},
+      {"label":"Debt Reduction","bad":"Pay full amount + high factor rates","good":"Settle for up to 80% less"},
+      {"label":"MCA Cycle","bad":"Taking new MCAs to pay old ones","good":"Break the cycle for good"},
+      {"label":"Legal Protection","bad":"Risk of lawsuits & UCC liens","good":"Legal team on your side"},
+      {"label":"Time to Resolve","bad":"Trapped for years","good":"6-8 months average"},
+      {"label":"Your Business","bad":"Bleeding cash, can't grow","good":"Keep operating & growing"}
+    ],
+    comparisonCtaText: "Check Your Eligibility",
+    howItWorksTitle: "How It Works",
+    howItWorksSubtitle: "We've perfected our proven process to get over 1,000 businesses out of MCA debt",
+    steps: [
+      {"title":"Free, Confidential Consultation","description":"Our expert advisors will call you to quickly determine whether your business is qualified for our debt relief program. We need to ensure this will be the best solution for your business."},
+      {"title":"Expert Debt Analysis","description":"Our trusted team will do a deep-dive analysis of your MCA debt and lender agreements. They will work on a plan based on your unique situation to ensure the best outcome."},
+      {"title":"Same-Day Sign Up","description":"Not all businesses qualify for our program, but we hope we can help yours. If your business does qualify, we can sign you up on the spot and get you fast-tracked to financial freedom."}
+    ],
+    caseStudiesTitle: "Our Numbers Speak for Themselves",
+    caseStudiesSubtitle: "These are actual settlement agreements we negotiated for our clients",
+    empathyTitle: "Trapped in MCA Debt? You're Not Alone.",
+    empathyText: [
+      "You took out an MCA to keep your business running. Then another. And another. Now the daily ACH withdrawals are eating your revenue alive, and you feel like there's no way out.",
+      "But here's what we want you to know: there IS a way out. Every day, we help business owners just like you break free from the MCA debt cycle — settling for a fraction of what they owe.",
+      "Let us take this weight off your shoulders. Your first consultation is completely free and confidential."
+    ],
+    testimonialsTitle: "What Our Clients Are Saying",
+    testimonialsSubtitle: "Hear from business owners who found relief with Coastal Debt",
+    faqTitle: "Common Questions About MCA Debt Relief",
+    faqSubtitle: "Get the answers you need before making a decision",
+    faqItems: [
+      {"question":"What types of MCA debt can you help with?","answer":"We help with all types of Merchant Cash Advances, including daily and weekly ACH payment MCAs, revenue-based financing, and business cash advances from any funder."},
+      {"question":"How much can I actually save?","answer":"Our clients typically save 30-80% of their total MCA debt. Recent settlements include 73% savings ($23K debt settled for $6,110) and 61% savings ($12.8K debt settled for $5,000)."},
+      {"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once you enroll in our program, we work to stop the daily ACH withdrawals and replace them with one comfortable weekly or monthly payment you can afford."},
+      {"question":"How long does the process take?","answer":"Most MCA debt cases are resolved in 6-8 months. This is significantly faster than continuing to make minimum payments or taking out new MCAs."},
+      {"question":"Do I need $20,000+ in MCA debt to qualify?","answer":"Yes, our program is designed for businesses with at least $20,000 in MCA debt. If you have multiple MCAs, we can help consolidate and settle them all."},
+      {"question":"Is there any upfront cost?","answer":"No. We don't charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}
+    ],
+    ctaTitle: "Get Out of MCA Debt for Good",
+    ctaSubtitle: "Free consultation. No obligation. See how much you could save today.",
+    ctaButton: "Get Started",
+    pageTitle: "Get Up to 80% Off Your MCA Debt | Coastal Debt Resolve",
+    metaDescription: "Discover if you qualify for our proven MCA Debt Relief program. Get up to 80% off your Merchant Cash Advance debt. Free consultation. No upfront fees.",
+    phone: "(888) 961-5338",
+    colors: {
+      primary: "#3052FF",
+      primaryLight: "#4a6aff",
+      navy: "#1a2e4a",
+      navyDark: "#0f1c2e"
+    }
+  });
+  const fbSections = JSON.stringify({trustBar:true,comparison:true,howItWorks:true,caseStudies:true,empathy:true,testimonials:true,faq:true,cta:true});
+
+  const fbPageExists = db.prepare("SELECT id FROM landing_pages WHERE slug = 'restructure-mca-business-loans-now-social'").get();
+  if (fbPageExists) {
+    db.prepare(`
+      UPDATE landing_pages SET name = ?, platform = 'meta', traffic_source = 'Facebook - Social',
+        form_id = ?, content = ?, sections_visible = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE slug = 'restructure-mca-business-loans-now-social'
+    `).run('MCA Debt Relief - Facebook', fbFormId, fbContent, fbSections);
+    console.log('Updated Facebook landing page: restructure-mca-business-loans-now-social');
+  } else {
+    db.prepare(`
+      INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields)
+      VALUES (?, ?, 'meta', 'Facebook - Social', ?, ?, ?, '{}')
+    `).run('restructure-mca-business-loans-now-social', 'MCA Debt Relief - Facebook', fbFormId, fbContent, fbSections);
+    console.log('Facebook landing page created: restructure-mca-business-loans-now-social');
+  }
+}
+
 // Seed article: MCA Debt Relief (Facebook/Social)
 {
   const obForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
