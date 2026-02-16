@@ -177,6 +177,31 @@
     .cta-btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(0,0,0,0.2)}
     .cta-phone{color:var(--white);font-size:1.4rem;font-weight:600;margin-top:25px}
     .cta-phone a{color:var(--white);text-decoration:none}
+    .cta-form-card{background:var(--white);border-radius:20px;padding:36px 32px;max-width:520px;margin:0 auto 24px;text-align:left}
+    .cta-form-card .form-group{margin-bottom:14px}
+    .cta-form-card label{display:block;font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+    .cta-form-card input[type="text"],.cta-form-card input[type="email"],.cta-form-card input[type="tel"],.cta-form-card select,.cta-form-card textarea{width:100%;padding:12px 16px;border:2px solid #eee;border-radius:12px;font-size:1rem;transition:border 0.2s;background:var(--white)}
+    .cta-form-card input:focus,.cta-form-card select:focus,.cta-form-card textarea:focus{outline:none;border-color:var(--blue)}
+    .cta-form-card .phone-wrapper{display:flex;align-items:center;border:2px solid #eee;border-radius:12px;overflow:hidden;transition:border 0.2s}
+    .cta-form-card .phone-wrapper .phone-prefix{padding:12px;background:#f8f9fb;font-size:0.9rem;white-space:nowrap;border-right:1px solid #eee}
+    .cta-form-card .phone-wrapper input{border:none;border-radius:0;padding:12px 16px}
+    .cta-form-card .phone-wrapper input:focus{outline:none;box-shadow:none}
+    .cta-form-card .phone-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
+    .cta-form-card .radio-group{display:flex;gap:12px}
+    .cta-form-card .radio-label{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;border:2px solid #eee;border-radius:12px;cursor:pointer;transition:all 0.2s;font-weight:600}
+    .cta-form-card .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.05)}
+    .cta-form-card .radio-label input{display:none}
+    .cta-form-card .consent-group{margin-top:10px}
+    .cta-form-card .consent-label{display:flex;align-items:flex-start;gap:8px;font-size:0.75rem;color:#666;line-height:1.4;cursor:pointer}
+    .cta-form-card .consent-label input{margin-top:3px;flex-shrink:0}
+    .cta-form-card .consent-label a{color:var(--blue)}
+    .cta-form-card .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
+    .cta-form-card .submit-btn{width:100%;padding:16px;background:var(--blue);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s}
+    .cta-form-card .submit-btn:hover{background:var(--blue-light);transform:translateY(-1px)}
+    .cta-form-card .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .bottom-form-success{text-align:center;padding:24px}
+    .bottom-form-success h3{font-size:1.4rem;color:#16a34a;margin-bottom:8px}
+    .bottom-form-success p{color:#555;font-size:1rem}
 
     /* Footer */
     footer{background:var(--navy-dark);padding:40px 0;text-align:center}
@@ -496,12 +521,39 @@
     </div>
   </section>
 
-  <!-- CTA Footer -->
+  <!-- CTA Footer with Form -->
   <section class="cta-footer">
     <div class="container">
       <h2>{{ctaTitle}}</h2>
       <p>{{ctaSubtitle}}</p>
-      <a href="#leadForm" class="cta-btn" onclick="var fc=document.querySelector('.form-card'); if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'}); var fi=fc.querySelector('input:not([type=hidden])'); if(fi) setTimeout(function(){fi.focus()},600);}">{{ctaButton}}</a>
+      <div class="cta-form-card" id="bottomFormCard">
+        <form id="bottomLeadForm" class="bottom-form">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="debt_amount" value="">
+          <input type="hidden" name="has_mca" value="">
+          <input type="hidden" name="gclid" class="bottom-gclid" value="">
+          <input type="hidden" name="msclkid" class="bottom-msclkid" value="">
+          <input type="hidden" name="fbclid" class="bottom-fbclid" value="">
+          <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
+          <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
+          <input type="hidden" name="page_url" class="bottom-pageurl" value="">
+          <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
+          {{HIDDEN_FIELDS}}
+          <div id="bottomFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="bottomConsentCheckbox" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="bottomConsentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{ctaButton}}</button>
+        </form>
+        <div class="bottom-form-success" id="bottomFormSuccess" style="display:none;">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
       <p class="cta-phone">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
     </div>
   </section>
@@ -1020,6 +1072,11 @@
           step2.classList.remove('active');
           stepSuccess.classList.add('active');
           document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Also show success on bottom form
+          var bf = document.getElementById('bottomLeadForm');
+          if (bf) bf.style.display = 'none';
+          var bs = document.getElementById('bottomFormSuccess');
+          if (bs) bs.style.display = 'block';
         } else {
           throw new Error('Submission failed');
         }
@@ -1029,6 +1086,132 @@
         btn.textContent = '{{formButton}}';
       }
     });
+    // ============= Bottom Form =============
+    // Render bottom form fields (same fields, skip has_mca)
+    var bottomFieldsHtml = formFields.filter(function(field) { return field.name !== 'has_mca'; }).map(function(field) {
+      if (field.type === 'radio') {
+        var options = (field.options || 'Yes,No').split(',').map(function(opt) { return opt.trim(); });
+        return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+          options.map(function(opt, i) {
+            return '<label class="radio-label"><input type="radio" name="bottom_' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
+          }).join('') + '</div></div>';
+      } else if (field.type === 'hidden') {
+        var existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        if (existingIds.includes(field.name)) return '';
+        return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+      } else if (field.type === 'tel') {
+        return '<div class="form-group"><label for="bottom_' + field.name + '">' + field.label + '</label>' +
+          '<div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>' +
+          '<input type="tel" id="bottom_' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div>' +
+          '<div class="phone-error" id="bottom_' + field.name + '_error">Please enter a valid 10-digit US phone number</div></div>';
+      } else {
+        return '<div class="form-group"><label for="bottom_' + field.name + '">' + field.label + '</label>' +
+          '<input type="' + field.type + '" id="bottom_' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+      }
+    }).join('');
+    document.getElementById('bottomFormFields').innerHTML = bottomFieldsHtml;
+
+    // Set bottom form hidden fields
+    function setBottomHiddenFields() {
+      var eli = window._eliClickId || '';
+      document.querySelectorAll('.bottom-eli').forEach(function(f) { f.value = eli; });
+      document.querySelectorAll('.bottom-gclid').forEach(function(f) { f.value = document.getElementById('gclid') ? document.getElementById('gclid').value : ''; });
+      document.querySelectorAll('.bottom-msclkid').forEach(function(f) { f.value = document.getElementById('msclkid') ? document.getElementById('msclkid').value : ''; });
+      document.querySelectorAll('.bottom-fbclid').forEach(function(f) { f.value = document.getElementById('fbclid') ? document.getElementById('fbclid').value : ''; });
+      document.querySelectorAll('.bottom-rt').forEach(function(f) { f.value = document.getElementById('rt_clickid') ? document.getElementById('rt_clickid').value : ''; });
+      document.querySelectorAll('.bottom-pageurl').forEach(function(f) { f.value = window.location.href; });
+      document.querySelectorAll('.bottom-referrer').forEach(function(f) { f.value = document.referrer || ''; });
+    }
+    setBottomHiddenFields();
+    setTimeout(setBottomHiddenFields, 3000);
+
+    // Phone formatting on bottom form
+    document.querySelectorAll('#bottomLeadForm input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        var errEl = document.getElementById('bottom_' + e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // Bottom form submission
+    document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      var consentBox = document.getElementById('bottomConsentCheckbox');
+      var consentErr = document.getElementById('bottomConsentError');
+      if (!consentBox.checked) {
+        consentErr.style.display = 'block';
+        consentBox.focus();
+        return;
+      }
+      consentErr.style.display = 'none';
+
+      // Validate phone
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById('bottom_' + phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      // Refresh hidden fields before submit
+      setBottomHiddenFields();
+
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = {};
+      formData.forEach(function(val, key) {
+        // Strip "bottom_" prefix from radio field names
+        var cleanKey = key.startsWith('bottom_') ? key.substring(7) : key;
+        data[cleanKey] = val;
+      });
+      data.landing_page_slug = PAGE_SLUG;
+
+      if (!data.rt_clickid) data.rt_clickid = getRtClickId();
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          document.getElementById('bottomLeadForm').style.display = 'none';
+          document.getElementById('bottomFormSuccess').style.display = 'block';
+          // Also show success on hero form
+          step2.classList.remove('active');
+          stepSuccess.classList.add('active');
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        btn.disabled = false;
+        btn.textContent = '{{ctaButton}}';
+      }
+    });
+
     })(); // end IIFE
   </script>
 </body>
