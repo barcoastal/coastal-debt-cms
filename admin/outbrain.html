@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Ads | Coastal Debt CMS</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <title>Outbrain | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .event-breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
@@ -27,7 +27,7 @@
     .mca-yes { color: #16a34a; font-weight: 600; }
     .mca-no { color: #6b7280; }
     table td { font-size: 12px; white-space: nowrap; }
-    table { min-width: 1600px; }
+    table { min-width: 1200px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
@@ -119,7 +119,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Google Ads</h1>
+        <h1>Outbrain</h1>
       </div>
 
       <!-- Time Range Filter -->
@@ -145,15 +145,7 @@
       <div class="stats-grid">
         <div class="stat-card primary">
           <div class="stat-value" id="statLeads">-</div>
-          <div class="stat-label">Google Leads</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statSpend">-</div>
-          <div class="stat-label">Total Ad Spend</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statCPL">-</div>
-          <div class="stat-label">Avg Cost Per Lead</div>
+          <div class="stat-label">Outbrain Leads</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="statEvents">-</div>
@@ -176,10 +168,10 @@
         </div>
       </div>
 
-      <!-- Google Leads Table -->
+      <!-- Outbrain Leads Table -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Google Leads</h3>
+          <h3 class="card-title">Outbrain Leads</h3>
         </div>
         <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
@@ -204,11 +196,9 @@
       { key: 'company_name', label: 'Company', default: true },
       { key: 'email', label: 'Email', default: true },
       { key: 'phone', label: 'Phone', default: true },
-      { key: 'gclid', label: 'GCLID', default: true },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
       { key: 'utm_campaign', label: 'Campaign', default: true },
-      { key: 'has_mca', label: 'MCA', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
       { key: 'transfer_status', label: 'Transfer Status', default: true },
       { key: 'five9_dispo', label: 'Five9 Dispo', default: true },
@@ -223,11 +213,9 @@
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
-      gclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.gclid || '') + '">' + escapeHtml(lead.gclid || '-') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
       utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
-      has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
       transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + escapeHtml(lead.transfer_status || '-') + '</span></td>',
       five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + escapeHtml(lead.five9_dispo || '-') + '</span></td>',
@@ -246,7 +234,7 @@
     let currentRange = 'mtd';
 
     const columnEditor = new ColumnEditor({
-      pageId: 'google-ads',
+      pageId: 'outbrain',
       columns: COLUMNS,
       mountTo: '#columnEditorMount',
       onColumnsChange: () => { renderTable(); loadLeads(currentPage); }
@@ -280,10 +268,8 @@
 
     async function loadSummary() {
       try {
-        const data = await api('/api/analytics/google-ads/summary' + buildQS());
+        const data = await api('/api/analytics/outbrain/summary' + buildQS());
         document.getElementById('statLeads').textContent = data.total_leads;
-        document.getElementById('statSpend').textContent = '$' + (data.total_cost_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('statCPL').textContent = '$' + (data.avg_cpl_cents / 100).toFixed(2);
         document.getElementById('statEvents').textContent = data.events_sent;
       } catch (err) {
         console.error('Error loading summary:', err);
@@ -298,7 +284,7 @@
 
     async function loadEventsBreakdown() {
       try {
-        const data = await api('/api/analytics/google-ads/events-breakdown' + buildQS());
+        const data = await api('/api/analytics/outbrain/events-breakdown' + buildQS());
         const grid = document.getElementById('eventsGrid');
 
         if (!data.length) {
@@ -320,7 +306,7 @@
             type: 'bar',
             data: {
               labels: data.map(e => e.conversion_action_name),
-              datasets: [{ label: 'Events', data: data.map(e => e.count), backgroundColor: '#3052FF', borderRadius: 6 }]
+              datasets: [{ label: 'Events', data: data.map(e => e.count), backgroundColor: '#E8590C', borderRadius: 6 }]
             },
             options: {
               indexAxis: 'y',
@@ -340,13 +326,12 @@
       currentPage = page;
       try {
         const qs = buildQS();
-        const sep = qs ? '&' : '?';
-        const data = await api('/api/analytics/google-ads/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
+        const data = await api('/api/analytics/outbrain/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
         const tbody = document.getElementById('leadsTable');
 
         const cols = columnEditor.getVisibleColumns();
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No Google leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No Outbrain leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead =>
             '<tr>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
