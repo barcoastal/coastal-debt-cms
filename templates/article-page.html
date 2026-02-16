@@ -953,7 +953,13 @@
     document.querySelectorAll('.cta-button, .article-inline-cta a').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
-        const target = document.getElementById('midFormSection');
+        // Use the href target if it points to a valid section, otherwise default to mid form
+        const href = this.getAttribute('href');
+        let target = null;
+        if (href && href.startsWith('#')) {
+          target = document.getElementById(href.substring(1));
+        }
+        if (!target) target = document.getElementById('midFormSection');
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'center' });
           const firstInput = target.querySelector('input[type="text"], input[type="email"]');

@@ -262,7 +262,7 @@
   <header>
     <div class="container header-inner">
       <span class="logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="40"></span>
-      <a href="tel:+18001234567" class="header-phone">
+      <a href="tel:{{phone}}" class="header-phone">
         <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
         </svg>
@@ -473,7 +473,7 @@
       <div class="empathy-content">
         <h2>{{empathyTitle}}</h2>
         <div id="empathyText"></div>
-        <a href="#leadForm" class="empathy-cta" onclick="var el = document.getElementById('debt_amount'); if (el && el.offsetParent) el.focus(); else { var fi = document.querySelector('#dynamicFormFields input'); if (fi) fi.focus(); }">Get Your Free Consultation</a>
+        <a href="#leadForm" class="empathy-cta" onclick="var fc=document.querySelector('.form-card'); if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'}); var fi=fc.querySelector('input:not([type=hidden])'); if(fi) setTimeout(function(){fi.focus()},600);}">Get Your Free Consultation</a>
       </div>
     </div>
   </section>
@@ -501,8 +501,8 @@
     <div class="container">
       <h2>{{ctaTitle}}</h2>
       <p>{{ctaSubtitle}}</p>
-      <a href="#leadForm" class="cta-btn" onclick="document.getElementById('full_name').focus()">{{ctaButton}}</a>
-      <p class="cta-phone">Or call now: <a href="tel:+18001234567">{{phone}}</a></p>
+      <a href="#leadForm" class="cta-btn" onclick="var fc=document.querySelector('.form-card'); if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'}); var fi=fc.querySelector('input:not([type=hidden])'); if(fi) setTimeout(function(){fi.focus()},600);}">{{ctaButton}}</a>
+      <p class="cta-phone">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
     </div>
   </section>
 
@@ -515,7 +515,7 @@
 
   <!-- Mobile Sticky CTA -->
   <div class="mobile-cta">
-    <a href="tel:+18001234567">Call Now: {{phone}}</a>
+    <a href="tel:{{phone}}">Call Now: {{phone}}</a>
   </div>
 
   <!-- Form JS -->
