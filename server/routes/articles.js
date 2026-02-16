@@ -215,6 +215,13 @@ function generateArticlePage(articleId) {
   const hiddenFieldsHtml = '';
 
   // Replace all placeholders
+  // Hero image
+  const heroImageUrl = content.heroImage || '';
+  const heroImageHtml = heroImageUrl
+    ? `<img class="article-hero-img" src="${heroImageUrl}" alt="${(article.headline || '').replace(/"/g, '&quot;')}">`
+    : '';
+  html = html.replace(/{{HERO_IMAGE}}/g, heroImageHtml);
+
   html = html.replace(/{{SLUG}}/g, article.slug);
   html = html.replace(/{{HEAD_SCRIPTS}}/g, headScripts);
   html = html.replace(/{{BODY_SCRIPTS}}/g, bodyScripts);

@@ -154,6 +154,154 @@
       text-decoration: underline;
     }
 
+    /* Featured / hero image */
+    .article-hero-img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 32px;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+    }
+
+    /* Inline article images */
+    .article-body figure {
+      margin: 36px 0;
+    }
+    .article-body figure img {
+      width: 100%;
+      border-radius: 6px;
+      display: block;
+    }
+    .article-body figure figcaption {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #888;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* Pull quote / stat highlight */
+    .article-stat-box {
+      background: #f0f4ff;
+      border-left: 4px solid #1a6dff;
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 36px 0;
+    }
+    .article-stat-box .stat-number {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: #1a6dff;
+      line-height: 1.1;
+    }
+    .article-stat-box .stat-label {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      color: #444;
+      margin-top: 4px;
+    }
+
+    /* Inline CTA banner */
+    .article-cta-banner {
+      background: linear-gradient(135deg, #1a3a5c 0%, #1a2e4a 100%);
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin: 40px 0;
+      text-align: center;
+    }
+    .article-cta-banner .cta-text {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .article-cta-banner .cta-sub {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 18px;
+    }
+    .article-cta-banner .cta-button {
+      display: inline-block;
+      padding: 14px 36px;
+      background: #1a6dff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .article-cta-banner .cta-button:hover {
+      background: #1558cc;
+      color: #fff;
+    }
+
+    /* Inline text CTA link */
+    .article-inline-cta {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: block;
+      text-align: center;
+      margin: 32px 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .article-inline-cta a {
+      color: #1a6dff;
+      text-decoration: none;
+      border-bottom: 2px solid #1a6dff;
+      padding-bottom: 2px;
+      transition: opacity 0.2s;
+    }
+    .article-inline-cta a:hover {
+      opacity: 0.8;
+    }
+
+    /* Trust badges row */
+    .article-trust-badges {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin: 36px 0;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+    .article-trust-badges img {
+      height: 36px;
+      opacity: 0.7;
+      filter: grayscale(100%);
+      transition: all 0.2s;
+    }
+    .article-trust-badges img:hover {
+      opacity: 1;
+      filter: grayscale(0%);
+    }
+    .article-trust-badges .trust-text {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .article-stat-box { padding: 20px 22px; }
+      .article-stat-box .stat-number { font-size: 28px; }
+      .article-cta-banner { padding: 24px 20px; margin-left: -20px; margin-right: -20px; border-radius: 0; }
+      .article-trust-badges { gap: 20px; }
+      .article-trust-badges img { height: 28px; }
+    }
+
     /* Mid-article form callout */
     .article-form-callout {
       background: #f8f9fb;
@@ -336,6 +484,8 @@
       By <span class="author-name">{{AUTHOR_NAME}}</span>, <span class="author-title">{{AUTHOR_TITLE}}</span>
       &nbsp;&bull;&nbsp; {{PUBLISH_DATE}}
     </div>
+
+    {{HERO_IMAGE}}
 
     <div class="article-body">
       {{BODY_BEFORE_FORM}}
@@ -565,6 +715,19 @@
         btn.textContent = '{{FORM_SUBMIT_TEXT}}';
       }
     }
+
+    // ============= CTA scroll to form =============
+    document.querySelectorAll('.cta-button, .article-inline-cta a').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.getElementById('midFormSection');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const firstInput = target.querySelector('input[type="text"], input[type="email"]');
+          if (firstInput) setTimeout(() => firstInput.focus(), 600);
+        }
+      });
+    });
 
     // ============= Init =============
     renderFormFields('midFormFields');

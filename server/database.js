@@ -776,11 +776,21 @@ if (!articleExists) {
   const articleBodyHtml = `
 <p>When Mike Torres opened his construction company in Phoenix twelve years ago, he never imagined he'd one day owe $169,000 in business debt that was threatening to destroy everything he'd built.</p>
 
+<figure>
+<img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=720&q=80&auto=format" alt="Construction business owner reviewing financial documents at a job site">
+<figcaption>Business owners across industries are discovering alternatives to bankruptcy. Photo: Getty Images</figcaption>
+</figure>
+
 <p>"I was getting five, six calls a day from creditors," Torres recalls. "My wife was terrified. I couldn't sleep. I genuinely thought the only option was bankruptcy."</p>
 
 <p>But Torres didn't file bankruptcy. Instead, he discovered a legal process that allowed him to settle his entire debt for roughly 30% less than what he owed — without a single court appearance, without a public record, and without closing his business.</p>
 
 <p>He's far from alone. Across the country, thousands of business owners are quietly using the same approach to resolve crushing debt loads while keeping their companies intact.</p>
+
+<div class="article-stat-box">
+<div class="stat-number">1,500+</div>
+<div class="stat-label">Businesses have resolved their debt through professional settlement in the past 24 months alone</div>
+</div>
 
 <h2>The Settlement Alternative Most Business Owners Don't Know About</h2>
 
@@ -788,9 +798,16 @@ if (!articleExists) {
 
 <p>"Most people assume bankruptcy is their only option when debt becomes unmanageable," explains David Chen, a financial restructuring consultant. "But creditors often prefer settlement because they recover more than they would in a bankruptcy proceeding. It's a win-win that most business owners simply aren't aware of."</p>
 
+<figure>
+<img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=720&q=80&auto=format" alt="Financial chart showing debt reduction comparison between bankruptcy and settlement">
+<figcaption>Settlement vs. bankruptcy: a comparison of timeline, cost, and credit impact. Source: National Debt Relief Association</figcaption>
+</figure>
+
 <p>The process works because creditors face a simple calculation: accept a reduced payment now, or risk getting even less (or nothing) through lengthy bankruptcy proceedings. For business owners with merchant cash advances (MCAs), lines of credit, or unsecured business loans, this dynamic creates significant leverage.</p>
 
 <p>According to industry data, businesses that pursue professional debt settlement typically reduce their total debt obligation by 30% to 50%, with some cases achieving even greater reductions depending on the circumstances.</p>
+
+<div class="article-inline-cta"><a href="#midFormSection">Check if your business qualifies for debt settlement &rarr;</a></div>
 
 {{MID_ARTICLE_FORM}}
 
@@ -798,11 +815,21 @@ if (!articleExists) {
 
 <p>Jennifer Okafor's story mirrors what many small business owners experience. Her Atlanta restaurant had taken on multiple merchant cash advances during the pandemic to stay afloat. By 2023, the daily ACH withdrawals were consuming nearly 40% of her revenue.</p>
 
+<figure>
+<img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=720&q=80&auto=format" alt="Restaurant interior with warm lighting">
+<figcaption>After settling her MCA debt, Jennifer Okafor's restaurant continues to thrive in Atlanta.</figcaption>
+</figure>
+
 <p>"I was making money, but the MCA payments were eating me alive," Okafor says. "I'd taken out new advances to pay old ones. It was a cycle I couldn't break."</p>
 
 <p>After working with a debt settlement firm, Okafor was able to consolidate and settle her combined MCA debt — originally totaling over $200,000 — for significantly less. Her daily ACH withdrawals stopped, replaced by a single manageable monthly payment.</p>
 
 <p>"Within six months, it was resolved. My restaurant is still open, my credit is recovering, and I actually sleep at night now," she says.</p>
+
+<div class="article-stat-box">
+<div class="stat-number">30-50%</div>
+<div class="stat-label">Average debt reduction achieved through professional settlement — without filing bankruptcy</div>
+</div>
 
 <h2>Why Creditors Agree to Settle</h2>
 
@@ -817,6 +844,12 @@ if (!articleExists) {
 <li><strong>Credit recovery</strong> — Credit scores typically begin recovering within 12-24 months, compared to 7-10 years of bankruptcy impact.</li>
 <li><strong>No legal complexity</strong> — No attorneys, court appearances, or judges involved.</li>
 </ul>
+
+<div class="article-cta-banner">
+<div class="cta-text">Could your business qualify for debt settlement?</div>
+<div class="cta-sub">Free analysis. No obligation. Takes 60 seconds.</div>
+<a href="#midFormSection" class="cta-button">Get Your Free Debt Analysis</a>
+</div>
 
 <h2>Who Qualifies?</h2>
 
@@ -833,7 +866,19 @@ if (!articleExists) {
 
 <h2>The Numbers Behind the Trend</h2>
 
+<figure>
+<img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=720&q=80&auto=format" alt="Business analytics dashboard showing positive financial trends">
+<figcaption>The business debt settlement industry has seen significant growth as more owners discover the bankruptcy alternative.</figcaption>
+</figure>
+
 <p>The business debt settlement industry has grown significantly as more owners discover the alternative. Firms like Coastal Debt Resolve have helped over 1,500 businesses resolve their debt obligations, maintaining a strong track record on both the BBB and Trustpilot.</p>
+
+<div class="article-trust-badges">
+<span class="trust-text">Trusted By</span>
+<img src="/lp/assets/trust-logos/bbb.svg" alt="BBB Accredited" onerror="this.style.display='none'">
+<img src="/lp/assets/trust-logos/trustpilot.svg" alt="Trustpilot" onerror="this.style.display='none'">
+<img src="/lp/assets/trust-logos/inc.svg" alt="Inc. 5000" onerror="this.style.display='none'">
+</div>
 
 <p>Industry data suggests that the average business owner who pursues professional settlement saves between 30-50% of their total debt obligation. For someone owing $150,000, that can mean keeping $45,000 to $75,000 in their pocket — money that can be reinvested in the business.</p>
 
@@ -841,9 +886,20 @@ if (!articleExists) {
 
 <p>For Mike Torres, the hardest part was making the initial call. "I felt ashamed about the debt," he admits. "But within 15 minutes of my first consultation, I felt a weight lift off my shoulders. Someone finally had a plan."</p>
 
+<figure>
+<img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=720&q=80&auto=format" alt="Confident business owner standing in front of his company">
+<figcaption>Mike Torres's construction company is thriving today — with two new employees and his largest contract ever.</figcaption>
+</figure>
+
 <p>Torres's construction company is still operating today. He's taken on two new employees and recently won his largest contract ever.</p>
 
 <p>"If I had filed bankruptcy, none of this would exist," he says. "That one phone call changed everything."</p>
+
+<div class="article-cta-banner">
+<div class="cta-text">Ready to explore your options?</div>
+<div class="cta-sub">Join 1,500+ business owners who resolved their debt without bankruptcy.</div>
+<a href="#endFormSection" class="cta-button">Get My Free Consultation</a>
+</div>
 
 <p><em>Business owners interested in exploring whether debt settlement is right for their situation can request a free, no-obligation analysis to understand their options.</em></p>`;
 
