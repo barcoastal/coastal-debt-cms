@@ -607,6 +607,7 @@ if (formCount.count === 0) {
     {"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
   ]);
@@ -692,6 +693,7 @@ if (!obFormExists) {
     {"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
   ]);
