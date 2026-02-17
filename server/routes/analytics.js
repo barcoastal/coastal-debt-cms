@@ -441,9 +441,9 @@ router.get('/google-ads/leads', authenticateToken, (req, res) => {
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
            l.cost_cents, l.cost_currency, l.gclid, l.eli_clickid, l.rt_clickid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo, l.stage,
-           l.contract_sign_date, l.total_debt_sign,
+           l.contract_sign_date, l.total_debt_sign, l.is_blocked,
            lp.name as landing_page_name,
-           v.utm_campaign,
+           v.utm_campaign, v.ip_address,
            (
              SELECT ce.conversion_action_name
              FROM conversion_events ce
@@ -567,9 +567,9 @@ router.get('/bing-ads/leads', authenticateToken, (req, res) => {
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid, l.msclkid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
-           l.stage, l.contract_sign_date, l.total_debt_sign,
+           l.stage, l.contract_sign_date, l.total_debt_sign, l.is_blocked,
            lp.name as landing_page_name,
-           v.utm_campaign,
+           v.utm_campaign, v.ip_address,
            (
              SELECT ce.conversion_action_name
              FROM conversion_events ce
@@ -693,9 +693,9 @@ router.get('/outbrain/leads', authenticateToken, (req, res) => {
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
-           l.stage, l.contract_sign_date, l.total_debt_sign,
+           l.stage, l.contract_sign_date, l.total_debt_sign, l.is_blocked,
            lp.name as landing_page_name,
-           v.utm_campaign,
+           v.utm_campaign, v.ip_address,
            (
              SELECT ce.conversion_action_name
              FROM conversion_events ce
@@ -829,8 +829,9 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
 
   const leads = db.prepare(`
     SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
-           l.eli_clickid, l.rt_clickid, l.fbclid, l.hidden_fields, l.created_at,
+           l.eli_clickid, l.rt_clickid, l.fbclid, l.hidden_fields, l.created_at, l.is_blocked,
            lp.name as landing_page_name,
+           v.ip_address,
            CASE WHEN l.hidden_fields LIKE '%"source":"facebook_instant_form"%' THEN 'Instant Form' ELSE 'Landing Page' END as lead_source,
            (
              SELECT ce.conversion_action_name
@@ -841,6 +842,7 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
            ) as current_status
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE lp.platform = 'meta' ${dateWhere}
     ORDER BY l.created_at DESC
     LIMIT ? OFFSET ?

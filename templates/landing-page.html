@@ -384,6 +384,7 @@
             <input type="hidden" id="fbclid" name="fbclid" value="">
             <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
             <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+            <input type="hidden" id="keyword" name="keyword" value="">
             <input type="hidden" id="page_url" name="page_url" value="">
             <input type="hidden" id="referrer_url" name="referrer_url" value="">
             {{HIDDEN_FIELDS}}
@@ -538,6 +539,7 @@
           <input type="hidden" name="fbclid" class="bottom-fbclid" value="">
           <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
           <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
+          <input type="hidden" name="keyword" class="bottom-keyword" value="">
           <input type="hidden" name="page_url" class="bottom-pageurl" value="">
           <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
           {{HIDDEN_FIELDS}}
@@ -754,6 +756,13 @@
     if (fbclid) {
       setStored('_fbclid', fbclid);
       document.getElementById('fbclid').value = fbclid;
+    }
+
+    // KEYWORD (utm_term): URL param → localStorage
+    let keyword = _lpParams.get('utm_term') || _lpParams.get('keyword') || getStored('_keyword') || '';
+    if (keyword) {
+      setStored('_keyword', keyword);
+      document.getElementById('keyword').value = keyword;
     }
 
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
@@ -1129,6 +1138,7 @@
       document.querySelectorAll('.bottom-msclkid').forEach(function(f) { f.value = document.getElementById('msclkid') ? document.getElementById('msclkid').value : ''; });
       document.querySelectorAll('.bottom-fbclid').forEach(function(f) { f.value = document.getElementById('fbclid') ? document.getElementById('fbclid').value : ''; });
       document.querySelectorAll('.bottom-rt').forEach(function(f) { f.value = document.getElementById('rt_clickid') ? document.getElementById('rt_clickid').value : ''; });
+      document.querySelectorAll('.bottom-keyword').forEach(function(f) { f.value = document.getElementById('keyword') ? document.getElementById('keyword').value : ''; });
       document.querySelectorAll('.bottom-pageurl').forEach(function(f) { f.value = window.location.href; });
       document.querySelectorAll('.bottom-referrer').forEach(function(f) { f.value = document.referrer || ''; });
     }

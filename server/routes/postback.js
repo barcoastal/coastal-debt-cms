@@ -90,7 +90,7 @@ router.all('/conversion', async (req, res) => {
 
   // Find the lead by eli_clickid
   const lead = db.prepare(`
-    SELECT l.*, v.gclid as visitor_gclid, v.msclkid as visitor_msclkid
+    SELECT l.*, l.is_blocked, v.gclid as visitor_gclid, v.msclkid as visitor_msclkid
     FROM leads l
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid
     WHERE l.eli_clickid = ?
@@ -117,6 +117,27 @@ router.all('/conversion', async (req, res) => {
       success: true,
       warning: 'Visitor found but no lead associated',
       gclid: visitor.gclid
+    });
+  }
+
+  // Check if lead is blocked
+  if (lead.is_blocked) {
+    // Log the event with 'blocked' status but don't send to any platform
+    db.prepare(`
+      INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'postback', 'blocked', 'Lead is blocked - conversion events skipped')
+    `).run(
+      lead.id, eli_clickid, lead.gclid || lead.visitor_gclid || null,
+      event, value || null,
+      debt_amount ? parseFloat(debt_amount) : null,
+      revenue ? parseFloat(revenue) : null
+    );
+
+    return res.json({
+      success: true,
+      lead_id: lead.id,
+      blocked: true,
+      message: 'Lead is blocked - conversion events logged but not sent'
     });
   }
 

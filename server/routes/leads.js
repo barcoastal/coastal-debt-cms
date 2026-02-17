@@ -152,6 +152,24 @@ router.post('/', async (req, res) => {
     }
   }
 
+  // Check if visitor's IP is in the blocklist
+  let isBlocked = false;
+  if (eli_clickid) {
+    try {
+      const visitor = db.prepare('SELECT ip_address FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+      if (visitor && visitor.ip_address) {
+        const blocked = db.prepare('SELECT id FROM blocked_ips WHERE ip_address = ?').get(visitor.ip_address);
+        if (blocked) {
+          isBlocked = true;
+          db.prepare('UPDATE leads SET is_blocked = 1 WHERE id = ?').run(result.lastInsertRowid);
+          console.log(`Lead ${result.lastInsertRowid} marked as blocked (IP: ${visitor.ip_address})`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check IP blocklist:', err);
+    }
+  }
+
   // Fetch Google Ads cost for GCLID (async, don't block response)
   if (gclid && fetchGclidCost) {
     fetchGclidCost(gclid).then(cost => {
@@ -165,120 +183,133 @@ router.post('/', async (req, res) => {
     }).catch(err => console.error('Failed to fetch GCLID cost:', err));
   }
 
-  // Auto-create "lead" conversion event for every lead submission
-  try {
-    const leadConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-
-    db.prepare(`
-      INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_id, conversion_action_name, source, status)
-      VALUES (?, ?, ?, ?, 'lead', 'auto', ?)
-    `).run(
-      result.lastInsertRowid,
-      eli_clickid || '',
-      gclid || '',
-      leadConfig?.conversion_action_id || null,
-      (gclid && leadConfig?.conversion_action_id) ? 'pending' : 'logged'
-    );
-
-    // Send to Google Ads if GCLID + conversion action configured
-    if (gclid && leadConfig?.conversion_action_id && uploadConversion) {
-      const leadId = result.lastInsertRowid;
-      uploadConversion(gclid, leadConfig.conversion_action_id).then(gadsResult => {
-        const evt = db.prepare(`SELECT id FROM conversion_events WHERE lead_id = ? AND conversion_action_name = 'lead' ORDER BY id DESC LIMIT 1`).get(leadId);
-        if (gadsResult.success && evt) {
-          db.prepare(`UPDATE conversion_events SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?`).run(evt.id);
-        } else if (evt) {
-          db.prepare(`UPDATE conversion_events SET status = 'failed', error_message = ? WHERE id = ?`).run(gadsResult.error, evt.id);
-        }
-      }).catch(err => console.error('Failed to send lead event to Google Ads:', err));
-    }
-  } catch (err) {
-    console.error('Failed to create lead conversion event:', err);
-  }
-
-  // Auto-send 'lead' event to Bing Ads if msclkid + config present
-  if (msclkid && uploadBingConversion) {
+  // Skip all conversion event sends if lead is from a blocked IP
+  if (!isBlocked) {
+    // Auto-create "lead" conversion event for every lead submission
     try {
-      const bingConfig = db.prepare('SELECT * FROM bing_ads_config WHERE id = 1').get();
-      const leadBingConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-      if (bingConfig && bingConfig.refresh_token_encrypted && leadBingConfig && leadBingConfig.send_to_bing && leadBingConfig.bing_conversion_goal_id) {
-        const leadId = result.lastInsertRowid;
-        uploadBingConversion(msclkid, leadBingConfig.bing_conversion_goal_id).then(bingResult => {
-          db.prepare(`
-            INSERT INTO conversion_events (lead_id, eli_clickid, msclkid, conversion_action_name, source, status, error_message, sent_at)
-            VALUES (?, ?, ?, 'lead', 'bing_ads', ?, ?, ${bingResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
-          `).run(
-            leadId,
-            eli_clickid || '',
-            msclkid,
-            bingResult.success ? 'sent' : 'failed',
-            bingResult.error || null
-          );
-          console.log(`Bing Ads lead event for lead ${leadId}: ${bingResult.success ? 'sent' : 'failed'}`);
-        }).catch(err => console.error('Failed to send Bing Ads lead event:', err));
-      }
-    } catch (err) {
-      console.error('Failed to check Bing Ads config for lead event:', err);
-    }
-  }
+      const leadConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
 
-  // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
-  if (sourceEntity.platform === 'meta' && sendFacebookEvent) {
-    const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-    const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
-
-    const nameParts = (full_name || '').trim().split(/\s+/);
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    // Look up visitor record for fbc/fbp/fbclid/IP/UA
-    const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
-
-    // Resolve fbc: visitor cookie → construct from fbclid (form or visitor)
-    let fbc = visitor?.fbc || '';
-    if (!fbc) {
-      const resolvedFbclid = fbclid || visitor?.fbclid || '';
-      if (resolvedFbclid) {
-        // Construct fbc in Facebook's format: fb.1.{timestamp_ms}.{fbclid}
-        fbc = `fb.1.${Date.now()}.${resolvedFbclid}`;
-      }
-    }
-
-    // Get client IP and user agent: prefer visitor's stored values (original browser), fallback to request
-    const clientIp = visitor?.ip_address ||
-                     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-                     req.headers['x-real-ip'] ||
-                     req.connection?.remoteAddress || req.ip || '';
-    const clientUa = visitor?.user_agent || req.headers['user-agent'] || '';
-
-    // Build event_source_url from the landing page slug
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const eventSourceUrl = article ? `${baseUrl}/a/${article.slug}` : `${baseUrl}/${page.slug}`;
-
-    sendFacebookEvent(fbLeadEvent, {
-      email,
-      phone,
-      firstName,
-      lastName,
-      fbc,
-      fbp: visitor?.fbp || '',
-      client_ip_address: clientIp,
-      client_user_agent: clientUa
-    }, {
-      event_source_url: eventSourceUrl
-    }).then(fbResult => {
       db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
-        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
+        INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_id, conversion_action_name, source, status)
+        VALUES (?, ?, ?, ?, 'lead', 'auto', ?)
       `).run(
         result.lastInsertRowid,
         eli_clickid || '',
-        fbResult.success ? 'sent' : 'failed',
-        fbResult.error || null,
-        fbResult.payload ? JSON.stringify(fbResult.payload) : null
+        gclid || '',
+        leadConfig?.conversion_action_id || null,
+        (gclid && leadConfig?.conversion_action_id) ? 'pending' : 'logged'
       );
-      console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}${fbResult.event_id ? ', event_id: ' + fbResult.event_id : ''}`);
-    }).catch(err => console.error('Failed to send Facebook CAPI Lead event:', err));
+
+      // Send to Google Ads if GCLID + conversion action configured
+      if (gclid && leadConfig?.conversion_action_id && uploadConversion) {
+        const leadId = result.lastInsertRowid;
+        uploadConversion(gclid, leadConfig.conversion_action_id).then(gadsResult => {
+          const evt = db.prepare(`SELECT id FROM conversion_events WHERE lead_id = ? AND conversion_action_name = 'lead' ORDER BY id DESC LIMIT 1`).get(leadId);
+          if (gadsResult.success && evt) {
+            db.prepare(`UPDATE conversion_events SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?`).run(evt.id);
+          } else if (evt) {
+            db.prepare(`UPDATE conversion_events SET status = 'failed', error_message = ? WHERE id = ?`).run(gadsResult.error, evt.id);
+          }
+        }).catch(err => console.error('Failed to send lead event to Google Ads:', err));
+      }
+    } catch (err) {
+      console.error('Failed to create lead conversion event:', err);
+    }
+
+    // Auto-send 'lead' event to Bing Ads if msclkid + config present
+    if (msclkid && uploadBingConversion) {
+      try {
+        const bingConfig = db.prepare('SELECT * FROM bing_ads_config WHERE id = 1').get();
+        const leadBingConfig = db.prepare(`SELECT * FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+        if (bingConfig && bingConfig.refresh_token_encrypted && leadBingConfig && leadBingConfig.send_to_bing && leadBingConfig.bing_conversion_goal_id) {
+          const leadId = result.lastInsertRowid;
+          uploadBingConversion(msclkid, leadBingConfig.bing_conversion_goal_id).then(bingResult => {
+            db.prepare(`
+              INSERT INTO conversion_events (lead_id, eli_clickid, msclkid, conversion_action_name, source, status, error_message, sent_at)
+              VALUES (?, ?, ?, 'lead', 'bing_ads', ?, ?, ${bingResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+            `).run(
+              leadId,
+              eli_clickid || '',
+              msclkid,
+              bingResult.success ? 'sent' : 'failed',
+              bingResult.error || null
+            );
+            console.log(`Bing Ads lead event for lead ${leadId}: ${bingResult.success ? 'sent' : 'failed'}`);
+          }).catch(err => console.error('Failed to send Bing Ads lead event:', err));
+        }
+      } catch (err) {
+        console.error('Failed to check Bing Ads config for lead event:', err);
+      }
+    }
+
+    // Send "Lead" event to Facebook CAPI if lead is from a meta-platform page
+    if (sourceEntity.platform === 'meta' && sendFacebookEvent) {
+      const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
+      const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
+
+      const nameParts = (full_name || '').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Look up visitor record for fbc/fbp/fbclid/IP/UA
+      const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
+
+      // Resolve fbc: visitor cookie → construct from fbclid (form or visitor)
+      let fbc = visitor?.fbc || '';
+      if (!fbc) {
+        const resolvedFbclid = fbclid || visitor?.fbclid || '';
+        if (resolvedFbclid) {
+          // Construct fbc in Facebook's format: fb.1.{timestamp_ms}.{fbclid}
+          fbc = `fb.1.${Date.now()}.${resolvedFbclid}`;
+        }
+      }
+
+      // Get client IP and user agent: prefer visitor's stored values (original browser), fallback to request
+      const clientIp = visitor?.ip_address ||
+                       req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                       req.headers['x-real-ip'] ||
+                       req.connection?.remoteAddress || req.ip || '';
+      const clientUa = visitor?.user_agent || req.headers['user-agent'] || '';
+
+      // Build event_source_url from the landing page slug
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventSourceUrl = article ? `${baseUrl}/a/${article.slug}` : `${baseUrl}/${page.slug}`;
+
+      sendFacebookEvent(fbLeadEvent, {
+        email,
+        phone,
+        firstName,
+        lastName,
+        fbc,
+        fbp: visitor?.fbp || '',
+        client_ip_address: clientIp,
+        client_user_agent: clientUa
+      }, {
+        event_source_url: eventSourceUrl
+      }).then(fbResult => {
+        db.prepare(`
+          INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
+          VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
+        `).run(
+          result.lastInsertRowid,
+          eli_clickid || '',
+          fbResult.success ? 'sent' : 'failed',
+          fbResult.error || null,
+          fbResult.payload ? JSON.stringify(fbResult.payload) : null
+        );
+        console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}${fbResult.event_id ? ', event_id: ' + fbResult.event_id : ''}`);
+      }).catch(err => console.error('Failed to send Facebook CAPI Lead event:', err));
+    }
+  } else {
+    // Log blocked lead event
+    try {
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, gclid, conversion_action_name, source, status, error_message)
+        VALUES (?, ?, ?, 'lead', 'auto', 'blocked', 'IP is on blocklist - conversion events skipped')
+      `).run(result.lastInsertRowid, eli_clickid || '', gclid || '');
+    } catch (err) {
+      console.error('Failed to log blocked lead event:', err);
+    }
   }
 
   res.json({ success: true, id: result.lastInsertRowid });
@@ -300,7 +331,7 @@ router.get('/', authenticateToken, (req, res) => {
            a.name as article_name, a.platform as article_platform,
            COALESCE(lp.name, a.name) as source_name,
            COALESCE(lp.platform, a.platform) as source_platform,
-           v.utm_campaign,
+           v.utm_campaign, v.ip_address,
            (
              SELECT ce.conversion_action_name
              FROM conversion_events ce
@@ -416,14 +447,94 @@ router.get('/', authenticateToken, (req, res) => {
   });
 });
 
+// ─── Blocked IPs Management ────────────────────────────────────────────────
+
+// List all blocked IPs
+router.get('/blocked-ips/list', authenticateToken, (req, res) => {
+  const ips = db.prepare('SELECT * FROM blocked_ips ORDER BY created_at DESC').all();
+  res.json(ips);
+});
+
+// Add IP to blocklist
+router.post('/blocked-ips', authenticateToken, (req, res) => {
+  const { ip_address, reason } = req.body;
+  if (!ip_address) return res.status(400).json({ error: 'ip_address is required' });
+
+  try {
+    const result = db.prepare('INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)').run(ip_address.trim(), reason || '');
+    // Mark all existing leads from this IP as blocked
+    const affected = db.prepare(`
+      UPDATE leads SET is_blocked = 1
+      WHERE eli_clickid IN (SELECT eli_clickid FROM visitors WHERE ip_address = ?)
+        AND is_blocked = 0
+    `).run(ip_address.trim());
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'blocked_ip', result.lastInsertRowid, `Blocked IP: ${ip_address}`, req.ip);
+    res.json({ id: result.lastInsertRowid, affected_leads: affected.changes });
+  } catch (err) {
+    if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'IP already blocked' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Remove IP from blocklist
+router.delete('/blocked-ips/:id', authenticateToken, (req, res) => {
+  const ip = db.prepare('SELECT ip_address FROM blocked_ips WHERE id = ?').get(req.params.id);
+  if (!ip) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM blocked_ips WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'blocked_ip', parseInt(req.params.id), `Unblocked IP: ${ip.ip_address}`, req.ip);
+  res.json({ message: 'IP removed from blocklist' });
+});
+
+// Manually block a lead (sets is_blocked = 1, adds visitor IP to blocklist)
+router.post('/:id/block', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT l.eli_clickid FROM leads l WHERE l.id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  db.prepare('UPDATE leads SET is_blocked = 1 WHERE id = ?').run(req.params.id);
+
+  let ip_address = null;
+  if (lead.eli_clickid) {
+    const visitor = db.prepare('SELECT ip_address FROM visitors WHERE eli_clickid = ?').get(lead.eli_clickid);
+    if (visitor && visitor.ip_address) {
+      ip_address = visitor.ip_address;
+      try {
+        db.prepare('INSERT OR IGNORE INTO blocked_ips (ip_address, reason) VALUES (?, ?)').run(ip_address, req.body.reason || 'Blocked from lead #' + req.params.id);
+        // Mark all other leads from this IP as blocked
+        db.prepare(`
+          UPDATE leads SET is_blocked = 1
+          WHERE eli_clickid IN (SELECT eli_clickid FROM visitors WHERE ip_address = ?)
+            AND is_blocked = 0
+        `).run(ip_address);
+      } catch (err) {
+        console.error('Failed to add IP to blocklist:', err);
+      }
+    }
+  }
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'lead', parseInt(req.params.id), `Blocked lead #${req.params.id}${ip_address ? ' (IP: ' + ip_address + ')' : ''}`, req.ip);
+  res.json({ success: true, ip_address });
+});
+
+// Unblock a lead (sets is_blocked = 0)
+router.post('/:id/unblock', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT id FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  db.prepare('UPDATE leads SET is_blocked = 0 WHERE id = ?').run(req.params.id);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'lead', parseInt(req.params.id), `Unblocked lead #${req.params.id}`, req.ip);
+  res.json({ success: true });
+});
+
 // Get single lead (with events timeline)
 router.get('/:id', authenticateToken, (req, res) => {
   const lead = db.prepare(`
     SELECT l.*, lp.name as landing_page_name, lp.traffic_source, lp.platform,
-           a.name as article_name, a.platform as article_platform
+           a.name as article_name, a.platform as article_platform,
+           v.ip_address
     FROM leads l
     LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
     LEFT JOIN articles a ON l.article_id = a.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE l.id = ?
   `).get(req.params.id);
 

@@ -668,6 +668,19 @@ db.exec(`
 // Add article_id to leads table
 try { db.exec(`ALTER TABLE leads ADD COLUMN article_id INTEGER`); } catch (e) {}
 
+// IP Blocklist table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS blocked_ips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT UNIQUE NOT NULL,
+    reason TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Add is_blocked column to leads
+try { db.exec(`ALTER TABLE leads ADD COLUMN is_blocked INTEGER DEFAULT 0`); } catch (e) {}
+
 // Outbrain: Business Debt landing page + direct form (no pre-qual)
 const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
 if (!obFormExists) {

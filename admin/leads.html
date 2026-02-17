@@ -26,6 +26,21 @@
     .badge-orange { background: #ffedd5; color: #9a3412; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-red { background: #fee2e2; color: #991b1b; }
+    .row-blocked { background: #fef2f2 !important; }
+    .ip-cell { font-family: monospace; font-size: 11px; }
+    .block-btn { background: none; border: 1px solid #dc2626; color: #dc2626; padding: 1px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; margin-left: 4px; }
+    .block-btn:hover { background: #dc2626; color: #fff; }
+    .unblock-btn { background: none; border: 1px solid #16a34a; color: #16a34a; padding: 1px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; margin-left: 4px; }
+    .unblock-btn:hover { background: #16a34a; color: #fff; }
+    #blockedIpsModal .modal { max-width: 640px; }
+    .blocked-ip-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-200); font-size: 13px; }
+    .blocked-ip-row:last-child { border-bottom: none; }
+    .blocked-ip-address { font-family: monospace; font-weight: 600; }
+    .blocked-ip-reason { color: var(--gray-500); font-size: 12px; margin-left: 12px; }
+    .blocked-ip-form { display: flex; gap: 8px; margin-bottom: 16px; }
+    .blocked-ip-form input { padding: 8px 10px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 0.85rem; }
+    .blocked-ip-form input[name="ip"] { width: 160px; font-family: monospace; }
+    .blocked-ip-form input[name="reason"] { flex: 1; }
 
     /* Lead Detail Layout */
     .lead-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -192,7 +207,10 @@
     <main class="main-content">
       <div class="page-header">
         <h1>Leads</h1>
-        <a href="/api/leads/export/csv" class="btn btn-secondary">Export CSV</a>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="openBlockedIpsModal()" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">Manage Blocked IPs</button>
+          <a href="/api/leads/export/csv" class="btn btn-secondary">Export CSV</a>
+        </div>
       </div>
 
       <!-- Filters -->
@@ -291,12 +309,29 @@
     </div>
   </div>
 
+  <!-- Blocked IPs Modal -->
+  <div class="modal-overlay" id="blockedIpsModal">
+    <div class="modal" style="max-width:640px;padding:24px;">
+      <div class="modal-header">
+        <h2>Blocked IPs</h2>
+        <button class="modal-close" onclick="hideModal('blockedIpsModal')">&times;</button>
+      </div>
+      <div class="blocked-ip-form">
+        <input type="text" name="ip" id="newBlockedIp" placeholder="IP Address">
+        <input type="text" name="reason" id="newBlockedReason" placeholder="Reason (optional)">
+        <button class="btn btn-primary btn-small" onclick="addBlockedIp()">Block IP</button>
+      </div>
+      <div id="blockedIpsList"></div>
+    </div>
+  </div>
+
   <script src="assets/js/common.js?v=6"></script>
   <script>
     const COLUMNS = [
       { key: 'full_name', label: 'Name', default: true },
       { key: 'company_name', label: 'Company', default: true },
       { key: 'phone', label: 'Phone', default: true },
+      { key: 'ip_address', label: 'IP Address', default: true },
       { key: 'debt_amount', label: 'Debt Amount', default: true },
       { key: 'platform', label: 'Source', default: true },
       { key: 'gclid', label: 'GCLID', default: false },
@@ -320,6 +355,9 @@
       full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      ip_address: (lead) => '<td class="ip-cell">' + escapeHtml(lead.ip_address || '-') +
+        (lead.ip_address && !lead.is_blocked ? ' <button class="block-btn" onclick="event.stopPropagation();blockIp(\'' + escapeHtml(lead.ip_address) + '\')">Block</button>' : '') +
+        (lead.is_blocked ? ' <span class="badge badge-red">Blocked</span>' : '') + '</td>',
       debt_amount: (lead) => '<td>' + escapeHtml(lead.debt_amount || '-') + '</td>',
       platform: (lead) => '<td><span class="badge badge-blue">' + escapeHtml(lead.platform || '-') + '</span></td>',
       gclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.gclid) + '">' + escapeHtml(lead.gclid || '-') + '</td>',
@@ -422,7 +460,7 @@
           tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No leads found</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead =>
-            '<tr>' + cols.map(key => cellRenderers[key] ? cellRenderers[key](lead) : '<td>-</td>').join('') + '</tr>'
+            '<tr' + (lead.is_blocked ? ' class="row-blocked"' : '') + '>' + cols.map(key => cellRenderers[key] ? cellRenderers[key](lead) : '<td>-</td>').join('') + '</tr>'
           ).join('');
         }
 
@@ -513,6 +551,10 @@
             </div>
             <div class="lead-detail-section">
               <h4>Source</h4>
+              <div class="detail-row"><span class="detail-label">IP Address</span><span class="detail-value" style="font-family:monospace;font-size:12px;">${escapeHtml(lead.ip_address || '-')}${lead.is_blocked ? ' <span class="badge badge-red">Blocked</span>' : ''}</span></div>
+              <div class="detail-row"><span class="detail-label">Block Status</span><span class="detail-value">${lead.is_blocked
+                ? '<button class="unblock-btn" onclick="unblockLead(' + lead.id + ')">Unblock Lead</button>'
+                : (lead.ip_address ? '<button class="block-btn" onclick="blockLeadFromDetail(' + lead.id + ')">Block IP</button>' : '<span style="color:var(--gray-400)">No IP</span>')}</span></div>
               <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value">${escapeHtml(lead.platform || '-')}</span></div>
               <div class="detail-row"><span class="detail-label">Landing Page</span><span class="detail-value">${escapeHtml(lead.landing_page_name || '-')}</span></div>
               ${hf.fb_form_name ? '<div class="detail-row"><span class="detail-label">FB Form</span><span class="detail-value">' + escapeHtml(hf.fb_form_name) + '</span></div>' : ''}
@@ -808,6 +850,94 @@
           transferSelect.appendChild(option);
         });
       } catch (e) {}
+    }
+
+    // ─── Blocked IPs Management ─────────────────────────────────
+    async function openBlockedIpsModal() {
+      showModal('blockedIpsModal');
+      loadBlockedIps();
+    }
+
+    async function loadBlockedIps() {
+      const container = document.getElementById('blockedIpsList');
+      try {
+        const res = await fetch('/api/leads/blocked-ips/list');
+        const ips = await res.json();
+        if (!ips.length) {
+          container.innerHTML = '<div style="color:var(--gray-400);font-size:0.85rem;padding:10px;">No blocked IPs</div>';
+          return;
+        }
+        container.innerHTML = ips.map(ip => `
+          <div class="blocked-ip-row">
+            <div>
+              <span class="blocked-ip-address">${escapeHtml(ip.ip_address)}</span>
+              <span class="blocked-ip-reason">${escapeHtml(ip.reason || '')}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-400);">${formatDate(ip.created_at)}</span>
+              <button class="action-btn action-btn-delete" onclick="removeBlockedIp(${ip.id})">Remove</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = '<div style="color:var(--red);">Failed to load blocked IPs</div>';
+      }
+    }
+
+    async function addBlockedIp() {
+      const ip = document.getElementById('newBlockedIp').value.trim();
+      if (!ip) return;
+      const reason = document.getElementById('newBlockedReason').value.trim();
+      const res = await fetch('/api/leads/blocked-ips', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip_address: ip, reason })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('newBlockedIp').value = '';
+        document.getElementById('newBlockedReason').value = '';
+        loadBlockedIps();
+        if (data.affected_leads > 0) loadLeads(currentPage);
+      } else {
+        alert(data.error || 'Failed to block IP');
+      }
+    }
+
+    async function removeBlockedIp(id) {
+      if (!confirm('Remove this IP from the blocklist?')) return;
+      await fetch('/api/leads/blocked-ips/' + id, { method: 'DELETE' });
+      loadBlockedIps();
+    }
+
+    async function blockIp(ip) {
+      if (!confirm('Block IP ' + ip + '? All leads from this IP will be marked as blocked.')) return;
+      const res = await fetch('/api/leads/blocked-ips', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip_address: ip, reason: 'Blocked from leads table' })
+      });
+      if (res.ok) loadLeads(currentPage);
+      else {
+        const data = await res.json();
+        alert(data.error || 'Failed to block IP');
+      }
+    }
+
+    async function blockLeadFromDetail(leadId) {
+      if (!confirm('Block this lead and its IP address?')) return;
+      const res = await fetch('/api/leads/' + leadId + '/block', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (res.ok) {
+        viewLead(leadId);
+        loadLeads(currentPage);
+      }
+    }
+
+    async function unblockLead(leadId) {
+      if (!confirm('Unblock this lead?')) return;
+      const res = await fetch('/api/leads/' + leadId + '/unblock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (res.ok) {
+        viewLead(leadId);
+        loadLeads(currentPage);
+      }
     }
 
     loadLandingPages();

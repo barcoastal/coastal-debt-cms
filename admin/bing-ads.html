@@ -29,6 +29,9 @@
     table td { font-size: 12px; white-space: nowrap; }
     table { min-width: 1600px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .row-blocked { background: #fef2f2 !important; }
+    .ip-cell { font-family: monospace; font-size: 11px; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -204,6 +207,7 @@
       { key: 'company_name', label: 'Company', default: true },
       { key: 'email', label: 'Email', default: true },
       { key: 'phone', label: 'Phone', default: true },
+      { key: 'ip_address', label: 'IP Address', default: true },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
       { key: 'utm_campaign', label: 'Campaign', default: true },
@@ -222,6 +226,7 @@
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      ip_address: (lead) => '<td class="ip-cell">' + escapeHtml(lead.ip_address || '-') + (lead.is_blocked ? ' <span class="badge badge-red">Blocked</span>' : '') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
       utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
@@ -344,7 +349,7 @@
           tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No Bing leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead =>
-            '<tr>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
+            '<tr' + (lead.is_blocked ? ' class="row-blocked"' : '') + '>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
           ).join('');
         }
 
