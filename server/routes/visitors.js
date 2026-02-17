@@ -63,9 +63,14 @@ router.post('/track', async (req, res) => {
         fbclid = COALESCE(NULLIF(?, ''), fbclid),
         fbc = COALESCE(NULLIF(?, ''), fbc),
         fbp = COALESCE(NULLIF(?, ''), fbp),
-        landing_page = COALESCE(NULLIF(?, ''), landing_page)
+        landing_page = COALESCE(NULLIF(?, ''), landing_page),
+        utm_source = COALESCE(NULLIF(?, ''), utm_source),
+        utm_medium = COALESCE(NULLIF(?, ''), utm_medium),
+        utm_campaign = COALESCE(NULLIF(?, ''), utm_campaign),
+        utm_term = COALESCE(NULLIF(?, ''), utm_term),
+        utm_content = COALESCE(NULLIF(?, ''), utm_content)
       WHERE eli_clickid = ?
-    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', eli_clickid);
+    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', utm_source || '', utm_medium || '', utm_campaign || '', utm_term || '', utm_content || '', eli_clickid);
 
     res.json({ success: true, visitor_id: existing.id, returning: true });
   } else {
