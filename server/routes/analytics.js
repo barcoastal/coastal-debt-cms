@@ -1058,4 +1058,85 @@ router.get('/organic/leads', authenticateToken, (req, res) => {
   });
 });
 
+// ─── Campaigns Performance ─────────────────────────────────────────────────
+
+router.get('/campaigns/performance', authenticateToken, (req, res) => {
+  try {
+    const { from, to, source, medium, platform } = req.query;
+    const tz = getConfiguredTimezone();
+    const visitorConds = [];
+    const visitorParams = [];
+
+    if (from) { visitorConds.push(`v.first_visit >= ?`); visitorParams.push(localDateToUtcRange(from, tz).start); }
+    if (to) { visitorConds.push(`v.first_visit <= ?`); visitorParams.push(localDateToUtcRange(to, tz).end); }
+    if (source) { visitorConds.push(`v.utm_source = ?`); visitorParams.push(source); }
+    if (medium) { visitorConds.push(`v.utm_medium = ?`); visitorParams.push(medium); }
+    if (platform) { visitorConds.push(`v.utm_medium = ?`); visitorParams.push(platform); }
+
+    // Only include visitors with a campaign
+    visitorConds.push(`v.utm_campaign IS NOT NULL`);
+    visitorConds.push(`v.utm_campaign != ''`);
+
+    const visitorWhere = 'WHERE ' + visitorConds.join(' AND ');
+
+    // Main query: group visitors by campaign, join to leads for form-answer counts
+    const rows = db.prepare(`
+      SELECT
+        v.utm_campaign,
+        v.utm_source,
+        v.utm_medium,
+        COUNT(DISTINCT v.id) as visitors,
+        COUNT(DISTINCT l.id) as leads,
+        COUNT(DISTINCT CASE WHEN l.debt_amount IS NOT NULL AND l.debt_amount != '' AND l.debt_amount != '0' THEN l.id END) as answered_debt,
+        COUNT(DISTINCT CASE WHEN l.has_mca IS NOT NULL AND l.has_mca != '' THEN l.id END) as answered_mca
+      FROM visitors v
+      LEFT JOIN leads l ON v.lead_id = l.id
+      ${visitorWhere}
+      GROUP BY v.utm_campaign, v.utm_source, v.utm_medium
+      ORDER BY visitors DESC
+    `).all(...visitorParams);
+
+    // Second query: event breakdowns grouped by campaign + event name
+    const eventConds = [...visitorConds.filter(c => c.startsWith('v.'))];
+    const eventParams = [...visitorParams];
+
+    const eventRows = db.prepare(`
+      SELECT
+        v.utm_campaign,
+        v.utm_source,
+        v.utm_medium,
+        ce.conversion_action_name,
+        COUNT(ce.id) as event_count
+      FROM conversion_events ce
+      JOIN leads l ON ce.lead_id = l.id
+      JOIN visitors v ON v.lead_id = l.id
+      ${visitorWhere}
+      AND ce.conversion_action_name IS NOT NULL
+      GROUP BY v.utm_campaign, v.utm_source, v.utm_medium, ce.conversion_action_name
+    `).all(...visitorParams);
+
+    // Build event map: campaign_key -> { eventName: count }
+    const eventMap = {};
+    for (const er of eventRows) {
+      const key = `${er.utm_campaign}||${er.utm_source}||${er.utm_medium}`;
+      if (!eventMap[key]) eventMap[key] = {};
+      eventMap[key][er.conversion_action_name] = er.event_count;
+    }
+
+    // Merge events into rows
+    const campaigns = rows.map(r => {
+      const key = `${r.utm_campaign}||${r.utm_source}||${r.utm_medium}`;
+      return {
+        ...r,
+        events: eventMap[key] || {}
+      };
+    });
+
+    res.json({ campaigns });
+  } catch (err) {
+    console.error('Campaigns performance error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

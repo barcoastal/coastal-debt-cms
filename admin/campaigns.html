@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaigns | Coastal Debt CMS</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+        </div>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Campaign Performance</h1>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card card">
+          <div class="stat-label">Total Campaigns</div>
+          <div class="stat-value" id="statCampaigns">-</div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-label">Total Visitors</div>
+          <div class="stat-value" id="statVisitors">-</div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-label">Total Leads</div>
+          <div class="stat-value" id="statLeads">-</div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-label">Overall CVR%</div>
+          <div class="stat-value" id="statCvr">-</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="filters">
+          <div class="time-range-btns">
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button class="active" data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+          </div>
+          <input type="date" id="fromDate" class="tr-from" style="display:none;">
+          <input type="date" id="toDate" class="tr-to" style="display:none;">
+          <select id="filterSource">
+            <option value="">All Sources</option>
+          </select>
+          <select id="filterMedium">
+            <option value="">All Mediums</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadCampaigns()">Apply</button>
+          <button class="btn btn-secondary" onclick="exportCsv()" style="margin-left:auto;">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Performance Table -->
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr id="tableHead"></tr>
+            </thead>
+            <tbody id="campaignsTable">
+              <tr><td colspan="99" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/common.js?v=6"></script>
+  <script>
+    let campaignsData = [];
+    let eventNames = [];
+    let currentRange = 'all';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadCampaigns();
+    }
+
+    function getFilters() {
+      const dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append('from', dateRange.from);
+      if (dateRange.to) params.append('to', dateRange.to);
+      const source = document.getElementById('filterSource').value;
+      const medium = document.getElementById('filterMedium').value;
+      if (source) params.append('source', source);
+      if (medium) params.append('medium', medium);
+      return params;
+    }
+
+    async function loadCampaigns() {
+      const params = getFilters();
+
+      // Fetch performance data and event names in parallel
+      const [perfRes, namesRes] = await Promise.all([
+        fetch('/api/analytics/campaigns/performance?' + params),
+        fetch('/api/analytics/event-names')
+      ]);
+
+      const perfData = await perfRes.json();
+      const names = await namesRes.json();
+
+      campaignsData = perfData.campaigns || [];
+      eventNames = names || [];
+
+      renderTable();
+      updateStats();
+    }
+
+    function renderTable() {
+      // Build header
+      const fixedCols = ['Campaign', 'Source', 'Medium', 'Visitors', 'Answered Debt', 'Answered MCA', 'Leads', 'CVR%'];
+      let headerHtml = fixedCols.map(c => '<th>' + c + '</th>').join('');
+      headerHtml += eventNames.map(n => '<th>' + escapeHtml(n) + '</th>').join('');
+      document.getElementById('tableHead').innerHTML = headerHtml;
+
+      // Build rows
+      const tbody = document.getElementById('campaignsTable');
+      if (campaignsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No campaign data found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = campaignsData.map(r => {
+        const cvr = r.visitors > 0 ? ((r.leads / r.visitors) * 100).toFixed(1) + '%' : '0%';
+        let html = '<tr>';
+        html += '<td><strong>' + escapeHtml(r.utm_campaign) + '</strong></td>';
+        html += '<td>' + escapeHtml(r.utm_source || '-') + '</td>';
+        html += '<td>' + escapeHtml(r.utm_medium || '-') + '</td>';
+        html += '<td>' + r.visitors.toLocaleString() + '</td>';
+        html += '<td>' + r.answered_debt.toLocaleString() + '</td>';
+        html += '<td>' + r.answered_mca.toLocaleString() + '</td>';
+        html += '<td>' + r.leads.toLocaleString() + '</td>';
+        html += '<td><span class="badge badge-blue">' + cvr + '</span></td>';
+        // Dynamic event columns
+        for (const name of eventNames) {
+          const count = (r.events && r.events[name]) || 0;
+          html += '<td>' + (count > 0 ? count.toLocaleString() : '-') + '</td>';
+        }
+        html += '</tr>';
+        return html;
+      }).join('');
+    }
+
+    function updateStats() {
+      const totalCampaigns = campaignsData.length;
+      const totalVisitors = campaignsData.reduce((s, r) => s + r.visitors, 0);
+      const totalLeads = campaignsData.reduce((s, r) => s + r.leads, 0);
+      const cvr = totalVisitors > 0 ? ((totalLeads / totalVisitors) * 100).toFixed(1) + '%' : '0%';
+
+      document.getElementById('statCampaigns').textContent = totalCampaigns.toLocaleString();
+      document.getElementById('statVisitors').textContent = totalVisitors.toLocaleString();
+      document.getElementById('statLeads').textContent = totalLeads.toLocaleString();
+      document.getElementById('statCvr').textContent = cvr;
+    }
+
+    async function loadFilterOptions() {
+      // Populate source and medium dropdowns from visitor data
+      try {
+        const res = await fetch('/api/analytics/campaigns');
+        // We need distinct sources/mediums — use the campaigns data itself after first load
+      } catch (e) { /* ignore */ }
+    }
+
+    function populateFilterDropdowns() {
+      const sources = [...new Set(campaignsData.map(r => r.utm_source).filter(Boolean))].sort();
+      const mediums = [...new Set(campaignsData.map(r => r.utm_medium).filter(Boolean))].sort();
+
+      const srcSelect = document.getElementById('filterSource');
+      const prevSrc = srcSelect.value;
+      srcSelect.innerHTML = '<option value="">All Sources</option>' +
+        sources.map(s => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>').join('');
+      srcSelect.value = prevSrc;
+
+      const medSelect = document.getElementById('filterMedium');
+      const prevMed = medSelect.value;
+      medSelect.innerHTML = '<option value="">All Mediums</option>' +
+        mediums.map(m => '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>').join('');
+      medSelect.value = prevMed;
+    }
+
+    // Override loadCampaigns to also populate filter dropdowns
+    const _origLoad = loadCampaigns;
+    loadCampaigns = async function() {
+      await _origLoad();
+      populateFilterDropdowns();
+    };
+
+    function exportCsv() {
+      if (campaignsData.length === 0) return;
+
+      const fixedHeaders = ['Campaign', 'Source', 'Medium', 'Visitors', 'Answered Debt', 'Answered MCA', 'Leads', 'CVR%'];
+      const headers = [...fixedHeaders, ...eventNames];
+
+      const rows = campaignsData.map(r => {
+        const cvr = r.visitors > 0 ? ((r.leads / r.visitors) * 100).toFixed(1) : '0';
+        const fixed = [r.utm_campaign, r.utm_source || '', r.utm_medium || '', r.visitors, r.answered_debt, r.answered_mca, r.leads, cvr + '%'];
+        const events = eventNames.map(n => (r.events && r.events[n]) || 0);
+        return [...fixed, ...events];
+      });
+
+      let csv = headers.map(h => '"' + h.replace(/"/g, '""') + '"').join(',') + '\n';
+      csv += rows.map(row => row.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'campaigns_performance.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    loadCampaigns();
+  </script>
+</body>
+</html>

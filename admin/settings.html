@@ -134,6 +134,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Conversions
         </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
         <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           Webleads
@@ -702,7 +706,7 @@
       try {
         const res = await api('/api/facebook/test', { method: 'POST' });
         if (res.success) {
-          alert('Connected! Page: ' + res.page_name + ' (ID: ' + res.page_id + ')');
+          alert(res.message || 'Lead event sent successfully!');
         } else {
           alert('Error: ' + (res.error || 'Unknown error'));
         }
