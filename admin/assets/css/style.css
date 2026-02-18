@@ -160,6 +160,18 @@ body {
 .sidebar-logo {
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.sidebar-logo .nautilus-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #fff;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: block;
 }
 
 .sidebar-logo h1 {
