@@ -312,11 +312,12 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
           } else {
             try {
               const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
-              if (fbConfig && fbConfig.ad_account_id && fbConfig.page_access_token) {
+              const fbAdsToken = fbConfig?.user_access_token || fbConfig?.page_access_token;
+              if (fbConfig && fbConfig.ad_account_id && fbAdsToken) {
                 const params = new URLSearchParams({
                   fields: 'spend',
                   date_preset: 'maximum',
-                  access_token: fbConfig.page_access_token
+                  access_token: fbAdsToken
                 });
                 const normalizedAcctId = fbConfig.ad_account_id.startsWith('act_') ? fbConfig.ad_account_id : 'act_' + fbConfig.ad_account_id;
                 const fbRes = await fetch(`https://graph.facebook.com/v21.0/${normalizedAcctId}/insights?${params}`);

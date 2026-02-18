@@ -1151,24 +1151,36 @@ router.post('/config', authenticateToken, (req, res) => {
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
-    if (!config || !config.ad_account_id || !config.page_access_token) {
-      return res.status(400).json({ error: 'Ad Account ID or Access Token not configured' });
+    if (!config || !config.ad_account_id) {
+      return res.status(400).json({ error: 'Ad Account ID not configured' });
     }
+
+    // Use user_access_token for Marketing API (has ads_read), fall back to page token
+    const adsToken = config.user_access_token || config.page_access_token;
+    if (!adsToken) {
+      return res.status(400).json({ error: 'No access token configured' });
+    }
+
+    const adAccountId = normalizeAdAccountId(config.ad_account_id);
 
     // Query Facebook Marketing API for account insights
     const params = new URLSearchParams({
       fields: 'spend,impressions,clicks,actions',
       date_preset: 'last_30d',
-      access_token: config.page_access_token
+      access_token: adsToken
     });
 
     const response = await fetch(
-      `https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`
+      `https://graph.facebook.com/v21.0/${adAccountId}/insights?${params}`
     );
     const data = await response.json();
 
     if (data.error) {
-      return res.status(400).json({ error: data.error.message });
+      return res.json({
+        total_spend: 0, avg_cpl: 0, fb_leads: 0, local_leads: 0, impressions: 0, clicks: 0,
+        fb_error: data.error.message,
+        debug: { ad_account_id: adAccountId, token_type: config.user_access_token ? 'user' : 'page', error_type: data.error.type, error_code: data.error.code }
+      });
     }
 
     // Extract values from insights response
@@ -1495,7 +1507,7 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
         filtering: filterJson,
         time_range: JSON.stringify({ since: dateStr, until: dateStr }),
         time_increment: '1',
-        access_token: config.page_access_token
+        access_token: config.user_access_token || config.page_access_token
       });
       const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`);
       const insightsData = await insightsRes.json();
@@ -1515,7 +1527,7 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
         fields: 'spend',
         time_range: JSON.stringify({ since: dateStr, until: dateStr }),
         time_increment: '1',
-        access_token: config.page_access_token
+        access_token: config.user_access_token || config.page_access_token
       });
       const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`);
       const insightsData = await insightsRes.json();
