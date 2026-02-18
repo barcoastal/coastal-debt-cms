@@ -3,7 +3,7 @@ const { authenticateToken } = require('./auth');
 
 const router = express.Router();
 
-const API_KEY = process.env.REDTRACK_API_KEY || '';
+const API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
 const BASE_URL = 'https://api.redtrack.io/report';
 
 // GET /api/redtrack/campaigns — Campaign-level report
