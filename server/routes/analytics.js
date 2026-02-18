@@ -295,29 +295,40 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
         `).get();
         cost = (costRow.total || 0) / 100;
       } else if (platform === 'meta') {
-        // Meta cost from Facebook Marketing API (cached 5 min)
-        const now = Date.now();
-        if (fbSpendCache.data !== null && now - fbSpendCache.timestamp < 5 * 60 * 1000) {
-          cost = fbSpendCache.data;
-        } else {
-          try {
-            const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
-            if (fbConfig && fbConfig.ad_account_id && fbConfig.page_access_token) {
-              const params = new URLSearchParams({
-                fields: 'spend',
-                date_preset: 'maximum',
-                access_token: fbConfig.page_access_token
-              });
-              const fbRes = await fetch(`https://graph.facebook.com/v21.0/${fbConfig.ad_account_id}/insights?${params}`);
-              const fbData = await fbRes.json();
-              if (fbData.data && fbData.data.length > 0) {
-                cost = parseFloat(fbData.data[0].spend || 0);
+        // Meta cost from DB (per-lead cost_cents, same as Google)
+        const metaCostRow = db.prepare(`
+          SELECT COALESCE(SUM(l.cost_cents), 0) as total
+          FROM leads l
+          JOIN landing_pages lp ON l.landing_page_id = lp.id
+          WHERE lp.platform = 'meta'
+        `).get();
+        cost = (metaCostRow.total || 0) / 100;
+
+        // Fallback to Facebook API if no DB costs exist
+        if (cost === 0) {
+          const now = Date.now();
+          if (fbSpendCache.data !== null && now - fbSpendCache.timestamp < 5 * 60 * 1000) {
+            cost = fbSpendCache.data;
+          } else {
+            try {
+              const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+              if (fbConfig && fbConfig.ad_account_id && fbConfig.page_access_token) {
+                const params = new URLSearchParams({
+                  fields: 'spend',
+                  date_preset: 'maximum',
+                  access_token: fbConfig.page_access_token
+                });
+                const fbRes = await fetch(`https://graph.facebook.com/v21.0/${fbConfig.ad_account_id}/insights?${params}`);
+                const fbData = await fbRes.json();
+                if (fbData.data && fbData.data.length > 0) {
+                  cost = parseFloat(fbData.data[0].spend || 0);
+                }
               }
+            } catch (err) {
+              console.error('Failed to fetch Facebook spend:', err.message);
             }
-          } catch (err) {
-            console.error('Failed to fetch Facebook spend:', err.message);
+            fbSpendCache = { data: cost, timestamp: now };
           }
-          fbSpendCache = { data: cost, timestamp: now };
         }
       }
       // Bing: cost = 0 (stub)
@@ -772,11 +783,25 @@ router.get('/meta-ads/summary', authenticateToken, (req, res) => {
 
   const totalLeads = leadStats.total_leads || 0;
 
+  // Cost aggregation from leads.cost_cents
+  const costStats = db.prepare(`
+    SELECT COALESCE(SUM(l.cost_cents), 0) as total_cost_cents,
+           COUNT(l.cost_cents) as leads_with_cost
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'meta' ${dateWhere}
+  `).get(...dateParams);
+
+  const totalCostCents = costStats.total_cost_cents || 0;
+
   res.json({
     total_leads: totalLeads,
     instant_form_leads: instantFormCount || 0,
     landing_page_leads: totalLeads - (instantFormCount || 0),
-    events_sent: eventStats.events_sent || 0
+    events_sent: eventStats.events_sent || 0,
+    total_cost_cents: totalCostCents,
+    leads_with_cost: costStats.leads_with_cost || 0,
+    avg_cpl_cents: totalLeads > 0 ? Math.round(totalCostCents / totalLeads) : 0
   });
 });
 
@@ -830,6 +855,7 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
   const leads = db.prepare(`
     SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid, l.fbclid, l.hidden_fields, l.created_at, l.is_blocked,
+           l.cost_cents,
            lp.name as landing_page_name,
            v.ip_address,
            CASE WHEN l.hidden_fields LIKE '%"source":"facebook_instant_form"%' THEN 'Instant Form' ELSE 'Landing Page' END as lead_source,

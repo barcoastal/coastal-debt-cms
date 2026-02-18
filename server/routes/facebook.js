@@ -1163,6 +1163,242 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 /**
+ * Fetch campaign-level costs from Facebook Marketing API and distribute to leads
+ * POST /api/facebook/fetch-all-costs
+ */
+router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+    if (!config || !config.ad_account_id || !config.page_access_token) {
+      return res.status(400).json({ error: 'Ad Account ID or Access Token not configured' });
+    }
+
+    // Get meta leads without cost that have fb_campaign_id in hidden_fields
+    const leads = db.prepare(`
+      SELECT l.id, l.hidden_fields, l.created_at FROM leads l
+      JOIN landing_pages lp ON l.landing_page_id = lp.id
+      WHERE lp.platform = 'meta' AND l.cost_cents IS NULL
+      ORDER BY l.created_at DESC LIMIT 500
+    `).all();
+
+    if (!leads.length) {
+      return res.json({ total: 0, fetched: 0, failed: 0, skipped: 0, message: 'No leads without cost data' });
+    }
+
+    // Extract fb_campaign_id and group leads by (campaign_id, date)
+    const campaignDateLeads = {}; // { campaignId: { date: [leadIds] } }
+    const campaignIds = new Set();
+    let skipped = 0;
+
+    for (const lead of leads) {
+      let hf = {};
+      try { hf = JSON.parse(lead.hidden_fields || '{}'); } catch (e) {}
+
+      const campaignId = hf.fb_campaign_id;
+      if (!campaignId) {
+        skipped++;
+        continue;
+      }
+
+      // Extract date (YYYY-MM-DD) from created_at
+      const dateStr = (lead.created_at || '').substring(0, 10);
+      if (!dateStr) {
+        skipped++;
+        continue;
+      }
+
+      campaignIds.add(campaignId);
+      if (!campaignDateLeads[campaignId]) campaignDateLeads[campaignId] = {};
+      if (!campaignDateLeads[campaignId][dateStr]) campaignDateLeads[campaignId][dateStr] = [];
+      campaignDateLeads[campaignId][dateStr].push(lead.id);
+    }
+
+    if (!campaignIds.size) {
+      return res.json({ total: leads.length, fetched: 0, failed: 0, skipped, message: 'No leads with fb_campaign_id in hidden_fields' });
+    }
+
+    // Find date range across all leads
+    let earliestDate = null, latestDate = null;
+    for (const cid of Object.keys(campaignDateLeads)) {
+      for (const d of Object.keys(campaignDateLeads[cid])) {
+        if (!earliestDate || d < earliestDate) earliestDate = d;
+        if (!latestDate || d > latestDate) latestDate = d;
+      }
+    }
+
+    // Fetch daily spend per campaign from Facebook Marketing API
+    const campaignIdArr = Array.from(campaignIds);
+    const filterJson = JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: campaignIdArr }]);
+    const params = new URLSearchParams({
+      fields: 'spend,campaign_id',
+      level: 'campaign',
+      filtering: filterJson,
+      time_range: JSON.stringify({ since: earliestDate, until: latestDate }),
+      time_increment: '1',
+      access_token: config.page_access_token,
+      limit: '500'
+    });
+
+    const insightsRes = await fetch(
+      `https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${params}`
+    );
+    const insightsData = await insightsRes.json();
+
+    if (insightsData.error) {
+      return res.status(400).json({ error: insightsData.error.message });
+    }
+
+    // Build spend lookup: { campaignId: { date: spend_dollars } }
+    const spendMap = {};
+    for (const row of insightsData.data || []) {
+      const cid = row.campaign_id;
+      const dateStr = row.date_start; // daily increment returns date_start = date_stop
+      const spend = parseFloat(row.spend || 0);
+      if (!spendMap[cid]) spendMap[cid] = {};
+      spendMap[cid][dateStr] = spend;
+    }
+
+    // Handle pagination if needed
+    let nextPage = insightsData.paging?.next;
+    while (nextPage) {
+      const nextRes = await fetch(nextPage);
+      const nextData = await nextRes.json();
+      if (nextData.error) break;
+      for (const row of nextData.data || []) {
+        const cid = row.campaign_id;
+        const dateStr = row.date_start;
+        const spend = parseFloat(row.spend || 0);
+        if (!spendMap[cid]) spendMap[cid] = {};
+        spendMap[cid][dateStr] = spend;
+      }
+      nextPage = nextData.paging?.next;
+    }
+
+    // Distribute costs: cost_per_lead = daily_spend / leads_that_day
+    let fetched = 0;
+    let failed = 0;
+    const updateStmt = db.prepare(`
+      UPDATE leads SET cost_cents = ?, cost_currency = 'USD', cost_fetched_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+
+    for (const cid of Object.keys(campaignDateLeads)) {
+      for (const dateStr of Object.keys(campaignDateLeads[cid])) {
+        const leadIds = campaignDateLeads[cid][dateStr];
+        const dailySpend = spendMap[cid]?.[dateStr];
+
+        if (dailySpend === undefined || dailySpend === 0) {
+          failed += leadIds.length;
+          continue;
+        }
+
+        const costCentsPerLead = Math.round((dailySpend * 100) / leadIds.length);
+
+        for (const leadId of leadIds) {
+          try {
+            updateStmt.run(costCentsPerLead, leadId);
+            fetched++;
+          } catch (e) {
+            failed++;
+          }
+        }
+      }
+    }
+
+    res.json({ total: leads.length, fetched, failed, skipped });
+  } catch (err) {
+    console.error('Facebook fetch-all-costs error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Fetch cost for a single lead from Facebook Marketing API
+ * POST /api/facebook/fetch-lead-cost/:leadId
+ */
+router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
+  try {
+    const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(req.params.leadId);
+    if (!lead) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    let hf = {};
+    try { hf = JSON.parse(lead.hidden_fields || '{}'); } catch (e) {}
+
+    const campaignId = hf.fb_campaign_id;
+    if (!campaignId) {
+      return res.status(400).json({ error: 'Lead has no fb_campaign_id in hidden_fields' });
+    }
+
+    const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+    if (!config || !config.ad_account_id || !config.page_access_token) {
+      return res.status(400).json({ error: 'Ad Account ID or Access Token not configured' });
+    }
+
+    const dateStr = (lead.created_at || '').substring(0, 10);
+    if (!dateStr) {
+      return res.status(400).json({ error: 'Lead has no valid created_at date' });
+    }
+
+    // Fetch daily spend for this campaign on this date
+    const filterJson = JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: [campaignId] }]);
+    const params = new URLSearchParams({
+      fields: 'spend,campaign_id',
+      level: 'campaign',
+      filtering: filterJson,
+      time_range: JSON.stringify({ since: dateStr, until: dateStr }),
+      time_increment: '1',
+      access_token: config.page_access_token
+    });
+
+    const insightsRes = await fetch(
+      `https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${params}`
+    );
+    const insightsData = await insightsRes.json();
+
+    if (insightsData.error) {
+      return res.status(400).json({ error: insightsData.error.message });
+    }
+
+    const dailySpend = insightsData.data?.[0] ? parseFloat(insightsData.data[0].spend || 0) : 0;
+
+    if (!dailySpend) {
+      return res.json({ cost_cents: null, message: 'No spend data found for this campaign/date' });
+    }
+
+    // Count how many leads share this campaign + date
+    const leadsOnDay = db.prepare(`
+      SELECT COUNT(*) as cnt FROM leads l
+      JOIN landing_pages lp ON l.landing_page_id = lp.id
+      WHERE lp.platform = 'meta'
+        AND l.hidden_fields LIKE ?
+        AND l.created_at >= ? AND l.created_at < ?
+    `).get(
+      `%"fb_campaign_id":"${campaignId}"%`,
+      dateStr + ' 00:00:00',
+      dateStr.replace(/(\d{4})-(\d{2})-(\d{2})/, (_, y, m, d) => {
+        const next = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + 1);
+        return next.toISOString().split('T')[0];
+      }) + ' 00:00:00'
+    );
+
+    const leadsCount = leadsOnDay.cnt || 1;
+    const costCents = Math.round((dailySpend * 100) / leadsCount);
+
+    db.prepare(`
+      UPDATE leads SET cost_cents = ?, cost_currency = 'USD', cost_fetched_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(costCents, lead.id);
+
+    res.json({ cost_cents: costCents, cost_currency: 'USD', daily_spend: dailySpend, leads_on_day: leadsCount });
+  } catch (err) {
+    console.error('Facebook fetch-lead-cost error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * ADMIN: Test Facebook connection by sending a test event to CAPI
  */
 router.post('/test', authenticateToken, async (req, res) => {

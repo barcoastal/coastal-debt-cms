@@ -162,6 +162,14 @@
           <div class="stat-value" id="statEvents">-</div>
           <div class="stat-label">Conversions Sent</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statSpend">-</div>
+          <div class="stat-label">Total Ad Spend</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statCPL">-</div>
+          <div class="stat-label">Avg Cost Per Lead</div>
+        </div>
       </div>
 
       <!-- Conversion Events Breakdown -->
@@ -181,8 +189,9 @@
 
       <!-- Meta Leads Table -->
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
           <h3 class="card-title">Meta Leads</h3>
+          <button class="btn btn-primary btn-small" id="fetchCostsBtn" onclick="fetchCosts()">Fetch Costs</button>
         </div>
         <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
@@ -222,6 +231,7 @@
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
       { key: 'fbclid', label: 'FBCLID', default: true },
       { key: 'lead_source', label: 'Source', default: true },
+      { key: 'cost', label: 'Cost', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
       { key: 'created_at', label: 'Date', default: true }
     ];
@@ -239,6 +249,7 @@
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
       fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid || '') + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
       lead_source: (lead) => '<td>' + getSourceBadge(lead.lead_source) + '</td>',
+      cost: (lead) => '<td>' + (lead.cost_cents ? '$' + (lead.cost_cents / 100).toFixed(2) : '-') + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
       created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'
     };
@@ -291,6 +302,8 @@
         document.getElementById('statInstant').textContent = data.instant_form_leads;
         document.getElementById('statLP').textContent = data.landing_page_leads;
         document.getElementById('statEvents').textContent = data.events_sent;
+        document.getElementById('statSpend').textContent = data.total_cost_cents ? '$' + (data.total_cost_cents / 100).toFixed(2) : '$0.00';
+        document.getElementById('statCPL').textContent = data.avg_cpl_cents ? '$' + (data.avg_cpl_cents / 100).toFixed(2) : '-';
       } catch (err) {
         console.error('Error loading summary:', err);
       }
@@ -384,6 +397,23 @@
     }
 
     loadAll();
+
+    async function fetchCosts() {
+      const btn = document.getElementById('fetchCostsBtn');
+      btn.disabled = true;
+      btn.textContent = 'Fetching...';
+      try {
+        const data = await api('/api/facebook/fetch-all-costs', { method: 'POST' });
+        const msg = `Fetched: ${data.fetched || 0}, Failed: ${data.failed || 0}, Skipped: ${data.skipped || 0}`;
+        alert(msg);
+        loadAll();
+      } catch (err) {
+        alert('Error fetching costs: ' + (err.message || err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Fetch Costs';
+      }
+    }
   </script>
 <script>
 (function(){
