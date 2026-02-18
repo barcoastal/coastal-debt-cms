@@ -232,10 +232,10 @@
     }
 
     const cellRenderers = {
-      campaign_name: function(r) { return '<td>' + escapeHtml(r.sub1 || r.campaign_name || r.name || '-') + '</td>'; },
+      campaign_name: function(r) { return '<td>' + escapeHtml(r.campaign || r.campaign_name || r.name || '-') + '</td>'; },
       clicks: function(r) { return '<td>' + fmtNum(r.clicks) + '</td>'; },
       conversions: function(r) { return '<td>' + fmtNum(r.conversions || r.conv) + '</td>'; },
-      cr: function(r) { return '<td>' + fmtPct(r.cr) + '</td>'; },
+      cr: function(r) { return '<td>' + fmtPct((Number(r.cr) || 0) * 100) + '</td>'; },
       cost: function(r) { return '<td>' + fmtMoney(r.cost) + '</td>'; },
       revenue: function(r) { return '<td>' + fmtMoney(r.revenue) + '</td>'; },
       profit: function(r) { return '<td class="' + profitClass(r.profit) + '">' + fmtMoney(r.profit) + '</td>'; },

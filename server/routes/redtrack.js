@@ -25,7 +25,8 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
       return res.status(response.status).json({ error: data.message || 'RedTrack API error' });
     }
 
-    res.json(data);
+    // API returns { items: [...], total: {...} } — send just the items array
+    res.json(data.items || []);
   } catch (err) {
     console.error('RedTrack campaigns error:', err);
     res.status(500).json({ error: 'Failed to fetch RedTrack campaigns' });
