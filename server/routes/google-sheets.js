@@ -66,8 +66,19 @@ async function getAuthClient() {
   const scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 
   // Prefer env var (for Railway/production), fall back to local key file
-  if (process.env.GOOGLE_SHEETS_KEY_JSON) {
-    const credentials = JSON.parse(process.env.GOOGLE_SHEETS_KEY_JSON);
+  const envKey = process.env.GOOGLE_SHEETS_KEY_JSON;
+  if (envKey) {
+    let credentials;
+    try {
+      credentials = JSON.parse(envKey);
+    } catch (e) {
+      // If Railway escapes the JSON, try decoding common issues
+      credentials = JSON.parse(envKey.replace(/\\n/g, '\n'));
+    }
+    // Ensure private_key newlines are actual newlines
+    if (credentials.private_key) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
     const auth = new google.auth.GoogleAuth({ credentials, scopes });
     authClient = await auth.getClient();
   } else {
@@ -138,8 +149,11 @@ router.get('/leads', authenticateToken, async (req, res) => {
 
     res.json(allRows);
   } catch (err) {
-    console.error('Google Sheets leads error:', err);
-    res.status(500).json({ error: 'Failed to fetch Google Sheets leads' });
+    console.error('Google Sheets leads error:', err.message || err);
+    const detail = process.env.GOOGLE_SHEETS_KEY_JSON
+      ? 'Auth via env var failed: ' + (err.message || 'unknown')
+      : 'Key file missing or invalid: ' + (err.message || 'unknown');
+    res.status(500).json({ error: 'Failed to fetch Google Sheets leads', detail });
   }
 });
 
