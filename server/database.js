@@ -1091,4 +1091,39 @@ if (!obFormExists) {
   }
 }
 
+// Migration: ensure all forms have the standard hidden fields
+(function() {
+  const requiredHiddenFields = [
+    {name:'keyword', label:'Keyword'},
+    {name:'fb_campaign_id', label:'FB Campaign ID'},
+    {name:'fb_adset_id', label:'FB Ad Set ID'},
+    {name:'fb_ad_id', label:'FB Ad ID'},
+    {name:'fb_campaign_name', label:'FB Campaign Name'},
+    {name:'fb_adset_name', label:'FB Ad Set Name'},
+    {name:'fb_ad_name', label:'FB Ad Name'},
+    {name:'fb_placement', label:'FB Placement'},
+    {name:'visitor_ip', label:'Visitor IP'}
+  ];
+  const forms = db.prepare('SELECT id, name, fields FROM forms').all();
+  for (const form of forms) {
+    try {
+      const fields = JSON.parse(form.fields);
+      let added = 0;
+      for (const rf of requiredHiddenFields) {
+        if (!fields.some(f => f.name === rf.name)) {
+          const idx = fields.findIndex(f => f.name === 'page_url');
+          const entry = {name: rf.name, label: rf.label, type: 'hidden', placeholder: '', options: '', required: false};
+          if (idx !== -1) fields.splice(idx, 0, entry);
+          else fields.push(entry);
+          added++;
+        }
+      }
+      if (added > 0) {
+        db.prepare('UPDATE forms SET fields = ? WHERE id = ?').run(JSON.stringify(fields), form.id);
+        console.log('Migration: added ' + added + ' hidden fields to form "' + form.name + '"');
+      }
+    } catch (e) {}
+  }
+})();
+
 module.exports = db;
