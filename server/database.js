@@ -608,13 +608,6 @@ if (formCount.count === 0) {
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_campaign_id","label":"FB Campaign ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_adset_id","label":"FB Ad Set ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_ad_id","label":"FB Ad ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_campaign_name","label":"FB Campaign Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_adset_name","label":"FB Ad Set Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_ad_name","label":"FB Ad Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_placement","label":"FB Placement","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
@@ -702,13 +695,6 @@ if (!obFormExists) {
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_campaign_id","label":"FB Campaign ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_adset_id","label":"FB Ad Set ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_ad_id","label":"FB Ad ID","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_campaign_name","label":"FB Campaign Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_adset_name","label":"FB Ad Set Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_ad_name","label":"FB Ad Name","type":"hidden","placeholder":"","options":"","required":false},
-    {"name":"fb_placement","label":"FB Placement","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
@@ -1091,36 +1077,55 @@ if (!obFormExists) {
   }
 }
 
-// Migration: ensure all forms have the standard hidden fields
+// Migration: ensure all forms have standard hidden fields (Meta-specific only on Meta/Facebook forms)
 (function() {
-  const requiredHiddenFields = [
+  var commonFields = [
     {name:'keyword', label:'Keyword'},
+    {name:'visitor_ip', label:'Visitor IP'}
+  ];
+  var metaOnlyFields = [
     {name:'fb_campaign_id', label:'FB Campaign ID'},
     {name:'fb_adset_id', label:'FB Ad Set ID'},
     {name:'fb_ad_id', label:'FB Ad ID'},
     {name:'fb_campaign_name', label:'FB Campaign Name'},
     {name:'fb_adset_name', label:'FB Ad Set Name'},
     {name:'fb_ad_name', label:'FB Ad Name'},
-    {name:'fb_placement', label:'FB Placement'},
-    {name:'visitor_ip', label:'Visitor IP'}
+    {name:'fb_placement', label:'FB Placement'}
   ];
-  const forms = db.prepare('SELECT id, name, fields FROM forms').all();
-  for (const form of forms) {
+  var metaFieldNames = metaOnlyFields.map(function(f) { return f.name; });
+  var forms = db.prepare('SELECT id, name, platform, fields FROM forms').all();
+  for (var i = 0; i < forms.length; i++) {
+    var form = forms[i];
     try {
-      const fields = JSON.parse(form.fields);
-      let added = 0;
-      for (const rf of requiredHiddenFields) {
-        if (!fields.some(f => f.name === rf.name)) {
-          const idx = fields.findIndex(f => f.name === 'page_url');
-          const entry = {name: rf.name, label: rf.label, type: 'hidden', placeholder: '', options: '', required: false};
+      var fields = JSON.parse(form.fields);
+      var isMeta = form.platform === 'meta' || form.name.toLowerCase().indexOf('facebook') !== -1;
+      var fieldsToAdd = isMeta ? commonFields.concat(metaOnlyFields) : commonFields;
+      var added = 0;
+
+      // Add missing fields
+      for (var j = 0; j < fieldsToAdd.length; j++) {
+        var rf = fieldsToAdd[j];
+        if (!fields.some(function(f) { return f.name === rf.name; })) {
+          var idx = -1;
+          for (var k = 0; k < fields.length; k++) { if (fields[k].name === 'page_url') { idx = k; break; } }
+          var entry = {name: rf.name, label: rf.label, type: 'hidden', placeholder: '', options: '', required: false};
           if (idx !== -1) fields.splice(idx, 0, entry);
           else fields.push(entry);
           added++;
         }
       }
+
+      // Remove Meta-only fields from non-Meta forms
+      if (!isMeta) {
+        var before = fields.length;
+        fields = fields.filter(function(f) { return metaFieldNames.indexOf(f.name) === -1; });
+        var removed = before - fields.length;
+        if (removed > 0) added += removed;
+      }
+
       if (added > 0) {
         db.prepare('UPDATE forms SET fields = ? WHERE id = ?').run(JSON.stringify(fields), form.id);
-        console.log('Migration: added ' + added + ' hidden fields to form "' + form.name + '"');
+        console.log('Migration: updated hidden fields on form "' + form.name + '"');
       }
     } catch (e) {}
   }
