@@ -438,7 +438,7 @@ router.get('/google-ads/leads', authenticateToken, (req, res) => {
   `).get(...params).count;
 
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.cost_cents, l.cost_currency, l.gclid, l.eli_clickid, l.rt_clickid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo, l.stage,
            l.contract_sign_date, l.total_debt_sign, l.is_blocked,
@@ -564,7 +564,7 @@ router.get('/bing-ads/leads', authenticateToken, (req, res) => {
   `).get(...params).count;
 
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid, l.msclkid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
            l.stage, l.contract_sign_date, l.total_debt_sign, l.is_blocked,
@@ -690,7 +690,7 @@ router.get('/outbrain/leads', authenticateToken, (req, res) => {
   `).get(...params).count;
 
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid,
            l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
            l.stage, l.contract_sign_date, l.total_debt_sign, l.is_blocked,
@@ -828,7 +828,7 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
   `).get(...params).count;
 
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.eli_clickid, l.rt_clickid, l.fbclid, l.hidden_fields, l.created_at, l.is_blocked,
            lp.name as landing_page_name,
            v.ip_address,
@@ -1039,7 +1039,7 @@ router.get('/organic/leads', authenticateToken, (req, res) => {
   const ttp = trafficTypeParams();
 
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
            l.created_at, v.referrer_url, v.utm_source, v.utm_medium,
            ${TRAFFIC_TYPE_CASE} as traffic_type
     FROM leads l

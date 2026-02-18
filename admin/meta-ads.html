@@ -211,7 +211,8 @@
 
     const COLUMNS = [
       { key: 'id', label: 'Lead ID', default: true },
-      { key: 'full_name', label: 'Name', default: true },
+      { key: 'first_name', label: 'First Name', default: true },
+      { key: 'last_name', label: 'Last Name', default: true },
       { key: 'company_name', label: 'Company', default: true },
       { key: 'email', label: 'Email', default: true },
       { key: 'phone', label: 'Phone', default: true },
@@ -227,7 +228,8 @@
 
     const cellRenderers = {
       id: (lead) => '<td>' + escapeHtml(lead.id || '-') + '</td>',
-      full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
+      first_name: (lead) => '<td>' + escapeHtml(lead.first_name || '-') + '</td>',
+      last_name: (lead) => '<td>' + escapeHtml(lead.last_name || '-') + '</td>',
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',

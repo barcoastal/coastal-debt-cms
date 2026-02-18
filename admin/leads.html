@@ -330,7 +330,8 @@
   <script src="assets/js/common.js?v=6"></script>
   <script>
     const COLUMNS = [
-      { key: 'full_name', label: 'Name', default: true },
+      { key: 'first_name', label: 'First Name', default: true },
+      { key: 'last_name', label: 'Last Name', default: true },
       { key: 'company_name', label: 'Company', default: true },
       { key: 'phone', label: 'Phone', default: true },
       { key: 'ip_address', label: 'IP Address', default: true },
@@ -354,7 +355,8 @@
     ];
 
     const cellRenderers = {
-      full_name: (lead) => '<td>' + escapeHtml(lead.full_name || '-') + '</td>',
+      first_name: (lead) => '<td>' + escapeHtml(lead.first_name || '-') + '</td>',
+      last_name: (lead) => '<td>' + escapeHtml(lead.last_name || '-') + '</td>',
       company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
       ip_address: (lead) => '<td class="ip-cell">' + escapeHtml(lead.ip_address || '-') +
@@ -537,7 +539,7 @@
           <div class="lead-detail-grid">
             <div class="lead-detail-section">
               <h4>Contact</h4>
-              <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${escapeHtml(lead.full_name || '-')}</span></div>
+              <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${escapeHtml([lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-')}</span></div>
               <div class="detail-row"><span class="detail-label">Company</span><span class="detail-value">${escapeHtml(lead.company_name || '-')}</span></div>
               <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(lead.email || '-')}</span></div>
               <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${escapeHtml(lead.phone || '-')}</span></div>

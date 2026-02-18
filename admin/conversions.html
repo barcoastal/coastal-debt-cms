@@ -361,7 +361,8 @@
   <script src="assets/js/common.js?v=6"></script>
   <script>
     const COLUMNS = [
-      { key: 'full_name', label: 'Lead', default: true },
+      { key: 'first_name', label: 'First Name', default: true },
+      { key: 'last_name', label: 'Last Name', default: true },
       { key: 'conversion_action_name', label: 'Event', default: true },
       { key: 'conversion_value', label: 'Value', default: true },
       { key: 'debt_amount', label: 'Debt Amount', default: true },
@@ -375,7 +376,8 @@
     ];
 
     const cellRenderers = {
-      full_name: (e) => '<td>' + escapeHtml(e.full_name || e.email || '-') + '</td>',
+      first_name: (e) => '<td>' + escapeHtml(e.first_name || '-') + '</td>',
+      last_name: (e) => '<td>' + escapeHtml(e.last_name || '-') + '</td>',
       conversion_action_name: (e) => '<td><strong>' + escapeHtml(e.conversion_action_name || '-') + '</strong></td>',
       conversion_value: (e) => '<td>' + (e.conversion_value ? '$' + Number(e.conversion_value).toLocaleString() : '-') + '</td>',
       debt_amount: (e) => '<td>' + (e.debt_amount ? '$' + Number(e.debt_amount).toLocaleString() : '-') + '</td>',

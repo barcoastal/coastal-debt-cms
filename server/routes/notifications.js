@@ -174,11 +174,11 @@ async function sendLeadNotification(lead, landingPage) {
     await transporter.sendMail({
       from: smtpConfig.smtp_from || smtpConfig.smtp_user,
       to: recipients.join(', '),
-      subject: `New Lead: ${lead.full_name || lead.email || 'Unknown'}`,
+      subject: `New Lead: ${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.email || 'Unknown'}`,
       html: `
         <h2>New Lead Received</h2>
         <table style="border-collapse:collapse;width:100%;max-width:500px;">
-          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Name</td><td style="padding:8px;border:1px solid #ddd;">${lead.full_name || '-'}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Name</td><td style="padding:8px;border:1px solid #ddd;">${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-'}</td></tr>
           <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Company</td><td style="padding:8px;border:1px solid #ddd;">${lead.company_name || '-'}</td></tr>
           <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Email</td><td style="padding:8px;border:1px solid #ddd;">${lead.email || '-'}</td></tr>
           <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Phone</td><td style="padding:8px;border:1px solid #ddd;">${lead.phone || '-'}</td></tr>

@@ -34,10 +34,10 @@ setTimeout(() => {
 
 // Field mapping: Facebook field name → our field name
 const FIELD_MAP = {
-  full_name: 'full_name',
-  name: 'full_name',
-  first_name: '_first_name',
-  last_name: '_last_name',
+  full_name: '_full_name',
+  name: '_full_name',
+  first_name: 'first_name',
+  last_name: 'last_name',
   email: 'email',
   phone_number: 'phone',
   phone: 'phone',
@@ -165,9 +165,11 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             }
           }
 
-          // Combine first + last name
-          if (!fields.full_name && (fields._first_name || fields._last_name)) {
-            fields.full_name = [fields._first_name, fields._last_name].filter(Boolean).join(' ');
+          // Derive first_name/last_name from full_name if not provided directly
+          if (!fields.first_name && !fields.last_name && fields._full_name) {
+            const parts = fields._full_name.trim().split(/\s+/);
+            fields.first_name = parts[0] || '';
+            fields.last_name = parts.slice(1).join(' ') || '';
           }
 
           // Skip template/placeholder fbclid values like "{{fbclid}}"
@@ -202,14 +204,17 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
           // Use form fbclid if available, otherwise use lead ID
           const fbclidValue = fields._fbclid || lead.id;
 
+          const syncFullName = [fields.first_name, fields.last_name].filter(Boolean).join(' ');
           const result = db.prepare(`
             INSERT INTO leads (
-              landing_page_id, full_name, company_name, email, phone,
+              landing_page_id, full_name, first_name, last_name, company_name, email, phone,
               debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
           `).run(
             config.default_landing_page_id,
-            fields.full_name || '',
+            syncFullName,
+            fields.first_name || '',
+            fields.last_name || '',
             fields.company_name || '',
             fields.email || '',
             fields.phone || '',
@@ -246,9 +251,8 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             const syncLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
             const fbLeadEvent = syncLeadConfig?.facebook_event_name || 'Lead';
 
-            const nameParts = (fields.full_name || '').trim().split(/\s+/);
-            const firstName = fields._first_name || nameParts[0] || '';
-            const lastName = fields._last_name || nameParts.slice(1).join(' ') || '';
+            const firstName = fields.first_name || '';
+            const lastName = fields.last_name || '';
 
             const fbResult = await sendFacebookEvent(fbLeadEvent, {
               email: fields.email,
@@ -459,7 +463,7 @@ router.get('/sync-status', (req, res) => {
 
   // Diagnostic: most recent 5 meta leads with dates
   const recentLeadsList = db.prepare(`
-    SELECT l.id, l.full_name, l.email, l.created_at, l.hidden_fields,
+    SELECT l.id, l.first_name, l.last_name, l.email, l.created_at, l.hidden_fields,
            lp.name as lp_name, lp.platform as lp_platform
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
@@ -468,7 +472,7 @@ router.get('/sync-status', (req, res) => {
     LIMIT 5
   `).all().map(r => ({
     id: r.id,
-    name: r.full_name,
+    name: [r.first_name, r.last_name].filter(Boolean).join(' '),
     email: r.email ? r.email.substring(0, 3) + '***' : '',
     created_at: r.created_at,
     lp_name: r.lp_name,
@@ -793,9 +797,11 @@ async function processLeadgenEvent(leadgenId, config) {
       }
     }
 
-    // Combine first_name + last_name if full_name not provided
-    if (!fields.full_name && (fields._first_name || fields._last_name)) {
-      fields.full_name = [fields._first_name, fields._last_name].filter(Boolean).join(' ');
+    // Derive first_name/last_name from full_name if not provided directly
+    if (!fields.first_name && !fields.last_name && fields._full_name) {
+      const parts = fields._full_name.trim().split(/\s+/);
+      fields.first_name = parts[0] || '';
+      fields.last_name = parts.slice(1).join(' ') || '';
     }
 
     // Get the landing page to associate with
@@ -853,14 +859,17 @@ async function processLeadgenEvent(leadgenId, config) {
     const fbclidValue = fields._fbclid || leadgenId;
 
     // Insert lead
+    const webhookFullName = [fields.first_name, fields.last_name].filter(Boolean).join(' ');
     const result = db.prepare(`
       INSERT INTO leads (
-        landing_page_id, full_name, company_name, email, phone,
+        landing_page_id, full_name, first_name, last_name, company_name, email, phone,
         debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, fbclid, hidden_fields, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?)
     `).run(
       landingPageId,
-      fields.full_name || '',
+      webhookFullName,
+      fields.first_name || '',
+      fields.last_name || '',
       fields.company_name || '',
       fields.email || '',
       fields.phone || '',
@@ -898,9 +907,8 @@ async function processLeadgenEvent(leadgenId, config) {
       const webhookLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
       const fbLeadEvent = webhookLeadConfig?.facebook_event_name || 'Lead';
 
-      const nameParts = (fields.full_name || '').trim().split(/\s+/);
-      const firstName = fields._first_name || nameParts[0] || '';
-      const lastName = fields._last_name || nameParts.slice(1).join(' ') || '';
+      const firstName = fields.first_name || '';
+      const lastName = fields.last_name || '';
 
       const fbResult = await sendFacebookEvent(fbLeadEvent, {
         email: fields.email,
@@ -1155,18 +1163,50 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 /**
- * ADMIN: Test Facebook connection
+ * ADMIN: Test Facebook connection by sending a test event to CAPI
  */
 router.post('/test', authenticateToken, async (req, res) => {
   const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
 
   if (!config || !config.page_access_token) {
-    return res.status(400).json({ error: 'No page access token configured' });
+    return res.status(400).json({ error: 'No access token configured' });
+  }
+
+  if (!config.pixel_id) {
+    return res.status(400).json({ error: 'No Pixel ID configured' });
   }
 
   try {
+    // Send a test event to verify CAPI connection works
+    const testEventId = 'test_' + Date.now();
+    const requestBody = {
+      data: [{
+        event_name: 'Lead',
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: 'website',
+        event_id: testEventId,
+        user_data: {
+          em: ['test'],
+          client_ip_address: '127.0.0.1',
+          client_user_agent: 'CMS Connection Test'
+        },
+        event_source_url: 'https://info.coastaldebt.com'
+      }],
+      access_token: config.page_access_token
+    };
+
+    // Use test_event_code so this doesn't count as a real event
+    if (config.test_event_code) {
+      requestBody.test_event_code = config.test_event_code;
+    }
+
     const response = await fetch(
-      `https://graph.facebook.com/v21.0/me?access_token=${config.page_access_token}`
+      `https://graph.facebook.com/v21.0/${config.pixel_id}/events`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }
     );
     const data = await response.json();
 
@@ -1174,7 +1214,11 @@ router.post('/test', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: data.error.message });
     }
 
-    res.json({ success: true, page_name: data.name, page_id: data.id });
+    res.json({
+      success: true,
+      message: `Lead event sent successfully to Pixel ${config.pixel_id}`,
+      events_received: data.events_received
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1196,7 +1240,7 @@ router.get('/debug/events', authenticateToken, (req, res) => {
   }
 
   const query = `
-    SELECT ce.*, l.full_name, l.email, l.phone, l.eli_clickid as lead_eli,
+    SELECT ce.*, l.first_name, l.last_name, l.email, l.phone, l.eli_clickid as lead_eli,
            v.fbc, v.fbp, v.ip_address, v.user_agent, v.fbclid, v.landing_page
     FROM conversion_events ce
     LEFT JOIN leads l ON ce.lead_id = l.id
@@ -1332,7 +1376,6 @@ router.get('/debug/lead/:id', authenticateToken, (req, res) => {
   });
 
   // Build match quality checklist
-  const nameParts = (lead.full_name || '').trim().split(/\s+/);
   const matchChecklist = {
     email: { present: !!lead.email, value: lead.email ? '***' : null },
     phone: { present: !!lead.phone, value: lead.phone ? '***' : null },
@@ -1342,8 +1385,8 @@ router.get('/debug/lead/:id', authenticateToken, (req, res) => {
     client_ip: { present: !!(visitor?.ip_address), value: visitor?.ip_address || null },
     client_ua: { present: !!(visitor?.user_agent), value: visitor?.user_agent ? visitor.user_agent.substring(0, 80) + '...' : null },
     event_source_url: { present: !!(visitor?.landing_page), value: visitor?.landing_page || null },
-    first_name: { present: !!(nameParts[0]), value: nameParts[0] || null },
-    last_name: { present: !!(nameParts.slice(1).join(' ')), value: nameParts.slice(1).join(' ') || null }
+    first_name: { present: !!lead.first_name, value: lead.first_name || null },
+    last_name: { present: !!lead.last_name, value: lead.last_name || null }
   };
 
   res.json({

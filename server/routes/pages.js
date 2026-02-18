@@ -16,7 +16,8 @@ setTimeout(() => {
 const defaultFormFields = [
   { name: 'has_mca', label: 'Do you have MCA (Merchant Cash Advance) debt?', type: 'radio', required: true, options: 'Yes,No' },
   { name: 'company_name', label: 'Company Name', type: 'text', required: true, placeholder: 'Your Company Name' },
-  { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Smith' },
+  { name: 'first_name', label: 'First Name', type: 'text', required: true, placeholder: 'John' },
+  { name: 'last_name', label: 'Last Name', type: 'text', required: true, placeholder: 'Smith' },
   { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'john@company.com' },
   { name: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '(555) 123-4567' }
 ];
@@ -289,8 +290,15 @@ function generateLandingPage(pageId) {
   const headScripts = pageScripts.filter(s => s.position === 'head').map(s => s.code).join('\n');
   const bodyScripts = pageScripts.filter(s => s.position === 'body_start' || s.position === 'body_end').map(s => s.code).join('\n');
 
-  // Generate hidden fields HTML
+  // Generate hidden fields HTML (skip names already hardcoded in the template)
+  const HARDCODED_HIDDEN = new Set([
+    'gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword',
+    'fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name',
+    'fb_adset_name','fb_ad_name','fb_placement','visitor_ip',
+    'page_url','referrer_url','landing_page_slug','debt_amount','has_mca'
+  ]);
   const hiddenFieldsHtml = Object.entries(hiddenFields)
+    .filter(([key]) => !HARDCODED_HIDDEN.has(key))
     .map(([key, value]) => `<input type="hidden" name="${key}" value="${value}">`)
     .join('\n            ');
 

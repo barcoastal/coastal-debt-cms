@@ -7,7 +7,8 @@ const router = express.Router();
 
 // Default form fields
 const defaultFields = [
-  { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Smith' },
+  { name: 'first_name', label: 'First Name', type: 'text', required: true, placeholder: 'John' },
+  { name: 'last_name', label: 'Last Name', type: 'text', required: true, placeholder: 'Smith' },
   { name: 'company_name', label: 'Company Name', type: 'text', required: true, placeholder: 'Your Company' },
   { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'john@company.com' },
   { name: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '(555) 123-4567' }

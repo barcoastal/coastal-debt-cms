@@ -26,7 +26,7 @@ router.get('/pipeline', authenticateToken, (req, res) => {
 
   // Get leads with their latest conversion event name
   const leads = db.prepare(`
-    SELECT l.id, l.full_name, l.company_name, l.email, l.phone, l.debt_amount,
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone, l.debt_amount,
            l.created_at, l.assigned_to, lp.name as landing_page_name, lp.platform,
            (
              SELECT ce.conversion_action_name
@@ -222,7 +222,7 @@ router.delete('/tasks/:taskId', authenticateToken, (req, res) => {
 // GET /tasks/my — tasks assigned to current user
 router.get('/tasks/my', authenticateToken, (req, res) => {
   const tasks = db.prepare(`
-    SELECT t.*, l.full_name as lead_name, l.company_name as lead_company
+    SELECT t.*, (l.first_name || ' ' || l.last_name) as lead_name, l.company_name as lead_company
     FROM lead_tasks t
     LEFT JOIN leads l ON t.lead_id = l.id
     WHERE t.assignee_id = ? AND t.status = 'open'
@@ -235,7 +235,7 @@ router.get('/tasks/my', authenticateToken, (req, res) => {
 router.get('/tasks/overdue', authenticateToken, (req, res) => {
   const today = getTodayInTz(getConfiguredTimezone());
   const tasks = db.prepare(`
-    SELECT t.*, l.full_name as lead_name, l.company_name as lead_company
+    SELECT t.*, (l.first_name || ' ' || l.last_name) as lead_name, l.company_name as lead_company
     FROM lead_tasks t
     LEFT JOIN leads l ON t.lead_id = l.id
     WHERE t.status = 'open' AND t.due_date < ?

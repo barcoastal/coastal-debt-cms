@@ -256,6 +256,21 @@ try {
 // Add capi_payload to conversion_events for Facebook debug
 try { db.exec(`ALTER TABLE conversion_events ADD COLUMN capi_payload TEXT`); } catch (e) {}
 
+// Add first_name, last_name columns to leads table
+try { db.exec(`ALTER TABLE leads ADD COLUMN first_name TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN last_name TEXT DEFAULT ''`); } catch (e) {}
+
+// Migrate existing leads: split full_name into first_name/last_name
+try {
+  const unmigrated = db.prepare(`SELECT id, full_name FROM leads WHERE first_name = '' AND full_name != '' AND full_name IS NOT NULL`).all();
+  for (const lead of unmigrated) {
+    const parts = (lead.full_name || '').trim().split(/\s+/);
+    db.prepare('UPDATE leads SET first_name = ?, last_name = ? WHERE id = ?')
+      .run(parts[0] || '', parts.slice(1).join(' ') || '', lead.id);
+  }
+  if (unmigrated.length) console.log(`Migrated ${unmigrated.length} leads to first_name/last_name`);
+} catch (e) { console.error('Name migration error:', e.message); }
+
 // Add fbclid to leads table for Facebook attribution
 try { db.exec(`ALTER TABLE leads ADD COLUMN fbclid TEXT DEFAULT ''`); } catch (e) {}
 
@@ -599,7 +614,8 @@ if (userCount.count === 0) {
 const formCount = db.prepare('SELECT COUNT(*) as count FROM forms').get();
 if (formCount.count === 0) {
   const formFields = JSON.stringify([
-    {"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},
+    {"name":"first_name","label":"First Name","type":"text","placeholder":"John","options":"","required":true},
+    {"name":"last_name","label":"Last Name","type":"text","placeholder":"Smith","options":"","required":true},
     {"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},
     {"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},
     {"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},
@@ -687,7 +703,8 @@ try { db.exec(`ALTER TABLE leads ADD COLUMN is_blocked INTEGER DEFAULT 0`); } ca
 const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
 if (!obFormExists) {
   const obFields = JSON.stringify([
-    {"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},
+    {"name":"first_name","label":"First Name","type":"text","placeholder":"John","options":"","required":true},
+    {"name":"last_name","label":"Last Name","type":"text","placeholder":"Smith","options":"","required":true},
     {"name":"company_name","label":"Company Name","type":"text","placeholder":"Your Company","options":"","required":true},
     {"name":"email","label":"Email","type":"email","placeholder":"john@company.com","options":"","required":true},
     {"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},
@@ -1076,6 +1093,22 @@ if (!obFormExists) {
     console.log('Seed article created: business-debt-settlement-guide');
   }
 }
+
+// Migration: rename full_name to first_name + last_name in all forms
+(function() {
+  var forms = db.prepare('SELECT id, fields FROM forms').all();
+  for (var form of forms) {
+    var fields = JSON.parse(form.fields || '[]');
+    var fnIdx = fields.findIndex(f => f.name === 'full_name');
+    if (fnIdx !== -1) {
+      fields.splice(fnIdx, 1,
+        {name:'first_name', label:'First Name', type:'text', placeholder:'John', options:'', required:true},
+        {name:'last_name', label:'Last Name', type:'text', placeholder:'Smith', options:'', required:true}
+      );
+      db.prepare('UPDATE forms SET fields = ? WHERE id = ?').run(JSON.stringify(fields), form.id);
+    }
+  }
+})();
 
 // Migration: ensure all forms have standard hidden fields (Meta-specific only on Meta/Facebook forms)
 (function() {

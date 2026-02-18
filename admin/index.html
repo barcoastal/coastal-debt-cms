@@ -372,7 +372,7 @@
         } else {
           tbody.innerHTML = recentLeads.map(lead => `
             <tr>
-              <td>${lead.full_name || '-'}</td>
+              <td>${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-'}</td>
               <td>${lead.company_name || '-'}</td>
               <td>${lead.email || '-'}</td>
               <td>${lead.phone || '-'}</td>

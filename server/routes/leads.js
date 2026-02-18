@@ -41,7 +41,8 @@ router.post('/', async (req, res) => {
   const {
     landing_page_slug,
     article_slug,
-    full_name,
+    first_name,
+    last_name,
     company_name,
     email,
     phone,
@@ -80,15 +81,18 @@ router.post('/', async (req, res) => {
   }
 
   // Insert lead
+  const full_name = [first_name, last_name].filter(Boolean).join(' ');
   const result = db.prepare(`
     INSERT INTO leads (
-      landing_page_id, article_id, full_name, company_name, email, phone,
+      landing_page_id, article_id, full_name, first_name, last_name, company_name, email, phone,
       debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     page ? page.id : null,
     article ? article.id : null,
     full_name,
+    first_name || '',
+    last_name || '',
     company_name,
     email,
     phone,
@@ -111,6 +115,8 @@ router.post('/', async (req, res) => {
   if (webhookUrl) {
     try {
       const webhookData = {
+        first_name: first_name || '',
+        last_name: last_name || '',
         full_name,
         company_name,
         email,
@@ -247,9 +253,8 @@ router.post('/', async (req, res) => {
       const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
       const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
 
-      const nameParts = (full_name || '').trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      const firstName = first_name || '';
+      const lastName = last_name || '';
 
       // Look up visitor record for fbc/fbp/fbclid/IP/UA
       const visitor = eli_clickid ? db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent FROM visitors WHERE eli_clickid = ?').get(eli_clickid) : null;
@@ -316,7 +321,7 @@ router.post('/', async (req, res) => {
 
   // Send lead notification email (async, don't block)
   if (sendLeadNotification) {
-    sendLeadNotification({ full_name, company_name, email, phone }, sourceEntity).catch(() => {});
+    sendLeadNotification({ first_name, last_name, full_name, company_name, email, phone }, sourceEntity).catch(() => {});
   }
 });
 
@@ -355,9 +360,9 @@ router.get('/', authenticateToken, (req, res) => {
   const params = [];
 
   if (search) {
-    query += ` AND (l.full_name LIKE ? OR l.email LIKE ? OR l.company_name LIKE ?)`;
-    countQuery += ` AND (l.full_name LIKE ? OR l.email LIKE ? OR l.company_name LIKE ?)`;
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    query += ` AND (l.first_name LIKE ? OR l.last_name LIKE ? OR l.email LIKE ? OR l.company_name LIKE ?)`;
+    countQuery += ` AND (l.first_name LIKE ? OR l.last_name LIKE ? OR l.email LIKE ? OR l.company_name LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
   }
 
   if (landing_page_id) {
@@ -603,7 +608,7 @@ router.patch('/:id', authenticateToken, (req, res) => {
 
 // Delete lead (cascades to conversion_events and visitors)
 router.delete('/:id', authenticateToken, (req, res) => {
-  const lead = db.prepare('SELECT full_name, eli_clickid FROM leads WHERE id = ?').get(req.params.id);
+  const lead = db.prepare('SELECT first_name, last_name, eli_clickid FROM leads WHERE id = ?').get(req.params.id);
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
   // Delete related records first
@@ -613,7 +618,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
   }
   db.prepare('DELETE FROM leads WHERE id = ?').run(req.params.id);
 
-  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${lead?.full_name || req.params.id}`, req.ip);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${[lead?.first_name, lead?.last_name].filter(Boolean).join(' ') || req.params.id}`, req.ip);
   res.json({ message: 'Lead deleted' });
 });
 
@@ -639,7 +644,11 @@ router.post('/zapier', async (req, res) => {
       return '';
     }
 
-    const fullName = find('fullname', 'name') || [find('firstname', 'first'), find('lastname', 'last')].filter(Boolean).join(' ');
+    const zapFirstName = find('firstname', 'first');
+    const zapLastName = find('lastname', 'last');
+    const fullName = find('fullname', 'name') || [zapFirstName, zapLastName].filter(Boolean).join(' ');
+    const firstName = zapFirstName || fullName.trim().split(/\s+/)[0] || '';
+    const lastName = zapLastName || fullName.trim().split(/\s+/).slice(1).join(' ') || '';
     const email = find('email', 'mail');
     const phone = find('phone', 'tel', 'mobile', 'cell');
     const company = find('company', 'business');
@@ -662,11 +671,11 @@ router.post('/zapier', async (req, res) => {
 
     const result = db.prepare(`
       INSERT INTO leads (
-        landing_page_id, full_name, company_name, email, phone,
+        landing_page_id, full_name, first_name, last_name, company_name, email, phone,
         debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, eli_clickid, hidden_fields
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', ?, ?)
     `).run(
-      pageId, fullName, company, email, phone, debt, mca,
+      pageId, fullName, firstName, lastName, company, email, phone, debt, mca,
       'zapier_' + Date.now(),
       JSON.stringify({ source: 'facebook_instant_form', platform: 'facebook', raw: body })
     );
@@ -676,7 +685,7 @@ router.post('/zapier', async (req, res) => {
     // Notification
     if (sendLeadNotification) {
       const lp = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(pageId);
-      sendLeadNotification({ full_name: fullName, company_name: company, email, phone }, lp).catch(() => {});
+      sendLeadNotification({ first_name: firstName, last_name: lastName, full_name: fullName, company_name: company, email, phone }, lp).catch(() => {});
     }
 
     // Conversion event
@@ -688,8 +697,7 @@ router.post('/zapier', async (req, res) => {
     if (sendFacebookEvent) {
       const zapierLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
       const fbLeadEvent = zapierLeadConfig?.facebook_event_name || 'Lead';
-      const parts = fullName.trim().split(/\s+/);
-      sendFacebookEvent(fbLeadEvent, { email, phone, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' }, {}).catch(() => {});
+      sendFacebookEvent(fbLeadEvent, { email, phone, firstName, lastName }, {}).catch(() => {});
     }
 
     res.json({ success: true, id: result.lastInsertRowid });
@@ -750,14 +758,15 @@ router.get('/export/csv', authenticateToken, (req, res) => {
 
   // Create CSV
   const headers = [
-    'ID', 'Full Name', 'Company', 'Email', 'Phone', 'Debt Amount',
+    'ID', 'First Name', 'Last Name', 'Company', 'Email', 'Phone', 'Debt Amount',
     'Has MCA', 'Considered Bankruptcy', 'GCLID', 'RT Click ID', 'Eli Click ID',
     'Cost', 'Landing Page', 'Traffic Source', 'Platform', 'Created At'
   ];
 
   const rows = leads.map(l => [
     l.id,
-    l.full_name,
+    l.first_name || '',
+    l.last_name || '',
     l.company_name,
     l.email,
     l.phone,

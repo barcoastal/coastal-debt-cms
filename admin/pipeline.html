@@ -185,7 +185,7 @@
       const days = daysSince(lead.created_at);
       const daysLabel = days === '-' ? '-' : days + 'd ago';
       return '<div class="pipeline-card" onclick="window.location.href=\'/admin/leads.html?view=' + lead.id + '\'">' +
-        '<div class="pipeline-card-name">' + escapeHtml(lead.full_name || 'Unknown') + '</div>' +
+        '<div class="pipeline-card-name">' + escapeHtml([lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Unknown') + '</div>' +
         '<div class="pipeline-card-company">' + escapeHtml(lead.company_name || 'No company') + '</div>' +
         '<div class="pipeline-card-meta">' +
           '<span>' + formatDebtAmount(lead.debt_amount) + '</span>' +

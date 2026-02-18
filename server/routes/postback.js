@@ -210,9 +210,8 @@ router.all('/conversion', async (req, res) => {
   if (config && config.facebook_event_name && sendFacebookEvent) {
     try {
       const fbEventName = config.facebook_event_name;
-      const nameParts = (lead.full_name || '').trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      const firstName = lead.first_name || '';
+      const lastName = lead.last_name || '';
 
       // Look up visitor record for fbc/fbp/fbclid/IP/UA
       const visitor = db.prepare('SELECT fbc, fbp, fbclid, ip_address, user_agent, landing_page FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
@@ -431,7 +430,7 @@ router.get('/events', authenticateToken, (req, res) => {
   const offset = (page - 1) * limit;
 
   const events = db.prepare(`
-    SELECT ce.*, l.full_name, l.company_name, l.email
+    SELECT ce.*, l.first_name, l.last_name, l.company_name, l.email
     FROM conversion_events ce
     LEFT JOIN leads l ON ce.lead_id = l.id
     ORDER BY ce.created_at DESC

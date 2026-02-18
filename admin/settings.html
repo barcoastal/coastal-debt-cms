@@ -547,8 +547,12 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>Full Name field</label>
-                <input type="text" id="mapFullName" placeholder="e.g. full_name (auto-detect)">
+                <label>First Name field</label>
+                <input type="text" id="mapFirstName" placeholder="e.g. first_name (auto-detect)">
+              </div>
+              <div class="form-group">
+                <label>Last Name field</label>
+                <input type="text" id="mapLastName" placeholder="e.g. last_name (auto-detect)">
               </div>
               <div class="form-group">
                 <label>Email field</label>
@@ -1113,7 +1117,8 @@
       document.getElementById('whLandingPage').value = data?.landing_page_id || '';
       document.getElementById('whActive').checked = data ? !!data.is_active : true;
       const m = data?.field_mapping || {};
-      document.getElementById('mapFullName').value = m.full_name || '';
+      document.getElementById('mapFirstName').value = m.first_name || '';
+      document.getElementById('mapLastName').value = m.last_name || '';
       document.getElementById('mapEmail').value = m.email || '';
       document.getElementById('mapPhone').value = m.phone || '';
       document.getElementById('mapCompany').value = m.company_name || '';
@@ -1142,7 +1147,7 @@
         field_mapping: {}
       };
       // Build field mapping (only include non-empty)
-      const mappings = { full_name: 'mapFullName', email: 'mapEmail', phone: 'mapPhone', company_name: 'mapCompany', debt_amount: 'mapDebt', has_mca: 'mapMca', leadgen_id: 'mapLeadgenId', form_name: 'mapFormName' };
+      const mappings = { first_name: 'mapFirstName', last_name: 'mapLastName', email: 'mapEmail', phone: 'mapPhone', company_name: 'mapCompany', debt_amount: 'mapDebt', has_mca: 'mapMca', leadgen_id: 'mapLeadgenId', form_name: 'mapFormName' };
       for (const [key, elId] of Object.entries(mappings)) {
         const val = document.getElementById(elId).value.trim();
         if (val) data.field_mapping[key] = val;

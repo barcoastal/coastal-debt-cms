@@ -97,7 +97,7 @@ function enqueueCampaign(campaignId) {
   } else {
     // No segment - send to all leads with email
     leads = db.prepare(`
-      SELECT l.id, l.full_name, l.company_name, l.email, l.phone, l.debt_amount,
+      SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone, l.debt_amount,
              l.stage, l.created_at, lp.name as landing_page_name, lp.platform
       FROM leads l
       LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
@@ -125,7 +125,7 @@ function enqueueCampaign(campaignId) {
 
       // Create a placeholder queue entry to get the ID first
       const result = insertQueue.run(
-        campaignId, lead.id, lead.email, lead.full_name || '',
+        campaignId, lead.id, lead.email, [lead.first_name, lead.last_name].filter(Boolean).join(' ') || '',
         'pending', 'pending', null
       );
       const queueId = result.lastInsertRowid;

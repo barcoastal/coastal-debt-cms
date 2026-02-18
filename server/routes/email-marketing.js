@@ -25,11 +25,10 @@ const AVAILABLE_VARIABLES = [
 
 function resolveVariables(text, lead, extras = {}) {
   if (!text) return text;
-  const nameParts = (lead.full_name || '').trim().split(/\s+/);
   const vars = {
-    first_name: nameParts[0] || '',
-    last_name: nameParts.slice(1).join(' ') || '',
-    full_name: lead.full_name || '',
+    first_name: lead.first_name || '',
+    last_name: lead.last_name || '',
+    full_name: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.full_name || '',
     company_name: lead.company_name || '',
     email: lead.email || '',
     phone: lead.phone || '',
@@ -187,7 +186,7 @@ function getSegmentLeadQuery(filterCriteria) {
   const { where, params } = buildSegmentQuery(filterCriteria);
   return {
     sql: `
-      SELECT l.id, l.full_name, l.company_name, l.email, l.phone, l.debt_amount,
+      SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone, l.debt_amount,
              l.stage, l.created_at, lp.name as landing_page_name, lp.platform
       FROM leads l
       LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
@@ -292,7 +291,7 @@ router.post('/templates/:id/preview', authenticateToken, (req, res) => {
   if (!lead) {
     // Use sample data
     lead = {
-      full_name: 'John Smith', company_name: 'Acme Corp', email: 'john@acme.com',
+      first_name: 'John', last_name: 'Smith', full_name: 'John Smith', company_name: 'Acme Corp', email: 'john@acme.com',
       phone: '(555) 123-4567', debt_amount: '$150,000', stage: 'qualified',
       created_at: new Date().toISOString(), landing_page_name: 'Business Debt Relief', platform: 'google'
     };
@@ -320,7 +319,7 @@ router.post('/templates/:id/send-test', authenticateToken, async (req, res) => {
 
   // Use sample data for test
   const lead = {
-    full_name: 'Test User', company_name: 'Test Company', email: to_email,
+    first_name: 'Test', last_name: 'User', full_name: 'Test User', company_name: 'Test Company', email: to_email,
     phone: '(555) 000-0000', debt_amount: '$100,000', stage: 'lead',
     created_at: new Date().toISOString(), landing_page_name: 'Test Page', platform: 'google'
   };

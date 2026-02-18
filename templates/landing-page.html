@@ -984,7 +984,7 @@
         `;
       } else if (field.type === 'hidden') {
         // Skip if this hidden field already exists in the form (to avoid duplicates)
-        const existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        const existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
         if (existingIds.includes(field.name)) return '';
         return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
       } else if (field.type === 'tel') {
@@ -1168,7 +1168,7 @@
             return '<label class="radio-label"><input type="radio" name="bottom_' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
           }).join('') + '</div></div>';
       } else if (field.type === 'hidden') {
-        var existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
         if (existingIds.includes(field.name)) return '';
         return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
       } else if (field.type === 'tel') {

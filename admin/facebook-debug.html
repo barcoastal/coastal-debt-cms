@@ -417,7 +417,7 @@
     ];
 
     const cellRenderers = {
-      lead_name: (e) => '<td>' + escapeHtml(e.full_name || e.email || '-') + '</td>',
+      lead_name: (e) => '<td>' + escapeHtml([e.first_name, e.last_name].filter(Boolean).join(' ') || e.email || '-') + '</td>',
       event: (e) => '<td><strong>' + escapeHtml(e.conversion_action_name || '-') + '</strong></td>',
       status: (e) => '<td><span class="status-' + e.status + '">' + e.status + '</span></td>',
       fbc: (e) => '<td>' + checkIcon(e.match_quality.fbc) + '</td>',
@@ -561,7 +561,7 @@
         html += '<h3 style="margin: 0 0 12px;">Lead Info</h3>';
         html += '<div class="lead-info-grid">';
         html += infoItem('Lead ID', data.lead.id);
-        html += infoItem('Name', data.lead.full_name);
+        html += infoItem('Name', [data.lead.first_name, data.lead.last_name].filter(Boolean).join(' '));
         html += infoItem('Email', data.lead.email);
         html += infoItem('Phone', data.lead.phone);
         html += infoItem('eli_clickid', data.lead.eli_clickid);
