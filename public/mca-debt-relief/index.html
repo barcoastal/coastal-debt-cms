@@ -385,6 +385,14 @@
             <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
             <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
             <input type="hidden" id="keyword" name="keyword" value="">
+            <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+            <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+            <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+            <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+            <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+            <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+            <input type="hidden" id="fb_placement" name="fb_placement" value="">
+            <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
             <input type="hidden" id="page_url" name="page_url" value="">
             <input type="hidden" id="referrer_url" name="referrer_url" value="">
             
@@ -540,6 +548,14 @@
           <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
           <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
           <input type="hidden" name="keyword" class="bottom-keyword" value="">
+          <input type="hidden" name="fb_campaign_id" class="bottom-fb-campaign-id" value="">
+          <input type="hidden" name="fb_adset_id" class="bottom-fb-adset-id" value="">
+          <input type="hidden" name="fb_ad_id" class="bottom-fb-ad-id" value="">
+          <input type="hidden" name="fb_campaign_name" class="bottom-fb-campaign-name" value="">
+          <input type="hidden" name="fb_adset_name" class="bottom-fb-adset-name" value="">
+          <input type="hidden" name="fb_ad_name" class="bottom-fb-ad-name" value="">
+          <input type="hidden" name="fb_placement" class="bottom-fb-placement" value="">
+          <input type="hidden" name="visitor_ip" class="bottom-visitor-ip" value="">
           <input type="hidden" name="page_url" class="bottom-pageurl" value="">
           <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
           
@@ -764,6 +780,43 @@
       setStored('_keyword', keyword);
       document.getElementById('keyword').value = keyword;
     }
+
+    // META ADS PARAMS: URL params → localStorage
+    var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+    // Also check common alt param names (campaign_id, adset_id, ad_id, etc.)
+    var metaAltNames = {
+      fb_campaign_id: ['campaign_id','c_id'],
+      fb_adset_id: ['adset_id','as_id'],
+      fb_ad_id: ['ad_id'],
+      fb_campaign_name: ['campaign_name','c_name'],
+      fb_adset_name: ['adset_name','as_name'],
+      fb_ad_name: ['ad_name'],
+      fb_placement: ['placement']
+    };
+    metaParams.forEach(function(p) {
+      var val = _lpParams.get(p) || '';
+      if (!val && metaAltNames[p]) {
+        for (var i = 0; i < metaAltNames[p].length; i++) {
+          val = _lpParams.get(metaAltNames[p][i]) || '';
+          if (val) break;
+        }
+      }
+      val = val || getStored('_' + p) || '';
+      if (val) {
+        setStored('_' + p, val);
+        var el = document.getElementById(p);
+        if (el) el.value = val;
+      }
+    });
+
+    // VISITOR IP: fetch from server
+    fetch('/api/visitors/ip').then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ip) {
+        var el = document.getElementById('visitor_ip');
+        if (el) el.value = d.ip;
+        window._visitorIp = d.ip;
+      }
+    }).catch(function(){});
 
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
     function getRtClickId() {
@@ -1139,6 +1192,10 @@
       document.querySelectorAll('.bottom-fbclid').forEach(function(f) { f.value = document.getElementById('fbclid') ? document.getElementById('fbclid').value : ''; });
       document.querySelectorAll('.bottom-rt').forEach(function(f) { f.value = document.getElementById('rt_clickid') ? document.getElementById('rt_clickid').value : ''; });
       document.querySelectorAll('.bottom-keyword').forEach(function(f) { f.value = document.getElementById('keyword') ? document.getElementById('keyword').value : ''; });
+      ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'].forEach(function(p) {
+        document.querySelectorAll('.bottom-' + p.replace(/_/g, '-')).forEach(function(f) { f.value = document.getElementById(p) ? document.getElementById(p).value : ''; });
+      });
+      document.querySelectorAll('.bottom-visitor-ip').forEach(function(f) { f.value = window._visitorIp || (document.getElementById('visitor_ip') ? document.getElementById('visitor_ip').value : ''); });
       document.querySelectorAll('.bottom-pageurl').forEach(function(f) { f.value = window.location.href; });
       document.querySelectorAll('.bottom-referrer').forEach(function(f) { f.value = document.referrer || ''; });
     }

@@ -608,6 +608,14 @@ if (formCount.count === 0) {
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_campaign_id","label":"FB Campaign ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_adset_id","label":"FB Ad Set ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_ad_id","label":"FB Ad ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_campaign_name","label":"FB Campaign Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_adset_name","label":"FB Ad Set Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_ad_name","label":"FB Ad Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_placement","label":"FB Placement","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
   ]);
@@ -694,6 +702,14 @@ if (!obFormExists) {
     {"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_campaign_id","label":"FB Campaign ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_adset_id","label":"FB Ad Set ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_ad_id","label":"FB Ad ID","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_campaign_name","label":"FB Campaign Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_adset_name","label":"FB Ad Set Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_ad_name","label":"FB Ad Name","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"fb_placement","label":"FB Placement","type":"hidden","placeholder":"","options":"","required":false},
+    {"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},
     {"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}
   ]);

@@ -5,6 +5,12 @@ const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOff
 
 const router = express.Router();
 
+// Return visitor IP (public endpoint - called from landing pages)
+router.get('/ip', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+  res.json({ ip });
+});
+
 // Track visitor (public endpoint - called from landing pages)
 router.post('/track', async (req, res) => {
   const {
