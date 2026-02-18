@@ -260,10 +260,12 @@
               <div class="label">Total Leads</div>
             </div>
           </div>
-          <div style="margin-top: 16px;">
+          <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <button class="btn btn-secondary" onclick="fetchAllCosts()">Fetch Missing Costs</button>
-            <span id="fetchStatus" style="margin-left: 12px; color: #6b7280;"></span>
+            <button class="btn btn-secondary" onclick="diagnoseGoogleAds()" style="background:#f3f4f6;color:#374151;">Diagnose Connection</button>
+            <span id="fetchStatus" style="margin-left: 4px; color: #6b7280;"></span>
           </div>
+          <div id="diagnoseResult" style="display:none; margin-top:12px; padding:16px; background:#f9fafb; border-radius:8px; font-size:13px; font-family:monospace; white-space:pre-wrap; border:1px solid #e5e7eb;"></div>
         </div>
 
         <!-- Setup Instructions -->
@@ -1007,6 +1009,24 @@
       document.getElementById('avgCpl').textContent = '$' + ((stats.avg_cpl_cents || 0) / 100).toFixed(2);
       document.getElementById('leadsWithCost').textContent = stats.leads_with_cost || 0;
       document.getElementById('totalLeads').textContent = stats.total_leads || 0;
+    }
+
+    async function diagnoseGoogleAds() {
+      const el = document.getElementById('diagnoseResult');
+      el.style.display = 'block';
+      el.textContent = 'Running diagnostics...';
+      try {
+        const res = await fetch('/api/google-ads/diagnose');
+        const data = await res.json();
+        let output = data.ok ? '✅ ALL CHECKS PASSED\n\n' : '❌ ISSUES FOUND\n\n';
+        data.checks.forEach(c => {
+          const icon = c.status === 'OK' ? '✅' : c.status === 'FAIL' ? '❌' : c.status === 'WARN' ? '⚠️' : 'ℹ️';
+          output += icon + ' ' + c.step + ': ' + c.detail + '\n';
+        });
+        el.textContent = output;
+      } catch(e) {
+        el.textContent = '❌ Request failed: ' + e.message;
+      }
     }
 
     async function fetchAllCosts() {

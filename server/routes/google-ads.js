@@ -431,6 +431,79 @@ async function fetchGclidCost(gclid) {
   }
 }
 
+// Diagnostic endpoint - test the full cost-fetching chain
+router.get('/diagnose', authenticateToken, async (req, res) => {
+  const checks = [];
+
+  // 1. Check config exists
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config) {
+    checks.push({ step: 'Config', status: 'FAIL', detail: 'No google_ads_config row found' });
+    return res.json({ ok: false, checks });
+  }
+  checks.push({ step: 'Config', status: 'OK', detail: 'Config row exists' });
+
+  // 2. Check refresh token
+  if (!config.refresh_token_encrypted) {
+    checks.push({ step: 'OAuth', status: 'FAIL', detail: 'No refresh token — need to connect via OAuth' });
+    return res.json({ ok: false, checks });
+  }
+  const refreshToken = decrypt(config.refresh_token_encrypted);
+  if (!refreshToken) {
+    checks.push({ step: 'OAuth', status: 'FAIL', detail: 'Cannot decrypt refresh token — ENCRYPTION_KEY mismatch? Current key starts with: ' + ENCRYPTION_KEY.substring(0, 8) + '...' });
+    return res.json({ ok: false, checks });
+  }
+  checks.push({ step: 'OAuth', status: 'OK', detail: 'Refresh token decrypted OK' });
+
+  // 3. Check customer ID
+  if (!config.customer_id) {
+    checks.push({ step: 'Account', status: 'FAIL', detail: 'No customer_id — need to select an account after OAuth' });
+    return res.json({ ok: false, checks });
+  }
+  checks.push({ step: 'Account', status: 'OK', detail: 'Customer ID: ' + config.customer_id });
+
+  // 4. Check developer token
+  const developerToken = getDeveloperToken(config);
+  if (!developerToken) {
+    checks.push({ step: 'Developer Token', status: 'FAIL', detail: 'No developer token in env var or DB' });
+    return res.json({ ok: false, checks });
+  }
+  checks.push({ step: 'Developer Token', status: 'OK', detail: 'Token found (length: ' + developerToken.length + ')' });
+
+  // 5. Check access token refresh
+  try {
+    const accessToken = await getValidAccessToken(config);
+    if (!accessToken) {
+      checks.push({ step: 'Access Token', status: 'FAIL', detail: 'getValidAccessToken returned null' });
+      return res.json({ ok: false, checks });
+    }
+    checks.push({ step: 'Access Token', status: 'OK', detail: 'Got valid access token' });
+  } catch (err) {
+    checks.push({ step: 'Access Token', status: 'FAIL', detail: 'Token refresh error: ' + err.message });
+    return res.json({ ok: false, checks });
+  }
+
+  // 6. Check leads with GCLIDs
+  const leadCount = db.prepare(`SELECT COUNT(*) as cnt FROM leads WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL`).get();
+  checks.push({ step: 'Leads', status: leadCount.cnt > 0 ? 'OK' : 'WARN', detail: leadCount.cnt + ' leads with GCLIDs needing cost data' });
+
+  // 7. Try a real API call with one GCLID
+  if (leadCount.cnt > 0) {
+    const testLead = db.prepare(`SELECT id, gclid FROM leads WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL ORDER BY created_at DESC LIMIT 1`).get();
+    checks.push({ step: 'Test GCLID', status: 'INFO', detail: 'Testing with lead #' + testLead.id + ', GCLID: ' + testLead.gclid.substring(0, 20) + '...' });
+
+    const result = await fetchGclidCost(testLead.gclid);
+    if (result.cost_cents !== undefined) {
+      checks.push({ step: 'API Call', status: 'OK', detail: 'Got cost: $' + (result.cost_cents / 100).toFixed(2) });
+    } else {
+      checks.push({ step: 'API Call', status: 'FAIL', detail: 'Error: ' + (result.error || 'Unknown') });
+    }
+  }
+
+  const allOk = checks.every(c => c.status === 'OK' || c.status === 'INFO' || c.status === 'WARN');
+  res.json({ ok: allOk, checks });
+});
+
 // Endpoint to manually fetch cost for a lead
 router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
   const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(req.params.leadId);
