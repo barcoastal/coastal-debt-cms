@@ -1,5 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
+const fs = require('fs');
 const path = require('path');
 const { authenticateToken } = require('./auth');
 
@@ -61,31 +62,24 @@ function headerToKey(header, index, allHeaders) {
 
 let authClient = null;
 
+// On Railway, write the key file from env var so file-based auth just works
+const keyPath = path.join(__dirname, '..', 'google-sheets-key.json');
+if (process.env.GOOGLE_SHEETS_KEY_JSON && !fs.existsSync(keyPath)) {
+  try {
+    fs.writeFileSync(keyPath, process.env.GOOGLE_SHEETS_KEY_JSON);
+    console.log('Wrote google-sheets-key.json from env var');
+  } catch (e) {
+    console.error('Failed to write google-sheets-key.json:', e.message);
+  }
+}
+
 async function getAuthClient() {
   if (authClient) return authClient;
-  const scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
-
-  // Prefer env var (for Railway/production), fall back to local key file
-  const envKey = process.env.GOOGLE_SHEETS_KEY_JSON;
-  if (envKey) {
-    let credentials;
-    try {
-      credentials = JSON.parse(envKey);
-    } catch (e) {
-      // If Railway escapes the JSON, try decoding common issues
-      credentials = JSON.parse(envKey.replace(/\\n/g, '\n'));
-    }
-    // Ensure private_key newlines are actual newlines
-    if (credentials.private_key) {
-      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
-    }
-    const auth = new google.auth.GoogleAuth({ credentials, scopes });
-    authClient = await auth.getClient();
-  } else {
-    const keyPath = path.join(__dirname, '..', 'google-sheets-key.json');
-    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes });
-    authClient = await auth.getClient();
-  }
+  const auth = new google.auth.GoogleAuth({
+    keyFile: keyPath,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+  });
+  authClient = await auth.getClient();
   return authClient;
 }
 
