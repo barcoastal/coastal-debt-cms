@@ -736,6 +736,10 @@
         document.getElementById('fbAvgCpl').textContent = '$' + (stats.avg_cpl || 0).toFixed(2);
         document.getElementById('fbFbLeads').textContent = stats.fb_leads || 0;
         document.getElementById('fbLocalLeads').textContent = stats.local_leads || 0;
+        if (stats.fb_error) {
+          document.getElementById('fbStatsStatus').textContent = 'FB API Error: ' + stats.fb_error + (stats.debug ? ' [' + stats.debug.token_type + ' token, ' + stats.debug.ad_account_id + ']' : '');
+          document.getElementById('fbStatsStatus').style.color = '#ef4444';
+        }
       } catch (e) {
         document.getElementById('fbStatsStatus').textContent = 'Failed to load stats';
         document.getElementById('fbStatsStatus').style.color = '#ef4444';
