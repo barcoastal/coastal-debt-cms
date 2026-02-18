@@ -1222,13 +1222,35 @@ router.get('/stats', authenticateToken, async (req, res) => {
  * POST /api/facebook/fetch-all-costs
  */
 router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
+  const debug = {};
   try {
     const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
-    if (!config || !config.ad_account_id || !config.page_access_token) {
-      return res.status(400).json({ error: 'Ad Account ID or Access Token not configured' });
+    if (!config) {
+      return res.status(400).json({ error: 'Facebook not configured' });
     }
 
-    // Get ALL meta leads without cost
+    // Use user_access_token for Marketing API (has ads_read permission), fall back to page token
+    const adsToken = config.user_access_token || config.page_access_token;
+    const adAccountId = config.ad_account_id;
+
+    debug.has_user_token = !!config.user_access_token;
+    debug.has_page_token = !!config.page_access_token;
+    debug.using_token = config.user_access_token ? 'user_access_token' : 'page_access_token';
+    debug.ad_account_id = adAccountId || 'NOT SET';
+
+    if (!adAccountId) {
+      return res.json({ error: 'Ad Account ID not configured', debug });
+    }
+    if (!adsToken) {
+      return res.json({ error: 'No access token configured', debug });
+    }
+
+    // Validate ad_account_id format
+    if (!adAccountId.startsWith('act_')) {
+      debug.ad_account_id_warning = 'Should start with act_ (e.g. act_123456789)';
+    }
+
+    // Step 1: Get ALL meta leads without cost
     const leads = db.prepare(`
       SELECT l.id, l.hidden_fields, l.created_at FROM leads l
       JOIN landing_pages lp ON l.landing_page_id = lp.id
@@ -1236,13 +1258,27 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
       ORDER BY l.created_at DESC LIMIT 500
     `).all();
 
+    debug.leads_without_cost = leads.length;
+
+    // Also check how many meta leads exist total and how many already have cost
+    const totalMeta = db.prepare(`
+      SELECT COUNT(*) as cnt FROM leads l
+      JOIN landing_pages lp ON l.landing_page_id = lp.id WHERE lp.platform = 'meta'
+    `).get();
+    const withCost = db.prepare(`
+      SELECT COUNT(*) as cnt FROM leads l
+      JOIN landing_pages lp ON l.landing_page_id = lp.id WHERE lp.platform = 'meta' AND l.cost_cents IS NOT NULL
+    `).get();
+    debug.total_meta_leads = totalMeta.cnt;
+    debug.leads_already_with_cost = withCost.cnt;
+
     if (!leads.length) {
-      return res.json({ total: 0, fetched: 0, failed: 0, message: 'No leads without cost data' });
+      return res.json({ total: 0, fetched: 0, failed: 0, message: 'No leads without cost data', debug });
     }
 
-    // Separate leads into two groups: with campaign_id and without
-    const campaignDateLeads = {}; // { campaignId: { date: [leadIds] } }
-    const noCampaignDateLeads = {}; // { date: [leadIds] }
+    // Step 2: Separate leads by campaign_id presence
+    const campaignDateLeads = {};
+    const noCampaignDateLeads = {};
     const campaignIds = new Set();
 
     for (const lead of leads) {
@@ -1264,7 +1300,12 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
       }
     }
 
-    // Find overall date range across ALL leads
+    const noCampCount = Object.values(noCampaignDateLeads).flat().length;
+    debug.leads_with_campaign_id = leads.length - noCampCount;
+    debug.leads_without_campaign_id = noCampCount;
+    debug.unique_campaign_ids = Array.from(campaignIds);
+
+    // Find date range
     const allDates = new Set();
     for (const cid of Object.keys(campaignDateLeads)) {
       for (const d of Object.keys(campaignDateLeads[cid])) allDates.add(d);
@@ -1272,37 +1313,39 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
     for (const d of Object.keys(noCampaignDateLeads)) allDates.add(d);
 
     if (!allDates.size) {
-      return res.json({ total: leads.length, fetched: 0, failed: leads.length, message: 'No leads with valid dates' });
+      return res.json({ total: leads.length, fetched: 0, failed: leads.length, message: 'No leads with valid dates', debug });
     }
 
     const sortedDates = Array.from(allDates).sort();
     const earliestDate = sortedDates[0];
     const latestDate = sortedDates[sortedDates.length - 1];
+    debug.date_range = { from: earliestDate, to: latestDate, days: sortedDates.length };
 
-    // Fetch account-level daily spend (used for fallback and for leads without campaign_id)
+    // Step 3: Fetch account-level daily spend from Facebook
+    const acctApiUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights`;
     const acctParams = new URLSearchParams({
       fields: 'spend',
       time_range: JSON.stringify({ since: earliestDate, until: latestDate }),
       time_increment: '1',
-      access_token: config.page_access_token,
+      access_token: adsToken,
       limit: '500'
     });
 
-    const acctRes = await fetch(
-      `https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${acctParams}`
-    );
+    debug.fb_api_url = acctApiUrl + '?' + acctParams.toString().replace(adsToken, '***TOKEN***');
+
+    const acctRes = await fetch(`${acctApiUrl}?${acctParams}`);
     const acctData = await acctRes.json();
 
     if (acctData.error) {
-      return res.status(400).json({ error: acctData.error.message });
+      debug.fb_api_error = acctData.error;
+      return res.json({ error: 'Facebook API error: ' + acctData.error.message, debug });
     }
 
     // Build account-level daily spend map
-    const acctSpendMap = {}; // { date: spend_dollars }
+    const acctSpendMap = {};
     for (const row of acctData.data || []) {
       acctSpendMap[row.date_start] = parseFloat(row.spend || 0);
     }
-    // Handle pagination
     let acctNext = acctData.paging?.next;
     while (acctNext) {
       const nr = await fetch(acctNext);
@@ -1314,8 +1357,13 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
       acctNext = nd.paging?.next;
     }
 
-    // If we have campaign-level leads, also fetch per-campaign spend
-    const campaignSpendMap = {}; // { campaignId: { date: spend_dollars } }
+    debug.fb_api_rows_returned = (acctData.data || []).length;
+    debug.days_with_spend = Object.keys(acctSpendMap).length;
+    debug.total_spend_in_range = Object.values(acctSpendMap).reduce((a, b) => a + b, 0).toFixed(2);
+    debug.sample_spend_days = Object.entries(acctSpendMap).slice(0, 5).map(([d, s]) => `${d}: $${s}`);
+
+    // Step 4: Per-campaign spend (if any leads have campaign_id)
+    const campaignSpendMap = {};
     if (campaignIds.size) {
       const filterJson = JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: Array.from(campaignIds) }]);
       const campParams = new URLSearchParams({
@@ -1324,13 +1372,11 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
         filtering: filterJson,
         time_range: JSON.stringify({ since: earliestDate, until: latestDate }),
         time_increment: '1',
-        access_token: config.page_access_token,
+        access_token: adsToken,
         limit: '500'
       });
 
-      const campRes = await fetch(
-        `https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${campParams}`
-      );
+      const campRes = await fetch(`${acctApiUrl}?${campParams}`);
       const campData = await campRes.json();
 
       if (!campData.error) {
@@ -1349,10 +1395,12 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
           }
           campNext = nd.paging?.next;
         }
+      } else {
+        debug.campaign_api_error = campData.error.message;
       }
     }
 
-    // Count ALL meta leads per day (for account-level fallback distribution)
+    // Step 5: Count ALL meta leads per day
     const allMetaLeadsPerDay = {};
     const dayCountRows = db.prepare(`
       SELECT DATE(l.created_at) as day, COUNT(*) as cnt
@@ -1363,7 +1411,7 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
     `).all(earliestDate, latestDate);
     for (const r of dayCountRows) allMetaLeadsPerDay[r.day] = r.cnt;
 
-    // Distribute costs
+    // Step 6: Distribute costs
     let fetched = 0;
     let failed = 0;
     const updateStmt = db.prepare(`
@@ -1371,17 +1419,12 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
       WHERE id = ?
     `);
 
-    // Mode 1: Per-campaign attribution
+    // Mode 1: Per-campaign
     for (const cid of Object.keys(campaignDateLeads)) {
       for (const dateStr of Object.keys(campaignDateLeads[cid])) {
         const leadIds = campaignDateLeads[cid][dateStr];
         const dailySpend = campaignSpendMap[cid]?.[dateStr];
-
-        if (!dailySpend) {
-          failed += leadIds.length;
-          continue;
-        }
-
+        if (!dailySpend) { failed += leadIds.length; continue; }
         const costCentsPerLead = Math.round((dailySpend * 100) / leadIds.length);
         for (const leadId of leadIds) {
           try { updateStmt.run(costCentsPerLead, leadId); fetched++; } catch (e) { failed++; }
@@ -1389,36 +1432,23 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
       }
     }
 
-    // Mode 2: Account-level fallback for leads without campaign_id
+    // Mode 2: Account-level fallback
     for (const dateStr of Object.keys(noCampaignDateLeads)) {
       const leadIds = noCampaignDateLeads[dateStr];
       const dailySpend = acctSpendMap[dateStr];
-
-      if (!dailySpend) {
-        failed += leadIds.length;
-        continue;
-      }
-
-      // Distribute account daily spend across ALL meta leads that day (not just these ones)
+      if (!dailySpend) { failed += leadIds.length; continue; }
       const totalLeadsOnDay = allMetaLeadsPerDay[dateStr] || leadIds.length;
       const costCentsPerLead = Math.round((dailySpend * 100) / totalLeadsOnDay);
-
       for (const leadId of leadIds) {
         try { updateStmt.run(costCentsPerLead, leadId); fetched++; } catch (e) { failed++; }
       }
     }
 
-    res.json({
-      total: leads.length,
-      fetched,
-      failed,
-      with_campaign: leads.length - Object.values(noCampaignDateLeads).flat().length,
-      without_campaign: Object.values(noCampaignDateLeads).flat().length,
-      days_with_spend: Object.keys(acctSpendMap).length
-    });
+    debug.result = { fetched, failed };
+    res.json({ total: leads.length, fetched, failed, debug });
   } catch (err) {
     console.error('Facebook fetch-all-costs error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, debug });
   }
 });
 

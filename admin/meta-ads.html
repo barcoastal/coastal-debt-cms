@@ -404,7 +404,25 @@
       btn.textContent = 'Fetching...';
       try {
         const data = await api('/api/facebook/fetch-all-costs', { method: 'POST' });
-        const msg = `Fetched: ${data.fetched || 0}, Failed: ${data.failed || 0}, Skipped: ${data.skipped || 0}`;
+        let msg = `Fetched: ${data.fetched || 0}, Failed: ${data.failed || 0}, Total: ${data.total || 0}`;
+        if (data.error) msg = 'Error: ' + data.error;
+        if (data.debug) {
+          msg += '\n\n--- Debug ---';
+          msg += '\nToken used: ' + (data.debug.using_token || '?');
+          msg += '\nAd Account: ' + (data.debug.ad_account_id || '?');
+          if (data.debug.ad_account_id_warning) msg += '\n⚠ ' + data.debug.ad_account_id_warning;
+          msg += '\nTotal meta leads: ' + (data.debug.total_meta_leads || 0);
+          msg += '\nAlready have cost: ' + (data.debug.leads_already_with_cost || 0);
+          msg += '\nWithout cost: ' + (data.debug.leads_without_cost || 0);
+          msg += '\nWith campaign ID: ' + (data.debug.leads_with_campaign_id || 0);
+          msg += '\nWithout campaign ID: ' + (data.debug.leads_without_campaign_id || 0);
+          msg += '\nDate range: ' + (data.debug.date_range ? data.debug.date_range.from + ' to ' + data.debug.date_range.to : '?');
+          msg += '\nFB API rows: ' + (data.debug.fb_api_rows_returned ?? '?');
+          msg += '\nDays with spend: ' + (data.debug.days_with_spend || 0);
+          msg += '\nTotal spend in range: $' + (data.debug.total_spend_in_range || '0');
+          if (data.debug.fb_api_error) msg += '\nFB API ERROR: ' + JSON.stringify(data.debug.fb_api_error);
+          if (data.debug.sample_spend_days) msg += '\nSample: ' + data.debug.sample_spend_days.join(', ');
+        }
         alert(msg);
         loadAll();
       } catch (err) {
