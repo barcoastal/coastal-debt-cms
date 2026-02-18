@@ -25,7 +25,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'other')),
+    platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'other')),
     traffic_source TEXT,
     webhook_url TEXT,
     form_id INTEGER,
@@ -70,7 +70,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS forms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'bing', 'outbrain', 'linkedin', 'other')),
+    platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'bing', 'outbrain', 'linkedin', 'reddit', 'other')),
     webhook_url TEXT,
     fields TEXT DEFAULT '[]',
     submit_button_text TEXT DEFAULT 'Submit',
@@ -669,7 +669,7 @@ db.exec(`
     author_name TEXT DEFAULT 'Sarah Mitchell',
     author_title TEXT DEFAULT 'Senior Business Correspondent',
     publish_date TEXT,
-    platform TEXT DEFAULT 'outbrain' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'other')),
+    platform TEXT DEFAULT 'outbrain' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'other')),
     traffic_source TEXT,
     form_id INTEGER,
     content TEXT DEFAULT '{}',
@@ -1161,6 +1161,102 @@ if (!obFormExists) {
         console.log('Migration: updated hidden fields on form "' + form.name + '"');
       }
     } catch (e) {}
+  }
+})();
+
+// Migration: add 'reddit' to platform CHECK constraints on existing tables
+// SQLite requires table rebuild to change CHECK constraints
+(function() {
+  try {
+    const row = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='forms'").get();
+    if (row && row.sql && !row.sql.includes("'reddit'")) {
+      console.log('Running reddit platform migration...');
+      db.pragma('foreign_keys = OFF');
+
+      db.exec(`
+        -- forms: rebuild with reddit in CHECK
+        DROP TABLE IF EXISTS forms_new;
+        CREATE TABLE forms_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'bing', 'outbrain', 'linkedin', 'reddit', 'other')),
+          webhook_url TEXT,
+          fields TEXT DEFAULT '[]',
+          submit_button_text TEXT DEFAULT 'Submit',
+          success_message TEXT DEFAULT 'Thank you! We will contact you shortly.',
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          skip_pre_qual INTEGER DEFAULT 0
+        );
+        INSERT INTO forms_new SELECT * FROM forms;
+        DROP TABLE forms;
+        ALTER TABLE forms_new RENAME TO forms;
+      `);
+      console.log('Migration: rebuilt forms with reddit platform');
+
+      // landing_pages (may already be done)
+      const lpRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='landing_pages'").get();
+      if (lpRow && !lpRow.sql.includes("'reddit'")) {
+        db.exec(`
+          DROP TABLE IF EXISTS landing_pages_new;
+          CREATE TABLE landing_pages_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'other')),
+            traffic_source TEXT,
+            webhook_url TEXT,
+            form_id INTEGER,
+            content TEXT DEFAULT '{}',
+            sections_visible TEXT DEFAULT '{}',
+            hidden_fields TEXT DEFAULT '{}',
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (form_id) REFERENCES forms(id)
+          );
+          INSERT INTO landing_pages_new SELECT * FROM landing_pages;
+          DROP TABLE landing_pages;
+          ALTER TABLE landing_pages_new RENAME TO landing_pages;
+        `);
+        console.log('Migration: rebuilt landing_pages with reddit platform');
+      }
+
+      // articles
+      db.exec(`
+        DROP TABLE IF EXISTS articles_new;
+        CREATE TABLE articles_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          headline TEXT,
+          subheadline TEXT,
+          body_html TEXT,
+          author_name TEXT DEFAULT 'Sarah Mitchell',
+          author_title TEXT DEFAULT 'Senior Business Correspondent',
+          publish_date TEXT,
+          platform TEXT DEFAULT 'outbrain' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'other')),
+          traffic_source TEXT,
+          form_id INTEGER,
+          content TEXT DEFAULT '{}',
+          meta_title TEXT,
+          meta_description TEXT,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (form_id) REFERENCES forms(id)
+        );
+        INSERT INTO articles_new SELECT * FROM articles;
+        DROP TABLE articles;
+        ALTER TABLE articles_new RENAME TO articles;
+      `);
+      console.log('Migration: rebuilt articles with reddit platform');
+
+      db.pragma('foreign_keys = ON');
+    }
+  } catch (e) {
+    console.error('Reddit platform migration error:', e.message);
+    try { db.pragma('foreign_keys = ON'); } catch (_) {}
   }
 })();
 
