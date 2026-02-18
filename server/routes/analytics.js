@@ -736,7 +736,7 @@ router.get('/outbrain/leads', authenticateToken, (req, res) => {
 });
 
 // Meta Ads: Summary stats
-router.get('/meta-ads/summary', authenticateToken, (req, res) => {
+router.get('/meta-ads/summary', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   const tz = getConfiguredTimezone();
   const dateConds = [];
@@ -785,7 +785,7 @@ router.get('/meta-ads/summary', authenticateToken, (req, res) => {
 
   const totalLeads = leadStats.total_leads || 0;
 
-  // Cost aggregation from leads.cost_cents
+  // Cost aggregation from leads.cost_cents (per-lead attributed costs)
   const costStats = db.prepare(`
     SELECT COALESCE(SUM(l.cost_cents), 0) as total_cost_cents,
            COUNT(l.cost_cents) as leads_with_cost
@@ -794,16 +794,53 @@ router.get('/meta-ads/summary', authenticateToken, (req, res) => {
     WHERE lp.platform = 'meta' ${dateWhere}
   `).get(...dateParams);
 
-  const totalCostCents = costStats.total_cost_cents || 0;
+  const dbCostCents = costStats.total_cost_cents || 0;
+
+  // Also fetch total spend from Facebook API for the selected date range
+  let fbSpend = 0;
+  try {
+    const fbConfig = db.prepare('SELECT ad_account_id, page_access_token, user_access_token FROM facebook_config WHERE id = 1').get();
+    if (fbConfig && fbConfig.ad_account_id) {
+      const adsToken = fbConfig.user_access_token || fbConfig.page_access_token;
+      const adAccountId = fbConfig.ad_account_id.startsWith('act_') ? fbConfig.ad_account_id : 'act_' + fbConfig.ad_account_id;
+
+      if (adsToken) {
+        const fbParams = new URLSearchParams({
+          fields: 'spend',
+          access_token: adsToken
+        });
+
+        // Use time_range if dates specified, otherwise use a preset
+        if (from && to) {
+          fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
+        } else if (from) {
+          fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+        } else {
+          fbParams.set('date_preset', 'maximum');
+        }
+
+        const fbRes = await fetch(`https://graph.facebook.com/v21.0/${adAccountId}/insights?${fbParams}`);
+        const fbData = await fbRes.json();
+        if (fbData.data && fbData.data.length > 0) {
+          fbSpend = parseFloat(fbData.data[0].spend || 0);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Meta summary: FB API error:', e.message);
+  }
+
+  // Use FB API spend if available, otherwise fall back to DB costs
+  const totalSpendCents = fbSpend > 0 ? Math.round(fbSpend * 100) : dbCostCents;
 
   res.json({
     total_leads: totalLeads,
     instant_form_leads: instantFormCount || 0,
     landing_page_leads: totalLeads - (instantFormCount || 0),
     events_sent: eventStats.events_sent || 0,
-    total_cost_cents: totalCostCents,
+    total_cost_cents: totalSpendCents,
     leads_with_cost: costStats.leads_with_cost || 0,
-    avg_cpl_cents: totalLeads > 0 ? Math.round(totalCostCents / totalLeads) : 0
+    avg_cpl_cents: totalLeads > 0 ? Math.round(totalSpendCents / totalLeads) : 0
   });
 });
 
