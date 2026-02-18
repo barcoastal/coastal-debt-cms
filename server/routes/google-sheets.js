@@ -63,12 +63,18 @@ let authClient = null;
 
 async function getAuthClient() {
   if (authClient) return authClient;
-  const keyPath = path.join(__dirname, '..', 'google-sheets-key.json');
-  const auth = new google.auth.GoogleAuth({
-    keyFile: keyPath,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  });
-  authClient = await auth.getClient();
+  const scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+
+  // Prefer env var (for Railway/production), fall back to local key file
+  if (process.env.GOOGLE_SHEETS_KEY_JSON) {
+    const credentials = JSON.parse(process.env.GOOGLE_SHEETS_KEY_JSON);
+    const auth = new google.auth.GoogleAuth({ credentials, scopes });
+    authClient = await auth.getClient();
+  } else {
+    const keyPath = path.join(__dirname, '..', 'google-sheets-key.json');
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes });
+    authClient = await auth.getClient();
+  }
   return authClient;
 }
 
