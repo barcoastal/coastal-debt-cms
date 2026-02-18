@@ -154,7 +154,9 @@ body {
   color: var(--white);
   position: fixed;
   height: 100vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar-logo {
@@ -184,6 +186,9 @@ body {
 
 .sidebar-nav {
   padding: 20px 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .sidebar-nav a {
@@ -208,12 +213,9 @@ body {
 }
 
 .sidebar-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .user-info {
