@@ -3,27 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Organic Traffic | Coastal Debt CMS</title>
+  <title>RedTrack | Coastal Debt CMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .time-range-btns { display: flex; gap: 8px; }
-    .time-range-btns button {
-      padding: 8px 16px; border: 1px solid var(--gray-300); border-radius: 8px;
-      background: var(--white); cursor: pointer; font-size: 0.875rem; color: var(--gray-600); transition: all 0.2s;
-    }
-    .time-range-btns button.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
-    .time-range-btns button:hover:not(.active) { border-color: var(--gray-400); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-header { margin-bottom: 16px; }
     .card-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0; }
-    .referrer-domain { font-weight: 600; color: var(--gray-800); }
-    .traffic-badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
-    .traffic-organic { background: #d1fae5; color: #065f46; }
-    .traffic-social { background: #e0e7ff; color: #3730a3; }
-    .traffic-referral { background: #fef3c7; color: #92400e; }
-    .traffic-direct { background: var(--gray-200); color: var(--gray-600); }
-    .doughnut-container { max-width: 320px; margin: 0 auto; }
+    table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1200px; }
+    .profit-positive { color: #16a34a; font-weight: 600; }
+    .profit-negative { color: #dc2626; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -75,7 +65,7 @@
           <a href="/admin/outbrain.html">Outbrain</a>
           <a href="/admin/facebook-debug.html">FB Debug</a>
         </div>
-        <a href="/admin/redtrack.html">
+        <a href="/admin/redtrack.html" class="active">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           RedTrack
         </a>
@@ -83,7 +73,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           UTM Builder
         </a>
-        <a href="/admin/organic.html" class="active">
+        <a href="/admin/organic.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           Organic Traffic
         </a>
@@ -127,18 +117,21 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Organic Traffic</h1>
+        <h1>RedTrack</h1>
       </div>
 
       <!-- Time Range Filter -->
       <div class="card">
         <div class="filters">
           <div class="time-range-btns">
-            <button onclick="setRange('mtd', this)">MTD</button>
-            <button class="active" onclick="setRange('30d', this)">Last 30 Days</button>
-            <button onclick="setRange('7d', this)">Last 7 Days</button>
-            <button onclick="setRange('all', this)">All Time</button>
-            <button onclick="setRange('custom', this)">Custom</button>
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button class="active" data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
           </div>
           <input type="date" id="fromDate" style="display:none;">
           <input type="date" id="toDate" style="display:none;">
@@ -149,279 +142,257 @@
       <!-- Summary Stats -->
       <div class="stats-grid">
         <div class="stat-card primary">
-          <div class="stat-value" id="statTotal">-</div>
-          <div class="stat-label">Total Organic Visitors</div>
+          <div class="stat-value" id="statClicks">-</div>
+          <div class="stat-label">Total Clicks</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statLeads">-</div>
-          <div class="stat-label">Organic Leads</div>
+          <div class="stat-value" id="statConversions">-</div>
+          <div class="stat-label">Conversions</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statConversion">-</div>
-          <div class="stat-label">Conversion Rate</div>
+          <div class="stat-value" id="statCost">-</div>
+          <div class="stat-label">Total Cost</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statDirect">-</div>
-          <div class="stat-label">Direct Visitors</div>
+          <div class="stat-value" id="statRevenue">-</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statProfit">-</div>
+          <div class="stat-label">Profit</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statROAS">-</div>
+          <div class="stat-label">ROAS</div>
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="charts-grid">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Traffic Sources</h3>
-          </div>
-          <div class="doughnut-container">
-            <canvas id="sourcesChart"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Organic Visitors Over Time</h3>
-          </div>
-          <canvas id="overTimeChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Top Referrers -->
+      <!-- Daily Chart -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Top Referrers</h3>
+          <h3 class="card-title">Daily Cost vs Revenue</h3>
         </div>
+        <canvas id="dailyChart" height="80"></canvas>
+      </div>
+
+      <!-- Campaigns Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Campaigns</h3>
+        </div>
+        <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
           <table>
             <thead>
-              <tr>
-                <th>Domain</th>
-                <th>Visitors</th>
-                <th>Conversions</th>
-                <th>Conv. Rate</th>
-              </tr>
+              <tr id="tableHead"></tr>
             </thead>
-            <tbody id="referrersTable">
-              <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+            <tbody id="campaignsTable">
+              <tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
-      </div>
-
-      <!-- Organic Leads -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Organic Leads</h3>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Source</th>
-                <th>Traffic Type</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody id="leadsTable">
-              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div id="pagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;"></div>
       </div>
     </main>
   </div>
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    let sourcesChart = null;
-    let overTimeChart = null;
-    let currentPage = 1;
-    let currentRange = '30d';
+    const COLUMNS = [
+      { key: 'campaign_name', label: 'Campaign Name', default: true },
+      { key: 'clicks', label: 'Clicks', default: true },
+      { key: 'conversions', label: 'Conversions', default: true },
+      { key: 'cr', label: 'CR%', default: true },
+      { key: 'cost', label: 'Cost', default: true },
+      { key: 'revenue', label: 'Revenue', default: true },
+      { key: 'profit', label: 'Profit', default: true },
+      { key: 'cpc', label: 'CPC', default: true },
+      { key: 'cpa', label: 'CPA', default: true },
+      { key: 'roas', label: 'ROAS', default: true },
+      { key: 'roi', label: 'ROI', default: true }
+    ];
+
+    function fmtMoney(v) {
+      var n = Number(v) || 0;
+      return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function fmtPct(v) {
+      var n = Number(v) || 0;
+      return n.toFixed(2) + '%';
+    }
+
+    function fmtNum(v) {
+      var n = Number(v) || 0;
+      return n.toLocaleString('en-US');
+    }
+
+    function profitClass(v) {
+      var n = Number(v) || 0;
+      return n >= 0 ? 'profit-positive' : 'profit-negative';
+    }
+
+    const cellRenderers = {
+      campaign_name: function(r) { return '<td>' + escapeHtml(r.sub1 || r.campaign_name || r.name || '-') + '</td>'; },
+      clicks: function(r) { return '<td>' + fmtNum(r.clicks) + '</td>'; },
+      conversions: function(r) { return '<td>' + fmtNum(r.conversions || r.conv) + '</td>'; },
+      cr: function(r) { return '<td>' + fmtPct(r.cr) + '</td>'; },
+      cost: function(r) { return '<td>' + fmtMoney(r.cost) + '</td>'; },
+      revenue: function(r) { return '<td>' + fmtMoney(r.revenue) + '</td>'; },
+      profit: function(r) { return '<td class="' + profitClass(r.profit) + '">' + fmtMoney(r.profit) + '</td>'; },
+      cpc: function(r) { return '<td>' + fmtMoney(r.cpc) + '</td>'; },
+      cpa: function(r) { return '<td>' + fmtMoney(r.cpa) + '</td>'; },
+      roas: function(r) { return '<td>' + (Number(r.roas) || 0).toFixed(2) + '</td>'; },
+      roi: function(r) { return '<td>' + fmtPct(r.roi) + '</td>'; }
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    let dailyChart = null;
+    let currentRange = 'mtd';
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'redtrack',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: function() { renderTable(); loadCampaigns(); }
+    });
+    renderTable();
 
     function getDateRange() {
       if (currentRange === 'custom') {
         return { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value };
       }
-      if (currentRange === 'all') return { from: '', to: '' };
-      const now = new Date();
-      let from;
-      if (currentRange === 'mtd') {
-        from = new Date(now.getFullYear(), now.getMonth(), 1);
-      } else if (currentRange === '7d') {
-        from = new Date(now.getTime() - 7 * 86400000);
-      } else if (currentRange === '30d') {
-        from = new Date(now.getTime() - 30 * 86400000);
-      }
-      return { from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+      return getDateRangeFromPreset(currentRange);
     }
 
     function setRange(range, btn) {
       currentRange = range;
-      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.time-range-btns button').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      const show = range === 'custom';
+      var show = range === 'custom';
       document.getElementById('fromDate').style.display = show ? '' : 'none';
       document.getElementById('toDate').style.display = show ? '' : 'none';
       if (range !== 'custom') loadAll();
     }
 
     function buildQS() {
-      const { from, to } = getDateRange();
-      const p = new URLSearchParams();
-      if (from) p.set('from', from);
-      if (to) p.set('to', to);
+      var dr = getDateRange();
+      var p = new URLSearchParams();
+      if (dr.from) p.set('from', dr.from);
+      if (dr.to) p.set('to', dr.to);
       return p.toString() ? '?' + p.toString() : '';
-    }
-
-    function getTrafficBadge(type) {
-      const map = {
-        organic_search: '<span class="traffic-badge traffic-organic">Organic Search</span>',
-        social: '<span class="traffic-badge traffic-social">Social</span>',
-        referral: '<span class="traffic-badge traffic-referral">Referral</span>',
-        direct: '<span class="traffic-badge traffic-direct">Direct</span>'
-      };
-      return map[type] || '<span class="traffic-badge traffic-direct">' + (type || 'Unknown') + '</span>';
     }
 
     async function loadSummary() {
       try {
-        const data = await api('/api/analytics/organic/summary' + buildQS());
-        document.getElementById('statTotal').textContent = data.totalVisitors.toLocaleString();
-        document.getElementById('statLeads').textContent = data.convertedVisitors.toLocaleString();
-        document.getElementById('statConversion').textContent = data.conversionRate + '%';
-        document.getElementById('statDirect').textContent = data.directVisitors.toLocaleString();
+        var data = await api('/api/redtrack/summary' + buildQS());
+        document.getElementById('statClicks').textContent = fmtNum(data.clicks);
+        document.getElementById('statConversions').textContent = fmtNum(data.conversions || data.conv);
+        document.getElementById('statCost').textContent = fmtMoney(data.cost);
+        document.getElementById('statRevenue').textContent = fmtMoney(data.revenue);
 
-        // Doughnut chart
-        if (sourcesChart) sourcesChart.destroy();
-        sourcesChart = new Chart(document.getElementById('sourcesChart').getContext('2d'), {
-          type: 'doughnut',
-          data: {
-            labels: ['Organic Search', 'Social', 'Referral', 'Direct'],
-            datasets: [{
-              data: [data.organicSearchVisitors, data.socialVisitors, data.referralVisitors, data.directVisitors],
-              backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#9ca3af'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            cutout: '60%',
-            plugins: {
-              legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
-            }
-          }
-        });
+        var profitVal = Number(data.profit) || 0;
+        var profitEl = document.getElementById('statProfit');
+        profitEl.textContent = fmtMoney(data.profit);
+        profitEl.style.color = profitVal >= 0 ? '#16a34a' : '#dc2626';
+
+        var roas = Number(data.roas) || 0;
+        document.getElementById('statROAS').textContent = roas.toFixed(2);
       } catch (err) {
         console.error('Error loading summary:', err);
       }
     }
 
-    async function loadOverTime() {
+    async function loadDaily() {
       try {
-        const qs = buildQS();
-        const data = await api('/api/analytics/organic/over-time' + qs);
+        var data = await api('/api/redtrack/daily' + buildQS());
+        var rows = Array.isArray(data) ? data : (data.rows || data.data || []);
 
-        if (overTimeChart) overTimeChart.destroy();
-        overTimeChart = new Chart(document.getElementById('overTimeChart').getContext('2d'), {
+        rows.sort(function(a, b) {
+          return (a.date || a.sub1 || '').localeCompare(b.date || b.sub1 || '');
+        });
+
+        var labels = rows.map(function(r) { return r.date || r.sub1 || ''; });
+        var costs = rows.map(function(r) { return Number(r.cost) || 0; });
+        var revenues = rows.map(function(r) { return Number(r.revenue) || 0; });
+
+        if (dailyChart) dailyChart.destroy();
+        dailyChart = new Chart(document.getElementById('dailyChart').getContext('2d'), {
           type: 'line',
           data: {
-            labels: data.map(d => d.date),
-            datasets: [{
-              label: 'Organic Visitors',
-              data: data.map(d => d.count),
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              fill: true,
-              tension: 0.3,
-              borderWidth: 2,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
+            labels: labels,
+            datasets: [
+              {
+                label: 'Cost',
+                data: costs,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                fill: true,
+                tension: 0.3
+              },
+              {
+                label: 'Revenue',
+                data: revenues,
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34,197,94,0.1)',
+                fill: true,
+                tension: 0.3
+              }
+            ]
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  }
+                }
+              }
+            },
             scales: {
-              y: { beginAtZero: true, ticks: { stepSize: 1 } },
-              x: { ticks: { maxTicksLimit: 10 } }
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(v) { return '$' + v.toLocaleString(); }
+                }
+              }
             }
           }
         });
       } catch (err) {
-        console.error('Error loading over time:', err);
+        console.error('Error loading daily chart:', err);
       }
     }
 
-    async function loadReferrers() {
+    async function loadCampaigns() {
       try {
-        const data = await api('/api/analytics/organic/top-referrers' + buildQS());
-        const tbody = document.getElementById('referrersTable');
+        var data = await api('/api/redtrack/campaigns' + buildQS());
+        var rows = Array.isArray(data) ? data : (data.rows || data.data || []);
+        var tbody = document.getElementById('campaignsTable');
+        var cols = columnEditor.getVisibleColumns();
 
-        if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--gray-400);">No referrer data for this period</td></tr>';
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No campaign data for this period</td></tr>';
           return;
         }
 
-        tbody.innerHTML = data.map(r => {
-          const rate = r.visitors > 0 ? Math.round((r.conversions / r.visitors) * 10000) / 100 : 0;
-          return '<tr>' +
-            '<td><span class="referrer-domain">' + r.domain + '</span></td>' +
-            '<td>' + r.visitors + '</td>' +
-            '<td>' + r.conversions + '</td>' +
-            '<td>' + rate + '%</td>' +
-          '</tr>';
+        tbody.innerHTML = rows.map(function(row) {
+          return '<tr>' + cols.map(function(key) { return cellRenderers[key](row); }).join('') + '</tr>';
         }).join('');
       } catch (err) {
-        console.error('Error loading referrers:', err);
-      }
-    }
-
-    async function loadLeads(page) {
-      page = page || 1;
-      currentPage = page;
-      try {
-        const qs = buildQS();
-        const data = await api('/api/analytics/organic/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
-        const tbody = document.getElementById('leadsTable');
-
-        if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">No organic leads found for this period</td></tr>';
-        } else {
-          tbody.innerHTML = data.leads.map(lead => {
-            return '<tr>' +
-              '<td>' + ([lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-') + '</td>' +
-              '<td>' + (lead.company_name || '-') + '</td>' +
-              '<td>' + (lead.email || '-') + '</td>' +
-              '<td>' + (lead.phone || '-') + '</td>' +
-              '<td>' + (lead.utm_source || lead.referrer_url || '-') + '</td>' +
-              '<td>' + getTrafficBadge(lead.traffic_type) + '</td>' +
-              '<td>' + formatDate(lead.created_at) + '</td>' +
-            '</tr>';
-          }).join('');
-        }
-
-        const pagination = document.getElementById('pagination');
-        pagination.innerHTML = '';
-        for (let i = 1; i <= data.pagination.pages; i++) {
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-small ' + (i === currentPage ? 'btn-primary' : 'btn-secondary');
-          btn.textContent = i;
-          btn.onclick = () => loadLeads(i);
-          pagination.appendChild(btn);
-        }
-      } catch (err) {
-        console.error('Error loading leads:', err);
+        console.error('Error loading campaigns:', err);
       }
     }
 
     function loadAll() {
       loadSummary();
-      loadOverTime();
-      loadReferrers();
-      loadLeads(1);
+      loadDaily();
+      loadCampaigns();
     }
 
     loadAll();

@@ -23,6 +23,7 @@ const crmRoutes = require('./routes/crm');
 const emailMarketingRoutes = require('./routes/email-marketing');
 const emailTrackingRoutes = require('./routes/email-tracking');
 const articlesRoutes = require('./routes/articles');
+const redtrackRoutes = require('./routes/redtrack');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -124,6 +125,7 @@ app.use('/api/ai', aiContentRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/email', emailMarketingRoutes);
 app.use('/api/articles', articlesRoutes);
+app.use('/api/redtrack', redtrackRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin
