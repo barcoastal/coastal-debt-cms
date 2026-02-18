@@ -137,7 +137,7 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
 
     for (const form of allForms) {
       try {
-        let nextUrl = `https://graph.facebook.com/v21.0/${form.id}/leads?access_token=${pageToken}&limit=50`;
+        let nextUrl = `https://graph.facebook.com/v21.0/${form.id}/leads?fields=id,created_time,field_data,ad_id,campaign_id&access_token=${pageToken}&limit=50`;
 
         while (nextUrl) {
         const leadsRes = await fetch(nextUrl);
@@ -186,6 +186,8 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             fb_page_name: pageName,
             fb_form_id: form.id,
             fb_form_name: form.name,
+            fb_campaign_id: lead.campaign_id || '',
+            fb_ad_id: lead.ad_id || '',
             fb_created_time: lead.created_time || '',
             sync_method: 'api_poll'
           };
@@ -725,6 +727,54 @@ try {
   console.error('Date backfill error:', err.message);
 }
 
+// Backfill fb_campaign_id for existing instant form leads that don't have it
+// Runs async on startup since it requires Facebook API calls
+setTimeout(async () => {
+  try {
+    const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+    if (!config || !config.page_access_token) return;
+
+    const leadsToBackfill = db.prepare(`
+      SELECT id, hidden_fields FROM leads
+      WHERE hidden_fields LIKE '%"source":"facebook_instant_form"%'
+        AND hidden_fields LIKE '%"fb_leadgen_id":"%'
+        AND (hidden_fields NOT LIKE '%"fb_campaign_id":"%' OR hidden_fields LIKE '%"fb_campaign_id":""%')
+      LIMIT 200
+    `).all();
+
+    if (!leadsToBackfill.length) return;
+    console.log(`Backfilling fb_campaign_id for ${leadsToBackfill.length} instant form leads...`);
+
+    let updated = 0;
+    for (const lead of leadsToBackfill) {
+      try {
+        const hf = JSON.parse(lead.hidden_fields || '{}');
+        if (!hf.fb_leadgen_id) continue;
+
+        const res = await fetch(
+          `https://graph.facebook.com/v21.0/${hf.fb_leadgen_id}?fields=campaign_id,ad_id&access_token=${config.page_access_token}`
+        );
+        const data = await res.json();
+        if (data.error) continue;
+
+        if (data.campaign_id) {
+          hf.fb_campaign_id = data.campaign_id;
+          if (data.ad_id) hf.fb_ad_id = data.ad_id;
+          db.prepare('UPDATE leads SET hidden_fields = ? WHERE id = ?').run(JSON.stringify(hf), lead.id);
+          updated++;
+        }
+
+        // Rate limit: small delay between API calls
+        await new Promise(r => setTimeout(r, 200));
+      } catch (e) {}
+    }
+
+    if (updated > 0) console.log(`Backfilled fb_campaign_id for ${updated} instant form leads`);
+  } catch (err) {
+    console.error('fb_campaign_id backfill error:', err.message);
+  }
+}, 15000); // Run 15s after startup
+
 // Ensure verify_token exists for webhook subscription
 try {
   const fbConf = db.prepare('SELECT verify_token, app_id FROM facebook_config WHERE id = 1').get();
@@ -779,7 +829,7 @@ async function processLeadgenEvent(leadgenId, config) {
   try {
     // Fetch lead data from Facebook
     const response = await fetch(
-      `https://graph.facebook.com/v21.0/${leadgenId}?access_token=${config.page_access_token}`
+      `https://graph.facebook.com/v21.0/${leadgenId}?fields=id,created_time,field_data,form_id,ad_id,campaign_id&access_token=${config.page_access_token}`
     );
     const data = await response.json();
 
@@ -844,6 +894,8 @@ async function processLeadgenEvent(leadgenId, config) {
       fb_leadgen_id: leadgenId,
       fb_form_id: data.form_id || '',
       fb_form_name: formName,
+      fb_campaign_id: data.campaign_id || '',
+      fb_ad_id: data.ad_id || '',
       fb_created_time: data.created_time || '',
       sync_method: 'webhook'
     };
