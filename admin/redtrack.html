@@ -14,6 +14,20 @@
     table { min-width: 1200px; }
     .profit-positive { color: #16a34a; font-weight: 600; }
     .profit-negative { color: #dc2626; font-weight: 600; }
+
+    /* Expandable row styles */
+    .expand-toggle { cursor: pointer; user-select: none; text-align: center; width: 28px; padding: 0 4px !important; }
+    .expand-toggle svg { width: 14px; height: 14px; transition: transform 0.2s; vertical-align: middle; }
+    .expand-toggle.open svg { transform: rotate(90deg); }
+    .detail-row td { padding: 0 !important; background: var(--gray-50, #f9fafb); }
+    .detail-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--gray-200, #e5e7eb); padding: 0 12px; }
+    .detail-tab { padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--gray-500, #6b7280); background: none; border-top: none; border-left: none; border-right: none; }
+    .detail-tab.active { color: var(--primary, #2563eb); border-bottom-color: var(--primary, #2563eb); }
+    .detail-panel { padding: 8px 12px 12px; }
+    .detail-panel table { min-width: 100%; margin: 0; }
+    .detail-panel table thead th { font-size: 11px; background: var(--gray-100, #f3f4f6); }
+    .detail-panel table tbody td { font-size: 11px; }
+    .detail-loading { text-align: center; padding: 20px; color: var(--gray-400, #9ca3af); font-size: 12px; }
   </style>
 </head>
 <body>
@@ -268,7 +282,7 @@
     };
 
     function renderTable() {
-      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+      document.getElementById('tableHead').innerHTML = '<th style="width:28px;"></th>' + columnEditor.renderHeader();
     }
 
     let dailyChart = null;
@@ -391,7 +405,153 @@
       }
     }
 
+    // --- Expandable rows state ---
+    var expandedCampaigns = {};  // campaign_id -> { subcampaigns: [...], keywords: [...] }
+    var expandedOpen = {};       // campaign_id -> true/false
+
+    function subCellRenderers(nameField) {
+      var renderers = {};
+      for (var key in cellRenderers) {
+        if (key === 'campaign_name') {
+          renderers[key] = (function(field) {
+            return function(r) { return '<td>' + escapeHtml(r[field] || '-') + '</td>'; };
+          })(nameField);
+        } else {
+          renderers[key] = cellRenderers[key];
+        }
+      }
+      return renderers;
+    }
+
+    function buildSubTable(rows, nameField) {
+      var cols = columnEditor.getVisibleColumns();
+      var renderers = subCellRenderers(nameField);
+      if (!rows || !rows.length) {
+        return '<div class="detail-loading">No data</div>';
+      }
+      var html = '<table><thead><tr>';
+      cols.forEach(function(key) {
+        var col = COLUMNS.find(function(c) { return c.key === key; });
+        html += '<th>' + (col ? col.label : key) + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+      rows.forEach(function(row) {
+        html += '<tr>' + cols.map(function(key) { return renderers[key](row); }).join('') + '</tr>';
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function renderDetailContent(campaignId) {
+      var cached = expandedCampaigns[campaignId];
+      if (!cached) return '<div class="detail-loading">Loading...</div>';
+
+      var activeTab = cached.activeTab || 'subcampaigns';
+      var html = '<div class="detail-tabs">';
+      html += '<button class="detail-tab' + (activeTab === 'subcampaigns' ? ' active' : '') + '" onclick="switchTab(\'' + campaignId + '\',\'subcampaigns\')">RT Campaigns</button>';
+      html += '<button class="detail-tab' + (activeTab === 'keywords' ? ' active' : '') + '" onclick="switchTab(\'' + campaignId + '\',\'keywords\')">Keywords</button>';
+      html += '</div>';
+      html += '<div class="detail-panel">';
+
+      if (activeTab === 'subcampaigns') {
+        if (cached.subcampaigns === null) {
+          html += '<div class="detail-loading">Loading RT Campaigns...</div>';
+        } else {
+          html += buildSubTable(cached.subcampaigns, 'sub5');
+        }
+      } else {
+        if (cached.keywords === null) {
+          html += '<div class="detail-loading">Loading Keywords...</div>';
+        } else {
+          html += buildSubTable(cached.keywords, 'sub2');
+        }
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function getDetailRow(campaignId) {
+      return document.getElementById('detail-' + campaignId);
+    }
+
+    function updateDetailRow(campaignId) {
+      var detailRow = getDetailRow(campaignId);
+      if (detailRow) {
+        detailRow.querySelector('td').innerHTML = renderDetailContent(campaignId);
+      }
+    }
+
+    function switchTab(campaignId, tab) {
+      if (!expandedCampaigns[campaignId]) return;
+      expandedCampaigns[campaignId].activeTab = tab;
+      // Fetch data for this tab if not yet loaded
+      if (tab === 'subcampaigns' && expandedCampaigns[campaignId].subcampaigns === null) {
+        fetchSubData(campaignId, 'subcampaigns');
+      } else if (tab === 'keywords' && expandedCampaigns[campaignId].keywords === null) {
+        fetchSubData(campaignId, 'keywords');
+      }
+      updateDetailRow(campaignId);
+    }
+
+    async function fetchSubData(campaignId, type) {
+      var endpoint = type === 'subcampaigns' ? '/api/redtrack/subcampaigns' : '/api/redtrack/keywords';
+      var qs = buildQS();
+      var url = qs
+        ? endpoint + qs + '&campaign_id=' + encodeURIComponent(campaignId)
+        : endpoint + '?campaign_id=' + encodeURIComponent(campaignId);
+      try {
+        var data = await api(url);
+        var rows = Array.isArray(data) ? data : (data.rows || data.data || []);
+        if (expandedCampaigns[campaignId]) {
+          expandedCampaigns[campaignId][type] = rows;
+          updateDetailRow(campaignId);
+        }
+      } catch (err) {
+        console.error('Error fetching ' + type + ':', err);
+        if (expandedCampaigns[campaignId]) {
+          expandedCampaigns[campaignId][type] = [];
+          updateDetailRow(campaignId);
+        }
+      }
+    }
+
+    function toggleExpand(campaignId, toggleEl) {
+      if (expandedOpen[campaignId]) {
+        // Collapse
+        expandedOpen[campaignId] = false;
+        toggleEl.classList.remove('open');
+        var detailRow = getDetailRow(campaignId);
+        if (detailRow) detailRow.remove();
+      } else {
+        // Expand
+        expandedOpen[campaignId] = true;
+        toggleEl.classList.add('open');
+
+        // Create detail row after the campaign row
+        var campaignRow = toggleEl.closest('tr');
+        var detailTr = document.createElement('tr');
+        detailTr.id = 'detail-' + campaignId;
+        detailTr.className = 'detail-row';
+        var td = document.createElement('td');
+        td.setAttribute('colspan', '99');
+        detailTr.appendChild(td);
+        campaignRow.after(detailTr);
+
+        // Init cache if needed (lazy load on first expand)
+        if (!expandedCampaigns[campaignId]) {
+          expandedCampaigns[campaignId] = { subcampaigns: null, keywords: null, activeTab: 'subcampaigns' };
+          fetchSubData(campaignId, 'subcampaigns');
+        }
+        updateDetailRow(campaignId);
+      }
+    }
+
     async function loadCampaigns() {
+      // Clear expanded state
+      expandedCampaigns = {};
+      expandedOpen = {};
+
       try {
         var data = await api('/api/redtrack/campaigns' + buildQS());
         var rows = Array.isArray(data) ? data : (data.rows || data.data || []);
@@ -404,7 +564,13 @@
         }
 
         tbody.innerHTML = rows.map(function(row) {
-          return '<tr>' + cols.map(function(key) { return cellRenderers[key](row); }).join('') + '</tr>';
+          var cid = row.campaign_id || '';
+          return '<tr data-campaign-id="' + escapeHtml(String(cid)) + '">'
+            + '<td class="expand-toggle" onclick="toggleExpand(\'' + escapeHtml(String(cid)) + '\', this)">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'
+            + '</td>'
+            + cols.map(function(key) { return cellRenderers[key](row); }).join('')
+            + '</tr>';
         }).join('');
       } catch (err) {
         console.error('Error loading campaigns:', err);

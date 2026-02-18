@@ -85,4 +85,64 @@ router.get('/summary', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/redtrack/subcampaigns — RT Campaigns (sub5) for a given campaign
+router.get('/subcampaigns', authenticateToken, async (req, res) => {
+  try {
+    const { campaign_id, from, to } = req.query;
+    if (!campaign_id) {
+      return res.status(400).json({ error: 'campaign_id is required' });
+    }
+    const params = new URLSearchParams({
+      api_key: API_KEY,
+      group: 'sub5',
+      campaign_id
+    });
+    if (from) params.set('date_from', from);
+    if (to) params.set('date_to', to);
+
+    const response = await fetch(`${BASE_URL}?${params}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.message || 'RedTrack API error' });
+    }
+
+    // Sub-group responses return a plain JSON array
+    res.json(Array.isArray(data) ? data : (data.items || data.rows || []));
+  } catch (err) {
+    console.error('RedTrack subcampaigns error:', err);
+    res.status(500).json({ error: 'Failed to fetch RedTrack subcampaigns' });
+  }
+});
+
+// GET /api/redtrack/keywords — Keywords (sub2) for a given campaign
+router.get('/keywords', authenticateToken, async (req, res) => {
+  try {
+    const { campaign_id, from, to } = req.query;
+    if (!campaign_id) {
+      return res.status(400).json({ error: 'campaign_id is required' });
+    }
+    const params = new URLSearchParams({
+      api_key: API_KEY,
+      group: 'sub2',
+      campaign_id
+    });
+    if (from) params.set('date_from', from);
+    if (to) params.set('date_to', to);
+
+    const response = await fetch(`${BASE_URL}?${params}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.message || 'RedTrack API error' });
+    }
+
+    // Sub-group responses return a plain JSON array
+    res.json(Array.isArray(data) ? data : (data.items || data.rows || []));
+  } catch (err) {
+    console.error('RedTrack keywords error:', err);
+    res.status(500).json({ error: 'Failed to fetch RedTrack keywords' });
+  }
+});
+
 module.exports = router;
