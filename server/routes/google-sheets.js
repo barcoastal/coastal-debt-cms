@@ -11,9 +11,10 @@ const SHEETS = [
 ];
 
 // Header-to-key mapping (normalise sheet headers to consistent snake_case keys)
-function headerToKey(header) {
+function headerToKey(header, index, allHeaders) {
   const map = {
     'date': 'date',
+    'date / time': 'date',
     'debt amount': 'debt_amount',
     'multiple mc': 'multiple_mc',
     'company': 'company',
@@ -23,18 +24,28 @@ function headerToKey(header) {
     'phone': 'phone',
     'url': 'url',
     'form title': 'form_title',
+    'form titlle': 'form_title',
     'entry id': 'entry_id',
     'user ip': 'user_ip',
     'form id': 'form_id',
     'campaign': 'campaign',
     'campaign name': 'campaign',
+    'utm campaign': 'campaign',
     'campaign id': 'campaign_id',
+    'ad id': 'ad_id',
+    'ad set id': 'ad_set_id',
+    'ad name': 'ad_name',
+    'ad set name': 'ad_set_name',
     'ad group': 'ad_group',
     'ad group id': 'ad_group_id',
+    'utm term': 'utm_term',
+    'utm agid': 'utm_agid',
+    'utm ad': 'utm_ad',
+    'creative': 'creative',
     'keyword': 'keyword',
     'device/placement': 'device',
     'device': 'device',
-    'placement': 'device',
+    'placement': 'placement',
     'utm source': 'utm_source',
     'utm_source': 'utm_source',
     'status': 'status',
@@ -43,6 +54,8 @@ function headerToKey(header) {
     'close date': 'close_date'
   };
   const lower = (header || '').trim().toLowerCase();
+  // Handle blank/space-only headers by position (column 8 = Phone in Google Ads sheet)
+  if (!lower) return '_blank_' + index;
   return map[lower] || lower.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 }
 
@@ -62,16 +75,30 @@ async function getAuthClient() {
 async function fetchSheet(sheets, sheetConfig) {
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetConfig.id,
-    range: 'A:Z'
+    range: 'A:AZ'
   });
 
   const rows = resp.data.values;
   if (!rows || rows.length < 2) return [];
 
-  const headers = rows[0].map(headerToKey);
+  const headers = rows[0].map((h, i, arr) => headerToKey(h, i, arr));
+
+  // Detect phone column: if header is blank/space but data looks like phone numbers
+  const phoneIdx = headers.findIndex((h, i) => {
+    if (!h.startsWith('_blank_')) return false;
+    // Check a few data rows to see if values look like phone numbers
+    for (let r = 1; r < Math.min(rows.length, 5); r++) {
+      const val = (rows[r][i] || '').trim();
+      if (val && /^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(val)) return true;
+    }
+    return false;
+  });
+  if (phoneIdx !== -1) headers[phoneIdx] = 'phone';
+
   return rows.slice(1).map(row => {
     const obj = {};
     headers.forEach((key, i) => {
+      if (key.startsWith('_blank_')) return; // skip truly blank columns
       obj[key] = (row[i] || '').trim();
     });
     obj.source = sheetConfig.source;
