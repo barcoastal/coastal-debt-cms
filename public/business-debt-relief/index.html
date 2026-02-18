@@ -775,7 +775,13 @@
     }
 
     // KEYWORD (utm_term): URL param → localStorage
-    let keyword = _lpParams.get('utm_term') || _lpParams.get('keyword') || getStored('_keyword') || '';
+    // Skip pure numeric values (Facebook ad IDs use utm_term for ad ID)
+    let keyword = _lpParams.get('keyword') || '';
+    if (!keyword) {
+      var _utmTerm = _lpParams.get('utm_term') || '';
+      if (_utmTerm && !/^\d+$/.test(_utmTerm)) keyword = _utmTerm;
+    }
+    keyword = keyword || getStored('_keyword') || '';
     if (keyword) {
       setStored('_keyword', keyword);
       document.getElementById('keyword').value = keyword;
@@ -785,13 +791,13 @@
     var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
     // Also check common alt param names (campaign_id, adset_id, ad_id, etc.)
     var metaAltNames = {
-      fb_campaign_id: ['campaign_id','c_id'],
-      fb_adset_id: ['adset_id','as_id'],
-      fb_ad_id: ['ad_id'],
-      fb_campaign_name: ['campaign_name','c_name'],
+      fb_campaign_id: ['campaign_id','c_id','sub6','utm_id'],
+      fb_adset_id: ['adset_id','as_id','sub5','utm_content'],
+      fb_ad_id: ['ad_id','sub4','utm_term'],
+      fb_campaign_name: ['campaign_name','c_name','utm_campaign'],
       fb_adset_name: ['adset_name','as_name'],
-      fb_ad_name: ['ad_name'],
-      fb_placement: ['placement']
+      fb_ad_name: ['ad_name','sub2'],
+      fb_placement: ['placement','sub7']
     };
     metaParams.forEach(function(p) {
       var val = _lpParams.get(p) || '';
@@ -947,7 +953,7 @@
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
     // Render dynamic form fields (skip has_mca — handled by its own step)
-    const formFields = [{"name":"full_name","label":"Full Name","type":"text","placeholder":"John Smith","options":"","required":true},{"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},{"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},{"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},{"name":"has_mca","label":"Do you have a Merchant Cash Advance (MCA)?","type":"radio","placeholder":"","options":"Yes,No","required":true},{"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_campaign_id","label":"FB Campaign ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_adset_id","label":"FB Ad Set ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_ad_id","label":"FB Ad ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_campaign_name","label":"FB Campaign Name","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_adset_name","label":"FB Ad Set Name","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_ad_name","label":"FB Ad Name","type":"hidden","placeholder":"","options":"","required":false},{"name":"fb_placement","label":"FB Placement","type":"hidden","placeholder":"","options":"","required":false},{"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},{"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},{"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}];
+    const formFields = [{"name":"first_name","label":"First Name","type":"text","placeholder":"John","options":"","required":true},{"name":"last_name","label":"Last Name","type":"text","placeholder":"Smith","options":"","required":true},{"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},{"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},{"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},{"name":"has_mca","label":"Do you have a Merchant Cash Advance (MCA)?","type":"radio","placeholder":"","options":"Yes,No","required":true},{"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},{"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},{"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},{"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}];
     const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
       if (field.type === 'radio') {
         const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
@@ -984,7 +990,7 @@
         `;
       } else if (field.type === 'hidden') {
         // Skip if this hidden field already exists in the form (to avoid duplicates)
-        const existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        const existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
         if (existingIds.includes(field.name)) return '';
         return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
       } else if (field.type === 'tel') {
@@ -1168,7 +1174,7 @@
             return '<label class="radio-label"><input type="radio" name="bottom_' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
           }).join('') + '</div></div>';
       } else if (field.type === 'hidden') {
-        var existingIds = ['gclid', 'msclkid', 'fbclid', 'rt_clickid', 'eli_clickid', 'page_url', 'referrer_url', 'debt_amount_hidden'];
+        var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
         if (existingIds.includes(field.name)) return '';
         return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
       } else if (field.type === 'tel') {
