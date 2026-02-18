@@ -18,6 +18,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Google Sheets service account key
+server/google-sheets-key.json
+
 # Logs
 *.log
 npm-debug.log*

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheet | Coastal Debt CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <style>
+    .table-container { overflow-x: auto; }
+    table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1800px; }
+    .badge-source-google { background: #dbeafe; color: #1d4ed8; }
+    .badge-source-facebook { background: #ede9fe; color: #6d28d9; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="nautilus-brand">NAUTILUS</span>
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+        </div>
+        <a href="/admin/redtrack.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          RedTrack
+        </a>
+        <a href="/admin/google-sheet.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Google Sheet
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Google Sheet</h1>
+      </div>
+
+      <!-- Filters -->
+      <div class="card">
+        <div class="filters" style="flex-wrap: wrap; margin-bottom: 12px;">
+          <div class="time-range-btns">
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button class="active" data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+          </div>
+          <input type="date" id="fromDate" style="display:none;">
+          <input type="date" id="toDate" style="display:none;">
+        </div>
+        <div class="filters" style="flex-wrap: wrap;">
+          <select id="sourceFilter">
+            <option value="">All Sources</option>
+            <option value="Google Ads">Google Ads</option>
+            <option value="Facebook">Facebook</option>
+          </select>
+          <input type="text" id="searchInput" placeholder="Search by name, email, company...">
+          <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
+        </div>
+
+        <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr id="tableHead"></tr>
+            </thead>
+            <tbody id="leadsTable">
+              <tr><td colspan="99" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/common.js?v=6"></script>
+  <script>
+    var COLUMNS = [
+      { key: 'date', label: 'Date', default: true },
+      { key: 'source', label: 'Source', default: true },
+      { key: 'company', label: 'Company', default: true },
+      { key: 'first_name', label: 'First Name', default: true },
+      { key: 'last_name', label: 'Last Name', default: true },
+      { key: 'email', label: 'Email', default: true },
+      { key: 'phone', label: 'Phone', default: true },
+      { key: 'debt_amount', label: 'Debt Amount', default: true },
+      { key: 'multiple_mc', label: 'Multiple MC', default: true },
+      { key: 'form_title', label: 'Form Title', default: true },
+      { key: 'campaign', label: 'Campaign', default: true },
+      { key: 'device', label: 'Device', default: true },
+      { key: 'utm_source', label: 'UTM Source', default: false },
+      { key: 'status', label: 'Status', default: true },
+      { key: 'state', label: 'State', default: true },
+      { key: 'close_date', label: 'Close Date', default: true },
+      { key: 'url', label: 'URL', default: false },
+      { key: 'entry_id', label: 'Entry ID', default: false },
+      { key: 'user_ip', label: 'User IP', default: false },
+      { key: 'termination_reason', label: 'Termination Reason', default: false }
+    ];
+
+    var cellRenderers = {
+      date: function(r) { return '<td>' + escapeHtml(r.date || '-') + '</td>'; },
+      source: function(r) {
+        var cls = r.source === 'Google Ads' ? 'badge-source-google' : 'badge-source-facebook';
+        return '<td><span class="badge ' + cls + '">' + escapeHtml(r.source || '-') + '</span></td>';
+      },
+      company: function(r) { return '<td>' + escapeHtml(r.company || '-') + '</td>'; },
+      first_name: function(r) { return '<td>' + escapeHtml(r.first_name || '-') + '</td>'; },
+      last_name: function(r) { return '<td>' + escapeHtml(r.last_name || '-') + '</td>'; },
+      email: function(r) { return '<td>' + escapeHtml(r.email || '-') + '</td>'; },
+      phone: function(r) { return '<td>' + escapeHtml(r.phone || '-') + '</td>'; },
+      debt_amount: function(r) { return '<td>' + escapeHtml(r.debt_amount || '-') + '</td>'; },
+      multiple_mc: function(r) { return '<td>' + escapeHtml(r.multiple_mc || '-') + '</td>'; },
+      form_title: function(r) { return '<td>' + escapeHtml(r.form_title || '-') + '</td>'; },
+      campaign: function(r) { return '<td>' + escapeHtml(r.campaign || '-') + '</td>'; },
+      device: function(r) { return '<td>' + escapeHtml(r.device || '-') + '</td>'; },
+      utm_source: function(r) { return '<td>' + escapeHtml(r.utm_source || '-') + '</td>'; },
+      status: function(r) { return '<td>' + escapeHtml(r.status || '-') + '</td>'; },
+      state: function(r) { return '<td>' + escapeHtml(r.state || '-') + '</td>'; },
+      close_date: function(r) { return '<td>' + escapeHtml(r.close_date || '-') + '</td>'; },
+      url: function(r) { return '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(r.url || '') + '">' + escapeHtml(r.url || '-') + '</td>'; },
+      entry_id: function(r) { return '<td>' + escapeHtml(r.entry_id || '-') + '</td>'; },
+      user_ip: function(r) { return '<td style="font-family:monospace;font-size:11px;">' + escapeHtml(r.user_ip || '-') + '</td>'; },
+      termination_reason: function(r) { return '<td>' + escapeHtml(r.termination_reason || '-') + '</td>'; }
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    var columnEditor = new ColumnEditor({
+      pageId: 'google-sheet',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: function() { renderTable(); renderPage(); }
+    });
+    renderTable();
+
+    var allData = [];
+    var filteredData = [];
+    var currentPage = 1;
+    var pageSize = 50;
+    var currentRange = 'all';
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') applyFilters();
+    }
+
+    // Parse sheet date "MM/DD/YYYY HH:MM:SS" to Date
+    function parseSheetDate(dateStr) {
+      if (!dateStr) return null;
+      var parts = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2}):(\d{2})$/);
+      if (parts) {
+        return new Date(parseInt(parts[3]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
+      }
+      var d = new Date(dateStr);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function applyFilters() {
+      var source = document.getElementById('sourceFilter').value;
+      var search = document.getElementById('searchInput').value.toLowerCase().trim();
+      var dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
+
+      filteredData = allData.filter(function(row) {
+        // Source filter
+        if (source && row.source !== source) return false;
+
+        // Search filter
+        if (search) {
+          var haystack = [row.first_name, row.last_name, row.email, row.company, row.phone, row.campaign].join(' ').toLowerCase();
+          if (haystack.indexOf(search) === -1) return false;
+        }
+
+        // Date filter
+        if (dateRange.from || dateRange.to) {
+          var d = parseSheetDate(row.date);
+          if (!d) return false;
+          var dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          if (dateRange.from && dateStr < dateRange.from) return false;
+          if (dateRange.to && dateStr > dateRange.to) return false;
+        }
+
+        return true;
+      });
+
+      currentPage = 1;
+      renderPage();
+    }
+
+    function renderPage() {
+      var tbody = document.getElementById('leadsTable');
+      var cols = columnEditor.getVisibleColumns();
+      var totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      var start = (currentPage - 1) * pageSize;
+      var pageData = filteredData.slice(start, start + pageSize);
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">No leads found</td></tr>';
+      } else {
+        tbody.innerHTML = pageData.map(function(row) {
+          return '<tr>' + cols.map(function(key) {
+            return cellRenderers[key] ? cellRenderers[key](row) : '<td>-</td>';
+          }).join('') + '</tr>';
+        }).join('');
+      }
+
+      // Pagination
+      var pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      if (totalPages > 1) {
+        // Prev button
+        if (currentPage > 1) {
+          var prevBtn = document.createElement('button');
+          prevBtn.className = 'btn btn-small btn-secondary';
+          prevBtn.textContent = 'Prev';
+          prevBtn.onclick = function() { currentPage--; renderPage(); };
+          pagination.appendChild(prevBtn);
+        }
+
+        // Page info
+        var info = document.createElement('span');
+        info.style.cssText = 'font-size:13px;color:var(--gray-500);';
+        info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + filteredData.length + ' rows)';
+        pagination.appendChild(info);
+
+        // Next button
+        if (currentPage < totalPages) {
+          var nextBtn = document.createElement('button');
+          nextBtn.className = 'btn btn-small btn-secondary';
+          nextBtn.textContent = 'Next';
+          nextBtn.onclick = function() { currentPage++; renderPage(); };
+          pagination.appendChild(nextBtn);
+        }
+      } else if (filteredData.length > 0) {
+        var info2 = document.createElement('span');
+        info2.style.cssText = 'font-size:13px;color:var(--gray-500);';
+        info2.textContent = filteredData.length + ' rows';
+        pagination.appendChild(info2);
+      }
+    }
+
+    async function loadLeads() {
+      var tbody = document.getElementById('leadsTable');
+      tbody.innerHTML = '<tr><td colspan="99" class="loading"><div class="spinner"></div></td></tr>';
+
+      try {
+        var data = await api('/api/google-sheets/leads');
+        allData = Array.isArray(data) ? data : [];
+        filteredData = allData;
+        applyFilters();
+      } catch (err) {
+        console.error('Failed to load Google Sheet leads:', err);
+        tbody.innerHTML = '<tr><td colspan="99" class="empty-state">Failed to load leads: ' + escapeHtml(err.message) + '</td></tr>';
+      }
+    }
+
+    // Search on enter
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') applyFilters();
+    });
+
+    loadLeads();
+  </script>
+</body>
+</html>
