@@ -3,27 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Organic Traffic | Coastal Debt CMS</title>
+  <title>Reddit | Coastal Debt CMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .time-range-btns { display: flex; gap: 8px; }
-    .time-range-btns button {
-      padding: 8px 16px; border: 1px solid var(--gray-300); border-radius: 8px;
-      background: var(--white); cursor: pointer; font-size: 0.875rem; color: var(--gray-600); transition: all 0.2s;
-    }
-    .time-range-btns button.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
-    .time-range-btns button:hover:not(.active) { border-color: var(--gray-400); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .event-breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .event-stat { background: var(--gray-50); border-radius: 8px; padding: 16px; text-align: center; }
+    .event-stat .event-count { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); }
+    .event-stat .event-name { font-size: 0.85rem; color: var(--gray-500); text-transform: capitalize; margin-top: 4px; }
+    .card-header { margin-bottom: 16px; }
     .card-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0; }
-    .referrer-domain { font-weight: 600; color: var(--gray-800); }
-    .traffic-badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
-    .traffic-organic { background: #d1fae5; color: #065f46; }
-    .traffic-social { background: #e0e7ff; color: #3730a3; }
-    .traffic-referral { background: #fef3c7; color: #92400e; }
-    .traffic-direct { background: var(--gray-200); color: var(--gray-600); }
-    .doughnut-container { max-width: 320px; margin: 0 auto; }
+    .badge-gray { background: var(--gray-200); color: var(--gray-600); }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .editable-cell {
+      cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
+      display: inline-block; border: 1px solid transparent; transition: all 0.15s;
+    }
+    .editable-cell:hover { background: var(--gray-100); border-color: var(--gray-300); }
+    .editable-cell input, .editable-cell select {
+      border: 1px solid var(--primary); border-radius: 4px; padding: 4px 6px;
+      font-size: 12px; width: 100%; outline: none;
+    }
+    .mca-yes { color: #16a34a; font-weight: 600; }
+    .mca-no { color: #6b7280; }
+    table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1600px; }
+    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .row-blocked { background: #fef2f2 !important; }
+    .ip-cell { font-family: monospace; font-size: 11px; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -88,7 +97,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           UTM Builder
         </a>
-        <a href="/admin/organic.html" class="active">
+        <a href="/admin/organic.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           Organic Traffic
         </a>
@@ -132,18 +141,21 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Organic Traffic</h1>
+        <h1>Reddit</h1>
       </div>
 
       <!-- Time Range Filter -->
       <div class="card">
         <div class="filters">
           <div class="time-range-btns">
-            <button onclick="setRange('mtd', this)">MTD</button>
-            <button class="active" onclick="setRange('30d', this)">Last 30 Days</button>
-            <button onclick="setRange('7d', this)">Last 7 Days</button>
-            <button onclick="setRange('all', this)">All Time</button>
-            <button onclick="setRange('custom', this)">Custom</button>
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button class="active" data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
           </div>
           <input type="date" id="fromDate" style="display:none;">
           <input type="date" id="toDate" style="display:none;">
@@ -154,83 +166,43 @@
       <!-- Summary Stats -->
       <div class="stats-grid">
         <div class="stat-card primary">
-          <div class="stat-value" id="statTotal">-</div>
-          <div class="stat-label">Total Organic Visitors</div>
-        </div>
-        <div class="stat-card">
           <div class="stat-value" id="statLeads">-</div>
-          <div class="stat-label">Organic Leads</div>
+          <div class="stat-label">Reddit Leads</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statConversion">-</div>
-          <div class="stat-label">Conversion Rate</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statDirect">-</div>
-          <div class="stat-label">Direct Visitors</div>
+          <div class="stat-value" id="statEvents">-</div>
+          <div class="stat-label">Conversions Sent</div>
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="charts-grid">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Traffic Sources</h3>
-          </div>
-          <div class="doughnut-container">
-            <canvas id="sourcesChart"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Organic Visitors Over Time</h3>
-          </div>
-          <canvas id="overTimeChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Top Referrers -->
+      <!-- Conversion Events Breakdown -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Top Referrers</h3>
+          <h3 class="card-title">Conversion Events Breakdown</h3>
         </div>
+        <div class="charts-grid">
+          <div>
+            <canvas id="eventsChart"></canvas>
+          </div>
+          <div id="eventsGrid" class="event-breakdown-grid">
+            <p style="color: var(--gray-500);">Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reddit Leads Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Reddit Leads</h3>
+        </div>
+        <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
           <table>
             <thead>
-              <tr>
-                <th>Domain</th>
-                <th>Visitors</th>
-                <th>Conversions</th>
-                <th>Conv. Rate</th>
-              </tr>
-            </thead>
-            <tbody id="referrersTable">
-              <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Organic Leads -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Organic Leads</h3>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Source</th>
-                <th>Traffic Type</th>
-                <th>Date</th>
-              </tr>
+              <tr id="tableHead"></tr>
             </thead>
             <tbody id="leadsTable">
-              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
+              <tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -241,26 +213,67 @@
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    let sourcesChart = null;
-    let overTimeChart = null;
+    const COLUMNS = [
+      { key: 'first_name', label: 'First Name', default: true },
+      { key: 'last_name', label: 'Last Name', default: true },
+      { key: 'company_name', label: 'Company', default: true },
+      { key: 'email', label: 'Email', default: true },
+      { key: 'phone', label: 'Phone', default: true },
+      { key: 'ip_address', label: 'IP Address', default: true },
+      { key: 'eli_clickid', label: 'Eli Click ID', default: false },
+      { key: 'rt_clickid', label: 'RT Click ID', default: false },
+      { key: 'utm_campaign', label: 'Campaign', default: true },
+      { key: 'has_mca', label: 'MCA', default: true },
+      { key: 'current_status', label: 'Current Status', default: true },
+      { key: 'transfer_status', label: 'Transfer Status', default: true },
+      { key: 'five9_dispo', label: 'Five9 Dispo', default: true },
+      { key: 'stage', label: 'Stage', default: true },
+      { key: 'contract_sign_date', label: 'Contract Sign Date', default: false },
+      { key: 'total_debt_sign', label: 'Total Debt Sign', default: false },
+      { key: 'created_at', label: 'Date', default: true }
+    ];
+
+    const cellRenderers = {
+      first_name: (lead) => '<td>' + escapeHtml(lead.first_name || '-') + '</td>',
+      last_name: (lead) => '<td>' + escapeHtml(lead.last_name || '-') + '</td>',
+      company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
+      email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
+      phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
+      ip_address: (lead) => '<td class="ip-cell">' + escapeHtml(lead.ip_address || '-') + (lead.is_blocked ? ' <span class="badge badge-red">Blocked</span>' : '') + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
+      rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
+      utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
+      has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
+      current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
+      transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + escapeHtml(lead.transfer_status || '-') + '</span></td>',
+      five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + escapeHtml(lead.five9_dispo || '-') + '</span></td>',
+      stage: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'stage\')">' + escapeHtml(lead.stage || '-') + '</span></td>',
+      contract_sign_date: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'contract_sign_date\')">' + escapeHtml(lead.contract_sign_date || '-') + '</span></td>',
+      total_debt_sign: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'total_debt_sign\')">' + escapeHtml(lead.total_debt_sign || '-') + '</span></td>',
+      created_at: (lead) => '<td>' + formatDate(lead.created_at) + '</td>'
+    };
+
+    function renderTable() {
+      document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+    }
+
+    let eventsChart = null;
     let currentPage = 1;
-    let currentRange = '30d';
+    let currentRange = 'mtd';
+
+    const columnEditor = new ColumnEditor({
+      pageId: 'reddit',
+      columns: COLUMNS,
+      mountTo: '#columnEditorMount',
+      onColumnsChange: () => { renderTable(); loadLeads(currentPage); }
+    });
+    renderTable();
 
     function getDateRange() {
       if (currentRange === 'custom') {
         return { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value };
       }
-      if (currentRange === 'all') return { from: '', to: '' };
-      const now = new Date();
-      let from;
-      if (currentRange === 'mtd') {
-        from = new Date(now.getFullYear(), now.getMonth(), 1);
-      } else if (currentRange === '7d') {
-        from = new Date(now.getTime() - 7 * 86400000);
-      } else if (currentRange === '30d') {
-        from = new Date(now.getTime() - 30 * 86400000);
-      }
-      return { from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+      return getDateRangeFromPreset(currentRange);
     }
 
     function setRange(range, btn) {
@@ -281,106 +294,58 @@
       return p.toString() ? '?' + p.toString() : '';
     }
 
-    function getTrafficBadge(type) {
-      const map = {
-        organic_search: '<span class="traffic-badge traffic-organic">Organic Search</span>',
-        social: '<span class="traffic-badge traffic-social">Social</span>',
-        referral: '<span class="traffic-badge traffic-referral">Referral</span>',
-        direct: '<span class="traffic-badge traffic-direct">Direct</span>'
-      };
-      return map[type] || '<span class="traffic-badge traffic-direct">' + (type || 'Unknown') + '</span>';
-    }
-
     async function loadSummary() {
       try {
-        const data = await api('/api/analytics/organic/summary' + buildQS());
-        document.getElementById('statTotal').textContent = data.totalVisitors.toLocaleString();
-        document.getElementById('statLeads').textContent = data.convertedVisitors.toLocaleString();
-        document.getElementById('statConversion').textContent = data.conversionRate + '%';
-        document.getElementById('statDirect').textContent = data.directVisitors.toLocaleString();
-
-        // Doughnut chart
-        if (sourcesChart) sourcesChart.destroy();
-        sourcesChart = new Chart(document.getElementById('sourcesChart').getContext('2d'), {
-          type: 'doughnut',
-          data: {
-            labels: ['Organic Search', 'Social', 'Referral', 'Direct'],
-            datasets: [{
-              data: [data.organicSearchVisitors, data.socialVisitors, data.referralVisitors, data.directVisitors],
-              backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#9ca3af'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            cutout: '60%',
-            plugins: {
-              legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
-            }
-          }
-        });
+        const data = await api('/api/analytics/reddit/summary' + buildQS());
+        document.getElementById('statLeads').textContent = data.total_leads;
+        document.getElementById('statEvents').textContent = data.events_sent;
       } catch (err) {
         console.error('Error loading summary:', err);
       }
     }
 
-    async function loadOverTime() {
-      try {
-        const qs = buildQS();
-        const data = await api('/api/analytics/organic/over-time' + qs);
-
-        if (overTimeChart) overTimeChart.destroy();
-        overTimeChart = new Chart(document.getElementById('overTimeChart').getContext('2d'), {
-          type: 'line',
-          data: {
-            labels: data.map(d => d.date),
-            datasets: [{
-              label: 'Organic Visitors',
-              data: data.map(d => d.count),
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              fill: true,
-              tension: 0.3,
-              borderWidth: 2,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: true, ticks: { stepSize: 1 } },
-              x: { ticks: { maxTicksLimit: 10 } }
-            }
-          }
-        });
-      } catch (err) {
-        console.error('Error loading over time:', err);
-      }
+    function getStatusBadge(status) {
+      if (!status) return '<span class="badge badge-gray">No events</span>';
+      const colors = { qualified: 'badge-blue', appointment: 'badge-yellow', closed: 'badge-green', sale: 'badge-green', failed: 'badge-red' };
+      return '<span class="badge ' + (colors[status.toLowerCase()] || 'badge-blue') + '">' + status + '</span>';
     }
 
-    async function loadReferrers() {
+    async function loadEventsBreakdown() {
       try {
-        const data = await api('/api/analytics/organic/top-referrers' + buildQS());
-        const tbody = document.getElementById('referrersTable');
+        const data = await api('/api/analytics/reddit/events-breakdown' + buildQS());
+        const grid = document.getElementById('eventsGrid');
 
         if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--gray-400);">No referrer data for this period</td></tr>';
-          return;
+          grid.innerHTML = '<p style="color: var(--gray-500);">No conversion events yet</p>';
+        } else {
+          grid.innerHTML = data.map(e => `
+            <div class="event-stat">
+              <div class="event-count">${e.count}</div>
+              <div class="event-name">${e.conversion_action_name}</div>
+            </div>
+          `).join('');
         }
 
-        tbody.innerHTML = data.map(r => {
-          const rate = r.visitors > 0 ? Math.round((r.conversions / r.visitors) * 10000) / 100 : 0;
-          return '<tr>' +
-            '<td><span class="referrer-domain">' + r.domain + '</span></td>' +
-            '<td>' + r.visitors + '</td>' +
-            '<td>' + r.conversions + '</td>' +
-            '<td>' + rate + '%</td>' +
-          '</tr>';
-        }).join('');
+        if (eventsChart) eventsChart.destroy();
+        eventsChart = null;
+
+        if (data.length) {
+          eventsChart = new Chart(document.getElementById('eventsChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: data.map(e => e.conversion_action_name),
+              datasets: [{ label: 'Events', data: data.map(e => e.count), backgroundColor: '#00809d', borderRadius: 6 }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+          });
+        }
       } catch (err) {
-        console.error('Error loading referrers:', err);
+        console.error('Error loading events breakdown:', err);
       }
     }
 
@@ -389,23 +354,16 @@
       currentPage = page;
       try {
         const qs = buildQS();
-        const data = await api('/api/analytics/organic/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
+        const data = await api('/api/analytics/reddit/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
         const tbody = document.getElementById('leadsTable');
 
+        const cols = columnEditor.getVisibleColumns();
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">No organic leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No Reddit leads found for this period</td></tr>';
         } else {
-          tbody.innerHTML = data.leads.map(lead => {
-            return '<tr>' +
-              '<td>' + ([lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-') + '</td>' +
-              '<td>' + (lead.company_name || '-') + '</td>' +
-              '<td>' + (lead.email || '-') + '</td>' +
-              '<td>' + (lead.phone || '-') + '</td>' +
-              '<td>' + (lead.utm_source || lead.referrer_url || '-') + '</td>' +
-              '<td>' + getTrafficBadge(lead.traffic_type) + '</td>' +
-              '<td>' + formatDate(lead.created_at) + '</td>' +
-            '</tr>';
-          }).join('');
+          tbody.innerHTML = data.leads.map(lead =>
+            '<tr' + (lead.is_blocked ? ' class="row-blocked"' : '') + '>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
+          ).join('');
         }
 
         const pagination = document.getElementById('pagination');
@@ -422,14 +380,54 @@
       }
     }
 
+    function editField(el, leadId, field) {
+      if (el.querySelector('input')) return;
+      const current = el.textContent.trim();
+      const val = current === '-' ? '' : current;
+      const isDate = field === 'contract_sign_date';
+      const inputType = isDate ? 'date' : 'text';
+      el.innerHTML = '<input type="' + inputType + '" value="' + val + '" onblur="saveField(this,' + leadId + ',\'' + field + '\')" onkeydown="if(event.key===\'Enter\')this.blur()">';
+      el.querySelector('input').focus();
+    }
+
+    async function saveField(input, leadId, field) {
+      const value = input.value.trim();
+      const cell = input.parentElement;
+      try {
+        await api('/api/leads/' + leadId, {
+          method: 'PATCH',
+          body: JSON.stringify({ [field]: value || null })
+        });
+        cell.textContent = value || '-';
+      } catch (err) {
+        console.error('Error saving field:', err);
+        cell.textContent = value || '-';
+      }
+    }
+
     function loadAll() {
       loadSummary();
-      loadOverTime();
-      loadReferrers();
+      loadEventsBreakdown();
       loadLeads(1);
     }
 
     loadAll();
   </script>
+<script>
+(function(){
+  var path = location.pathname;
+  var sub = document.querySelector('.nav-submenu');
+  if (!sub) return;
+  var links = sub.querySelectorAll('a');
+  for (var i = 0; i < links.length; i++) {
+    if (path.includes(links[i].getAttribute('href').replace('/admin/',''))) {
+      links[i].classList.add('active');
+      sub.classList.add('open');
+      sub.previousElementSibling.classList.add('open', 'active');
+      break;
+    }
+  }
+})();
+</script>
 </body>
 </html>

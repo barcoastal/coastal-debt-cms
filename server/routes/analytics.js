@@ -261,7 +261,7 @@ let fbSpendCache = { data: null, timestamp: 0 };
 
 router.get('/platform-financials', authenticateToken, async (req, res) => {
   try {
-    const platforms = ['google', 'meta', 'bing'];
+    const platforms = ['google', 'meta', 'bing', 'reddit'];
     const result = {};
 
     for (const platform of platforms) {
@@ -594,6 +594,132 @@ router.get('/bing-ads/leads', authenticateToken, (req, res) => {
     JOIN landing_pages lp ON l.landing_page_id = lp.id
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE lp.platform = 'bing' ${dateWhere}
+    ORDER BY l.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, parseInt(limit), offset);
+
+  res.json({
+    leads,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit))
+    }
+  });
+});
+
+// Reddit: Summary stats
+router.get('/reddit/summary', authenticateToken, (req, res) => {
+  const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
+  const dateConds = [];
+  const dateParams = [];
+  const eventDateConds = [];
+  const eventDateParams = [];
+
+  if (from) {
+    dateConds.push(`l.created_at >= ?`);
+    dateParams.push(localDateToUtcRange(from, tz).start);
+    eventDateConds.push(`ce.created_at >= ?`);
+    eventDateParams.push(localDateToUtcRange(from, tz).start);
+  }
+  if (to) {
+    dateConds.push(`l.created_at <= ?`);
+    dateParams.push(localDateToUtcRange(to, tz).end);
+    eventDateConds.push(`ce.created_at <= ?`);
+    eventDateParams.push(localDateToUtcRange(to, tz).end);
+  }
+
+  const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
+  const eventDateWhere = eventDateConds.length ? ' AND ' + eventDateConds.join(' AND ') : '';
+
+  const leadStats = db.prepare(`
+    SELECT COUNT(*) as total_leads
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'reddit' ${dateWhere}
+  `).get(...dateParams);
+
+  const eventStats = db.prepare(`
+    SELECT COUNT(*) as events_sent
+    FROM conversion_events ce
+    JOIN leads l ON ce.lead_id = l.id
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'reddit' AND ce.status = 'sent' ${eventDateWhere}
+  `).get(...eventDateParams);
+
+  res.json({
+    total_leads: leadStats.total_leads || 0,
+    events_sent: eventStats.events_sent || 0
+  });
+});
+
+// Reddit: Conversion events breakdown by type
+router.get('/reddit/events-breakdown', authenticateToken, (req, res) => {
+  const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
+  const conds = [];
+  const params = [];
+
+  if (from) { conds.push(`ce.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`ce.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
+
+  const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
+
+  const data = db.prepare(`
+    SELECT ce.conversion_action_name, COUNT(*) as count
+    FROM conversion_events ce
+    JOIN leads l ON ce.lead_id = l.id
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'reddit'
+      AND ce.conversion_action_name IS NOT NULL
+      ${dateWhere}
+    GROUP BY ce.conversion_action_name
+    ORDER BY count DESC
+  `).all(...params);
+
+  res.json(data);
+});
+
+// Reddit: Leads with latest conversion status
+router.get('/reddit/leads', authenticateToken, (req, res) => {
+  const { from, to, page = 1, limit = 25 } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+  const tz = getConfiguredTimezone();
+  const conds = [];
+  const params = [];
+
+  if (from) { conds.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to) { conds.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
+
+  const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
+
+  const total = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'reddit' ${dateWhere}
+  `).get(...params).count;
+
+  const leads = db.prepare(`
+    SELECT l.id, l.first_name, l.last_name, l.company_name, l.email, l.phone,
+           l.eli_clickid, l.rt_clickid,
+           l.created_at, l.has_mca, l.transfer_status, l.five9_dispo,
+           l.stage, l.contract_sign_date, l.total_debt_sign, l.is_blocked,
+           lp.name as landing_page_name,
+           v.utm_campaign, v.ip_address,
+           (
+             SELECT ce.conversion_action_name
+             FROM conversion_events ce
+             WHERE ce.lead_id = l.id
+             ORDER BY ce.created_at DESC
+             LIMIT 1
+           ) as current_status
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    WHERE lp.platform = 'reddit' ${dateWhere}
     ORDER BY l.created_at DESC
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
