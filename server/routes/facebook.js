@@ -6,6 +6,12 @@ const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getSqliteOffse
 
 const router = express.Router();
 
+// Ensure ad_account_id has act_ prefix (Facebook Marketing API requires it)
+function normalizeAdAccountId(id) {
+  if (!id) return id;
+  return id.startsWith('act_') ? id : 'act_' + id;
+}
+
 // Convert Facebook ISO time (2026-02-11T16:49:12+0000) to SQLite format (2026-02-11 16:49:12)
 function fbTimeToSqlite(fbTime) {
   if (!fbTime) return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
@@ -1157,7 +1163,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
     });
 
     const response = await fetch(
-      `https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${params}`
+      `https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`
     );
     const data = await response.json();
 
@@ -1231,7 +1237,7 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
 
     // Use user_access_token for Marketing API (has ads_read permission), fall back to page token
     const adsToken = config.user_access_token || config.page_access_token;
-    const adAccountId = config.ad_account_id;
+    const adAccountId = normalizeAdAccountId(config.ad_account_id);
 
     debug.has_user_token = !!config.user_access_token;
     debug.has_page_token = !!config.page_access_token;
@@ -1491,7 +1497,7 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
         time_increment: '1',
         access_token: config.page_access_token
       });
-      const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${params}`);
+      const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`);
       const insightsData = await insightsRes.json();
       if (insightsData.error) return res.status(400).json({ error: insightsData.error.message });
       dailySpend = insightsData.data?.[0] ? parseFloat(insightsData.data[0].spend || 0) : 0;
@@ -1511,7 +1517,7 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
         time_increment: '1',
         access_token: config.page_access_token
       });
-      const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${config.ad_account_id}/insights?${params}`);
+      const insightsRes = await fetch(`https://graph.facebook.com/v21.0/${normalizeAdAccountId(config.ad_account_id)}/insights?${params}`);
       const insightsData = await insightsRes.json();
       if (insightsData.error) return res.status(400).json({ error: insightsData.error.message });
       dailySpend = insightsData.data?.[0] ? parseFloat(insightsData.data[0].spend || 0) : 0;

@@ -318,7 +318,8 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
                   date_preset: 'maximum',
                   access_token: fbConfig.page_access_token
                 });
-                const fbRes = await fetch(`https://graph.facebook.com/v21.0/${fbConfig.ad_account_id}/insights?${params}`);
+                const normalizedAcctId = fbConfig.ad_account_id.startsWith('act_') ? fbConfig.ad_account_id : 'act_' + fbConfig.ad_account_id;
+                const fbRes = await fetch(`https://graph.facebook.com/v21.0/${normalizedAcctId}/insights?${params}`);
                 const fbData = await fbRes.json();
                 if (fbData.data && fbData.data.length > 0) {
                   cost = parseFloat(fbData.data[0].spend || 0);
