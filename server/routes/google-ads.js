@@ -517,16 +517,42 @@ router.get('/diagnose', authenticateToken, async (req, res) => {
   const leadCount = db.prepare(`SELECT COUNT(*) as cnt FROM leads WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL`).get();
   checks.push({ step: 'Leads', status: leadCount.cnt > 0 ? 'OK' : 'WARN', detail: leadCount.cnt + ' leads with GCLIDs needing cost data' });
 
-  // 7. Try a real API call with one GCLID
-  if (leadCount.cnt > 0) {
-    const testLead = db.prepare(`SELECT id, gclid FROM leads WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL ORDER BY created_at DESC LIMIT 1`).get();
-    checks.push({ step: 'Test GCLID', status: 'INFO', detail: 'Testing with lead #' + testLead.id + ', GCLID: ' + testLead.gclid.substring(0, 20) + '...' });
+  // 7. Try API access with multiple versions and configs
+  const accessToken = await getValidAccessToken(config);
+  await ensureLoginCustomerId(config);
+  const mcc = config.login_customer_id;
+  checks.push({ step: 'MCC', status: mcc ? 'OK' : 'WARN', detail: 'login_customer_id: ' + (mcc || '(not set)') });
+  checks.push({ step: 'Dev Token', status: 'INFO', detail: 'Using: ' + developerToken.substring(0, 6) + '...' });
 
-    const result = await fetchGclidCost(testLead.gclid);
-    if (result.cost_cents !== undefined) {
-      checks.push({ step: 'API Call', status: 'OK', detail: 'Got cost: $' + (result.cost_cents / 100).toFixed(2) });
-    } else {
-      checks.push({ step: 'API Call', status: 'FAIL', detail: 'Error: ' + (result.error || 'Unknown') });
+  const versions = ['v18', 'v17', 'v16', 'v20'];
+  const configs = mcc
+    ? [{ mcc, label: 'with MCC' }, { mcc: null, label: 'without MCC' }]
+    : [{ mcc: null, label: 'no MCC' }];
+
+  for (const ver of versions) {
+    for (const cfg of configs) {
+      try {
+        const hdrs = {
+          'Authorization': `Bearer ${accessToken}`,
+          'developer-token': developerToken,
+          'Content-Type': 'application/json'
+        };
+        if (cfg.mcc) hdrs['login-customer-id'] = cfg.mcc;
+
+        const testRes = await fetch(
+          `https://googleads.googleapis.com/${ver}/customers/${config.customer_id}/googleAds:search`,
+          { method: 'POST', headers: hdrs, body: JSON.stringify({ query: 'SELECT customer.id FROM customer LIMIT 1' }) }
+        );
+        const testData = await testRes.json();
+        if (!testData.error) {
+          checks.push({ step: `API ${ver} ${cfg.label}`, status: 'OK', detail: 'Query succeeded!' });
+        } else {
+          const code = testData.error.details?.[0]?.errors?.[0]?.errorCode;
+          checks.push({ step: `API ${ver} ${cfg.label}`, status: 'FAIL', detail: JSON.stringify(code || testData.error.status) });
+        }
+      } catch (e) {
+        checks.push({ step: `API ${ver} ${cfg.label}`, status: 'FAIL', detail: e.message });
+      }
     }
   }
 
