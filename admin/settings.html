@@ -243,6 +243,18 @@
           <button class="btn btn-primary" onclick="selectAccount()">Use This Account</button>
         </div>
 
+        <!-- MCC / Login Customer ID -->
+        <div id="mccSection" style="display: none; margin-top: 16px;">
+          <div class="form-group" style="max-width: 400px;">
+            <label>MCC Account ID <span style="color:#6b7280;font-weight:normal;">(Manager Account)</span></label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="mccInput" placeholder="e.g. 8504676688" style="flex:1;">
+              <button class="btn btn-secondary" onclick="saveMcc()">Save</button>
+            </div>
+            <small style="color:#6b7280;">Required if you access this account through an MCC. Enter the Manager account ID.</small>
+          </div>
+        </div>
+
         <!-- Disconnect Button -->
         <div id="disconnectSection" style="display: none; margin-top: 16px;">
           <button class="btn btn-danger" onclick="disconnectGoogleAds()">Disconnect Google Ads</button>
@@ -934,7 +946,9 @@
         costStats.style.display = 'block';
         setupSteps.style.display = 'none';
         accountSelection.style.display = 'none';
+        document.getElementById('mccSection').style.display = 'block';
         loadCostStats();
+        loadMcc();
       } else if (status.connected) {
         // Connected but no account selected
         statusDiv.innerHTML = `
@@ -1016,6 +1030,25 @@
 
       await fetch('/api/google-ads/disconnect', { method: 'POST' });
       location.reload();
+    }
+
+    async function loadMcc() {
+      try {
+        const res = await fetch('/api/google-ads/mcc');
+        const data = await res.json();
+        document.getElementById('mccInput').value = data.login_customer_id || '';
+      } catch (e) {}
+    }
+
+    async function saveMcc() {
+      const id = document.getElementById('mccInput').value.trim();
+      const res = await fetch('/api/google-ads/mcc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login_customer_id: id })
+      });
+      const data = await res.json();
+      alert(id ? 'MCC Account ID saved: ' + data.login_customer_id : 'MCC Account ID cleared');
     }
 
     async function loadCostStats() {

@@ -308,6 +308,20 @@ router.post('/select-account', authenticateToken, (req, res) => {
   res.json({ message: 'Account selected' });
 });
 
+// Get/set MCC (login_customer_id)
+router.get('/mcc', authenticateToken, (req, res) => {
+  const config = db.prepare('SELECT login_customer_id FROM google_ads_config WHERE id = 1').get();
+  res.json({ login_customer_id: config?.login_customer_id || '' });
+});
+
+router.post('/mcc', authenticateToken, (req, res) => {
+  const { login_customer_id } = req.body;
+  const cleanId = (login_customer_id || '').replace(/[^0-9]/g, '');
+  db.prepare('UPDATE google_ads_config SET login_customer_id = ? WHERE id = 1').run(cleanId || null);
+  console.log('MCC login_customer_id set to:', cleanId || '(cleared)');
+  res.json({ message: 'MCC account ID saved', login_customer_id: cleanId });
+});
+
 // Disconnect
 router.post('/disconnect', authenticateToken, (req, res) => {
   db.prepare(`
