@@ -117,6 +117,49 @@ async function fetchSheet(sheets, sheetConfig) {
   });
 }
 
+// GET /api/google-sheets/debug — diagnose Google Sheets connection
+router.get('/debug', authenticateToken, async (req, res) => {
+  const checks = {
+    keyFileExists: fs.existsSync(keyPath),
+    keyFilePath: keyPath,
+    envVarSet: !!process.env.GOOGLE_SHEETS_KEY_JSON,
+    envVarLength: process.env.GOOGLE_SHEETS_KEY_JSON ? process.env.GOOGLE_SHEETS_KEY_JSON.length : 0
+  };
+
+  try {
+    if (checks.keyFileExists) {
+      const raw = fs.readFileSync(keyPath, 'utf8');
+      const key = JSON.parse(raw);
+      checks.keyFileValid = true;
+      checks.clientEmail = key.client_email || 'missing';
+      checks.projectId = key.project_id || 'missing';
+      checks.hasPrivateKey = !!key.private_key;
+    }
+  } catch (e) {
+    checks.keyFileValid = false;
+    checks.keyFileError = e.message;
+  }
+
+  try {
+    const client = await getAuthClient();
+    checks.authSuccess = true;
+    const sheets = google.sheets({ version: 'v4', auth: client });
+    for (const s of SHEETS) {
+      try {
+        const resp = await sheets.spreadsheets.values.get({ spreadsheetId: s.id, range: 'A1:A2' });
+        checks['sheet_' + s.source.replace(/\s/g, '_')] = { ok: true, rows: resp.data.values ? resp.data.values.length : 0 };
+      } catch (e) {
+        checks['sheet_' + s.source.replace(/\s/g, '_')] = { ok: false, error: e.message };
+      }
+    }
+  } catch (e) {
+    checks.authSuccess = false;
+    checks.authError = e.message;
+  }
+
+  res.json(checks);
+});
+
 // GET /api/google-sheets/leads
 router.get('/leads', authenticateToken, async (req, res) => {
   try {
