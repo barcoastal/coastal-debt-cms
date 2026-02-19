@@ -535,12 +535,13 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
 });
 
 // Standalone function to fetch missing costs (used by route and background job)
+// Uses campaign-level average CPC per date (click_view requires Standard API access)
 async function fetchMissingCosts() {
   const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
   if (!config || !config.refresh_token_encrypted || !config.customer_id) return { total: 0, fetched: 0, failed: 0 };
 
   const leads = db.prepare(`
-    SELECT id, gclid FROM leads
+    SELECT id, gclid, DATE(created_at) as lead_date FROM leads
     WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL
     ORDER BY created_at DESC
     LIMIT 100
@@ -548,38 +549,101 @@ async function fetchMissingCosts() {
 
   if (!leads.length) return { total: 0, fetched: 0, failed: 0 };
 
-  let fetched = 0;
-  let failed = 0;
-  let lastError = '';
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return { total: leads.length, fetched: 0, failed: leads.length, last_error: 'No developer token' };
 
-  for (const lead of leads) {
-    const result = await fetchGclidCost(lead.gclid);
-    if (result.cost_cents !== undefined) {
-      db.prepare(`
-        UPDATE leads SET cost_cents = ?, cost_currency = ?, cost_fetched_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(result.cost_cents, result.currency, lead.id);
-      fetched++;
-    } else {
-      failed++;
-      lastError = result.error || 'Unknown error';
-      // If it's an auth/config error, stop early — all will fail
-      if (lastError.includes('not configured') || lastError.includes('DEVELOPER_TOKEN') ||
-          lastError.includes('PERMISSION_DENIED') || lastError.includes('non-JSON') ||
-          lastError.includes('USER_PERMISSION_DENIED') || lastError.includes('AUTHENTICATION')) {
-        console.error('Stopping batch fetch — auth/config error:', lastError);
-        break;
+    // Find date range from leads
+    const dates = leads.map(l => l.lead_date).filter(Boolean);
+    const minDate = dates.reduce((a, b) => a < b ? a : b);
+    const maxDate = dates.reduce((a, b) => a > b ? a : b);
+
+    // Query campaign-level cost and clicks grouped by date
+    const query = `
+      SELECT
+        metrics.cost_micros,
+        metrics.clicks,
+        segments.date
+      FROM campaign
+      WHERE segments.date >= '${minDate}'
+        AND segments.date <= '${maxDate}'
+        AND metrics.clicks > 0
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken),
+        body: JSON.stringify({ query })
+      }
+    );
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      return { total: leads.length, fetched: 0, failed: leads.length, last_error: `API returned non-JSON (status ${response.status})` };
+    }
+
+    if (data.error) {
+      return { total: leads.length, fetched: 0, failed: leads.length, last_error: data.error.message || JSON.stringify(data.error) };
+    }
+
+    // Build CPC by date: sum cost and clicks across all campaigns per date
+    const cpcByDate = {};
+    for (const batch of data) {
+      if (!batch.results) continue;
+      for (const row of batch.results) {
+        const date = row.segments.date;
+        if (!cpcByDate[date]) cpcByDate[date] = { cost: 0, clicks: 0 };
+        cpcByDate[date].cost += parseInt(row.metrics.costMicros || 0);
+        cpcByDate[date].clicks += parseInt(row.metrics.clicks || 0);
       }
     }
-    // Small delay to avoid rate limiting
-    await new Promise(r => setTimeout(r, 100));
+
+    // Calculate overall average CPC as fallback for dates with no data
+    let totalCost = 0, totalClicks = 0;
+    for (const d of Object.values(cpcByDate)) {
+      totalCost += d.cost;
+      totalClicks += d.clicks;
+    }
+    const overallCpcCents = totalClicks > 0 ? Math.round(totalCost / totalClicks / 10000) : null;
+
+    console.log(`Google Ads CPC data: ${Object.keys(cpcByDate).length} dates, ${totalClicks} total clicks, overall avg CPC: ${overallCpcCents ? '$' + (overallCpcCents / 100).toFixed(2) : 'N/A'}`);
+
+    // Apply CPC to each lead based on its creation date
+    let fetched = 0, failed = 0;
+    for (const lead of leads) {
+      const dateData = cpcByDate[lead.lead_date];
+      let costCents = null;
+
+      if (dateData && dateData.clicks > 0) {
+        costCents = Math.round(dateData.cost / dateData.clicks / 10000);
+      } else if (overallCpcCents !== null) {
+        costCents = overallCpcCents;
+      }
+
+      if (costCents !== null) {
+        db.prepare('UPDATE leads SET cost_cents = ?, cost_currency = ?, cost_fetched_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .run(costCents, 'USD', lead.id);
+        fetched++;
+      } else {
+        failed++;
+      }
+    }
+
+    if (fetched > 0) console.log(`Google Ads costs: fetched ${fetched}/${leads.length} (${failed} failed)`);
+
+    const result = { total: leads.length, fetched, failed };
+    if (failed > 0 && !overallCpcCents) result.last_error = 'No campaign cost data found for lead dates';
+    return result;
+  } catch (err) {
+    console.error('Error fetching campaign CPC:', err);
+    return { total: leads.length, fetched: 0, failed: leads.length, last_error: err.message };
   }
-
-  if (fetched > 0) console.log(`Google Ads costs: fetched ${fetched}/${leads.length} (${failed} failed)`);
-
-  const result = { total: leads.length, fetched, failed };
-  if (lastError) result.last_error = lastError;
-  return result;
 }
 
 // Batch fetch costs for leads without cost data
