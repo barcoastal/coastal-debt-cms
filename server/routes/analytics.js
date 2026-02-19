@@ -1,9 +1,61 @@
 const express = require('express');
+const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
 const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
 
 const router = express.Router();
+
+// --- Reused encryption helpers (same key as google-ads.js) ---
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'coastal-debt-cms-encryption-key-32';
+const IV_LENGTH = 16;
+
+function encrypt(text) {
+  if (!text) return null;
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+
+function decrypt(text) {
+  if (!text) return null;
+  try {
+    const parts = text.split(':');
+    const iv = Buffer.from(parts[0], 'hex');
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(parts[1], 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (e) { return null; }
+}
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || '';
+const GOOGLE_DEVELOPER_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
+const GOOGLE_LOGIN_CUSTOMER_ID = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '';
+
+async function getGoogleAccessToken(config) {
+  const expiresAt = new Date(config.token_expires_at);
+  if (expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
+    const refreshToken = decrypt(config.refresh_token_encrypted);
+    const resp = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ refresh_token: refreshToken, client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET, grant_type: 'refresh_token' })
+    });
+    const tokens = await resp.json();
+    if (tokens.access_token) {
+      db.prepare('UPDATE google_ads_config SET access_token_encrypted = ?, token_expires_at = ? WHERE id = 1')
+        .run(encrypt(tokens.access_token), new Date(Date.now() + tokens.expires_in * 1000).toISOString());
+      return tokens.access_token;
+    }
+  }
+  return decrypt(config.access_token_encrypted);
+}
 
 // Helper: build WHERE clause from common filters
 function buildFilters(req, tableAlias = 'l', pageAlias = 'lp') {
@@ -566,6 +618,88 @@ router.get('/pipeline-summary', authenticateToken, (req, res) => {
     console.error('Pipeline summary error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Real ad spend from Google Ads API + Facebook Marketing API
+router.get('/real-ad-spend', authenticateToken, async (req, res) => {
+  const { from, to } = req.query;
+  let googleSpend = null;
+  let metaSpend = null;
+
+  // --- Google Ads: total account spend via API ---
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (gConfig && gConfig.refresh_token_encrypted && gConfig.customer_id) {
+      const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
+      if (devToken) {
+        const accessToken = await getGoogleAccessToken(gConfig);
+        const customerId = gConfig.customer_id.replace(/-/g, '');
+        const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
+        const headers = {
+          'Authorization': `Bearer ${accessToken}`,
+          'developer-token': devToken,
+          'Content-Type': 'application/json'
+        };
+        if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+
+        // Build date conditions for GAQL
+        let dateFilter = '';
+        if (from && to) {
+          dateFilter = `WHERE segments.date >= '${from}' AND segments.date <= '${to}'`;
+        } else if (from) {
+          dateFilter = `WHERE segments.date >= '${from}'`;
+        } else if (to) {
+          dateFilter = `WHERE segments.date <= '${to}'`;
+        }
+
+        const gaqlQuery = `SELECT metrics.cost_micros FROM customer ${dateFilter}`;
+        const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ query: gaqlQuery, pageSize: 1 })
+        });
+        const gData = await gRes.json();
+        if (gData.results && gData.results.length > 0) {
+          const costMicros = parseInt(gData.results[0].metrics.costMicros || '0', 10);
+          googleSpend = costMicros / 1000000;
+        } else if (!gData.error) {
+          googleSpend = 0;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Real ad spend - Google error:', e.message);
+  }
+
+  // --- Facebook: total account spend via Marketing API ---
+  try {
+    const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+    if (fbConfig && fbConfig.ad_account_id) {
+      const adsToken = fbConfig.user_access_token || fbConfig.page_access_token;
+      if (adsToken) {
+        const adAccountId = fbConfig.ad_account_id.startsWith('act_') ? fbConfig.ad_account_id : 'act_' + fbConfig.ad_account_id;
+        const fbParams = new URLSearchParams({ fields: 'spend', access_token: adsToken });
+        if (from && to) {
+          fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
+        } else if (from) {
+          fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+        } else {
+          fbParams.set('date_preset', 'maximum');
+        }
+        const fbRes = await fetch(`https://graph.facebook.com/v21.0/${adAccountId}/insights?${fbParams}`);
+        const fbData = await fbRes.json();
+        if (fbData.data && fbData.data.length > 0) {
+          metaSpend = parseFloat(fbData.data[0].spend || 0);
+        } else if (!fbData.error) {
+          metaSpend = 0;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Real ad spend - Meta error:', e.message);
+  }
+
+  res.json({ googleSpend, metaSpend });
 });
 
 // Google Ads: Summary stats

@@ -379,12 +379,36 @@
         profitEl.style.color = filteredProfit >= 0 ? '#10b981' : '#ef4444';
         document.getElementById('statProfitSub').innerHTML = 'ROAS: ' + (filteredCostDollars > 0 ? (filteredRevenue / filteredCostDollars).toFixed(2) + 'x' : 'N/A');
 
-        // --- KPI Row 2 ---
-        document.getElementById('statGoogleCost').textContent = fmtMoney((stats.googleCost || 0) / 100);
-        document.getElementById('statMetaCost').textContent = fmtMoney((stats.metaCost || 0) / 100);
-        const avgCPL = filteredLeads > 0 ? filteredCostDollars / filteredLeads : 0;
-        document.getElementById('statAvgCPL').textContent = fmtMoney(avgCPL);
+        // --- KPI Row 2: Real ad spend from Google Ads API + Facebook API ---
         document.getElementById('statActivePages').textContent = stats.activePages;
+        // Show DB-based costs immediately as placeholders
+        let gCost = (stats.googleCost || 0) / 100;
+        let mCost = (stats.metaCost || 0) / 100;
+        document.getElementById('statGoogleCost').textContent = fmtMoney(gCost);
+        document.getElementById('statMetaCost').textContent = fmtMoney(mCost);
+        document.getElementById('statAvgCPL').textContent = fmtMoney(filteredLeads > 0 ? filteredCostDollars / filteredLeads : 0);
+
+        // Fetch real spend from APIs (async, updates cards when ready)
+        fetch('/api/analytics/real-ad-spend' + qs).then(r => r.json()).then(spend => {
+          if (spend.googleSpend !== null) {
+            gCost = spend.googleSpend;
+            document.getElementById('statGoogleCost').textContent = fmtMoney(gCost);
+          }
+          if (spend.metaSpend !== null) {
+            mCost = spend.metaSpend;
+            document.getElementById('statMetaCost').textContent = fmtMoney(mCost);
+          }
+          // Recalculate total cost + profit + CPL with real spend
+          const realTotalCost = gCost + mCost;
+          const realProfit = filteredRevenue - realTotalCost;
+          document.getElementById('statCost').textContent = fmtMoney(realTotalCost);
+          document.getElementById('statCostSub').textContent = 'Google: ' + fmtMoney(gCost) + ' · Meta: ' + fmtMoney(mCost);
+          const pEl = document.getElementById('statProfit');
+          pEl.textContent = fmtMoney(realProfit);
+          pEl.style.color = realProfit >= 0 ? '#10b981' : '#ef4444';
+          document.getElementById('statProfitSub').innerHTML = 'ROAS: ' + (realTotalCost > 0 ? (filteredRevenue / realTotalCost).toFixed(2) + 'x' : 'N/A');
+          document.getElementById('statAvgCPL').textContent = fmtMoney(filteredLeads > 0 ? realTotalCost / filteredLeads : 0);
+        }).catch(() => {});
 
         // Load financials over time (for dual-axis charts)
         const finRes = await fetch('/api/analytics/financials-over-time' + qs);
