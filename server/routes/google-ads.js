@@ -689,41 +689,11 @@ async function fetchMissingCosts() {
     const apiError = data.error || data[0]?.error;
     if (apiError) {
       const errMsg = apiError.message || JSON.stringify(apiError);
-      // If PERMISSION_DENIED, reset login_customer_id and retry detection once
-      if (errMsg.includes('permission') || errMsg.includes('PERMISSION_DENIED')) {
-        if (config.login_customer_id) {
-          console.log('Campaign query failed with PERMISSION_DENIED, resetting login_customer_id and retrying...');
-          db.prepare('UPDATE google_ads_config SET login_customer_id = NULL WHERE id = 1').run();
-          config.login_customer_id = null;
-          const newMcc = await ensureLoginCustomerId(config);
-          if (newMcc) {
-            // Retry the query with the new login_customer_id
-            const retryResponse = await fetch(
-              `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
-              {
-                method: 'POST',
-                headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
-                body: JSON.stringify({ query })
-              }
-            );
-            const retryText = await retryResponse.text();
-            try { data = JSON.parse(retryText); } catch (e) {
-              return { total: leads.length, fetched: 0, failed: leads.length, last_error: 'Retry also failed (non-JSON)' };
-            }
-            const retryError = data.error || data[0]?.error;
-            if (retryError) {
-              return { total: leads.length, fetched: 0, failed: leads.length, last_error: `Retry failed: ${retryError.message}`, login_customer_id: config.login_customer_id };
-            }
-            // If retry succeeded, continue to processing below
-          } else {
-            return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg + ' (no working login_customer_id found)' };
-          }
-        } else {
-          return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg + ' (no login_customer_id available)' };
-        }
-      } else {
-        return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg };
-      }
+      return {
+        total: leads.length, fetched: 0, failed: leads.length,
+        last_error: errMsg,
+        debug: { customer_id: config.customer_id, login_customer_id: config.login_customer_id || '(not set)' }
+      };
     }
 
     // Build CPC by date: sum cost and clicks across all campaigns per date

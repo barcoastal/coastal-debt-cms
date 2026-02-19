@@ -1092,7 +1092,9 @@
           statusEl.textContent = 'No leads with GCLIDs found that need cost data.';
           statusEl.style.color = '#f59e0b';
         } else if (data.last_error && data.fetched === 0) {
-          statusEl.textContent = `Failed: ${data.last_error}`;
+          let msg = `Failed: ${data.last_error}`;
+          if (data.debug) msg += ` | customer=${data.debug.customer_id}, mcc=${data.debug.login_customer_id}`;
+          statusEl.textContent = msg;
           statusEl.style.color = '#ef4444';
         } else {
           statusEl.textContent = `Done! Fetched ${data.fetched} of ${data.total} leads` +
