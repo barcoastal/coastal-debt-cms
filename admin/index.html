@@ -151,39 +151,53 @@
         </div>
       </div>
 
-      <!-- Stats -->
-      <div class="stats-grid">
-        <div class="stat-card primary">
-          <div class="stat-value" id="statLeadsToday">-</div>
-          <div class="stat-label">Leads Today</div>
+      <!-- KPI Row 1: Leads / Revenue / Cost / Profit -->
+      <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-card" style="border-left: 4px solid var(--primary);">
+          <div class="stat-label" id="lblLeads">Leads</div>
+          <div class="stat-value" id="statLeads">-</div>
+          <div class="stat-sub" id="statLeadsSub"></div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statLeadsWeek">-</div>
-          <div class="stat-label">Leads WTD</div>
+        <div class="stat-card" style="border-left: 4px solid #10b981;">
+          <div class="stat-label" id="lblRevenue">Revenue</div>
+          <div class="stat-value" style="color:#10b981;" id="statRevenue">-</div>
+          <div class="stat-sub" id="statRevenueSub"></div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statLeadsMonth">-</div>
-          <div class="stat-label">Leads MTD</div>
+        <div class="stat-card" style="border-left: 4px solid #ef4444;">
+          <div class="stat-label" id="lblCost">Total Cost</div>
+          <div class="stat-value" style="color:#ef4444;" id="statCost">-</div>
+          <div class="stat-sub" id="statCostSub"></div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="statActivePages">-</div>
-          <div class="stat-label">Active Landing Pages</div>
+        <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
+          <div class="stat-label" id="lblProfit">Profit</div>
+          <div class="stat-value" id="statProfit">-</div>
+          <div class="stat-sub" id="statProfitSub"></div>
         </div>
       </div>
 
-      <!-- Revenue Stats -->
-      <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <!-- KPI Row 2: Google Cost / Meta Cost / CPL / Active Pages -->
+      <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
         <div class="stat-card">
-          <div class="stat-value" id="statRevenueToday">-</div>
-          <div class="stat-label">Revenue Today</div>
+          <div class="stat-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:4px;" fill="none" stroke="#4285F4" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Google Ads Cost
+          </div>
+          <div class="stat-value" style="color:#4285F4;font-size:1.5rem;" id="statGoogleCost">-</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statRevenueMTD">-</div>
-          <div class="stat-label">Revenue MTD</div>
+          <div class="stat-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:4px;" fill="none" stroke="#1877F2" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Meta (FB) Cost
+          </div>
+          <div class="stat-value" style="color:#1877F2;font-size:1.5rem;" id="statMetaCost">-</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statProfitMTD" style="color: #10b981;">-</div>
-          <div class="stat-label">Profit MTD</div>
+          <div class="stat-label">Avg CPL</div>
+          <div class="stat-value" style="font-size:1.5rem;" id="statAvgCPL">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Landing Pages</div>
+          <div class="stat-value" style="font-size:1.5rem;" id="statActivePages">-</div>
         </div>
       </div>
 
@@ -214,13 +228,29 @@
         </div>
       </div>
 
-      <!-- Charts -->
+      <!-- Charts Row 1: Leads & Cost + Revenue & Profit -->
       <div class="charts-grid">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Leads Over Time</h3>
+            <h3 class="card-title">Leads & Cost Over Time</h3>
           </div>
-          <canvas id="leadsChart"></canvas>
+          <canvas id="leadsCostChart"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Revenue & Profit Over Time</h3>
+          </div>
+          <canvas id="revenueProfitChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts Row 2: Pipeline Funnel + Platform Doughnut -->
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Pipeline Funnel</h3>
+          </div>
+          <canvas id="pipelineChart"></canvas>
         </div>
         <div class="card">
           <div class="card-header">
@@ -245,12 +275,14 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Source</th>
+                <th>Stage</th>
+                <th>Cost</th>
                 <th>Date</th>
               </tr>
             </thead>
             <tbody id="recentLeadsTable">
               <tr>
-                <td colspan="6" class="loading"><div class="spinner"></div></td>
+                <td colspan="8" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
@@ -261,8 +293,19 @@
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    let leadsChart, platformChart;
+    let leadsCostChart, revenueProfitChart, pipelineChart, platformChart;
     let currentRange = '30d';
+
+    const rangeLabels = {
+      today: 'Today',
+      yesterday: 'Yesterday',
+      last_week: 'Last Week',
+      mtd: 'MTD',
+      '7d': 'Last 7 Days',
+      '30d': 'Last 30 Days',
+      all: 'All Time',
+      custom: 'Custom Range'
+    };
 
     function setRange(range, btn) {
       currentRange = range;
@@ -304,54 +347,206 @@
         if (dateRange.from) params.set('from', dateRange.from);
         if (dateRange.to) params.set('to', dateRange.to);
         const qs = params.toString() ? '?' + params.toString() : '';
+        const rangeLabel = rangeLabels[currentRange] || currentRange;
+
+        const fmtMoney = (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         // Load stats
         const statsRes = await fetch('/api/analytics/dashboard' + qs);
         const stats = await statsRes.json();
 
-        document.getElementById('statLeadsToday').textContent = stats.leadsToday;
-        document.getElementById('statLeadsWeek').textContent = stats.leadsWTD;
-        document.getElementById('statLeadsMonth').textContent = stats.leadsMTD;
+        // --- KPI Row 1: Uses filtered data matching chosen date range ---
+        const filteredCostDollars = (stats.filteredCost || 0) / 100;
+        const filteredRevenue = stats.filteredRevenue || 0;
+        const filteredProfit = filteredRevenue - filteredCostDollars;
+        const filteredLeads = stats.totalLeads || 0;
+
+        document.getElementById('lblLeads').textContent = 'Leads \u2014 ' + rangeLabel;
+        document.getElementById('statLeads').textContent = filteredLeads;
+        document.getElementById('statLeadsSub').textContent = 'Today: ' + stats.leadsToday + ' \u00B7 MTD: ' + stats.leadsMTD;
+
+        document.getElementById('lblRevenue').textContent = 'Revenue \u2014 ' + rangeLabel;
+        document.getElementById('statRevenue').textContent = fmtMoney(filteredRevenue);
+        document.getElementById('statRevenueSub').textContent = 'Today: ' + fmtMoney(stats.revenueToday);
+
+        document.getElementById('lblCost').textContent = 'Total Cost \u2014 ' + rangeLabel;
+        document.getElementById('statCost').textContent = fmtMoney(filteredCostDollars);
+        document.getElementById('statCostSub').textContent = 'Today: ' + fmtMoney((stats.costToday || 0) / 100);
+
+        document.getElementById('lblProfit').textContent = 'Profit \u2014 ' + rangeLabel;
+        const profitEl = document.getElementById('statProfit');
+        profitEl.textContent = fmtMoney(filteredProfit);
+        profitEl.style.color = filteredProfit >= 0 ? '#10b981' : '#ef4444';
+        document.getElementById('statProfitSub').innerHTML = 'ROAS: ' + (filteredCostDollars > 0 ? (filteredRevenue / filteredCostDollars).toFixed(2) + 'x' : 'N/A');
+
+        // --- KPI Row 2 ---
+        document.getElementById('statGoogleCost').textContent = fmtMoney((stats.googleCost || 0) / 100);
+        document.getElementById('statMetaCost').textContent = fmtMoney((stats.metaCost || 0) / 100);
+        const avgCPL = filteredLeads > 0 ? filteredCostDollars / filteredLeads : 0;
+        document.getElementById('statAvgCPL').textContent = fmtMoney(avgCPL);
         document.getElementById('statActivePages').textContent = stats.activePages;
 
-        // Revenue stats
-        const fmtMoney = (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('statRevenueToday').textContent = fmtMoney(stats.revenueToday);
-        document.getElementById('statRevenueMTD').textContent = fmtMoney(stats.revenueMTD);
-        const profitMTD = (stats.revenueMTD || 0) - ((stats.costMTD || 0) / 100);
-        const profitEl = document.getElementById('statProfitMTD');
-        profitEl.textContent = fmtMoney(profitMTD);
-        profitEl.style.color = profitMTD >= 0 ? '#10b981' : '#ef4444';
+        // Load financials over time (for dual-axis charts)
+        const finRes = await fetch('/api/analytics/financials-over-time' + qs);
+        const finData = await finRes.json();
+        const finLabels = finData.map(d => parseUtcDate(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: getConfiguredTz() }));
 
-        // Load leads over time
-        const timeRes = await fetch('/api/analytics/over-time?days=30' + (qs ? '&' + params.toString() : ''));
-        const timeData = await timeRes.json();
-
-        if (leadsChart) leadsChart.destroy();
-        const ctx1 = document.getElementById('leadsChart').getContext('2d');
-        leadsChart = new Chart(ctx1, {
-          type: 'line',
+        // Dual-axis: Leads & Cost Over Time
+        if (leadsCostChart) leadsCostChart.destroy();
+        const ctx1 = document.getElementById('leadsCostChart').getContext('2d');
+        leadsCostChart = new Chart(ctx1, {
+          type: 'bar',
           data: {
-            labels: timeData.map(d => parseUtcDate(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: getConfiguredTz() })),
-            datasets: [{
-              label: 'Leads',
-              data: timeData.map(d => d.count),
-              borderColor: '#3052FF',
-              backgroundColor: 'rgba(48, 82, 255, 0.1)',
-              fill: true,
-              tension: 0.3
-            }]
+            labels: finLabels,
+            datasets: [
+              {
+                label: 'Leads',
+                data: finData.map(d => d.leads),
+                backgroundColor: 'rgba(48, 82, 255, 0.65)',
+                borderColor: '#3052FF',
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'y',
+                order: 2
+              },
+              {
+                label: 'Cost ($)',
+                data: finData.map(d => d.cost),
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                borderWidth: 2,
+                type: 'line',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: '#ef4444',
+                yAxisID: 'y1',
+                order: 1
+              }
+            ]
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false } },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    if (ctx.dataset.yAxisID === 'y1') return 'Cost: ' + fmtMoney(ctx.raw);
+                    return 'Leads: ' + ctx.raw;
+                  }
+                }
+              }
+            },
             scales: {
-              y: { beginAtZero: true }
+              y: {
+                type: 'linear',
+                position: 'left',
+                beginAtZero: true,
+                title: { display: true, text: 'Leads', font: { size: 11 } },
+                grid: { color: 'rgba(0,0,0,0.04)' }
+              },
+              y1: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                title: { display: true, text: 'Cost ($)', font: { size: 11 } },
+                grid: { drawOnChartArea: false },
+                ticks: { callback: v => '$' + v }
+              },
+              x: { grid: { display: false } }
             }
           }
         });
 
-        // Load leads by platform
+        // Revenue & Profit Over Time
+        if (revenueProfitChart) revenueProfitChart.destroy();
+        const ctx1b = document.getElementById('revenueProfitChart').getContext('2d');
+        revenueProfitChart = new Chart(ctx1b, {
+          type: 'line',
+          data: {
+            labels: finLabels,
+            datasets: [
+              {
+                label: 'Revenue ($)',
+                data: finData.map(d => d.revenue),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: '#10b981'
+              },
+              {
+                label: 'Profit ($)',
+                data: finData.map(d => d.profit),
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.08)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: '#8b5cf6'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) { return ctx.dataset.label + ': ' + fmtMoney(ctx.raw); }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Dollars ($)', font: { size: 11 } },
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: { callback: v => '$' + v }
+              },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+
+        // Pipeline Funnel
+        try {
+          const pipeRes = await fetch('/api/analytics/pipeline-summary' + qs);
+          const pipeData = await pipeRes.json();
+          const stages = pipeData.stages || [];
+
+          if (pipelineChart) pipelineChart.destroy();
+          const ctxPipe = document.getElementById('pipelineChart').getContext('2d');
+          const pipeColors = ['#3052FF', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#64748b'];
+          pipelineChart = new Chart(ctxPipe, {
+            type: 'bar',
+            data: {
+              labels: stages.map(s => s.stage),
+              datasets: [{
+                label: 'Leads',
+                data: stages.map(s => s.count),
+                backgroundColor: stages.map((_, i) => pipeColors[i % pipeColors.length]),
+                borderRadius: 4,
+                borderWidth: 0
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, title: { display: true, text: 'Leads', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                y: { grid: { display: false } }
+              }
+            }
+          });
+        } catch (pipeErr) {
+          console.error('Error loading pipeline:', pipeErr);
+        }
+
+        // Leads by Platform (doughnut)
         const platformRes = await fetch('/api/analytics/by-platform' + qs);
         const platformData = await platformRes.json();
 
@@ -363,51 +558,93 @@
             labels: platformData.map(d => d.platform || 'Other'),
             datasets: [{
               data: platformData.map(d => d.count),
-              backgroundColor: ['#3052FF', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+              backgroundColor: ['#3052FF', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'],
+              borderWidth: 2,
+              borderColor: '#fff'
             }]
           },
           options: {
-            responsive: true
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+              legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+            }
           }
         });
 
-        // Load recent leads
+        // Load recent leads (with stage + cost columns)
         const recentRes = await fetch('/api/analytics/recent?limit=10' + (qs ? '&' + params.toString() : ''));
         const recentLeads = await recentRes.json();
 
         const tbody = document.getElementById('recentLeadsTable');
         if (recentLeads.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No leads yet</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No leads yet</td></tr>';
         } else {
           tbody.innerHTML = recentLeads.map(lead => `
             <tr>
-              <td>${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-'}</td>
-              <td>${lead.company_name || '-'}</td>
-              <td>${lead.email || '-'}</td>
-              <td>${lead.phone || '-'}</td>
-              <td><span class="badge badge-blue">${lead.traffic_source || '-'}</span></td>
+              <td>${escapeHtml([lead.first_name, lead.last_name].filter(Boolean).join(' ') || '-')}</td>
+              <td>${escapeHtml(lead.company_name || '-')}</td>
+              <td>${escapeHtml(lead.email || '-')}</td>
+              <td>${escapeHtml(lead.phone || '-')}</td>
+              <td><span class="badge badge-blue">${escapeHtml(lead.traffic_source || '-')}</span></td>
+              <td><span class="badge badge-gray">${escapeHtml(lead.stage || 'New')}</span></td>
+              <td>${lead.cost_cents ? fmtMoney(lead.cost_cents / 100) : '-'}</td>
               <td>${formatDate(lead.created_at)}</td>
             </tr>
           `).join('');
         }
-        // Load platform financials
+
+        // Load platform financials (with date filters)
         try {
-          const pfRes = await fetch('/api/analytics/platform-financials');
+          const pfRes = await fetch('/api/analytics/platform-financials' + qs);
           const pf = await pfRes.json();
-          const platformNames = { google: 'Google Ads', meta: 'Meta (Facebook)', bing: 'Bing Ads' };
+          const platformNames = {
+            google: 'Google Ads',
+            meta: 'Meta (Facebook)',
+            bing: 'Bing Ads',
+            reddit: 'Reddit',
+            outbrain: 'Outbrain'
+          };
+          const platformIcons = {
+            google: '#4285F4',
+            meta: '#1877F2',
+            bing: '#00809D',
+            reddit: '#FF4500',
+            outbrain: '#E8590C'
+          };
           const pfBody = document.getElementById('platformFinancialsTable');
-          const rows = ['google', 'meta', 'bing'].map(p => {
+          const pfPlatforms = ['google', 'meta', 'bing', 'reddit', 'outbrain'];
+          let totals = { leads: 0, cost: 0, revenue: 0, profit: 0 };
+
+          const rows = pfPlatforms.map(p => {
             const d = pf[p] || { revenue: 0, cost: 0, profit: 0, leads: 0, cpl: 0, roas: 0 };
+            totals.leads += d.leads;
+            totals.cost += d.cost;
+            totals.revenue += d.revenue;
+            totals.profit += d.profit;
             return `<tr>
-              <td><strong>${platformNames[p]}</strong></td>
+              <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${platformIcons[p]};margin-right:8px;"></span><strong>${platformNames[p]}</strong></td>
               <td>${d.leads}</td>
               <td>${fmtMoney(d.cost)}</td>
               <td>${fmtMoney(d.revenue)}</td>
-              <td style="color:${d.profit >= 0 ? '#10b981' : '#ef4444'}">${fmtMoney(d.profit)}</td>
+              <td style="color:${d.profit >= 0 ? '#10b981' : '#ef4444'};font-weight:600;">${fmtMoney(d.profit)}</td>
               <td>${fmtMoney(d.cpl)}</td>
               <td>${d.roas.toFixed(2)}x</td>
             </tr>`;
           });
+
+          const totalCpl = totals.leads > 0 ? totals.cost / totals.leads : 0;
+          const totalRoas = totals.cost > 0 ? totals.revenue / totals.cost : 0;
+          rows.push(`<tr style="font-weight:700;background:var(--gray-50);border-top:2px solid var(--gray-200);">
+            <td><strong>Total</strong></td>
+            <td>${totals.leads}</td>
+            <td>${fmtMoney(totals.cost)}</td>
+            <td>${fmtMoney(totals.revenue)}</td>
+            <td style="color:${totals.profit >= 0 ? '#10b981' : '#ef4444'}">${fmtMoney(totals.profit)}</td>
+            <td>${fmtMoney(totalCpl)}</td>
+            <td>${totalRoas.toFixed(2)}x</td>
+          </tr>`);
+
           pfBody.innerHTML = rows.join('');
         } catch (pfErr) {
           console.error('Error loading platform financials:', pfErr);

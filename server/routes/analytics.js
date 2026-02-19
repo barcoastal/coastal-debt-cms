@@ -136,6 +136,33 @@ router.get('/dashboard', authenticateToken, (req, res) => {
   // Filtered total (respects user date range)
   const totalLeads = db.prepare(`SELECT COUNT(*) as count FROM leads l ${join} ${where}`).get(...params).count;
 
+  // --- Filtered aggregates (respects ALL filters including date range) ---
+  // Filtered revenue
+  const filteredRevenueJoin = needsJoin
+    ? 'JOIN leads l ON ce.lead_id = l.id LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id'
+    : '';
+  const filteredRevenueConds = [];
+  const filteredRevenueParams = [];
+  if (platform) { filteredRevenueConds.push(`lp.platform = ?`); filteredRevenueParams.push(platform); }
+  if (page) { filteredRevenueConds.push(`lp.slug = ?`); filteredRevenueParams.push(page); }
+  if (req.query.from) { filteredRevenueConds.push(`ce.created_at >= ?`); filteredRevenueParams.push(localDateToUtcRange(req.query.from, tz).start); }
+  if (req.query.to) { filteredRevenueConds.push(`ce.created_at <= ?`); filteredRevenueParams.push(localDateToUtcRange(req.query.to, tz).end); }
+  const filteredRevenueWhere = filteredRevenueConds.length ? 'WHERE ' + filteredRevenueConds.join(' AND ') : '';
+  const filteredRevenue = db.prepare(`SELECT COALESCE(SUM(ce.revenue), 0) as total FROM conversion_events ce ${filteredRevenueJoin} ${filteredRevenueWhere}`).get(...filteredRevenueParams).total;
+
+  // Filtered cost (all platforms)
+  const filteredCost = db.prepare(`SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l ${join} ${where}`).get(...params).total;
+
+  // Per-platform cost (respects date filter, ignores platform filter)
+  const platformCostConds = [];
+  const platformCostParams = [];
+  if (req.query.from) { platformCostConds.push(`l.created_at >= ?`); platformCostParams.push(localDateToUtcRange(req.query.from, tz).start); }
+  if (req.query.to) { platformCostConds.push(`l.created_at <= ?`); platformCostParams.push(localDateToUtcRange(req.query.to, tz).end); }
+  const platformCostDateWhere = platformCostConds.length ? ' AND ' + platformCostConds.join(' AND ') : '';
+
+  const googleCost = db.prepare(`SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l JOIN landing_pages lp ON l.landing_page_id = lp.id WHERE lp.platform = 'google' ${platformCostDateWhere}`).get(...platformCostParams).total;
+  const metaCost = db.prepare(`SELECT COALESCE(SUM(l.cost_cents), 0) as total FROM leads l JOIN landing_pages lp ON l.landing_page_id = lp.id WHERE lp.platform = 'meta' ${platformCostDateWhere}`).get(...platformCostParams).total;
+
   res.json({
     totalLeads,
     leadsToday,
@@ -148,7 +175,11 @@ router.get('/dashboard', authenticateToken, (req, res) => {
     revenueMTD,
     costToday,
     costWTD,
-    costMTD
+    costMTD,
+    filteredRevenue,
+    filteredCost,
+    googleCost,
+    metaCost
   });
 });
 
@@ -261,7 +292,30 @@ let fbSpendCache = { data: null, timestamp: 0 };
 
 router.get('/platform-financials', authenticateToken, async (req, res) => {
   try {
-    const platforms = ['google', 'meta', 'bing', 'reddit'];
+    const { from, to } = req.query;
+    const tz = getConfiguredTimezone();
+    const dateConds = [];
+    const dateParams = [];
+    const eventDateConds = [];
+    const eventDateParams = [];
+
+    if (from) {
+      dateConds.push(`l.created_at >= ?`);
+      dateParams.push(localDateToUtcRange(from, tz).start);
+      eventDateConds.push(`ce.created_at >= ?`);
+      eventDateParams.push(localDateToUtcRange(from, tz).start);
+    }
+    if (to) {
+      dateConds.push(`l.created_at <= ?`);
+      dateParams.push(localDateToUtcRange(to, tz).end);
+      eventDateConds.push(`ce.created_at <= ?`);
+      eventDateParams.push(localDateToUtcRange(to, tz).end);
+    }
+
+    const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
+    const eventDateWhere = eventDateConds.length ? ' AND ' + eventDateConds.join(' AND ') : '';
+
+    const platforms = ['google', 'meta', 'bing', 'reddit', 'outbrain'];
     const result = {};
 
     for (const platform of platforms) {
@@ -271,15 +325,15 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
         FROM conversion_events ce
         JOIN leads l ON ce.lead_id = l.id
         JOIN landing_pages lp ON l.landing_page_id = lp.id
-        WHERE lp.platform = ? AND ce.revenue IS NOT NULL
-      `).get(platform);
+        WHERE lp.platform = ? AND ce.revenue IS NOT NULL ${eventDateWhere}
+      `).get(platform, ...eventDateParams);
 
       // Leads count
       const leadsRow = db.prepare(`
         SELECT COUNT(*) as count FROM leads l
         JOIN landing_pages lp ON l.landing_page_id = lp.id
-        WHERE lp.platform = ?
-      `).get(platform);
+        WHERE lp.platform = ? ${dateWhere}
+      `).get(platform, ...dateParams);
 
       const revenue = revenueRow.revenue || 0;
       const leads = leadsRow.count || 0;
@@ -291,8 +345,8 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
           SELECT COALESCE(SUM(l.cost_cents), 0) as total
           FROM leads l
           JOIN landing_pages lp ON l.landing_page_id = lp.id
-          WHERE lp.platform = 'google'
-        `).get();
+          WHERE lp.platform = 'google' ${dateWhere}
+        `).get(...dateParams);
         cost = (costRow.total || 0) / 100;
       } else if (platform === 'meta') {
         // Meta cost from DB (per-lead cost_cents, same as Google)
@@ -300,8 +354,8 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
           SELECT COALESCE(SUM(l.cost_cents), 0) as total
           FROM leads l
           JOIN landing_pages lp ON l.landing_page_id = lp.id
-          WHERE lp.platform = 'meta'
-        `).get();
+          WHERE lp.platform = 'meta' ${dateWhere}
+        `).get(...dateParams);
         cost = (metaCostRow.total || 0) / 100;
 
         // Fallback to Facebook API if no DB costs exist
@@ -314,13 +368,19 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
               const fbConfig = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
               const fbAdsToken = fbConfig?.user_access_token || fbConfig?.page_access_token;
               if (fbConfig && fbConfig.ad_account_id && fbAdsToken) {
-                const params = new URLSearchParams({
+                const fbParams = new URLSearchParams({
                   fields: 'spend',
-                  date_preset: 'maximum',
                   access_token: fbAdsToken
                 });
+                if (from && to) {
+                  fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
+                } else if (from) {
+                  fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+                } else {
+                  fbParams.set('date_preset', 'maximum');
+                }
                 const normalizedAcctId = fbConfig.ad_account_id.startsWith('act_') ? fbConfig.ad_account_id : 'act_' + fbConfig.ad_account_id;
-                const fbRes = await fetch(`https://graph.facebook.com/v21.0/${normalizedAcctId}/insights?${params}`);
+                const fbRes = await fetch(`https://graph.facebook.com/v21.0/${normalizedAcctId}/insights?${fbParams}`);
                 const fbData = await fbRes.json();
                 if (fbData.data && fbData.data.length > 0) {
                   cost = parseFloat(fbData.data[0].spend || 0);
@@ -332,8 +392,16 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
             fbSpendCache = { data: cost, timestamp: now };
           }
         }
+      } else {
+        // All other platforms: cost from leads.cost_cents
+        const otherCostRow = db.prepare(`
+          SELECT COALESCE(SUM(l.cost_cents), 0) as total
+          FROM leads l
+          JOIN landing_pages lp ON l.landing_page_id = lp.id
+          WHERE lp.platform = ? ${dateWhere}
+        `).get(platform, ...dateParams);
+        cost = (otherCostRow.total || 0) / 100;
       }
-      // Bing: cost = 0 (stub)
 
       const profit = revenue - cost;
       const cpl = leads > 0 ? cost / leads : 0;
@@ -345,6 +413,157 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('Platform financials error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Financials over time (daily leads, cost, revenue, profit)
+router.get('/financials-over-time', authenticateToken, (req, res) => {
+  try {
+    const { conditions, params } = buildFilters(req);
+    const tz = getConfiguredTimezone();
+    const offsetStr = getSqliteOffsetStr(tz);
+
+    // Default to last 30 days if no from/to specified
+    if (!req.query.from) {
+      const todayStr = getTodayInTz(tz);
+      const todayDate = new Date(todayStr + 'T00:00:00');
+      const startDate = new Date(todayDate);
+      startDate.setDate(startDate.getDate() - 30);
+      const startStr = startDate.toISOString().split('T')[0];
+      const { start } = localDateToUtcRange(startStr, tz);
+      conditions.push(`l.created_at >= ?`);
+      params.push(start);
+    }
+
+    const needsJoin = req.query.platform || req.query.page;
+    const join = needsJoin ? 'LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id' : '';
+    const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    // Query 1: leads + cost per day from leads table
+    const leadsData = db.prepare(`
+      SELECT DATE(l.created_at, '${offsetStr}') as date,
+             COUNT(*) as leads,
+             COALESCE(SUM(l.cost_cents), 0) as cost_cents
+      FROM leads l
+      ${join}
+      ${where}
+      GROUP BY DATE(l.created_at, '${offsetStr}')
+      ORDER BY date ASC
+    `).all(...params);
+
+    // Query 2: revenue per day from conversion_events
+    // Rebuild conditions for ce table
+    const ceConds = [];
+    const ceParams = [];
+    if (req.query.platform) {
+      ceConds.push(`lp.platform = ?`);
+      ceParams.push(req.query.platform);
+    }
+    if (req.query.page) {
+      ceConds.push(`lp.slug = ?`);
+      ceParams.push(req.query.page);
+    }
+    if (req.query.from) {
+      ceConds.push(`ce.created_at >= ?`);
+      ceParams.push(localDateToUtcRange(req.query.from, tz).start);
+    }
+    if (req.query.to) {
+      ceConds.push(`ce.created_at <= ?`);
+      ceParams.push(localDateToUtcRange(req.query.to, tz).end);
+    }
+    if (!req.query.from) {
+      const todayStr = getTodayInTz(tz);
+      const todayDate = new Date(todayStr + 'T00:00:00');
+      const startDate = new Date(todayDate);
+      startDate.setDate(startDate.getDate() - 30);
+      const startStr = startDate.toISOString().split('T')[0];
+      const { start } = localDateToUtcRange(startStr, tz);
+      ceConds.push(`ce.created_at >= ?`);
+      ceParams.push(start);
+    }
+
+    const ceNeedsJoin = req.query.platform || req.query.page;
+    const ceJoin = ceNeedsJoin
+      ? 'JOIN leads l ON ce.lead_id = l.id LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id'
+      : '';
+    const ceWhere = ceConds.length > 0 ? 'WHERE ' + ceConds.join(' AND ') : '';
+
+    const revenueData = db.prepare(`
+      SELECT DATE(ce.created_at, '${offsetStr}') as date,
+             COALESCE(SUM(ce.revenue), 0) as revenue
+      FROM conversion_events ce
+      ${ceJoin}
+      ${ceWhere}
+      GROUP BY DATE(ce.created_at, '${offsetStr}')
+      ORDER BY date ASC
+    `).all(...ceParams);
+
+    // Merge into a single array keyed by date
+    const revenueMap = {};
+    for (const r of revenueData) {
+      revenueMap[r.date] = r.revenue || 0;
+    }
+
+    // Also collect dates from revenue that may not have leads
+    const allDates = new Set(leadsData.map(d => d.date));
+    for (const r of revenueData) allDates.add(r.date);
+
+    const leadsMap = {};
+    for (const d of leadsData) {
+      leadsMap[d.date] = d;
+    }
+
+    const merged = [...allDates].sort().map(date => {
+      const ld = leadsMap[date] || { leads: 0, cost_cents: 0 };
+      const revenue = revenueMap[date] || 0;
+      const cost = (ld.cost_cents || 0) / 100;
+      return {
+        date,
+        leads: ld.leads || 0,
+        cost,
+        revenue,
+        profit: revenue - cost
+      };
+    });
+
+    res.json(merged);
+  } catch (err) {
+    console.error('Financials over time error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Pipeline summary (leads grouped by latest conversion stage)
+router.get('/pipeline-summary', authenticateToken, (req, res) => {
+  try {
+    const { conditions, params } = buildFilters(req);
+    const needsJoin = req.query.platform || req.query.page;
+    const join = needsJoin ? 'LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id' : '';
+    const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    // For each lead, find the latest conversion_action_name
+    const data = db.prepare(`
+      SELECT
+        COALESCE(
+          (SELECT ce.conversion_action_name
+           FROM conversion_events ce
+           WHERE ce.lead_id = l.id
+           ORDER BY ce.created_at DESC
+           LIMIT 1),
+          'New'
+        ) as stage,
+        COUNT(*) as count
+      FROM leads l
+      ${join}
+      ${where}
+      GROUP BY stage
+      ORDER BY count DESC
+    `).all(...params);
+
+    res.json({ stages: data });
+  } catch (err) {
+    console.error('Pipeline summary error:', err);
     res.status(500).json({ error: err.message });
   }
 });
