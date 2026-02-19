@@ -560,18 +560,54 @@ async function ensureLoginCustomerId(config) {
     const data = await response.json();
     const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
 
+    console.log('MCC detection: accessible customers:', customerIds);
+
+    // First pass: look for a manager account by checking details
     for (const customerId of customerIds) {
       try {
         const detailRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}`, { headers });
         const detail = await detailRes.json();
+        console.log(`MCC detection: account ${customerId} — manager=${detail.manager}, name=${detail.descriptiveName || 'N/A'}`);
         if (detail.manager) {
           db.prepare('UPDATE google_ads_config SET login_customer_id = ? WHERE id = 1').run(customerId);
-          console.log('Auto-detected MCC account:', customerId, detail.descriptiveName);
+          console.log('Auto-detected MCC account:', customerId);
           config.login_customer_id = customerId;
           return customerId;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log(`MCC detection: failed to get details for ${customerId}:`, e.message);
+      }
     }
+
+    // Second pass: if no manager found, try each account as login_customer_id
+    // by testing a simple campaign query on the target account
+    console.log('MCC detection: no manager found, testing each account as login_customer_id...');
+    for (const customerId of customerIds) {
+      if (customerId === config.customer_id) continue;
+      try {
+        const testHeaders = getApiHeaders(accessToken, developerToken, customerId);
+        const testResponse = await fetch(
+          `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
+          {
+            method: 'POST',
+            headers: testHeaders,
+            body: JSON.stringify({ query: 'SELECT campaign.id FROM campaign LIMIT 1', pageSize: 1 })
+          }
+        );
+        const testData = await testResponse.json();
+        if (!testData.error) {
+          db.prepare('UPDATE google_ads_config SET login_customer_id = ? WHERE id = 1').run(customerId);
+          console.log('Found working login_customer_id by testing:', customerId);
+          config.login_customer_id = customerId;
+          return customerId;
+        }
+        console.log(`MCC detection: ${customerId} as login_customer_id failed:`, testData.error?.message?.substring(0, 100));
+      } catch (e) {
+        console.log(`MCC detection: ${customerId} test error:`, e.message);
+      }
+    }
+
+    console.log('MCC detection: no working login_customer_id found');
   } catch (err) {
     console.error('Error detecting MCC:', err.message);
   }
@@ -638,7 +674,42 @@ async function fetchMissingCosts() {
     // searchStream returns errors as [{error: ...}]
     const apiError = data.error || data[0]?.error;
     if (apiError) {
-      return { total: leads.length, fetched: 0, failed: leads.length, last_error: apiError.message || JSON.stringify(apiError) };
+      const errMsg = apiError.message || JSON.stringify(apiError);
+      // If PERMISSION_DENIED, reset login_customer_id and retry detection once
+      if (errMsg.includes('permission') || errMsg.includes('PERMISSION_DENIED')) {
+        if (config.login_customer_id) {
+          console.log('Campaign query failed with PERMISSION_DENIED, resetting login_customer_id and retrying...');
+          db.prepare('UPDATE google_ads_config SET login_customer_id = NULL WHERE id = 1').run();
+          config.login_customer_id = null;
+          const newMcc = await ensureLoginCustomerId(config);
+          if (newMcc) {
+            // Retry the query with the new login_customer_id
+            const retryResponse = await fetch(
+              `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+              {
+                method: 'POST',
+                headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+                body: JSON.stringify({ query })
+              }
+            );
+            const retryText = await retryResponse.text();
+            try { data = JSON.parse(retryText); } catch (e) {
+              return { total: leads.length, fetched: 0, failed: leads.length, last_error: 'Retry also failed (non-JSON)' };
+            }
+            const retryError = data.error || data[0]?.error;
+            if (retryError) {
+              return { total: leads.length, fetched: 0, failed: leads.length, last_error: `Retry failed: ${retryError.message}`, login_customer_id: config.login_customer_id };
+            }
+            // If retry succeeded, continue to processing below
+          } else {
+            return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg + ' (no working login_customer_id found)' };
+          }
+        } else {
+          return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg + ' (no login_customer_id available)' };
+        }
+      } else {
+        return { total: leads.length, fetched: 0, failed: leads.length, last_error: errMsg };
+      }
     }
 
     // Build CPC by date: sum cost and clicks across all campaigns per date
