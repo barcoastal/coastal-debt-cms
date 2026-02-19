@@ -279,6 +279,13 @@ router.get('/accounts', authenticateToken, async (req, res) => {
       }
     }
 
+    // Auto-detect MCC (manager account) and save for login-customer-id header
+    const managerAccount = accounts.find(a => a.is_manager);
+    if (managerAccount) {
+      db.prepare('UPDATE google_ads_config SET login_customer_id = ? WHERE id = 1').run(managerAccount.customer_id);
+      console.log('Auto-detected MCC account:', managerAccount.customer_id, managerAccount.name);
+    }
+
     res.json({ accounts });
   } catch (err) {
     console.error('Error fetching accounts:', err);
@@ -396,7 +403,7 @@ async function fetchGclidCost(gclid) {
       `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
-        headers: getApiHeaders(accessToken, developerToken),
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
         body: JSON.stringify({ query })
       }
     );
@@ -410,9 +417,11 @@ async function fetchGclidCost(gclid) {
       return { error: `API returned non-JSON (status ${response.status})` };
     }
 
-    if (data.error) {
-      console.error('Google Ads API error:', JSON.stringify(data.error));
-      return { error: data.error.message || JSON.stringify(data.error) };
+    // searchStream returns errors as [{error: ...}]
+    const apiError = data.error || data[0]?.error;
+    if (apiError) {
+      console.error('Google Ads API error:', JSON.stringify(apiError));
+      return { error: apiError.message || JSON.stringify(apiError) };
     }
 
     // Debug: log what the API actually returns
@@ -575,7 +584,7 @@ async function fetchMissingCosts() {
       `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
-        headers: getApiHeaders(accessToken, developerToken),
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
         body: JSON.stringify({ query })
       }
     );
@@ -588,8 +597,10 @@ async function fetchMissingCosts() {
       return { total: leads.length, fetched: 0, failed: leads.length, last_error: `API returned non-JSON (status ${response.status})` };
     }
 
-    if (data.error) {
-      return { total: leads.length, fetched: 0, failed: leads.length, last_error: data.error.message || JSON.stringify(data.error) };
+    // searchStream returns errors as [{error: ...}]
+    const apiError = data.error || data[0]?.error;
+    if (apiError) {
+      return { total: leads.length, fetched: 0, failed: leads.length, last_error: apiError.message || JSON.stringify(apiError) };
     }
 
     // Build CPC by date: sum cost and clicks across all campaigns per date
@@ -719,7 +730,7 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
       `https://googleads.googleapis.com/v20/customers/${config.customer_id}:uploadClickConversions`,
       {
         method: 'POST',
-        headers: getApiHeaders(accessToken, developerToken),
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
         body: JSON.stringify({
           conversions: [conversion],
           partialFailure: true
@@ -768,7 +779,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
       `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
-        headers: getApiHeaders(accessToken, developerToken),
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
         body: JSON.stringify({ query })
       }
     );

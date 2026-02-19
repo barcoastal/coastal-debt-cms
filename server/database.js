@@ -558,6 +558,11 @@ try {
   db.exec(`ALTER TABLE facebook_config ADD COLUMN ad_account_id TEXT`);
 } catch (e) {}
 
+// Add login_customer_id (MCC ID) to google_ads_config for manager account access
+try {
+  db.exec(`ALTER TABLE google_ads_config ADD COLUMN login_customer_id TEXT`);
+} catch (e) {}
+
 // Notification and alert tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS notification_config (
