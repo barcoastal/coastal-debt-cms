@@ -656,6 +656,28 @@ async function fetchMissingCosts() {
     const minDate = dates.reduce((a, b) => a < b ? a : b);
     const maxDate = dates.reduce((a, b) => a > b ? a : b);
 
+    const headers = getApiHeaders(accessToken, developerToken, config.login_customer_id);
+
+    // First: test basic access with simplest possible query
+    const testResponse = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query: 'SELECT customer.id FROM customer LIMIT 1' })
+      }
+    );
+    const testData = await testResponse.json();
+    if (testData.error) {
+      // Show full error details for debugging
+      const fullErr = JSON.stringify(testData.error).substring(0, 500);
+      return {
+        total: leads.length, fetched: 0, failed: leads.length,
+        last_error: `API access test failed: ${fullErr}`,
+        debug: { customer_id: config.customer_id, login_customer_id: config.login_customer_id || '(not set)' }
+      };
+    }
+
     // Query campaign-level cost and clicks grouped by date
     const query = `
       SELECT
@@ -669,26 +691,17 @@ async function fetchMissingCosts() {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
       {
         method: 'POST',
-        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        headers,
         body: JSON.stringify({ query })
       }
     );
 
-    const responseText = await response.text();
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      return { total: leads.length, fetched: 0, failed: leads.length, last_error: `API returned non-JSON (status ${response.status})` };
-    }
-
-    // searchStream returns errors as [{error: ...}]
-    const apiError = data.error || data[0]?.error;
-    if (apiError) {
-      const errMsg = apiError.message || JSON.stringify(apiError);
+    const data = await response.json();
+    if (data.error) {
+      const errMsg = data.error.message || JSON.stringify(data.error);
       return {
         total: leads.length, fetched: 0, failed: leads.length,
         last_error: errMsg,
@@ -698,14 +711,12 @@ async function fetchMissingCosts() {
 
     // Build CPC by date: sum cost and clicks across all campaigns per date
     const cpcByDate = {};
-    for (const batch of data) {
-      if (!batch.results) continue;
-      for (const row of batch.results) {
-        const date = row.segments.date;
-        if (!cpcByDate[date]) cpcByDate[date] = { cost: 0, clicks: 0 };
-        cpcByDate[date].cost += parseInt(row.metrics.costMicros || 0);
-        cpcByDate[date].clicks += parseInt(row.metrics.clicks || 0);
-      }
+    const results = data.results || [];
+    for (const row of results) {
+      const date = row.segments.date;
+      if (!cpcByDate[date]) cpcByDate[date] = { cost: 0, clicks: 0 };
+      cpcByDate[date].cost += parseInt(row.metrics.costMicros || 0);
+      cpcByDate[date].clicks += parseInt(row.metrics.clicks || 0);
     }
 
     // Calculate overall average CPC as fallback for dates with no data
