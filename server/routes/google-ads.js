@@ -372,6 +372,9 @@ async function fetchGclidCost(gclid) {
     return { error: 'Google Ads not configured' };
   }
 
+  // Auto-detect MCC if not set
+  await ensureLoginCustomerId(config);
+
   try {
     const accessToken = await getValidAccessToken(config);
     const developerToken = getDeveloperToken(config);
@@ -543,11 +546,46 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
   }
 });
 
+// Auto-detect MCC (manager account) and save login_customer_id if not set
+async function ensureLoginCustomerId(config) {
+  if (config.login_customer_id) return config.login_customer_id;
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return null;
+
+    const headers = getApiHeaders(accessToken, developerToken);
+    const response = await fetch('https://googleads.googleapis.com/v20/customers:listAccessibleCustomers', { headers });
+    const data = await response.json();
+    const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
+
+    for (const customerId of customerIds) {
+      try {
+        const detailRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}`, { headers });
+        const detail = await detailRes.json();
+        if (detail.manager) {
+          db.prepare('UPDATE google_ads_config SET login_customer_id = ? WHERE id = 1').run(customerId);
+          console.log('Auto-detected MCC account:', customerId, detail.descriptiveName);
+          config.login_customer_id = customerId;
+          return customerId;
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error('Error detecting MCC:', err.message);
+  }
+  return null;
+}
+
 // Standalone function to fetch missing costs (used by route and background job)
 // Uses campaign-level average CPC per date (click_view requires Standard API access)
 async function fetchMissingCosts() {
   const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
   if (!config || !config.refresh_token_encrypted || !config.customer_id) return { total: 0, fetched: 0, failed: 0 };
+
+  // Auto-detect MCC if not set
+  await ensureLoginCustomerId(config);
 
   const leads = db.prepare(`
     SELECT id, gclid, DATE(created_at) as lead_date FROM leads
