@@ -530,14 +530,19 @@ router.post('/fetch-lead-cost/:leadId', authenticateToken, async (req, res) => {
   }
 });
 
-// Batch fetch costs for leads without cost data
-router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
+// Standalone function to fetch missing costs (used by route and background job)
+async function fetchMissingCosts() {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) return { total: 0, fetched: 0, failed: 0 };
+
   const leads = db.prepare(`
     SELECT id, gclid FROM leads
     WHERE gclid IS NOT NULL AND gclid != '' AND cost_cents IS NULL
     ORDER BY created_at DESC
     LIMIT 100
   `).all();
+
+  if (!leads.length) return { total: 0, fetched: 0, failed: 0 };
 
   let fetched = 0;
   let failed = 0;
@@ -566,9 +571,17 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
     await new Promise(r => setTimeout(r, 100));
   }
 
-  const response = { total: leads.length, fetched, failed };
-  if (lastError) response.last_error = lastError;
-  res.json(response);
+  if (fetched > 0) console.log(`Google Ads costs: fetched ${fetched}/${leads.length} (${failed} failed)`);
+
+  const result = { total: leads.length, fetched, failed };
+  if (lastError) result.last_error = lastError;
+  return result;
+}
+
+// Batch fetch costs for leads without cost data
+router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
+  const result = await fetchMissingCosts();
+  res.json(result);
 });
 
 // Get cost statistics
@@ -752,4 +765,5 @@ router.post('/upload-conversion', authenticateToken, async (req, res) => {
 // Export for use in leads route
 module.exports = router;
 module.exports.fetchGclidCost = fetchGclidCost;
+module.exports.fetchMissingCosts = fetchMissingCosts;
 module.exports.uploadConversion = uploadConversion;

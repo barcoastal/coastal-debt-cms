@@ -191,6 +191,11 @@ const { evaluateAlertRules } = require('./routes/notifications');
 setInterval(evaluateAlertRules, 15 * 60 * 1000);
 setTimeout(evaluateAlertRules, 30 * 1000); // Run once 30s after startup
 
+// Background Google Ads cost fetching - every 15 minutes
+const { fetchMissingCosts } = require('./routes/google-ads');
+setInterval(fetchMissingCosts, 15 * 60 * 1000);
+setTimeout(fetchMissingCosts, 60 * 1000); // First run 60s after startup
+
 // Start email worker (background queue processor + campaign scheduler)
 const { startWorker: startEmailWorker } = require('./email-worker');
 startEmailWorker();
