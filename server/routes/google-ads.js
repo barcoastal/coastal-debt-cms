@@ -386,9 +386,6 @@ async function fetchGclidCost(gclid) {
     return { error: 'Google Ads not configured' };
   }
 
-  // Auto-detect MCC if not set
-  await ensureLoginCustomerId(config);
-
   try {
     const accessToken = await getValidAccessToken(config);
     const developerToken = getDeveloperToken(config);
@@ -659,9 +656,6 @@ async function ensureLoginCustomerId(config) {
 async function fetchMissingCosts() {
   const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
   if (!config || !config.refresh_token_encrypted || !config.customer_id) return { total: 0, fetched: 0, failed: 0 };
-
-  // Auto-detect MCC if not set
-  await ensureLoginCustomerId(config);
 
   const leads = db.prepare(`
     SELECT id, gclid, DATE(created_at) as lead_date FROM leads
