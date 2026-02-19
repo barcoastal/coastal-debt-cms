@@ -428,7 +428,7 @@ async function fetchGclidCost(gclid) {
       };
     }
 
-    return { error: 'No cost data found for this GCLID' };
+    return { error: `No cost data found for GCLID. API response: ${JSON.stringify(data).substring(0, 300)}` };
   } catch (err) {
     console.error('Error fetching GCLID cost:', err);
     return { error: err.message };
