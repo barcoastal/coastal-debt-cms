@@ -1,5 +1,6 @@
 const express = require('express');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -13,7 +14,8 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     const params = new URLSearchParams({
       api_key: API_KEY,
       group: 'campaign',
-      total: 'true'
+      total: 'true',
+      timezone: getConfiguredTimezone()
     });
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
@@ -39,7 +41,8 @@ router.get('/daily', authenticateToken, async (req, res) => {
     const { from, to } = req.query;
     const params = new URLSearchParams({
       api_key: API_KEY,
-      group: 'date'
+      group: 'date',
+      timezone: getConfiguredTimezone()
     });
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
@@ -65,7 +68,8 @@ router.get('/summary', authenticateToken, async (req, res) => {
     const params = new URLSearchParams({
       api_key: API_KEY,
       group: 'campaign',
-      total: 'true'
+      total: 'true',
+      timezone: getConfiguredTimezone()
     });
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
@@ -95,7 +99,8 @@ router.get('/subcampaigns', authenticateToken, async (req, res) => {
     const params = new URLSearchParams({
       api_key: API_KEY,
       group: 'sub5',
-      campaign_id
+      campaign_id,
+      timezone: getConfiguredTimezone()
     });
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
@@ -125,7 +130,8 @@ router.get('/keywords', authenticateToken, async (req, res) => {
     const params = new URLSearchParams({
       api_key: API_KEY,
       group: 'sub2',
-      campaign_id
+      campaign_id,
+      timezone: getConfiguredTimezone()
     });
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);
