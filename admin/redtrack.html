@@ -165,8 +165,8 @@
           <div class="stat-label">Total Clicks</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statConversions">-</div>
-          <div class="stat-label">Conversions</div>
+          <div class="stat-value" id="statLeads">-</div>
+          <div class="stat-label">Leads</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="statCost">-</div>
@@ -219,7 +219,16 @@
     const COLUMNS = [
       { key: 'campaign_name', label: 'Campaign Name', default: true },
       { key: 'clicks', label: 'Clicks', default: true },
-      { key: 'conversions', label: 'Conversions', default: true },
+      { key: 'lead', label: 'Lead', default: true },
+      { key: 'qualified_lead', label: 'Qualified Lead', default: true },
+      { key: 'opportunity', label: 'Opportunity', default: true },
+      { key: 'contract', label: 'Contract', default: true },
+      { key: 'closed_won', label: 'Closed Won', default: true },
+      { key: 'payment', label: 'Payment', default: true },
+      { key: 'phonecall', label: 'Phone Call', default: true },
+      { key: 'call_lead', label: 'Call Lead', default: true },
+      { key: 'call_lead_ql', label: 'Call Lead QL', default: true },
+      { key: 'total_conversions', label: 'Total Events', default: true },
       { key: 'cr', label: 'CR%', default: true },
       { key: 'cost', label: 'Cost', default: true },
       { key: 'revenue', label: 'Revenue', default: true },
@@ -227,18 +236,7 @@
       { key: 'cpc', label: 'CPC', default: true },
       { key: 'cpa', label: 'CPA', default: true },
       { key: 'roas', label: 'ROAS', default: true },
-      { key: 'roi', label: 'ROI', default: true },
-      { key: 'lead', label: 'lead', default: true },
-      { key: 'qualified_lead', label: 'qualified_lead', default: true },
-      { key: 'opportunity', label: 'opportunity', default: true },
-      { key: 'contract', label: 'contract', default: true },
-      { key: 'closed_won', label: 'closed_won', default: true },
-      { key: 'payment', label: 'payment', default: true },
-      { key: 'phonecall', label: 'phonecall', default: true },
-      { key: 'call_lead', label: 'call_lead', default: true },
-      { key: 'call_lead_ql', label: 'call_lead_ql', default: true },
-      { key: 'SF_lead', label: 'SF_lead', default: true },
-      { key: 'pdf_lead_rt', label: 'pdf_lead_rt', default: true }
+      { key: 'roi', label: 'ROI', default: true }
     ];
 
     function fmtMoney(v) {
@@ -264,7 +262,16 @@
     const cellRenderers = {
       campaign_name: function(r) { return '<td>' + escapeHtml(r.campaign || r.campaign_name || r.name || '-') + '</td>'; },
       clicks: function(r) { return '<td>' + fmtNum(r.clicks) + '</td>'; },
-      conversions: function(r) { return '<td>' + fmtNum(r.conversions || r.conv) + '</td>'; },
+      lead: function(r) { return '<td>' + fmtNum(r.conversions || r.conv) + '</td>'; },
+      qualified_lead: function(r) { return '<td>' + fmtNum(r.convtype1) + '</td>'; },
+      opportunity: function(r) { return '<td>' + fmtNum(r.convtype2) + '</td>'; },
+      contract: function(r) { return '<td>' + fmtNum(r.convtype3) + '</td>'; },
+      closed_won: function(r) { return '<td>' + fmtNum(r.convtype4) + '</td>'; },
+      payment: function(r) { return '<td>' + fmtNum(r.convtype5) + '</td>'; },
+      phonecall: function(r) { return '<td>' + fmtNum(r.convtype6) + '</td>'; },
+      call_lead: function(r) { return '<td>' + fmtNum(r.convtype7) + '</td>'; },
+      call_lead_ql: function(r) { return '<td>' + fmtNum(r.convtype8) + '</td>'; },
+      total_conversions: function(r) { return '<td>' + fmtNum(r.total_conversions) + '</td>'; },
       cr: function(r) { return '<td>' + fmtPct((Number(r.cr) || 0) * 100) + '</td>'; },
       cost: function(r) { return '<td>' + fmtMoney(r.cost) + '</td>'; },
       revenue: function(r) { return '<td>' + fmtMoney(r.revenue) + '</td>'; },
@@ -272,18 +279,7 @@
       cpc: function(r) { return '<td>' + fmtMoney(r.cpc) + '</td>'; },
       cpa: function(r) { return '<td>' + fmtMoney(r.cpa) + '</td>'; },
       roas: function(r) { return '<td>' + (Number(r.roas) || 0).toFixed(2) + '</td>'; },
-      roi: function(r) { return '<td>' + fmtPct(r.roi) + '</td>'; },
-      lead: function(r) { return '<td>' + fmtNum(r.convtype1) + '</td>'; },
-      qualified_lead: function(r) { return '<td>' + fmtNum(r.convtype2) + '</td>'; },
-      opportunity: function(r) { return '<td>' + fmtNum(r.convtype3) + '</td>'; },
-      contract: function(r) { return '<td>' + fmtNum(r.convtype4) + '</td>'; },
-      closed_won: function(r) { return '<td>' + fmtNum(r.convtype5) + '</td>'; },
-      payment: function(r) { return '<td>' + fmtNum(r.convtype6) + '</td>'; },
-      phonecall: function(r) { return '<td>' + fmtNum(r.convtype7) + '</td>'; },
-      call_lead: function(r) { return '<td>' + fmtNum(r.convtype8) + '</td>'; },
-      call_lead_ql: function(r) { return '<td>' + fmtNum(r.convtype9) + '</td>'; },
-      SF_lead: function(r) { return '<td>' + fmtNum(r.convtype10) + '</td>'; },
-      pdf_lead_rt: function(r) { return '<td>' + fmtNum(r.convtype11) + '</td>'; }
+      roi: function(r) { return '<td>' + fmtPct(r.roi) + '</td>'; }
     };
 
     function renderTable() {
@@ -330,7 +326,7 @@
       try {
         var data = await api('/api/redtrack/summary' + buildQS());
         document.getElementById('statClicks').textContent = fmtNum(data.clicks);
-        document.getElementById('statConversions').textContent = fmtNum(data.conversions || data.conv);
+        document.getElementById('statLeads').textContent = fmtNum(data.conversions || data.conv);
         document.getElementById('statCost').textContent = fmtMoney(data.cost);
         document.getElementById('statRevenue').textContent = fmtMoney(data.revenue);
 
