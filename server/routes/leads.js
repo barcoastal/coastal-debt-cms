@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, localDateToUtcRange } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -378,16 +379,17 @@ router.get('/', authenticateToken, (req, res) => {
   }
 
   if (from_date) {
+    const tz = getConfiguredTimezone();
     query += ` AND l.created_at >= ?`;
     countQuery += ` AND l.created_at >= ?`;
-    params.push(from_date);
+    params.push(from_date.length === 10 ? localDateToUtcRange(from_date, tz).start : from_date);
   }
 
   if (to_date) {
+    const tz = getConfiguredTimezone();
     query += ` AND l.created_at <= ?`;
     countQuery += ` AND l.created_at <= ?`;
-    // Append end-of-day time if only a date was provided
-    params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date);
+    params.push(to_date.length === 10 ? localDateToUtcRange(to_date, tz).end : to_date);
   }
 
   if (event) {
@@ -743,13 +745,15 @@ router.get('/export/csv', authenticateToken, (req, res) => {
   }
 
   if (from_date) {
+    const tz = getConfiguredTimezone();
     query += ` AND l.created_at >= ?`;
-    params.push(from_date);
+    params.push(from_date.length === 10 ? localDateToUtcRange(from_date, tz).start : from_date);
   }
 
   if (to_date) {
+    const tz = getConfiguredTimezone();
     query += ` AND l.created_at <= ?`;
-    params.push(to_date.length === 10 ? to_date + ' 23:59:59' : to_date);
+    params.push(to_date.length === 10 ? localDateToUtcRange(to_date, tz).end : to_date);
   }
 
   query += ` ORDER BY l.created_at DESC`;
