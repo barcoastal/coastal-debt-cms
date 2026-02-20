@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, localDateToUtcRange } = require('../lib/timezone');
+const { getConfiguredTimezone, localDateToUtcRange, getNowInTz } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -133,7 +133,7 @@ router.post('/', async (req, res) => {
         landing_page: sourceEntity.name,
         source_type: article ? 'article' : 'landing_page',
         ...hiddenFields,
-        submitted_at: new Date().toISOString()
+        submitted_at: new Date().toLocaleString('en-US', { timeZone: getConfiguredTimezone(), year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(',', '')
       };
 
       console.log('Sending to webhook:', webhookUrl);
