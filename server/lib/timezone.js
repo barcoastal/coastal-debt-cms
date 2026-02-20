@@ -46,4 +46,10 @@ function getNowInTz(tz) {
   return now.toLocaleString('sv-SE', { timeZone: tz }).replace(' ', 'T');
 }
 
-module.exports = { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr, getNowInTz };
+// Format a Date object as YYYY-MM-DD using local (non-UTC) getters.
+// Use this instead of date.toISOString().split('T')[0] which incorrectly converts to UTC.
+function formatLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+module.exports = { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr, getNowInTz, formatLocalDate };

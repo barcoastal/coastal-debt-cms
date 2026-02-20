@@ -260,7 +260,7 @@
       } else if (currentRange === '30d') {
         from = new Date(now.getTime() - 30 * 86400000);
       }
-      return { from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+      return { from: toLocalDate(from), to: toLocalDate(now) };
     }
 
     function setRange(range, btn) {

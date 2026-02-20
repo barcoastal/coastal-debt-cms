@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const { getConfiguredTimezone, getTodayInTz } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -55,7 +56,7 @@ router.post('/', authenticateToken, (req, res) => {
       name, safeSlug,
       headline || '', subheadline || '', body_html || '',
       author_name || 'Sarah Mitchell', author_title || 'Senior Business Correspondent',
-      publish_date || new Date().toISOString().split('T')[0],
+      publish_date || getTodayInTz(getConfiguredTimezone()),
       platform || 'outbrain', traffic_source || '',
       form_id || null,
       content ? JSON.stringify(content) : '{}',

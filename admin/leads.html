@@ -684,7 +684,7 @@
           container.innerHTML = '<div style="color:var(--gray-400);font-size:0.85rem;padding:10px;">No tasks yet</div>';
           return;
         }
-        const today = new Date().toISOString().split('T')[0];
+        const today = toLocalDate(new Date());
         container.innerHTML = tasks.map(t => {
           const isOverdue = t.status === 'open' && t.due_date && t.due_date < today;
           return `<div class="task-item ${t.status === 'done' ? 'done' : ''}">

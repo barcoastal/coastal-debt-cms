@@ -1207,12 +1207,13 @@ router.get('/stats', authenticateToken, async (req, res) => {
     // Count local meta-platform leads in last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
     const localLeadsResult = db.prepare(`
       SELECT COUNT(*) as count FROM leads l
       JOIN landing_pages lp ON l.landing_page_id = lp.id
       WHERE lp.platform = 'meta'
       AND l.created_at >= ?
-    `).get(thirtyDaysAgo.toISOString());
+    `).get(thirtyDaysAgoStr);
     const localLeads = localLeadsResult ? localLeadsResult.count : 0;
 
     // Calculate avg CPL using local leads (more accurate for this CMS)
@@ -1688,8 +1689,9 @@ router.get('/debug/events', authenticateToken, (req, res) => {
   }
 
   // Summary stats (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgo2 = new Date();
+  thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
+  const thirtyDaysAgoStr2 = thirtyDaysAgo2.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
   const statsRows = db.prepare(`
     SELECT ce.status, ce.capi_payload,
            v.fbc, v.fbp, v.ip_address, v.user_agent
@@ -1697,7 +1699,7 @@ router.get('/debug/events', authenticateToken, (req, res) => {
     LEFT JOIN leads l ON ce.lead_id = l.id
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE ce.source = 'facebook_capi' AND ce.created_at >= ?
-  `).all(thirtyDaysAgo.toISOString());
+  `).all(thirtyDaysAgoStr2);
 
   let totalEvents = statsRows.length;
   let sentCount = 0, failedCount = 0, withFbc = 0, withFbp = 0, withIpUa = 0;

@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
+const { getConfiguredTimezone, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr, formatLocalDate } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -396,10 +396,11 @@ async function fetchGclidCost(gclid) {
     const safeGclid = gclid.replace(/[^a-zA-Z0-9_-]/g, '');
 
     // click_view requires segments.date filter — query last 90 days
-    const today = new Date();
-    const past90 = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-    const startDate = past90.toISOString().split('T')[0];
-    const endDate = today.toISOString().split('T')[0];
+    const tz = getConfiguredTimezone();
+    const endDate = getTodayInTz(tz);
+    const endDateObj = new Date(endDate + 'T00:00:00');
+    const past90 = new Date(endDateObj.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const startDate = formatLocalDate(past90);
 
     const query = `
       SELECT

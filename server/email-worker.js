@@ -269,7 +269,7 @@ async function processQueue() {
 
 // Check for scheduled campaigns
 function checkScheduledCampaigns() {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
   const scheduled = db.prepare(`
     SELECT id, name FROM email_campaigns
     WHERE status = 'scheduled' AND scheduled_at <= ?

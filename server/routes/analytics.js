@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
-const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr } = require('../lib/timezone');
+const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOffsetHours, getSqliteOffsetStr, formatLocalDate } = require('../lib/timezone');
 
 const router = express.Router();
 
@@ -162,7 +162,7 @@ router.get('/dashboard', authenticateToken, (req, res) => {
   const dayOfWeek = todayDate.getDay(); // 0=Sun
   const wtdDate = new Date(todayDate);
   wtdDate.setDate(wtdDate.getDate() - dayOfWeek);
-  const wtdStr = wtdDate.toISOString().split('T')[0];
+  const wtdStr = formatLocalDate(wtdDate);
   const { start: wtdStart } = localDateToUtcRange(wtdStr, tz);
 
   // MTD: first of current month in configured timezone
@@ -299,7 +299,7 @@ router.get('/over-time', authenticateToken, (req, res) => {
     const todayDate = new Date(todayStr + 'T00:00:00');
     const startDate = new Date(todayDate);
     startDate.setDate(startDate.getDate() - days);
-    const startStr = startDate.toISOString().split('T')[0];
+    const startStr = formatLocalDate(startDate);
     const { start } = localDateToUtcRange(startStr, tz);
     conditions.push(`l.created_at >= ?`);
     params.push(start);
@@ -427,7 +427,7 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
                 if (from && to) {
                   fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
                 } else if (from) {
-                  fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+                  fbParams.set('time_range', JSON.stringify({ since: from, until: getTodayInTz(tz) }));
                 } else {
                   fbParams.set('date_preset', 'maximum');
                 }
@@ -482,7 +482,7 @@ router.get('/financials-over-time', authenticateToken, (req, res) => {
       const todayDate = new Date(todayStr + 'T00:00:00');
       const startDate = new Date(todayDate);
       startDate.setDate(startDate.getDate() - 30);
-      const startStr = startDate.toISOString().split('T')[0];
+      const startStr = formatLocalDate(startDate);
       const { start } = localDateToUtcRange(startStr, tz);
       conditions.push(`l.created_at >= ?`);
       params.push(start);
@@ -529,7 +529,7 @@ router.get('/financials-over-time', authenticateToken, (req, res) => {
       const todayDate = new Date(todayStr + 'T00:00:00');
       const startDate = new Date(todayDate);
       startDate.setDate(startDate.getDate() - 30);
-      const startStr = startDate.toISOString().split('T')[0];
+      const startStr = formatLocalDate(startDate);
       const { start } = localDateToUtcRange(startStr, tz);
       ceConds.push(`ce.created_at >= ?`);
       ceParams.push(start);
@@ -682,7 +682,7 @@ router.get('/real-ad-spend', authenticateToken, async (req, res) => {
         if (from && to) {
           fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
         } else if (from) {
-          fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+          fbParams.set('time_range', JSON.stringify({ since: from, until: getTodayInTz(getConfiguredTimezone()) }));
         } else {
           fbParams.set('date_preset', 'maximum');
         }
@@ -1293,7 +1293,7 @@ router.get('/meta-ads/summary', authenticateToken, async (req, res) => {
         if (from && to) {
           fbParams.set('time_range', JSON.stringify({ since: from, until: to }));
         } else if (from) {
-          fbParams.set('time_range', JSON.stringify({ since: from, until: new Date().toISOString().split('T')[0] }));
+          fbParams.set('time_range', JSON.stringify({ since: from, until: getTodayInTz(tz) }));
         } else {
           fbParams.set('date_preset', 'maximum');
         }
@@ -1502,7 +1502,7 @@ router.get('/organic/over-time', authenticateToken, (req, res) => {
     const todayDate = new Date(todayStr + 'T00:00:00');
     const startDate = new Date(todayDate);
     startDate.setDate(startDate.getDate() - days);
-    const startStr = startDate.toISOString().split('T')[0];
+    const startStr = formatLocalDate(startDate);
     const { start } = localDateToUtcRange(startStr, tz);
     conditions.push(`v.first_visit >= ?`);
     params.push(start);
