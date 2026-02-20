@@ -12,6 +12,7 @@
     table { min-width: 1800px; }
     .badge-source-google { background: #dbeafe; color: #1d4ed8; }
     .badge-source-facebook { background: #ede9fe; color: #6d28d9; }
+    .badge-source-tiktok { background: #fce7f3; color: #db2777; }
   </style>
 </head>
 <body>
@@ -145,6 +146,7 @@
             <option value="Google Ads">Google Ads</option>
             <option value="Facebook">Facebook</option>
             <option value="Facebook Form">Facebook Form</option>
+            <option value="TikTok">TikTok</option>
           </select>
           <input type="text" id="searchInput" placeholder="Search by name, email, company...">
           <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
@@ -196,7 +198,7 @@
     var cellRenderers = {
       date: function(r) { return '<td>' + escapeHtml(r.date || '-') + '</td>'; },
       source: function(r) {
-        var cls = r.source === 'Google Ads' ? 'badge-source-google' : 'badge-source-facebook';
+        var cls = r.source === 'Google Ads' ? 'badge-source-google' : r.source === 'TikTok' ? 'badge-source-tiktok' : 'badge-source-facebook';
         return '<td><span class="badge ' + cls + '">' + escapeHtml(r.source || '-') + '</span></td>';
       },
       company: function(r) { return '<td>' + escapeHtml(r.company || '-') + '</td>'; },
