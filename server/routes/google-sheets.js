@@ -176,8 +176,13 @@ router.get('/leads', authenticateToken, async (req, res) => {
       ? SHEETS.filter(s => s.source.toLowerCase() === source.toLowerCase())
       : SHEETS;
 
-    // Fetch all target sheets in parallel
-    const results = await Promise.all(targets.map(s => fetchSheet(sheets, s)));
+    // Fetch all target sheets in parallel (skip sheets that fail e.g. permission errors)
+    const results = await Promise.all(targets.map(s =>
+      fetchSheet(sheets, s).catch(err => {
+        console.error(`Google Sheets: failed to fetch "${s.source}" (${s.id}):`, err.message);
+        return [];
+      })
+    ));
     let allRows = results.flat();
 
     // Sort by date descending
