@@ -76,39 +76,71 @@ PLATFORM: ${platform || 'general'}
 
 ${platformGuide}
 
-Generate landing page content optimized for these keywords and platform. The page helps business owners settle their debt without filing bankruptcy.
+Generate COMPLETE landing page content optimized for these keywords and platform. The page helps business owners settle their debt without filing bankruptcy. Every field must be fully written, keyword-relevant content — no placeholders.
 
 Return a JSON object with this EXACT structure:
 {
-  "hero": {
-    "headline": "main headline (max 8 words, include keyword naturally)",
-    "subheadline": "supporting text (1-2 sentences, expand on the promise)",
-    "cta": "button text (3-5 words, action-oriented)"
+  "seo": {
+    "pageTitle": "browser tab title with keyword (50-60 chars)",
+    "metaDescription": "compelling meta description with keyword (150-160 chars)"
   },
-  "benefits": {
+  "hero": {
+    "badge": "short badge text above headline (2-3 words)",
+    "headline": "powerful first line (max 6 words)",
+    "headlineLine2": "second line continuing the thought",
+    "headlineHighlight": "highlighted/emphasized phrase (e.g. 'Up to 80% Less.')",
+    "subheadline": "1-2 sentences expanding the promise",
+    "bulletPoints": ["benefit point 1", "benefit point 2", "benefit point 3", "benefit point 4"],
+    "formTitle": "form heading (e.g. 'See If You Qualify')",
+    "formSubtitle": "form subtext (e.g. 'Takes 60 seconds. No obligation.')",
+    "cta": "button text (3-5 words)"
+  },
+  "howItWorks": {
     "title": "section heading",
-    "items": ["benefit 1", "benefit 2", "benefit 3", "benefit 4", "benefit 5"]
+    "subtitle": "section subtitle",
+    "steps": [
+      { "title": "Step 1 title", "description": "Step 1 description (1-2 sentences)" },
+      { "title": "Step 2 title", "description": "Step 2 description (1-2 sentences)" },
+      { "title": "Step 3 title", "description": "Step 3 description (1-2 sentences)" }
+    ]
+  },
+  "comparison": {
+    "title": "comparison section heading",
+    "subtitle": "comparison subtitle",
+    "colBad": "bad option header (e.g. 'Filing Bankruptcy')",
+    "colGood": "good option header (e.g. 'Debt Settlement')",
+    "ctaText": "comparison CTA button text"
   },
   "empathy": {
-    "title": "empathetic heading",
-    "content": "2-3 sentences showing you understand their pain"
+    "title": "empathetic heading showing understanding",
+    "paragraphs": ["paragraph 1 (2-3 sentences)", "paragraph 2 (2-3 sentences)"]
   },
-  "testimonials": [
-    { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial quote" },
-    { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial quote" },
-    { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial quote" }
-  ],
-  "faq": [
-    { "question": "common question about the keywords/topic", "answer": "clear, helpful answer" },
-    { "question": "another relevant question", "answer": "clear answer" },
-    { "question": "another relevant question", "answer": "clear answer" },
-    { "question": "another relevant question", "answer": "clear answer" }
-  ],
-  "caseStudies": {
-    "title": "section heading for case studies"
+  "testimonials": {
+    "title": "testimonials section heading",
+    "subtitle": "testimonials subtitle",
+    "items": [
+      { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial (2-3 sentences)" },
+      { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial (2-3 sentences)" },
+      { "name": "First L.", "location": "City, ST", "quote": "realistic testimonial (2-3 sentences)" }
+    ]
+  },
+  "faq": {
+    "title": "FAQ section heading",
+    "subtitle": "FAQ subtitle",
+    "items": [
+      { "question": "keyword-relevant question", "answer": "clear, helpful answer (2-3 sentences)" },
+      { "question": "another relevant question", "answer": "clear answer" },
+      { "question": "another relevant question", "answer": "clear answer" },
+      { "question": "another relevant question", "answer": "clear answer" }
+    ]
+  },
+  "cta": {
+    "title": "final CTA heading",
+    "subtitle": "final CTA subtitle",
+    "button": "final CTA button text"
   },
   "footer": {
-    "disclaimer": "brief legal disclaimer relevant to the service"
+    "disclaimer": "brief legal disclaimer"
   }
 }
 
@@ -116,7 +148,7 @@ Return ONLY valid JSON. No markdown fences, no extra text.`;
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     });
 

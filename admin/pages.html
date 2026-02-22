@@ -794,46 +794,77 @@
         });
         const c = res.content;
 
-        // Fill hero fields
+        // SEO
+        if (c.seo) {
+          document.getElementById('editPageTitle').value = c.seo.pageTitle || '';
+          document.getElementById('editMetaDescription').value = c.seo.metaDescription || '';
+        }
+
+        // Hero section
         if (c.hero) {
+          document.getElementById('editBadge').value = c.hero.badge || '';
           document.getElementById('editHeadline').value = c.hero.headline || '';
+          document.getElementById('editHeadlineLine2').value = c.hero.headlineLine2 || '';
+          document.getElementById('editHeadlineHighlight').value = c.hero.headlineHighlight || '';
           document.getElementById('editSubheadline').value = c.hero.subheadline || '';
-          if (c.hero.cta) document.getElementById('editCtaButton').value = c.hero.cta;
+          document.getElementById('editBulletPoints').value = (c.hero.bulletPoints || []).join('\n');
+          document.getElementById('editFormTitle').value = c.hero.formTitle || '';
+          document.getElementById('editFormSubtitle').value = c.hero.formSubtitle || '';
+          document.getElementById('editCtaButton').value = c.hero.cta || '';
         }
 
-        // Fill benefits as bullet points
-        if (c.benefits) {
-          document.getElementById('editBulletPoints').value = (c.benefits.items || []).join('\n');
+        // How It Works
+        if (c.howItWorks) {
+          document.getElementById('editHowItWorksTitle').value = c.howItWorks.title || '';
+          document.getElementById('editHowItWorksSubtitle').value = c.howItWorks.subtitle || '';
+          var steps = c.howItWorks.steps || [];
+          if (steps[0]) { document.getElementById('editStep1Title').value = steps[0].title || ''; document.getElementById('editStep1Desc').value = steps[0].description || ''; }
+          if (steps[1]) { document.getElementById('editStep2Title').value = steps[1].title || ''; document.getElementById('editStep2Desc').value = steps[1].description || ''; }
+          if (steps[2]) { document.getElementById('editStep3Title').value = steps[2].title || ''; document.getElementById('editStep3Desc').value = steps[2].description || ''; }
         }
 
-        // Fill empathy
+        // Comparison
+        if (c.comparison) {
+          document.getElementById('editComparisonTitle').value = c.comparison.title || '';
+          document.getElementById('editComparisonSubtitle').value = c.comparison.subtitle || '';
+          document.getElementById('editComparisonColBad').value = c.comparison.colBad || '';
+          document.getElementById('editComparisonColGood').value = c.comparison.colGood || '';
+          document.getElementById('editComparisonCtaText').value = c.comparison.ctaText || '';
+        }
+
+        // Empathy
         if (c.empathy) {
           document.getElementById('editEmpathyTitle').value = c.empathy.title || '';
-          document.getElementById('editEmpathyText').value = c.empathy.content || '';
+          document.getElementById('editEmpathyText').value = (c.empathy.paragraphs || []).join('\n');
         }
 
-        // Fill testimonials title
+        // Testimonials
         if (c.testimonials) {
-          document.getElementById('editTestimonialsTitle').value = 'Real People. Real Results.';
+          document.getElementById('editTestimonialsTitle').value = c.testimonials.title || '';
+          document.getElementById('editTestimonialsSubtitle').value = c.testimonials.subtitle || '';
+          currentEditContent.testimonials = c.testimonials.items || [];
         }
 
-        // Fill FAQ title
+        // FAQ
         if (c.faq) {
-          document.getElementById('editFaqTitle').value = 'Frequently Asked Questions';
+          document.getElementById('editFaqTitle').value = c.faq.title || '';
+          document.getElementById('editFaqSubtitle').value = c.faq.subtitle || '';
+          currentEditContent.faqItems = c.faq.items || [];
         }
 
-        // Fill case studies title
-        if (c.caseStudies) {
-          document.getElementById('editComparisonTitle').value = c.caseStudies.title || '';
+        // Final CTA
+        if (c.cta) {
+          document.getElementById('editCtaTitle').value = c.cta.title || '';
+          document.getElementById('editCtaSubtitle').value = c.cta.subtitle || '';
+          document.getElementById('editCtaButton').value = c.cta.button || '';
         }
 
-        // Fill footer disclaimer into empathy as additional context
+        // Footer
         if (c.footer && c.footer.disclaimer) {
-          // Store in currentEditContent for save
           currentEditContent.footerDisclaimer = c.footer.disclaimer;
         }
 
-        msg.innerHTML = 'Done! Review the sections below, then click <strong>Save Changes</strong>.';
+        msg.innerHTML = 'Done! All sections updated. Review below, then click <strong>Save Changes</strong>.';
       } catch (e) {
         err.textContent = e.message || 'Generation failed'; err.style.display = 'block'; msg.style.display = 'none';
       } finally {
