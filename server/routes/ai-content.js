@@ -59,7 +59,7 @@ router.post('/generate-content', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Keywords are required' });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
     if (!apiKey) {
       return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured. Add it to your environment variables.' });
     }
