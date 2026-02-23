@@ -10,7 +10,8 @@ const SHEETS = [
   { id: '1M5c0N_69hUK2-J_Kg8t8hdFMcWITct3D0aWxlEHM6lI', source: 'Google Ads' },
   { id: '1MIHXOnTG1Yc0tt5mNy0Et1KHtb2POXL6jW3thsev5Ec', source: 'Facebook' },
   { id: '1MIHXOnTG1Yc0tt5mNy0Et1KHtb2POXL6jW3thsev5Ec', source: 'Facebook Form', tab: 'form' },
-  { id: '1zcECsFWlakaG4c6fX2vbjISlrbn-3mX70Fmj2HGMb9k', source: 'TikTok' }
+  { id: '1zcECsFWlakaG4c6fX2vbjISlrbn-3mX70Fmj2HGMb9k', source: 'TikTok' },
+  { id: '1zcECsFWlakaG4c6fX2vbjISlrbn-3mX70Fmj2HGMb9k', source: 'TikTok Form', tab: 'form' }
 ];
 
 // Header-to-key mapping (normalise sheet headers to consistent snake_case keys)
