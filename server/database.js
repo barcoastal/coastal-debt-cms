@@ -293,6 +293,18 @@ db.exec(`
   )
 `);
 
+// Create tiktok_config table (singleton pattern matching facebook_config)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tiktok_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token TEXT,
+    advertiser_id TEXT,
+    default_landing_page_id INTEGER,
+    connected_at DATETIME,
+    FOREIGN KEY (default_landing_page_id) REFERENCES landing_pages(id)
+  )
+`);
+
 // Add test_event_code to facebook_config
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
 

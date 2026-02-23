@@ -496,6 +496,59 @@
           </ol>
         </div>
       </div>
+      <!-- TikTok Lead Gen Integration -->
+      <div class="settings-card">
+        <h3>TikTok Lead Gen Integration</h3>
+        <p>Import leads from TikTok Lead Generation forms directly into the CMS.</p>
+
+        <div id="ttConnectionStatus">
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Not Configured</strong>
+              <span>Set up your Access Token to import TikTok leads</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Access Token</label>
+          <input type="password" id="ttAccessToken" placeholder="Enter your TikTok Business API Access Token">
+          <small style="color: #666;">Get it from <a href="https://business-api.tiktok.com/portal/docs?id=1738373164380162" target="_blank">TikTok Business Center</a> &rarr; Developer Portal &rarr; App Management</small>
+        </div>
+
+        <div class="form-group">
+          <label>Advertiser ID</label>
+          <input type="text" id="ttAdvertiserId" placeholder="Enter your TikTok Advertiser ID">
+          <small style="color: #666;">Find it in TikTok Ads Manager &rarr; Account Info. Numeric ID like <code>7123456789012345678</code></small>
+        </div>
+
+        <div class="form-group">
+          <label>Default Landing Page for TikTok Leads</label>
+          <select id="ttDefaultPage">
+            <option value="">Select a landing page...</option>
+          </select>
+          <small style="color: #666;">TikTok lead gen leads will be associated with this landing page</small>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="saveTikTokConfig()">Save Configuration</button>
+          <button class="btn btn-secondary" onclick="syncTikTokNow()" id="ttSyncBtn">Sync Leads Now</button>
+        </div>
+        <span id="ttSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
+
+        <div class="setup-steps" style="margin-top: 20px;">
+          <h4>Setup Instructions</h4>
+          <ol>
+            <li>Go to <a href="https://business-api.tiktok.com/portal/docs?id=1738373164380162" target="_blank">TikTok Marketing API</a> and create a developer app</li>
+            <li>Request the <strong>Lead Generation</strong> permission scope for your app</li>
+            <li>Generate a long-lived Access Token from the developer portal</li>
+            <li>Enter the Access Token and your Advertiser ID above, then save</li>
+            <li>Leads are synced automatically every 5 minutes once configured</li>
+          </ol>
+        </div>
+      </div>
+
       <!-- Inbound Webhooks -->
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -776,6 +829,90 @@
     }
 
     loadFbConfig();
+
+    // --- TikTok Lead Gen ---
+    async function loadTikTokConfig() {
+      // Populate landing page dropdown
+      try {
+        const pagesRes = await api('/api/pages');
+        const select = document.getElementById('ttDefaultPage');
+        (pagesRes.pages || pagesRes).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name + ' (' + p.platform + ')';
+          select.appendChild(opt);
+        });
+      } catch (e) {}
+
+      // Load existing config
+      try {
+        const config = await api('/api/tiktok-leads/config');
+        if (config.has_access_token) {
+          document.getElementById('ttAccessToken').value = config.access_token || '';
+          document.getElementById('ttAdvertiserId').value = config.advertiser_id || '';
+          document.getElementById('ttDefaultPage').value = config.default_landing_page_id || '';
+
+          document.getElementById('ttConnectionStatus').innerHTML = `
+            <div class="connection-status connected">
+              <div class="status-dot green"></div>
+              <div class="account-info">
+                <strong>Configured</strong>
+                <span>Connected on ${config.connected_at ? formatDate(config.connected_at) : 'Unknown'}${config.advertiser_id ? ' | Advertiser: ' + config.advertiser_id : ''}</span>
+              </div>
+            </div>
+          `;
+        }
+      } catch (e) {}
+    }
+
+    async function saveTikTokConfig() {
+      const token = document.getElementById('ttAccessToken').value;
+      const advertiserId = document.getElementById('ttAdvertiserId').value;
+      const pageId = document.getElementById('ttDefaultPage').value;
+
+      if (!token) {
+        alert('Access Token is required');
+        return;
+      }
+
+      try {
+        await api('/api/tiktok-leads/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: token,
+            advertiser_id: advertiserId || null,
+            default_landing_page_id: pageId || null
+          })
+        });
+        document.getElementById('ttSaveStatus').textContent = 'Saved!';
+        document.getElementById('ttSaveStatus').style.color = '#10b981';
+        loadTikTokConfig();
+      } catch (e) {
+        document.getElementById('ttSaveStatus').textContent = 'Failed to save';
+        document.getElementById('ttSaveStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function syncTikTokNow() {
+      const btn = document.getElementById('ttSyncBtn');
+      btn.disabled = true;
+      btn.textContent = 'Syncing...';
+      try {
+        const res = await api('/api/tiktok-leads/sync', { method: 'POST' });
+        const msg = res.synced > 0 ? 'Synced ' + res.synced + ' new lead(s)!' : (res.message || 'No new leads found.');
+        const errMsg = res.errors?.length ? '\n\nErrors:\n' + res.errors.join('\n') : '';
+        const apiErr = res.error ? '\n\nError: ' + res.error : '';
+        alert(msg + errMsg + apiErr);
+      } catch (e) {
+        alert('Sync failed: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sync Leads Now';
+      }
+    }
+
+    loadTikTokConfig();
 
     // --- Bing Ads ---
     async function checkBingStatus() {
