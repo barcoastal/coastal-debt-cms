@@ -254,35 +254,7 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             console.error('Failed to create lead event for synced FB lead:', evtErr);
           }
 
-          // Send "Lead" event to Facebook CAPI
-          try {
-            const syncLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-            const fbLeadEvent = syncLeadConfig?.facebook_event_name || 'Lead';
-
-            const firstName = fields.first_name || '';
-            const lastName = fields.last_name || '';
-
-            const fbResult = await sendFacebookEvent(fbLeadEvent, {
-              email: fields.email,
-              phone: fields.phone,
-              firstName,
-              lastName
-            }, {});
-
-            db.prepare(`
-              INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
-              VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
-            `).run(
-              result.lastInsertRowid,
-              eliClickId,
-              fbResult.success ? 'sent' : 'failed',
-              fbResult.error || null,
-              fbResult.payload ? JSON.stringify(fbResult.payload) : null
-            );
-            console.log(`Facebook CAPI ${fbLeadEvent} event for synced lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
-          } catch (capiErr) {
-            console.error('Failed to send Facebook CAPI Lead event for synced lead:', capiErr);
-          }
+          // CAPI not sent for instant form leads — only landing page leads send CAPI events
         }
         } // end while (pagination)
       } catch (formErr) {
@@ -959,36 +931,7 @@ async function processLeadgenEvent(leadgenId, config) {
       console.error('Failed to create lead event for FB lead:', err);
     }
 
-    // Send "Lead" event to Facebook CAPI — Instant Form leads are always from Facebook
-    // Note: Instant form leads come from Facebook directly, so no fbc/fbp/IP/UA available
-    try {
-      const webhookLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-      const fbLeadEvent = webhookLeadConfig?.facebook_event_name || 'Lead';
-
-      const firstName = fields.first_name || '';
-      const lastName = fields.last_name || '';
-
-      const fbResult = await sendFacebookEvent(fbLeadEvent, {
-        email: fields.email,
-        phone: fields.phone,
-        firstName,
-        lastName
-      }, {});
-
-      db.prepare(`
-        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, source, status, error_message, sent_at, capi_payload)
-        VALUES (?, ?, 'lead', NULL, 'facebook_capi', ?, ?, ${fbResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
-      `).run(
-        result.lastInsertRowid,
-        eliClickId,
-        fbResult.success ? 'sent' : 'failed',
-        fbResult.error || null,
-        fbResult.payload ? JSON.stringify(fbResult.payload) : null
-      );
-      console.log(`Facebook CAPI ${fbLeadEvent} event for instant form lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}`);
-    } catch (err) {
-      console.error('Failed to send Facebook CAPI Lead event for instant form:', err);
-    }
+    // CAPI not sent for instant form leads — only landing page leads send CAPI events
 
   } catch (err) {
     console.error('Failed to process Facebook lead:', err);
