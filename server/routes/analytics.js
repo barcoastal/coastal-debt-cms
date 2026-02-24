@@ -1534,22 +1534,23 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
 
 const FB_DEEP_BASE_FILTER = `lp.platform = 'meta' AND l.rt_clickid IS NOT NULL AND l.rt_clickid != '' AND l.hidden_fields NOT LIKE '%"source":"facebook_instant_form"%'`;
 const RT_API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
-const RT_META_CAMPAIGN_IDS = ['685e703c73306f36aa1ddcd3', '69445a8d6b6678d79a8153ec'];
 
-// Helper: fetch all RedTrack conversions for Meta campaigns in a date range
-async function fetchRedTrackMetaConversions(from, to) {
+// Helper: fetch all RedTrack conversions, filtered to only clickids we care about
+async function fetchRedTrackConversionsForClickIds(clickIdSet, from, to) {
   try {
+    // Fetch all RT conversions for the widest possible range to catch events
+    // that may have occurred outside the lead creation date range
     const params = new URLSearchParams({
       api_key: RT_API_KEY,
-      date_from: from || '2025-01-01',
-      date_to: to || new Date().toISOString().slice(0, 10),
+      date_from: '2025-01-01',
+      date_to: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
       limit: '10000'
     });
     const response = await fetch(`https://api.redtrack.io/conversions?${params}`);
     if (!response.ok) return [];
     const data = await response.json();
-    // Filter to Meta campaigns only
-    return (data.items || []).filter(i => RT_META_CAMPAIGN_IDS.includes(i.campaign_id));
+    // Return only conversions whose clickid matches one of our leads
+    return (data.items || []).filter(i => clickIdSet.has(i.clickid));
   } catch (err) {
     console.error('RedTrack conversions fetch error:', err.message);
     return [];
@@ -1591,9 +1592,8 @@ router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
 
   const clickIdSet = new Set(leadClickIds);
 
-  // Fetch RedTrack conversions
-  const rtConversions = await fetchRedTrackMetaConversions(from, to);
-  const matched = rtConversions.filter(c => clickIdSet.has(c.clickid));
+  // Fetch RedTrack conversions matched to our lead clickids
+  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet, from, to);
 
   // Count leads with deep events (non-lead events)
   const leadsWithDeep = new Set();
@@ -1637,9 +1637,8 @@ router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, re
 
   const clickIdSet = new Set(leadClickIds);
 
-  // Fetch RedTrack conversions and match
-  const rtConversions = await fetchRedTrackMetaConversions(from, to);
-  const matched = rtConversions.filter(c => clickIdSet.has(c.clickid));
+  // Fetch RedTrack conversions matched to our lead clickids
+  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet, from, to);
 
   // Group by type
   const counts = {};
@@ -1689,8 +1688,9 @@ router.get('/fb-deep-events/leads', authenticateToken, async (req, res) => {
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
 
-  // Fetch RedTrack conversions and build clickid → events map
-  const rtConversions = await fetchRedTrackMetaConversions(from, to);
+  // Fetch RedTrack conversions for leads on this page and build clickid → events map
+  const pageClickIds = new Set(leads.map(l => l.rt_clickid).filter(Boolean));
+  const rtConversions = await fetchRedTrackConversionsForClickIds(pageClickIds, from, to);
   const rtMap = {};
   for (const c of rtConversions) {
     if (!rtMap[c.clickid]) rtMap[c.clickid] = [];
