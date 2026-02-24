@@ -40,47 +40,136 @@ const FIELD_MAP = {
 router.get('/config', authenticateToken, (req, res) => {
   const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
   if (!config) return res.json({});
-  // Mask access_token for security
+  // Mask access_token and app_secret for security
   res.json({
     ...config,
     access_token: config.access_token ? '••••' + config.access_token.slice(-6) : null,
-    has_access_token: !!config.access_token
+    has_access_token: !!config.access_token,
+    app_id: config.app_id || '',
+    app_secret: config.app_secret ? '••••' + config.app_secret.slice(-4) : null,
+    has_app_secret: !!config.app_secret
   });
+});
+
+/**
+ * GET /connect — Generate TikTok OAuth authorization URL
+ */
+router.get('/connect', authenticateToken, (req, res) => {
+  const config = db.prepare('SELECT app_id FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.app_id) {
+    return res.status(400).json({ error: 'Save your TikTok App ID first' });
+  }
+
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const redirectUri = baseUrl.replace(/\/$/, '');
+
+  const authUrl = `https://business-api.tiktok.com/portal/auth?app_id=${encodeURIComponent(config.app_id)}&state=tiktok_oauth&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+  res.json({ auth_url: authUrl });
+});
+
+/**
+ * GET /callback — OAuth callback: exchange auth_code for access_token
+ */
+router.get('/callback', async (req, res) => {
+  const { auth_code } = req.query;
+
+  if (!auth_code) {
+    return res.redirect('/admin/settings.html?tiktok_error=no_auth_code');
+  }
+
+  const config = db.prepare('SELECT app_id, app_secret FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.app_id || !config.app_secret) {
+    return res.redirect('/admin/settings.html?tiktok_error=missing_app_credentials');
+  }
+
+  try {
+    const tokenResponse = await fetch('https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: config.app_id,
+        secret: config.app_secret,
+        auth_code: auth_code
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.code !== 0 || !tokenData.data?.access_token) {
+      const errMsg = tokenData.message || 'Token exchange failed';
+      console.error('TikTok OAuth error:', errMsg, tokenData);
+      return res.redirect('/admin/settings.html?tiktok_error=' + encodeURIComponent(errMsg));
+    }
+
+    const accessToken = tokenData.data.access_token;
+    const advertiserId = tokenData.data.advertiser_ids?.[0] || null;
+
+    // Save the access token
+    const existing = db.prepare('SELECT id FROM tiktok_config WHERE id = 1').get();
+    if (existing) {
+      const updates = ['access_token = ?', 'connected_at = CURRENT_TIMESTAMP'];
+      const params = [accessToken];
+
+      // Auto-fill advertiser_id if we got one and none is set
+      if (advertiserId) {
+        const currentConfig = db.prepare('SELECT advertiser_id FROM tiktok_config WHERE id = 1').get();
+        if (!currentConfig.advertiser_id) {
+          updates.push('advertiser_id = ?');
+          params.push(advertiserId);
+        }
+      }
+
+      db.prepare(`UPDATE tiktok_config SET ${updates.join(', ')} WHERE id = 1`).run(...params);
+    } else {
+      db.prepare(`
+        INSERT INTO tiktok_config (id, access_token, advertiser_id, connected_at)
+        VALUES (1, ?, ?, CURRENT_TIMESTAMP)
+      `).run(accessToken, advertiserId);
+    }
+
+    if (logActivity) logActivity(null, 'System', 'connected', 'tiktok', null, 'TikTok connected via OAuth', null);
+    console.log('TikTok OAuth: access token saved successfully');
+    res.redirect('/admin/settings.html?tiktok_connected=true');
+  } catch (err) {
+    console.error('TikTok OAuth callback error:', err);
+    res.redirect('/admin/settings.html?tiktok_error=token_exchange_failed');
+  }
 });
 
 /**
  * POST /config — Saves TikTok config (authenticated)
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { access_token, advertiser_id, default_landing_page_id } = req.body;
+  const { access_token, advertiser_id, default_landing_page_id, app_id, app_secret } = req.body;
 
   const existing = db.prepare('SELECT id FROM tiktok_config WHERE id = 1').get();
 
   if (existing) {
+    const updates = [];
+    const params = [];
+
     // Only update access_token if a new one is provided (not masked)
     if (access_token && !access_token.startsWith('••••')) {
-      db.prepare(`
-        UPDATE tiktok_config SET
-          access_token = ?,
-          advertiser_id = ?,
-          default_landing_page_id = ?,
-          connected_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-      `).run(access_token, advertiser_id || null, default_landing_page_id || null);
-    } else {
-      db.prepare(`
-        UPDATE tiktok_config SET
-          advertiser_id = ?,
-          default_landing_page_id = ?,
-          connected_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-      `).run(advertiser_id || null, default_landing_page_id || null);
+      updates.push('access_token = ?');
+      params.push(access_token);
     }
+
+    // Only update app_secret if a new one is provided (not masked)
+    if (app_secret && !app_secret.startsWith('••••')) {
+      updates.push('app_secret = ?');
+      params.push(app_secret);
+    }
+
+    updates.push('advertiser_id = ?', 'default_landing_page_id = ?', 'app_id = ?', 'connected_at = CURRENT_TIMESTAMP');
+    params.push(advertiser_id || null, default_landing_page_id || null, app_id || null);
+
+    db.prepare(`UPDATE tiktok_config SET ${updates.join(', ')} WHERE id = 1`).run(...params);
   } else {
     db.prepare(`
-      INSERT INTO tiktok_config (id, access_token, advertiser_id, default_landing_page_id, connected_at)
-      VALUES (1, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(access_token || null, advertiser_id || null, default_landing_page_id || null);
+      INSERT INTO tiktok_config (id, access_token, advertiser_id, default_landing_page_id, app_id, app_secret, connected_at)
+      VALUES (1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(access_token || null, advertiser_id || null, default_landing_page_id || null, app_id || null, app_secret || null);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'connected', 'tiktok', null, 'TikTok config updated', req.ip);
@@ -97,9 +186,6 @@ async function syncTikTokLeads() {
   }
   if (!config.advertiser_id) {
     return { synced: 0, error: 'TikTok Advertiser ID not configured' };
-  }
-  if (!config.default_landing_page_id) {
-    return { synced: 0, error: 'Default landing page not configured' };
   }
 
   let synced = 0;
@@ -243,7 +329,7 @@ async function syncTikTokLeads() {
               debt_amount, has_mca, considered_bankruptcy, gclid, rt_clickid, eli_clickid, hidden_fields, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)
           `).run(
-            config.default_landing_page_id,
+            config.default_landing_page_id || null,
             fullName,
             fields.first_name || '',
             fields.last_name || '',
@@ -263,7 +349,9 @@ async function syncTikTokLeads() {
 
           // Send notification
           if (sendLeadNotification) {
-            const landingPage = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(config.default_landing_page_id);
+            const landingPage = config.default_landing_page_id
+              ? db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(config.default_landing_page_id)
+              : { name: 'TikTok Lead Gen Form', platform: 'tiktok' };
             sendLeadNotification(fields, landingPage).catch(() => {});
           }
 

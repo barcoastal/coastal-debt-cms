@@ -132,8 +132,12 @@ app.use('/api/google-sheets', googleSheetsRoutes);
 app.use('/api/tiktok-leads', tiktokLeadsRoutes);
 app.use('/t', emailTrackingRoutes);
 
-// Redirect root to admin
+// Redirect root to admin (or handle TikTok OAuth callback)
 app.get('/', (req, res) => {
+  // TikTok OAuth redirects to root with auth_code param
+  if (req.query.auth_code) {
+    return res.redirect('/api/tiktok-leads/callback?auth_code=' + encodeURIComponent(req.query.auth_code));
+  }
   res.redirect('/admin');
 });
 

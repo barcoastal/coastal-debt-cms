@@ -305,6 +305,10 @@ db.exec(`
   )
 `);
 
+// Add app_id and app_secret to tiktok_config (for OAuth flow)
+try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_secret TEXT`); } catch (e) {}
+
 // Add test_event_code to facebook_config
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
 

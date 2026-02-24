@@ -507,15 +507,21 @@
             <div class="status-dot yellow"></div>
             <div class="account-info">
               <strong>Not Configured</strong>
-              <span>Set up your Access Token to import TikTok leads</span>
+              <span>Set up your App credentials and connect via OAuth to import TikTok leads</span>
             </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Access Token</label>
-          <input type="password" id="ttAccessToken" placeholder="Enter your TikTok Business API Access Token">
-          <small style="color: #666;">Get it from <a href="https://business-api.tiktok.com/portal/docs?id=1738373164380162" target="_blank">TikTok Business Center</a> &rarr; Developer Portal &rarr; App Management</small>
+          <label>App ID</label>
+          <input type="text" id="ttAppId" placeholder="Enter your TikTok App ID">
+          <small style="color: #666;">From <a href="https://business-api.tiktok.com/portal/apps/" target="_blank">TikTok Developer Portal</a> &rarr; My Apps</small>
+        </div>
+
+        <div class="form-group">
+          <label>App Secret</label>
+          <input type="password" id="ttAppSecret" placeholder="Enter your TikTok App Secret">
+          <small style="color: #666;">Found under your app details in the developer portal</small>
         </div>
 
         <div class="form-group">
@@ -532,8 +538,15 @@
           <small style="color: #666;">TikTok lead gen leads will be associated with this landing page</small>
         </div>
 
-        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+        <div class="form-group">
+          <label>Access Token</label>
+          <input type="password" id="ttAccessToken" placeholder="Auto-filled after OAuth connection" readonly style="background: #f3f4f6;">
+          <small style="color: #666;">Automatically set when you connect via OAuth below</small>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" onclick="saveTikTokConfig()">Save Configuration</button>
+          <button class="btn btn-secondary" onclick="connectTikTok()" id="ttConnectBtn" style="background: #00f2ea; color: #000; border-color: #00f2ea;">Connect with TikTok</button>
           <button class="btn btn-secondary" onclick="syncTikTokNow()" id="ttSyncBtn">Sync Leads Now</button>
         </div>
         <span id="ttSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
@@ -541,11 +554,11 @@
         <div class="setup-steps" style="margin-top: 20px;">
           <h4>Setup Instructions</h4>
           <ol>
-            <li>Go to <a href="https://business-api.tiktok.com/portal/docs?id=1738373164380162" target="_blank">TikTok Marketing API</a> and create a developer app</li>
-            <li>Request the <strong>Lead Generation</strong> permission scope for your app</li>
-            <li>Generate a long-lived Access Token from the developer portal</li>
-            <li>Enter the Access Token and your Advertiser ID above, then save</li>
-            <li>Leads are synced automatically every 5 minutes once configured</li>
+            <li>Enter your <strong>App ID</strong> and <strong>App Secret</strong> from the <a href="https://business-api.tiktok.com/portal/apps/" target="_blank">TikTok Developer Portal</a></li>
+            <li>Enter your <strong>Advertiser ID</strong> and select a <strong>Default Landing Page</strong></li>
+            <li>Click <strong>Save Configuration</strong></li>
+            <li>Click <strong>Connect with TikTok</strong> to authorize via OAuth &mdash; you'll be redirected to TikTok and back</li>
+            <li>Once connected, leads sync automatically every 5 minutes</li>
           </ol>
         </div>
       </div>
@@ -832,11 +845,26 @@
     loadFbConfig();
 
     // --- TikTok Lead Gen ---
+    // Handle TikTok OAuth redirect params
+    (function checkTikTokOAuth() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tiktok_connected') === 'true') {
+        history.replaceState({}, '', '/admin/settings.html');
+        setTimeout(() => alert('TikTok connected successfully! Access token has been saved.'), 300);
+      }
+      if (params.get('tiktok_error')) {
+        const err = params.get('tiktok_error');
+        history.replaceState({}, '', '/admin/settings.html');
+        setTimeout(() => alert('TikTok connection error: ' + err), 300);
+      }
+    })();
+
     async function loadTikTokConfig() {
       // Populate landing page dropdown
       try {
         const pagesRes = await api('/api/pages');
         const select = document.getElementById('ttDefaultPage');
+        select.innerHTML = '<option value="">Select a landing page...</option>';
         (pagesRes.pages || pagesRes).forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
@@ -848,16 +876,22 @@
       // Load existing config
       try {
         const config = await api('/api/tiktok-leads/config');
+        document.getElementById('ttAppId').value = config.app_id || '';
+        document.getElementById('ttAdvertiserId').value = config.advertiser_id || '';
+        document.getElementById('ttDefaultPage').value = config.default_landing_page_id || '';
+
+        if (config.has_app_secret) {
+          document.getElementById('ttAppSecret').value = config.app_secret || '';
+        }
+
         if (config.has_access_token) {
           document.getElementById('ttAccessToken').value = config.access_token || '';
-          document.getElementById('ttAdvertiserId').value = config.advertiser_id || '';
-          document.getElementById('ttDefaultPage').value = config.default_landing_page_id || '';
 
           document.getElementById('ttConnectionStatus').innerHTML = `
             <div class="connection-status connected">
               <div class="status-dot green"></div>
               <div class="account-info">
-                <strong>Configured</strong>
+                <strong>Connected</strong>
                 <span>Connected on ${config.connected_at ? formatDate(config.connected_at) : 'Unknown'}${config.advertiser_id ? ' | Advertiser: ' + config.advertiser_id : ''}</span>
               </div>
             </div>
@@ -867,12 +901,14 @@
     }
 
     async function saveTikTokConfig() {
-      const token = document.getElementById('ttAccessToken').value;
+      const appId = document.getElementById('ttAppId').value;
+      const appSecret = document.getElementById('ttAppSecret').value;
       const advertiserId = document.getElementById('ttAdvertiserId').value;
       const pageId = document.getElementById('ttDefaultPage').value;
+      const token = document.getElementById('ttAccessToken').value;
 
-      if (!token) {
-        alert('Access Token is required');
+      if (!appId) {
+        alert('App ID is required');
         return;
       }
 
@@ -881,7 +917,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            access_token: token,
+            app_id: appId,
+            app_secret: appSecret || undefined,
+            access_token: token || undefined,
             advertiser_id: advertiserId || null,
             default_landing_page_id: pageId || null
           })
@@ -892,6 +930,19 @@
       } catch (e) {
         document.getElementById('ttSaveStatus').textContent = 'Failed to save';
         document.getElementById('ttSaveStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function connectTikTok() {
+      try {
+        const res = await api('/api/tiktok-leads/connect');
+        if (res.auth_url) {
+          window.location.href = res.auth_url;
+        } else {
+          alert(res.error || 'Could not generate TikTok auth URL');
+        }
+      } catch (e) {
+        alert('Save your App ID and App Secret first, then click Connect.');
       }
     }
 
