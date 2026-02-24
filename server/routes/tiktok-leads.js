@@ -379,8 +379,61 @@ router.get('/webhook-url', authenticateToken, (req, res) => {
 });
 
 /**
+ * Parse CSV text into array of objects using header row as keys
+ */
+function parseCSV(csvText) {
+  const lines = csvText.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+
+  // Parse header
+  const headers = parseCSVLine(lines[0]);
+  const rows = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    const obj = {};
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]?.trim()?.toLowerCase()] = values[j]?.trim() || '';
+    }
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        result.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+/**
  * Core sync function: fetch leads from TikTok Business API
- * Uses the Leads API: get form libraries, then create download task + download leads
+ * Uses: GET /page/get/ to list forms, then POST /page/lead/task/ + GET /page/lead/task/download/
+ * Also tries direct GET /lead/get/ endpoint for newer API access
  */
 async function syncTikTokLeads() {
   const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
@@ -400,15 +453,15 @@ async function syncTikTokLeads() {
   const errors = [];
 
   try {
-    // Step 1: Get form libraries (list all instant forms)
-    const formsUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/lead/form/get/');
+    // Step 1: List all instant forms via /page/get/
+    const formsUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/page/get/');
     formsUrl.searchParams.set('advertiser_id', config.advertiser_id);
     formsUrl.searchParams.set('page_size', '100');
 
-    console.log('TikTok sync: fetching form libraries...');
+    console.log('TikTok sync: fetching instant forms...');
     const formsRes = await fetch(formsUrl.toString(), { headers });
     const formsData = await formsRes.json();
-    console.log('TikTok forms response:', JSON.stringify(formsData).slice(0, 500));
+    console.log('TikTok forms response:', JSON.stringify(formsData).slice(0, 1000));
 
     if (formsData.code !== 0) {
       const errMsg = formsData.message || 'API error (code: ' + formsData.code + ')';
@@ -416,79 +469,180 @@ async function syncTikTokLeads() {
       return { synced: 0, error: errMsg };
     }
 
-    const forms = formsData.data?.list || formsData.data?.forms || [];
+    const forms = formsData.data?.list || formsData.data?.pages || formsData.data?.forms || [];
     if (!forms.length) {
-      return { synced: 0, message: 'No lead gen forms found' };
+      return { synced: 0, message: 'No lead gen forms found for this advertiser' };
     }
 
     console.log(`TikTok sync: found ${forms.length} form(s)`);
 
-    // Step 2: For each form, create a download task and fetch leads
+    // Step 2: For each form, try direct lead access first, then fall back to task-based download
     for (const form of forms) {
-      const formId = form.form_id || form.id || form.page_id;
-      const formName = form.form_name || form.name || form.page_name || '';
-      if (!formId) continue;
+      const pageId = form.page_id || form.form_id || form.id;
+      const formName = form.page_name || form.form_name || form.name || form.title || '';
+      if (!pageId) continue;
 
+      console.log(`TikTok sync: processing form "${formName}" (page_id: ${pageId})`);
+
+      // Method A: Try direct lead access via /lead/get/
       try {
-        // Create a lead download task
-        console.log(`TikTok sync: creating download task for form "${formName}" (${formId})...`);
-        const taskRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/lead/task/create/', {
+        const leadUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/lead/get/');
+        leadUrl.searchParams.set('advertiser_id', config.advertiser_id);
+        leadUrl.searchParams.set('page_id', pageId);
+        leadUrl.searchParams.set('lead_source', 'INSTANT_FORM');
+
+        const leadRes = await fetch(leadUrl.toString(), { headers });
+        const leadData = await leadRes.json();
+        console.log(`TikTok lead/get response for ${pageId}:`, JSON.stringify(leadData).slice(0, 500));
+
+        if (leadData.code === 0 && leadData.data) {
+          const leads = leadData.data?.list || leadData.data?.leads || [];
+          if (Array.isArray(leads) && leads.length > 0) {
+            console.log(`TikTok sync (direct): form "${formName}" returned ${leads.length} lead(s)`);
+            for (const lead of leads) {
+              lead.form_id = pageId;
+              lead.form_name = formName;
+              try {
+                const result = processLead(lead, 'api_poll');
+                if (result.imported) synced++;
+              } catch (err) {
+                if (!err.message?.includes('duplicate')) {
+                  errors.push(`Lead ${lead.lead_id || lead.id}: ${err.message}`);
+                }
+              }
+            }
+            continue; // Direct method worked, skip task-based for this form
+          }
+        }
+      } catch (directErr) {
+        console.log(`TikTok sync: direct /lead/get/ failed for ${pageId}, trying task-based download...`, directErr.message);
+      }
+
+      // Method B: Task-based download (create task -> poll -> download CSV)
+      try {
+        console.log(`TikTok sync: creating download task for form "${formName}" (${pageId})...`);
+        const taskRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
           method: 'POST',
           headers,
           body: JSON.stringify({
             advertiser_id: config.advertiser_id,
-            form_id: formId
+            page_id: pageId
           })
         });
         const taskData = await taskRes.json();
-        console.log('TikTok download task response:', JSON.stringify(taskData).slice(0, 500));
+        console.log('TikTok task response:', JSON.stringify(taskData).slice(0, 500));
 
         if (taskData.code !== 0) {
-          errors.push(`Form ${formId}: ${taskData.message || 'Failed to create download task'}`);
+          errors.push(`Form ${pageId}: ${taskData.message || 'Failed to create download task'}`);
           continue;
         }
 
         const taskId = taskData.data?.task_id;
         if (!taskId) {
-          errors.push(`Form ${formId}: No task_id returned`);
+          errors.push(`Form ${pageId}: No task_id returned`);
           continue;
         }
 
-        // Wait briefly for the task to process
-        await new Promise(r => setTimeout(r, 2000));
+        // Poll task status until SUCCEED (max 30 seconds)
+        let taskReady = false;
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(r => setTimeout(r, 3000));
 
-        // Download leads from the task
-        const downloadUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/lead/task/download/');
+          const pollRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              advertiser_id: config.advertiser_id,
+              page_id: pageId,
+              task_id: taskId
+            })
+          });
+          const pollData = await pollRes.json();
+
+          const status = pollData.data?.status || pollData.data?.task_status;
+          console.log(`TikTok task ${taskId} status: ${status} (attempt ${attempt + 1})`);
+
+          if (status === 'SUCCEED' || status === 'SUCCESS' || status === 'COMPLETED') {
+            taskReady = true;
+            break;
+          }
+          if (status === 'FAILED' || status === 'ERROR') {
+            errors.push(`Form ${pageId}: Download task failed`);
+            break;
+          }
+        }
+
+        if (!taskReady) {
+          if (!errors.some(e => e.includes(pageId))) {
+            errors.push(`Form ${pageId}: Download task timed out`);
+          }
+          continue;
+        }
+
+        // Download leads CSV
+        const downloadUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/download/');
         downloadUrl.searchParams.set('advertiser_id', config.advertiser_id);
         downloadUrl.searchParams.set('task_id', taskId);
 
         const downloadRes = await fetch(downloadUrl.toString(), { headers });
-        const downloadData = await downloadRes.json();
-        console.log('TikTok download response:', JSON.stringify(downloadData).slice(0, 500));
+        const contentType = downloadRes.headers.get('content-type') || '';
 
-        if (downloadData.code !== 0) {
-          errors.push(`Form ${formId} download: ${downloadData.message || 'Download failed'}`);
-          continue;
-        }
+        if (contentType.includes('json')) {
+          // JSON response (might be error or structured data)
+          const downloadData = await downloadRes.json();
+          console.log('TikTok download JSON response:', JSON.stringify(downloadData).slice(0, 500));
 
-        const leads = downloadData.data?.list || downloadData.data?.leads || [];
-        console.log(`TikTok sync: form "${formName}" returned ${leads.length} lead(s)`);
+          if (downloadData.code !== 0) {
+            errors.push(`Form ${pageId} download: ${downloadData.message || 'Download failed'}`);
+            continue;
+          }
 
-        for (const lead of leads) {
-          if (!lead.lead_id && !lead.id) continue;
-          lead.form_id = formId;
-          lead.form_name = formName;
-          try {
-            const result = processLead(lead, 'api_poll');
-            if (result.imported) synced++;
-          } catch (err) {
-            if (!err.message?.includes('duplicate')) {
-              errors.push(`Lead ${lead.lead_id || lead.id}: ${err.message}`);
+          const leads = downloadData.data?.list || downloadData.data?.leads || [];
+          for (const lead of leads) {
+            lead.form_id = pageId;
+            lead.form_name = formName;
+            try {
+              const result = processLead(lead, 'api_poll');
+              if (result.imported) synced++;
+            } catch (err) {
+              if (!err.message?.includes('duplicate')) {
+                errors.push(`Lead ${lead.lead_id || lead.id}: ${err.message}`);
+              }
+            }
+          }
+        } else {
+          // CSV/text response
+          const csvText = await downloadRes.text();
+          console.log(`TikTok download: received ${csvText.length} bytes of CSV data`);
+
+          const rows = parseCSV(csvText);
+          console.log(`TikTok sync: parsed ${rows.length} lead(s) from CSV for form "${formName}"`);
+
+          for (const row of rows) {
+            // CSV rows have headers as keys, map them to our lead format
+            const leadObj = {
+              lead_id: row.lead_id || row.id || ('csv_' + crypto.randomBytes(6).toString('hex')),
+              form_id: pageId,
+              form_name: formName,
+              create_time: row.create_time || row.created_time || row.submit_time,
+              // Flatten CSV columns as field data
+              fields: Object.entries(row)
+                .filter(([k]) => !['lead_id', 'id', 'create_time', 'created_time', 'submit_time'].includes(k))
+                .map(([name, value]) => ({ name, value }))
+            };
+
+            try {
+              const result = processLead(leadObj, 'api_poll');
+              if (result.imported) synced++;
+            } catch (err) {
+              if (!err.message?.includes('duplicate')) {
+                errors.push(`CSV lead: ${err.message}`);
+              }
             }
           }
         }
-      } catch (formErr) {
-        errors.push(`Form ${formId}: ${formErr.message}`);
+      } catch (taskErr) {
+        errors.push(`Form ${pageId}: ${taskErr.message}`);
       }
     }
   } catch (err) {
