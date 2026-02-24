@@ -551,14 +551,24 @@
         </div>
         <span id="ttSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
 
+        <div class="form-group" style="margin-top: 20px;">
+          <label>Webhook URL (for TikTok Instant Form leads)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="ttWebhookUrl" readonly style="background: #f3f4f6; font-family: monospace; font-size: 13px;">
+            <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('ttWebhookUrl').value); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)" style="white-space: nowrap;">Copy</button>
+          </div>
+          <small style="color: #666;">Paste this URL in TikTok Ads Manager &rarr; Lead Gen Form &rarr; CRM &rarr; <strong>Custom API</strong> &rarr; Webhook URL</small>
+        </div>
+
         <div class="setup-steps" style="margin-top: 20px;">
           <h4>Setup Instructions</h4>
           <ol>
             <li>Enter your <strong>App ID</strong> and <strong>App Secret</strong> from the <a href="https://business-api.tiktok.com/portal/apps/" target="_blank">TikTok Developer Portal</a></li>
-            <li>Enter your <strong>Advertiser ID</strong> and select a <strong>Default Landing Page</strong></li>
-            <li>Click <strong>Save Configuration</strong></li>
-            <li>Click <strong>Connect with TikTok</strong> to authorize via OAuth &mdash; you'll be redirected to TikTok and back</li>
-            <li>Once connected, leads sync automatically every 5 minutes</li>
+            <li>Enter your <strong>Advertiser ID</strong> and select a <strong>Default Landing Page</strong> (optional)</li>
+            <li>Click <strong>Save Configuration</strong>, then <strong>Connect with TikTok</strong></li>
+            <li>Copy the <strong>Webhook URL</strong> above</li>
+            <li>In TikTok Ads Manager, edit your Lead Gen form &rarr; CRM Integration &rarr; <strong>Custom API</strong> &rarr; paste the webhook URL</li>
+            <li>New leads from the instant form will appear in the CMS instantly</li>
           </ol>
         </div>
       </div>
@@ -871,6 +881,12 @@
           opt.textContent = p.name + ' (' + p.platform + ')';
           select.appendChild(opt);
         });
+      } catch (e) {}
+
+      // Load webhook URL
+      try {
+        const wh = await api('/api/tiktok-leads/webhook-url');
+        document.getElementById('ttWebhookUrl').value = wh.webhook_url || '';
       } catch (e) {}
 
       // Load existing config
