@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok | Coastal Debt CMS</title>
+  <title>FB Deep Events | Coastal Debt CMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,7 +16,13 @@
     .card-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0; }
     .badge-gray { background: var(--gray-200); color: var(--gray-600); }
     .badge-yellow { background: #fef3c7; color: #92400e; }
-    .badge-tiktok { background: #e0f2fe; color: #0c4a6e; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    table td { font-size: 12px; white-space: nowrap; }
+    table { min-width: 1200px; }
+    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    .row-blocked { background: #fef2f2 !important; }
+    .ip-cell { font-family: monospace; font-size: 11px; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
     .editable-cell {
       cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
       display: inline-block; border: 1px solid transparent; transition: all 0.15s;
@@ -26,14 +32,17 @@
       border: 1px solid var(--primary); border-radius: 4px; padding: 4px 6px;
       font-size: 12px; width: 100%; outline: none;
     }
-    .mca-yes { color: #16a34a; font-weight: 600; }
-    .mca-no { color: #6b7280; }
-    table td { font-size: 12px; white-space: nowrap; }
-    table { min-width: 1600px; }
-    .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
-    .row-blocked { background: #fef2f2 !important; }
-    .ip-cell { font-family: monospace; font-size: 11px; }
-    .badge-red { background: #fee2e2; color: #991b1b; }
+    .event-pills { display: flex; flex-wrap: wrap; gap: 3px; }
+    .event-pill { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+    .event-pill-lead { background: var(--gray-200); color: var(--gray-600); }
+    .event-pill-qualified { background: #dbeafe; color: #1e40af; }
+    .event-pill-appointment { background: #fef3c7; color: #92400e; }
+    .event-pill-closed { background: #d1fae5; color: #065f46; }
+    .event-pill-sale { background: #d1fae5; color: #065f46; }
+    .funnel-mini { display: flex; gap: 12px; flex-wrap: wrap; }
+    .funnel-item { text-align: center; }
+    .funnel-item .funnel-count { font-size: 1.25rem; font-weight: 700; }
+    .funnel-item .funnel-label { font-size: 0.75rem; color: var(--gray-500); text-transform: capitalize; }
   </style>
 </head>
 <body>
@@ -144,7 +153,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>TikTok</h1>
+        <h1>FB Deep Events</h1>
       </div>
 
       <!-- Time Range Filter -->
@@ -170,18 +179,31 @@
       <div class="stats-grid">
         <div class="stat-card primary">
           <div class="stat-value" id="statLeads">-</div>
-          <div class="stat-label">TikTok Leads</div>
+          <div class="stat-label">FB LP Leads (with RT)</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="statEvents">-</div>
-          <div class="stat-label">Conversions Sent</div>
+          <div class="stat-value" id="statWithEvents">-</div>
+          <div class="stat-label">With Deep Events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statEventsSent">-</div>
+          <div class="stat-label">Events Sent</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" style="margin-bottom:8px;">Funnel</div>
+          <div class="funnel-mini">
+            <div class="funnel-item"><div class="funnel-count" id="funnelQualified" style="color:#1e40af;">-</div><div class="funnel-label">Qualified</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelAppointment" style="color:#92400e;">-</div><div class="funnel-label">Appt</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelClosed" style="color:#065f46;">-</div><div class="funnel-label">Closed</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelSale" style="color:#065f46;">-</div><div class="funnel-label">Sale</div></div>
+          </div>
         </div>
       </div>
 
       <!-- Conversion Events Breakdown -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Conversion Events Breakdown</h3>
+          <h3 class="card-title">Events Breakdown</h3>
         </div>
         <div class="charts-grid">
           <div>
@@ -193,10 +215,10 @@
         </div>
       </div>
 
-      <!-- TikTok Leads Table -->
+      <!-- Leads Table -->
       <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">TikTok Leads</h3>
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 class="card-title">FB Deep Event Leads</h3>
         </div>
         <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
@@ -216,26 +238,16 @@
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    function getSourceLabel(lead) {
-      try {
-        const hf = typeof lead.hidden_fields === 'string' ? JSON.parse(lead.hidden_fields || '{}') : (lead.hidden_fields || {});
-        if (hf.source === 'tiktok_lead_gen') return 'Lead Gen Form';
-        return 'Landing Page';
-      } catch (e) { return 'Landing Page'; }
-    }
-
     const COLUMNS = [
+      { key: 'id', label: 'Lead ID', default: true },
       { key: 'first_name', label: 'First Name', default: true },
       { key: 'last_name', label: 'Last Name', default: true },
-      { key: 'company_name', label: 'Company', default: true },
       { key: 'email', label: 'Email', default: true },
       { key: 'phone', label: 'Phone', default: true },
-      { key: 'ip_address', label: 'IP Address', default: true },
-      { key: 'lead_source', label: 'Source', default: true },
-      { key: 'eli_clickid', label: 'Eli Click ID', default: false },
-      { key: 'rt_clickid', label: 'RT Click ID', default: false },
-      { key: 'utm_campaign', label: 'Campaign', default: true },
-      { key: 'has_mca', label: 'MCA', default: true },
+      { key: 'rt_clickid', label: 'RT Click ID', default: true },
+      { key: 'eli_clickid', label: 'ELI Click ID', default: false },
+      { key: 'debt_amount', label: 'Debt Amount', default: true },
+      { key: 'deep_events', label: 'Deep Events', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
       { key: 'transfer_status', label: 'Transfer Status', default: true },
       { key: 'five9_dispo', label: 'Five9 Dispo', default: true },
@@ -245,18 +257,39 @@
       { key: 'created_at', label: 'Date', default: true }
     ];
 
+    function getEventPillClass(name) {
+      if (!name) return 'event-pill-lead';
+      const n = name.toLowerCase();
+      if (n === 'sale') return 'event-pill-sale';
+      if (n === 'closed') return 'event-pill-closed';
+      if (n === 'appointment') return 'event-pill-appointment';
+      if (n === 'qualified') return 'event-pill-qualified';
+      return 'event-pill-lead';
+    }
+
+    function renderEventPills(events) {
+      if (!events || !events.length) return '<span class="badge badge-gray">None</span>';
+      return '<div class="event-pills">' + events.map(e =>
+        '<span class="event-pill ' + getEventPillClass(e.conversion_action_name) + '">' + escapeHtml(e.conversion_action_name || 'unknown') + '</span>'
+      ).join('') + '</div>';
+    }
+
+    function getStatusBadge(status) {
+      if (!status) return '<span class="badge badge-gray">No events</span>';
+      const colors = { lead: 'badge-gray', qualified: 'badge-blue', appointment: 'badge-yellow', closed: 'badge-green', sale: 'badge-green', failed: 'badge-red' };
+      return '<span class="badge ' + (colors[status.toLowerCase()] || 'badge-blue') + '">' + escapeHtml(status) + '</span>';
+    }
+
     const cellRenderers = {
+      id: (lead) => '<td>' + escapeHtml(lead.id || '-') + '</td>',
       first_name: (lead) => '<td>' + escapeHtml(lead.first_name || '-') + '</td>',
       last_name: (lead) => '<td>' + escapeHtml(lead.last_name || '-') + '</td>',
-      company_name: (lead) => '<td>' + escapeHtml(lead.company_name || '-') + '</td>',
       email: (lead) => '<td>' + escapeHtml(lead.email || '-') + '</td>',
       phone: (lead) => '<td>' + escapeHtml(lead.phone || '-') + '</td>',
-      ip_address: (lead) => '<td class="ip-cell">' + escapeHtml(lead.ip_address || '-') + (lead.is_blocked ? ' <span class="badge badge-red">Blocked</span>' : '') + '</td>',
-      lead_source: (lead) => '<td><span class="badge badge-tiktok">' + getSourceLabel(lead) + '</span></td>',
-      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid || '') + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
-      utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
-      has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
+      eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid || '') + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
+      debt_amount: (lead) => '<td>' + (lead.debt_amount ? '$' + Number(lead.debt_amount).toLocaleString() : '-') + '</td>',
+      deep_events: (lead) => '<td>' + renderEventPills(lead.events) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
       transfer_status: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'transfer_status\')">' + escapeHtml(lead.transfer_status || '-') + '</span></td>',
       five9_dispo: (lead) => '<td><span class="editable-cell" onclick="editField(this,' + lead.id + ',\'five9_dispo\')">' + escapeHtml(lead.five9_dispo || '-') + '</span></td>',
@@ -275,7 +308,7 @@
     let currentRange = 'mtd';
 
     const columnEditor = new ColumnEditor({
-      pageId: 'tiktok',
+      pageId: 'fb-deep-events',
       columns: COLUMNS,
       mountTo: '#columnEditorMount',
       onColumnsChange: () => { renderTable(); loadLeads(currentPage); }
@@ -309,23 +342,22 @@
 
     async function loadSummary() {
       try {
-        const data = await api('/api/analytics/tiktok/summary' + buildQS());
+        const data = await api('/api/analytics/fb-deep-events/summary' + buildQS());
         document.getElementById('statLeads').textContent = data.total_leads;
-        document.getElementById('statEvents').textContent = data.events_sent;
+        document.getElementById('statWithEvents').textContent = data.leads_with_events;
+        document.getElementById('statEventsSent').textContent = data.events_sent;
+        document.getElementById('funnelQualified').textContent = data.funnel.qualified;
+        document.getElementById('funnelAppointment').textContent = data.funnel.appointment;
+        document.getElementById('funnelClosed').textContent = data.funnel.closed;
+        document.getElementById('funnelSale').textContent = data.funnel.sale;
       } catch (err) {
         console.error('Error loading summary:', err);
       }
     }
 
-    function getStatusBadge(status) {
-      if (!status) return '<span class="badge badge-gray">No events</span>';
-      const colors = { qualified: 'badge-blue', appointment: 'badge-yellow', closed: 'badge-green', sale: 'badge-green', failed: 'badge-red' };
-      return '<span class="badge ' + (colors[status.toLowerCase()] || 'badge-blue') + '">' + status + '</span>';
-    }
-
     async function loadEventsBreakdown() {
       try {
-        const data = await api('/api/analytics/tiktok/events-breakdown' + buildQS());
+        const data = await api('/api/analytics/fb-deep-events/events-breakdown' + buildQS());
         const grid = document.getElementById('eventsGrid');
 
         if (!data.length) {
@@ -347,7 +379,7 @@
             type: 'bar',
             data: {
               labels: data.map(e => e.conversion_action_name),
-              datasets: [{ label: 'Events', data: data.map(e => e.count), backgroundColor: '#00f2ea', borderRadius: 6 }]
+              datasets: [{ label: 'Events', data: data.map(e => e.count), backgroundColor: '#8b5cf6', borderRadius: 6 }]
             },
             options: {
               indexAxis: 'y',
@@ -367,15 +399,15 @@
       currentPage = page;
       try {
         const qs = buildQS();
-        const data = await api('/api/analytics/tiktok/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
+        const data = await api('/api/analytics/fb-deep-events/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
         const tbody = document.getElementById('leadsTable');
 
         const cols = columnEditor.getVisibleColumns();
         if (!data.leads.length) {
-          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No TikTok leads found for this period</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:40px;color:var(--gray-400);">No FB deep event leads found for this period</td></tr>';
         } else {
           tbody.innerHTML = data.leads.map(lead =>
-            '<tr' + (lead.is_blocked ? ' class="row-blocked"' : '') + '>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
+            '<tr>' + cols.map(key => cellRenderers[key](lead)).join('') + '</tr>'
           ).join('');
         }
 
