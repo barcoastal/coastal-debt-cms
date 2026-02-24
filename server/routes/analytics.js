@@ -1534,12 +1534,15 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
 
 const FB_DEEP_BASE_FILTER = `lp.platform = 'meta' AND l.rt_clickid IS NOT NULL AND l.rt_clickid != '' AND l.hidden_fields NOT LIKE '%"source":"facebook_instant_form"%'`;
 const RT_API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
+const RT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let rtConversionsCache = { data: null, clickidMap: null, fetchedAt: 0 };
 
-// Helper: fetch all RedTrack conversions, filtered to only clickids we care about
-async function fetchRedTrackConversionsForClickIds(clickIdSet, from, to) {
+// Helper: fetch all RedTrack conversions (cached for 5 min, auto-refreshes)
+async function getAllRedTrackConversions() {
+  if (rtConversionsCache.data && (Date.now() - rtConversionsCache.fetchedAt) < RT_CACHE_TTL) {
+    return rtConversionsCache;
+  }
   try {
-    // Fetch all RT conversions for the widest possible range to catch events
-    // that may have occurred outside the lead creation date range
     const params = new URLSearchParams({
       api_key: RT_API_KEY,
       date_from: '2025-01-01',
@@ -1547,14 +1550,36 @@ async function fetchRedTrackConversionsForClickIds(clickIdSet, from, to) {
       limit: '10000'
     });
     const response = await fetch(`https://api.redtrack.io/conversions?${params}`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    // Return only conversions whose clickid matches one of our leads
-    return (data.items || []).filter(i => clickIdSet.has(i.clickid));
+    if (!response.ok) {
+      console.error('RedTrack API error:', response.status);
+      return rtConversionsCache.data ? rtConversionsCache : { data: [], clickidMap: {} };
+    }
+    const json = await response.json();
+    const items = json.items || [];
+    // Build clickid → events map once
+    const clickidMap = {};
+    for (const c of items) {
+      if (!clickidMap[c.clickid]) clickidMap[c.clickid] = [];
+      clickidMap[c.clickid].push(c);
+    }
+    rtConversionsCache = { data: items, clickidMap, fetchedAt: Date.now() };
+    console.log(`RedTrack cache refreshed: ${items.length} conversions, ${Object.keys(clickidMap).length} unique clickids`);
+    return rtConversionsCache;
   } catch (err) {
     console.error('RedTrack conversions fetch error:', err.message);
-    return [];
+    return rtConversionsCache.data ? rtConversionsCache : { data: [], clickidMap: {} };
   }
+}
+
+// Helper: get RedTrack conversions for a set of clickids
+async function fetchRedTrackConversionsForClickIds(clickIdSet) {
+  const cache = await getAllRedTrackConversions();
+  const matched = [];
+  for (const clickid of clickIdSet) {
+    const events = cache.clickidMap[clickid];
+    if (events) matched.push(...events);
+  }
+  return matched;
 }
 
 // FB Deep Events: Summary stats
@@ -1593,7 +1618,7 @@ router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
   const clickIdSet = new Set(leadClickIds);
 
   // Fetch RedTrack conversions matched to our lead clickids
-  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet, from, to);
+  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet);
 
   // Count leads with deep events (non-lead events)
   const leadsWithDeep = new Set();
@@ -1638,7 +1663,7 @@ router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, re
   const clickIdSet = new Set(leadClickIds);
 
   // Fetch RedTrack conversions matched to our lead clickids
-  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet, from, to);
+  const matched = await fetchRedTrackConversionsForClickIds(clickIdSet);
 
   // Group by type
   const counts = {};
@@ -1690,7 +1715,7 @@ router.get('/fb-deep-events/leads', authenticateToken, async (req, res) => {
 
   // Fetch RedTrack conversions for leads on this page and build clickid → events map
   const pageClickIds = new Set(leads.map(l => l.rt_clickid).filter(Boolean));
-  const rtConversions = await fetchRedTrackConversionsForClickIds(pageClickIds, from, to);
+  const rtConversions = await fetchRedTrackConversionsForClickIds(pageClickIds);
   const rtMap = {};
   for (const c of rtConversions) {
     if (!rtMap[c.clickid]) rtMap[c.clickid] = [];
