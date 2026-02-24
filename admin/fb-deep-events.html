@@ -35,10 +35,14 @@
     .event-pills { display: flex; flex-wrap: wrap; gap: 3px; }
     .event-pill { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
     .event-pill-lead { background: var(--gray-200); color: var(--gray-600); }
-    .event-pill-qualified { background: #dbeafe; color: #1e40af; }
-    .event-pill-appointment { background: #fef3c7; color: #92400e; }
-    .event-pill-closed { background: #d1fae5; color: #065f46; }
-    .event-pill-sale { background: #d1fae5; color: #065f46; }
+    .event-pill-qualified_lead { background: #dbeafe; color: #1e40af; }
+    .event-pill-opportunity { background: #fef3c7; color: #92400e; }
+    .event-pill-contract { background: #ede9fe; color: #5b21b6; }
+    .event-pill-closed_won { background: #d1fae5; color: #065f46; }
+    .event-pill-payment { background: #d1fae5; color: #065f46; }
+    .event-pill-phonecall { background: #e0e7ff; color: #3730a3; }
+    .event-pill-call_lead { background: #e0e7ff; color: #3730a3; }
+    .event-pill-call_lead_ql { background: #e0e7ff; color: #3730a3; }
     .funnel-mini { display: flex; gap: 12px; flex-wrap: wrap; }
     .funnel-item { text-align: center; }
     .funnel-item .funnel-count { font-size: 1.25rem; font-weight: 700; }
@@ -193,9 +197,10 @@
           <div class="stat-label" style="margin-bottom:8px;">Funnel</div>
           <div class="funnel-mini">
             <div class="funnel-item"><div class="funnel-count" id="funnelQualified" style="color:#1e40af;">-</div><div class="funnel-label">Qualified</div></div>
-            <div class="funnel-item"><div class="funnel-count" id="funnelAppointment" style="color:#92400e;">-</div><div class="funnel-label">Appt</div></div>
-            <div class="funnel-item"><div class="funnel-count" id="funnelClosed" style="color:#065f46;">-</div><div class="funnel-label">Closed</div></div>
-            <div class="funnel-item"><div class="funnel-count" id="funnelSale" style="color:#065f46;">-</div><div class="funnel-label">Sale</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelOpportunity" style="color:#92400e;">-</div><div class="funnel-label">Opportunity</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelContract" style="color:#7c3aed;">-</div><div class="funnel-label">Contract</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelClosedWon" style="color:#065f46;">-</div><div class="funnel-label">Closed Won</div></div>
+            <div class="funnel-item"><div class="funnel-count" id="funnelPayment" style="color:#065f46;">-</div><div class="funnel-label">Payment</div></div>
           </div>
         </div>
       </div>
@@ -257,27 +262,51 @@
       { key: 'created_at', label: 'Date', default: true }
     ];
 
-    function getEventPillClass(name) {
-      if (!name) return 'event-pill-lead';
-      const n = name.toLowerCase();
-      if (n === 'sale') return 'event-pill-sale';
-      if (n === 'closed') return 'event-pill-closed';
-      if (n === 'appointment') return 'event-pill-appointment';
-      if (n === 'qualified') return 'event-pill-qualified';
-      return 'event-pill-lead';
-    }
+    const EVENT_PILL_CLASSES = {
+      lead: 'event-pill-lead',
+      qualified_lead: 'event-pill-qualified_lead',
+      opportunity: 'event-pill-opportunity',
+      contract: 'event-pill-contract',
+      closed_won: 'event-pill-closed_won',
+      payment: 'event-pill-payment',
+      phonecall: 'event-pill-phonecall',
+      call_lead: 'event-pill-call_lead',
+      call_lead_ql: 'event-pill-call_lead_ql'
+    };
+
+    const EVENT_LABELS = {
+      lead: 'Lead',
+      qualified_lead: 'Qualified',
+      opportunity: 'Opportunity',
+      contract: 'Contract',
+      closed_won: 'Closed Won',
+      payment: 'Payment',
+      phonecall: 'Phone Call',
+      call_lead: 'Call Lead',
+      call_lead_ql: 'Call Lead QL',
+      pdf_lead_rt: 'PDF Lead'
+    };
 
     function renderEventPills(events) {
       if (!events || !events.length) return '<span class="badge badge-gray">None</span>';
-      return '<div class="event-pills">' + events.map(e =>
-        '<span class="event-pill ' + getEventPillClass(e.conversion_action_name) + '">' + escapeHtml(e.conversion_action_name || 'unknown') + '</span>'
-      ).join('') + '</div>';
+      return '<div class="event-pills">' + events.map(e => {
+        const type = e.type || e.conversion_action_name || 'unknown';
+        const cls = EVENT_PILL_CLASSES[type] || 'event-pill-lead';
+        const label = EVENT_LABELS[type] || type;
+        const payout = e.payout ? ' $' + Number(e.payout).toLocaleString() : '';
+        return '<span class="event-pill ' + cls + '" title="' + escapeHtml(e.conv_time || e.created_at || '') + '">' + escapeHtml(label) + payout + '</span>';
+      }).join('') + '</div>';
     }
 
     function getStatusBadge(status) {
       if (!status) return '<span class="badge badge-gray">No events</span>';
-      const colors = { lead: 'badge-gray', qualified: 'badge-blue', appointment: 'badge-yellow', closed: 'badge-green', sale: 'badge-green', failed: 'badge-red' };
-      return '<span class="badge ' + (colors[status.toLowerCase()] || 'badge-blue') + '">' + escapeHtml(status) + '</span>';
+      const colors = {
+        lead: 'badge-gray', qualified_lead: 'badge-blue', opportunity: 'badge-yellow',
+        contract: 'badge-purple', closed_won: 'badge-green', payment: 'badge-green',
+        phonecall: 'badge-blue', call_lead: 'badge-blue', call_lead_ql: 'badge-blue'
+      };
+      const label = EVENT_LABELS[status] || status;
+      return '<span class="badge ' + (colors[status] || 'badge-blue') + '">' + escapeHtml(label) + '</span>';
     }
 
     const cellRenderers = {
@@ -346,10 +375,11 @@
         document.getElementById('statLeads').textContent = data.total_leads;
         document.getElementById('statWithEvents').textContent = data.leads_with_events;
         document.getElementById('statEventsSent').textContent = data.events_sent;
-        document.getElementById('funnelQualified').textContent = data.funnel.qualified;
-        document.getElementById('funnelAppointment').textContent = data.funnel.appointment;
-        document.getElementById('funnelClosed').textContent = data.funnel.closed;
-        document.getElementById('funnelSale').textContent = data.funnel.sale;
+        document.getElementById('funnelQualified').textContent = data.funnel.qualified_lead || 0;
+        document.getElementById('funnelOpportunity').textContent = data.funnel.opportunity || 0;
+        document.getElementById('funnelContract').textContent = data.funnel.contract || 0;
+        document.getElementById('funnelClosedWon').textContent = data.funnel.closed_won || 0;
+        document.getElementById('funnelPayment').textContent = data.funnel.payment || 0;
       } catch (err) {
         console.error('Error loading summary:', err);
       }

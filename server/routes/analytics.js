@@ -1533,31 +1533,46 @@ router.get('/meta-ads/leads', authenticateToken, (req, res) => {
 // ─── FB Deep Events Endpoints ────────────────────────────────────────────────
 
 const FB_DEEP_BASE_FILTER = `lp.platform = 'meta' AND l.rt_clickid IS NOT NULL AND l.rt_clickid != '' AND l.hidden_fields NOT LIKE '%"source":"facebook_instant_form"%'`;
+const RT_API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
+const RT_META_CAMPAIGN_IDS = ['685e703c73306f36aa1ddcd3', '69445a8d6b6678d79a8153ec'];
+
+// Helper: fetch all RedTrack conversions for Meta campaigns in a date range
+async function fetchRedTrackMetaConversions(from, to) {
+  try {
+    const params = new URLSearchParams({
+      api_key: RT_API_KEY,
+      date_from: from || '2025-01-01',
+      date_to: to || new Date().toISOString().slice(0, 10),
+      limit: '10000'
+    });
+    const response = await fetch(`https://api.redtrack.io/conversions?${params}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    // Filter to Meta campaigns only
+    return (data.items || []).filter(i => RT_META_CAMPAIGN_IDS.includes(i.campaign_id));
+  } catch (err) {
+    console.error('RedTrack conversions fetch error:', err.message);
+    return [];
+  }
+}
 
 // FB Deep Events: Summary stats
-router.get('/fb-deep-events/summary', authenticateToken, (req, res) => {
+router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
-  const eventDateConds = [];
-  const eventDateParams = [];
 
   if (from) {
     dateConds.push(`l.created_at >= ?`);
     dateParams.push(localDateToUtcRange(from, tz).start);
-    eventDateConds.push(`ce.created_at >= ?`);
-    eventDateParams.push(localDateToUtcRange(from, tz).start);
   }
   if (to) {
     dateConds.push(`l.created_at <= ?`);
     dateParams.push(localDateToUtcRange(to, tz).end);
-    eventDateConds.push(`ce.created_at <= ?`);
-    eventDateParams.push(localDateToUtcRange(to, tz).end);
   }
 
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
-  const eventDateWhere = eventDateConds.length ? ' AND ' + eventDateConds.join(' AND ') : '';
 
   const totalLeads = db.prepare(`
     SELECT COUNT(*) as count
@@ -1566,79 +1581,81 @@ router.get('/fb-deep-events/summary', authenticateToken, (req, res) => {
     WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
   `).get(...dateParams).count;
 
-  const leadsWithEvents = db.prepare(`
-    SELECT COUNT(DISTINCT l.id) as count
+  // Get all rt_clickids for these leads
+  const leadClickIds = db.prepare(`
+    SELECT DISTINCT l.rt_clickid
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    JOIN conversion_events ce ON ce.lead_id = l.id
-    WHERE ${FB_DEEP_BASE_FILTER}
-      AND ce.conversion_action_name != 'lead'
-      ${dateWhere}
-  `).get(...dateParams).count;
+    WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
+  `).all(...dateParams).map(r => r.rt_clickid);
 
-  const eventsSent = db.prepare(`
-    SELECT COUNT(*) as count
-    FROM conversion_events ce
-    JOIN leads l ON ce.lead_id = l.id
-    JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE ${FB_DEEP_BASE_FILTER}
-      AND ce.status = 'sent'
-      ${eventDateWhere}
-  `).get(...eventDateParams).count;
+  const clickIdSet = new Set(leadClickIds);
 
-  const funnelRows = db.prepare(`
-    SELECT ce.conversion_action_name as name, COUNT(*) as count
-    FROM conversion_events ce
-    JOIN leads l ON ce.lead_id = l.id
-    JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE ${FB_DEEP_BASE_FILTER}
-      AND ce.conversion_action_name IN ('qualified', 'appointment', 'closed', 'sale')
-      ${eventDateWhere}
-    GROUP BY ce.conversion_action_name
-  `).all(...eventDateParams);
+  // Fetch RedTrack conversions
+  const rtConversions = await fetchRedTrackMetaConversions(from, to);
+  const matched = rtConversions.filter(c => clickIdSet.has(c.clickid));
 
-  const funnel = { qualified: 0, appointment: 0, closed: 0, sale: 0 };
-  for (const row of funnelRows) {
-    funnel[row.name] = row.count;
+  // Count leads with deep events (non-lead events)
+  const leadsWithDeep = new Set();
+  for (const c of matched) {
+    if (c.type !== 'lead') leadsWithDeep.add(c.clickid);
+  }
+
+  // Funnel counts from RedTrack
+  const funnel = { qualified_lead: 0, opportunity: 0, contract: 0, closed_won: 0, payment: 0 };
+  for (const c of matched) {
+    if (c.type in funnel) funnel[c.type]++;
   }
 
   res.json({
     total_leads: totalLeads,
-    leads_with_events: leadsWithEvents,
-    events_sent: eventsSent,
+    leads_with_events: leadsWithDeep.size,
+    events_sent: matched.length,
     funnel
   });
 });
 
 // FB Deep Events: Conversion events breakdown by type
-router.get('/fb-deep-events/events-breakdown', authenticateToken, (req, res) => {
+router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   const tz = getConfiguredTimezone();
-  const conds = [];
-  const params = [];
+  const dateConds = [];
+  const dateParams = [];
 
-  if (from) { conds.push(`ce.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
-  if (to) { conds.push(`ce.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
+  if (from) { dateConds.push(`l.created_at >= ?`); dateParams.push(localDateToUtcRange(from, tz).start); }
+  if (to) { dateConds.push(`l.created_at <= ?`); dateParams.push(localDateToUtcRange(to, tz).end); }
 
-  const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
+  const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
 
-  const data = db.prepare(`
-    SELECT ce.conversion_action_name, COUNT(*) as count
-    FROM conversion_events ce
-    JOIN leads l ON ce.lead_id = l.id
+  // Get all rt_clickids for these leads
+  const leadClickIds = db.prepare(`
+    SELECT DISTINCT l.rt_clickid
+    FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
-    WHERE ${FB_DEEP_BASE_FILTER}
-      AND ce.conversion_action_name IS NOT NULL
-      ${dateWhere}
-    GROUP BY ce.conversion_action_name
-    ORDER BY count DESC
-  `).all(...params);
+    WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
+  `).all(...dateParams).map(r => r.rt_clickid);
+
+  const clickIdSet = new Set(leadClickIds);
+
+  // Fetch RedTrack conversions and match
+  const rtConversions = await fetchRedTrackMetaConversions(from, to);
+  const matched = rtConversions.filter(c => clickIdSet.has(c.clickid));
+
+  // Group by type
+  const counts = {};
+  for (const c of matched) {
+    counts[c.type] = (counts[c.type] || 0) + 1;
+  }
+
+  const data = Object.entries(counts)
+    .map(([name, count]) => ({ conversion_action_name: name, count }))
+    .sort((a, b) => b.count - a.count);
 
   res.json(data);
 });
 
-// FB Deep Events: Leads with conversion events
-router.get('/fb-deep-events/leads', authenticateToken, (req, res) => {
+// FB Deep Events: Leads with RedTrack conversion events
+router.get('/fb-deep-events/leads', authenticateToken, async (req, res) => {
   const { from, to, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   const tz = getConfiguredTimezone();
@@ -1663,14 +1680,7 @@ router.get('/fb-deep-events/leads', authenticateToken, (req, res) => {
            l.transfer_status, l.five9_dispo, l.stage,
            l.contract_sign_date, l.total_debt_sign, l.is_blocked,
            lp.name as landing_page_name,
-           v.ip_address,
-           (
-             SELECT ce.conversion_action_name
-             FROM conversion_events ce
-             WHERE ce.lead_id = l.id
-             ORDER BY ce.created_at DESC
-             LIMIT 1
-           ) as current_status
+           v.ip_address
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
     LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
@@ -1679,25 +1689,27 @@ router.get('/fb-deep-events/leads', authenticateToken, (req, res) => {
     LIMIT ? OFFSET ?
   `).all(...params, parseInt(limit), offset);
 
-  // Batch-fetch conversion events for all leads on this page
-  if (leads.length) {
-    const leadIds = leads.map(l => l.id);
-    const placeholders = leadIds.map(() => '?').join(',');
-    const events = db.prepare(`
-      SELECT lead_id, conversion_action_name, status, created_at
-      FROM conversion_events
-      WHERE lead_id IN (${placeholders})
-      ORDER BY created_at ASC
-    `).all(...leadIds);
+  // Fetch RedTrack conversions and build clickid → events map
+  const rtConversions = await fetchRedTrackMetaConversions(from, to);
+  const rtMap = {};
+  for (const c of rtConversions) {
+    if (!rtMap[c.clickid]) rtMap[c.clickid] = [];
+    rtMap[c.clickid].push({
+      type: c.type,
+      payout: c.payout,
+      conv_time: c.conv_time,
+      status: c.status
+    });
+  }
 
-    const eventsMap = {};
-    for (const e of events) {
-      if (!eventsMap[e.lead_id]) eventsMap[e.lead_id] = [];
-      eventsMap[e.lead_id].push(e);
-    }
-    for (const lead of leads) {
-      lead.events = eventsMap[lead.id] || [];
-    }
+  // Attach RedTrack events to each lead and derive current_status
+  for (const lead of leads) {
+    const rtEvents = rtMap[lead.rt_clickid] || [];
+    // Sort by conv_time ascending
+    rtEvents.sort((a, b) => new Date(a.conv_time) - new Date(b.conv_time));
+    lead.events = rtEvents;
+    // Current status = last event type (most progressed)
+    lead.current_status = rtEvents.length ? rtEvents[rtEvents.length - 1].type : null;
   }
 
   res.json({
