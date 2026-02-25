@@ -1120,6 +1120,14 @@ router.get('/tiktok/summary', authenticateToken, (req, res) => {
     WHERE lp.platform = 'tiktok' ${dateWhere}
   `).get(...dateParams);
 
+  // Count instant form leads (hidden_fields contains tiktok_lead_gen source)
+  const instantFormCount = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'tiktok' AND l.hidden_fields LIKE '%"source":"tiktok_lead_gen"%' ${dateWhere}
+  `).get(...dateParams).count;
+
   const eventStats = db.prepare(`
     SELECT COUNT(*) as events_sent
     FROM conversion_events ce
@@ -1128,8 +1136,12 @@ router.get('/tiktok/summary', authenticateToken, (req, res) => {
     WHERE lp.platform = 'tiktok' AND ce.status = 'sent' ${eventDateWhere}
   `).get(...eventDateParams);
 
+  const totalLeads = leadStats.total_leads || 0;
+
   res.json({
-    total_leads: leadStats.total_leads || 0,
+    total_leads: totalLeads,
+    instant_form_leads: instantFormCount || 0,
+    landing_page_leads: totalLeads - (instantFormCount || 0),
     events_sent: eventStats.events_sent || 0
   });
 });
