@@ -15,6 +15,7 @@ setTimeout(() => {
 let uploadConversion = null;
 let sendFacebookEvent = null;
 let uploadBingConversion = null;
+let sendTikTokEvent = null;
 setTimeout(() => {
   try {
     uploadConversion = require('./google-ads').uploadConversion;
@@ -30,6 +31,11 @@ setTimeout(() => {
     uploadBingConversion = require('./bing-ads').uploadBingConversion;
   } catch (e) {
     console.log('Bing Ads module not loaded yet');
+  }
+  try {
+    sendTikTokEvent = require('./tiktok-leads').sendTikTokEvent;
+  } catch (e) {
+    console.log('TikTok module not loaded yet');
   }
 }, 0);
 
@@ -268,6 +274,46 @@ router.all('/conversion', async (req, res) => {
     }
   }
 
+  // Send to TikTok Events API if event config has tiktok_event_name set
+  let ttResult = null;
+  if (config && config.tiktok_event_name && sendTikTokEvent) {
+    try {
+      const ttEventName = config.tiktok_event_name;
+      const visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+      const clientIp = visitor?.ip_address || req.ip || '';
+      const clientUa = visitor?.user_agent || req.headers['user-agent'] || '';
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventSourceUrl = visitor?.landing_page ? `${baseUrl}${visitor.landing_page}` : '';
+      const ttValue = revenue ? parseFloat(revenue) : (debt_amount ? parseFloat(debt_amount) : (value ? parseFloat(value) : undefined));
+
+      ttResult = await sendTikTokEvent(ttEventName, {
+        email: lead.email,
+        phone: lead.phone,
+        external_id: eli_clickid,
+        client_ip_address: clientIp,
+        client_user_agent: clientUa
+      }, { value: ttValue, currency, event_source_url: eventSourceUrl });
+
+      // Log TikTok CAPI result in conversion_events
+      db.prepare(`
+        INSERT INTO conversion_events (lead_id, eli_clickid, conversion_action_name, conversion_value, debt_amount, revenue, source, status, error_message, sent_at, capi_payload)
+        VALUES (?, ?, ?, ?, ?, ?, 'tiktok_capi', ?, ?, ${ttResult.success ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?)
+      `).run(
+        lead.id,
+        eli_clickid,
+        event,
+        value || null,
+        debt_amount ? parseFloat(debt_amount) : null,
+        revenue ? parseFloat(revenue) : null,
+        ttResult.success ? 'sent' : 'failed',
+        ttResult.error || null,
+        ttResult.payload ? JSON.stringify(ttResult.payload) : null
+      );
+    } catch (err) {
+      console.error('Failed to send TikTok CAPI event:', err);
+    }
+  }
+
   // Send to Bing Ads if event config has send_to_bing enabled and msclkid is present
   let bingResult = null;
   if (msclkid && config && config.send_to_bing && config.bing_conversion_goal_id && uploadBingConversion) {
@@ -331,6 +377,7 @@ router.all('/conversion', async (req, res) => {
     google_ads_sent: status === 'sent',
     google_ads_configured: !!(config && config.conversion_action_id),
     facebook_capi_sent: fbResult?.success || false,
+    tiktok_capi_sent: ttResult?.success || false,
     bing_ads_sent: bingResult?.success || false
   });
 });
@@ -373,16 +420,16 @@ router.get('/config', authenticateToken, (req, res) => {
  * ADMIN: Create postback configuration
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, facebook_event_name, bing_conversion_goal_id, send_to_bing } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, facebook_event_name, bing_conversion_goal_id, send_to_bing, tiktok_event_name, send_to_tiktok } = req.body;
 
   if (!name || !event_name) {
     return res.status(400).json({ error: 'Name and event_name required' });
   }
 
   const result = db.prepare(`
-    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, facebook_event_name, bing_conversion_goal_id, send_to_bing)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, facebook_event_name ? 1 : 0, facebook_event_name || null, bing_conversion_goal_id || null, send_to_bing ? 1 : 0);
+    INSERT INTO postback_config (name, event_name, google_ads_event_name, conversion_action_id, send_to_facebook, facebook_event_name, bing_conversion_goal_id, send_to_bing, tiktok_event_name, send_to_tiktok)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(name, event_name.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, facebook_event_name ? 1 : 0, facebook_event_name || null, bing_conversion_goal_id || null, send_to_bing ? 1 : 0, tiktok_event_name || null, tiktok_event_name ? 1 : 0);
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'postback_config', result.lastInsertRowid, `Created postback config: ${name}`, req.ip);
   res.json({ id: result.lastInsertRowid, message: 'Config created' });
@@ -392,7 +439,7 @@ router.post('/config', authenticateToken, (req, res) => {
  * ADMIN: Update postback configuration
  */
 router.put('/config/:id', authenticateToken, (req, res) => {
-  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, facebook_event_name, bing_conversion_goal_id, send_to_bing } = req.body;
+  const { name, event_name, google_ads_event_name, conversion_action_id, is_active, facebook_event_name, bing_conversion_goal_id, send_to_bing, tiktok_event_name, send_to_tiktok } = req.body;
 
   db.prepare(`
     UPDATE postback_config SET
@@ -404,9 +451,11 @@ router.put('/config/:id', authenticateToken, (req, res) => {
       facebook_event_name = ?,
       send_to_facebook = ?,
       bing_conversion_goal_id = ?,
-      send_to_bing = COALESCE(?, send_to_bing)
+      send_to_bing = COALESCE(?, send_to_bing),
+      tiktok_event_name = ?,
+      send_to_tiktok = ?
     WHERE id = ?
-  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, facebook_event_name || null, facebook_event_name ? 1 : 0, bing_conversion_goal_id || null, send_to_bing != null ? (send_to_bing ? 1 : 0) : null, req.params.id);
+  `).run(name, event_name?.toLowerCase(), google_ads_event_name || null, conversion_action_id || null, is_active, facebook_event_name || null, facebook_event_name ? 1 : 0, bing_conversion_goal_id || null, send_to_bing != null ? (send_to_bing ? 1 : 0) : null, tiktok_event_name || null, tiktok_event_name ? 1 : 0, req.params.id);
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'postback_config', parseInt(req.params.id), `Updated postback config: ${name || req.params.id}`, req.ip);
   res.json({ message: 'Config updated' });

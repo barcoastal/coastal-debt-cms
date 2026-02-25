@@ -47,7 +47,9 @@ router.get('/config', authenticateToken, (req, res) => {
     has_access_token: !!config.access_token,
     app_id: config.app_id || '',
     app_secret: config.app_secret ? '••••' + config.app_secret.slice(-4) : null,
-    has_app_secret: !!config.app_secret
+    has_app_secret: !!config.app_secret,
+    pixel_code: config.pixel_code || '',
+    test_event_code: config.test_event_code || ''
   });
 });
 
@@ -141,7 +143,7 @@ router.get('/callback', async (req, res) => {
  * POST /config — Saves TikTok config (authenticated)
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { access_token, advertiser_id, default_landing_page_id, app_id, app_secret } = req.body;
+  const { access_token, advertiser_id, default_landing_page_id, app_id, app_secret, pixel_code, test_event_code } = req.body;
 
   const existing = db.prepare('SELECT id FROM tiktok_config WHERE id = 1').get();
 
@@ -161,15 +163,15 @@ router.post('/config', authenticateToken, (req, res) => {
       params.push(app_secret);
     }
 
-    updates.push('advertiser_id = ?', 'default_landing_page_id = ?', 'app_id = ?', 'connected_at = CURRENT_TIMESTAMP');
-    params.push(advertiser_id || null, default_landing_page_id || null, app_id || null);
+    updates.push('advertiser_id = ?', 'default_landing_page_id = ?', 'app_id = ?', 'pixel_code = ?', 'test_event_code = ?', 'connected_at = CURRENT_TIMESTAMP');
+    params.push(advertiser_id || null, default_landing_page_id || null, app_id || null, pixel_code || null, test_event_code || null);
 
     db.prepare(`UPDATE tiktok_config SET ${updates.join(', ')} WHERE id = 1`).run(...params);
   } else {
     db.prepare(`
-      INSERT INTO tiktok_config (id, access_token, advertiser_id, default_landing_page_id, app_id, app_secret, connected_at)
-      VALUES (1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(access_token || null, advertiser_id || null, default_landing_page_id || null, app_id || null, app_secret || null);
+      INSERT INTO tiktok_config (id, access_token, advertiser_id, default_landing_page_id, app_id, app_secret, pixel_code, test_event_code, connected_at)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(access_token || null, advertiser_id || null, default_landing_page_id || null, app_id || null, app_secret || null, pixel_code || null, test_event_code || null);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'connected', 'tiktok', null, 'TikTok config updated', req.ip);
@@ -703,4 +705,298 @@ function startBackgroundSync() {
 // Start background sync
 startBackgroundSync();
 
+/**
+ * Send a conversion event to TikTok Events API
+ *
+ * @param {string} eventName - e.g. "CompletePayment", "SubmitForm", "Contact"
+ * @param {object} userData - { email, phone, external_id, client_ip_address, client_user_agent }
+ * @param {object} [options] - { value, currency, event_source_url, event_id }
+ * @returns {Promise<{success: boolean, error?: string, event_id?: string, payload?: object}>}
+ */
+async function sendTikTokEvent(eventName, userData, options = {}) {
+  try {
+    const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+    if (!config || !config.access_token || !config.pixel_code) {
+      return { success: false, error: 'TikTok Events API not configured (missing access_token or pixel_code)' };
+    }
+
+    // Hash helper - SHA256, lowercase, trimmed
+    const hash = (val) => {
+      if (!val) return null;
+      return crypto.createHash('sha256').update(String(val).trim().toLowerCase()).digest('hex');
+    };
+
+    // Normalize phone to digits only
+    const normalizePhone = (phone) => {
+      if (!phone) return null;
+      return phone.replace(/\D/g, '') || null;
+    };
+
+    const event_id = options.event_id || crypto.randomUUID();
+    const timestamp = new Date().toISOString().replace(/\.\d+Z$/, '+00:00');
+
+    // Build context.user with hashed fields
+    const user = {};
+    if (userData.email) user.email = hash(userData.email);
+    if (userData.phone) user.phone_number = hash(normalizePhone(userData.phone));
+    if (userData.external_id) user.external_id = hash(userData.external_id);
+
+    const context = { user };
+    if (options.event_source_url) {
+      context.page = { url: options.event_source_url };
+    }
+    if (userData.client_ip_address) context.ip = userData.client_ip_address;
+    if (userData.client_user_agent) context.user_agent = userData.client_user_agent;
+
+    const body = {
+      pixel_code: config.pixel_code,
+      event: eventName,
+      event_id,
+      timestamp,
+      context,
+      properties: {}
+    };
+
+    if (options.value !== undefined && options.value !== null) {
+      body.properties.value = parseFloat(options.value);
+      body.properties.currency = options.currency || 'USD';
+    }
+    body.properties.content_type = 'product';
+
+    // Include test_event_code if configured
+    if (config.test_event_code) {
+      body.test_event_code = config.test_event_code;
+    }
+
+    const response = await fetch('https://business-api.tiktok.com/open_api/v1.2/pixel/track/', {
+      method: 'POST',
+      headers: {
+        'Access-Token': config.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const result = await response.json();
+
+    // Build sanitized payload for debug storage (exclude access_token)
+    const debugPayload = { ...body };
+
+    if (result.code !== 0) {
+      console.error('TikTok Events API error:', result.message);
+      return { success: false, error: result.message || 'TikTok API error (code: ' + result.code + ')', event_id, payload: debugPayload };
+    }
+
+    console.log(`TikTok Events API: sent "${eventName}" event, event_id: ${event_id}`);
+    return { success: true, event_id, payload: debugPayload };
+  } catch (err) {
+    console.error('TikTok Events API request failed:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * DEBUG: Get recent TikTok CAPI events with match quality info
+ */
+router.get('/debug/events', authenticateToken, (req, res) => {
+  const { page = 1, limit = 50, status } = req.query;
+  const offset = (page - 1) * limit;
+
+  let where = `WHERE ce.source = 'tiktok_capi'`;
+  const params = [];
+
+  if (status) {
+    where += ` AND ce.status = ?`;
+    params.push(status);
+  }
+
+  const query = `
+    SELECT ce.*, l.first_name, l.last_name, l.email, l.phone, l.eli_clickid as lead_eli,
+           v.ip_address, v.user_agent, v.landing_page
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    ${where}
+    ORDER BY ce.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const countQuery = `
+    SELECT COUNT(*) as total FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    ${where}
+  `;
+
+  let events = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
+  const total = db.prepare(countQuery).get(...params).total;
+
+  // Parse capi_payload and extract match quality fields
+  events = events.map(e => {
+    let payload = null;
+    try { payload = e.capi_payload ? JSON.parse(e.capi_payload) : null; } catch (err) {}
+
+    const ctx = payload?.context || {};
+    const user = ctx.user || {};
+    return {
+      ...e,
+      capi_payload: payload,
+      match_quality: {
+        email: !!user.email,
+        phone: !!user.phone_number,
+        external_id: !!user.external_id,
+        ip: !!(ctx.ip || e.ip_address),
+        ua: !!(ctx.user_agent || e.user_agent),
+        event_source_url: !!(ctx.page?.url)
+      }
+    };
+  });
+
+  // Summary stats (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  const statsRows = db.prepare(`
+    SELECT ce.status, ce.capi_payload,
+           v.ip_address, v.user_agent
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    WHERE ce.source = 'tiktok_capi' AND ce.created_at >= ?
+  `).all(thirtyDaysAgoStr);
+
+  let totalEvents = statsRows.length;
+  let sentCount = 0, failedCount = 0, withEmail = 0, withPhone = 0, withIpUa = 0, withExternalId = 0;
+  for (const row of statsRows) {
+    if (row.status === 'sent') sentCount++;
+    if (row.status === 'failed') failedCount++;
+    let p = null;
+    try { p = row.capi_payload ? JSON.parse(row.capi_payload) : null; } catch (err) {}
+    const ctx = p?.context || {};
+    const user = ctx.user || {};
+    if (user.email) withEmail++;
+    if (user.phone_number) withPhone++;
+    if (user.external_id) withExternalId++;
+    if ((ctx.ip || row.ip_address) && (ctx.user_agent || row.user_agent)) withIpUa++;
+  }
+
+  res.json({
+    events,
+    pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
+    summary: {
+      total_events: totalEvents,
+      sent: sentCount,
+      failed: failedCount,
+      pct_email: totalEvents ? Math.round((withEmail / totalEvents) * 100) : 0,
+      pct_phone: totalEvents ? Math.round((withPhone / totalEvents) * 100) : 0,
+      pct_external_id: totalEvents ? Math.round((withExternalId / totalEvents) * 100) : 0,
+      pct_ip_ua: totalEvents ? Math.round((withIpUa / totalEvents) * 100) : 0
+    }
+  });
+});
+
+/**
+ * DEBUG: Look up a specific lead's TikTok CAPI data
+ */
+router.get('/debug/lead/:id', authenticateToken, (req, res) => {
+  const identifier = req.params.id;
+
+  // Try by lead ID first, then by eli_clickid
+  let lead = db.prepare(`
+    SELECT l.*, lp.name as landing_page_name, lp.platform
+    FROM leads l
+    LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE l.id = ?
+  `).get(identifier);
+
+  if (!lead) {
+    lead = db.prepare(`
+      SELECT l.*, lp.name as landing_page_name, lp.platform
+      FROM leads l
+      LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
+      WHERE l.eli_clickid = ?
+    `).get(identifier);
+  }
+
+  if (!lead) {
+    return res.status(404).json({ error: 'Lead not found' });
+  }
+
+  try { lead.hidden_fields = JSON.parse(lead.hidden_fields || '{}'); } catch (e) { lead.hidden_fields = {}; }
+
+  // Get visitor record
+  const visitor = lead.eli_clickid
+    ? db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(lead.eli_clickid)
+    : null;
+
+  // Get all TikTok CAPI events for this lead
+  let ttEvents = db.prepare(`
+    SELECT * FROM conversion_events
+    WHERE lead_id = ? AND source = 'tiktok_capi'
+    ORDER BY created_at DESC
+  `).all(lead.id);
+
+  ttEvents = ttEvents.map(e => {
+    let payload = null;
+    try { payload = e.capi_payload ? JSON.parse(e.capi_payload) : null; } catch (err) {}
+    return { ...e, capi_payload: payload };
+  });
+
+  // Build match quality checklist
+  const matchChecklist = {
+    email: { present: !!lead.email, value: lead.email ? '***' : null },
+    phone: { present: !!lead.phone, value: lead.phone ? '***' : null },
+    external_id: { present: !!lead.eli_clickid, value: lead.eli_clickid || null },
+    client_ip: { present: !!(visitor?.ip_address), value: visitor?.ip_address || null },
+    client_ua: { present: !!(visitor?.user_agent), value: visitor?.user_agent ? visitor.user_agent.substring(0, 80) + '...' : null },
+    event_source_url: { present: !!(visitor?.landing_page), value: visitor?.landing_page || null }
+  };
+
+  res.json({
+    lead,
+    visitor: visitor ? {
+      eli_clickid: visitor.eli_clickid,
+      ip_address: visitor.ip_address,
+      user_agent: visitor.user_agent,
+      landing_page: visitor.landing_page,
+      utm_source: visitor.utm_source,
+      utm_campaign: visitor.utm_campaign,
+      first_visit: visitor.first_visit
+    } : null,
+    tt_events: ttEvents,
+    match_checklist: matchChecklist
+  });
+});
+
+/**
+ * DEBUG: Send a manual test event to TikTok Events API
+ */
+router.post('/debug/test-event', authenticateToken, async (req, res) => {
+  const { email, phone, event_name, external_id, client_ip, client_ua, event_source_url } = req.body;
+
+  if (!event_name) {
+    return res.status(400).json({ error: 'event_name is required' });
+  }
+
+  const result = await sendTikTokEvent(event_name, {
+    email: email || '',
+    phone: phone || '',
+    external_id: external_id || '',
+    client_ip_address: client_ip || '',
+    client_user_agent: client_ua || ''
+  }, {
+    event_source_url: event_source_url || ''
+  });
+
+  res.json({
+    success: result.success,
+    error: result.error || null,
+    event_id: result.event_id || null,
+    payload_sent: result.payload || null,
+    tiktok_response: result.success
+      ? { status: 'ok' }
+      : { error: result.error }
+  });
+});
+
 module.exports = router;
+module.exports.sendTikTokEvent = sendTikTokEvent;

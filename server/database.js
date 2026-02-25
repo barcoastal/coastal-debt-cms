@@ -233,6 +233,10 @@ try {
 // Add facebook_event_name to postback_config if not exist
 try { db.exec(`ALTER TABLE postback_config ADD COLUMN facebook_event_name TEXT`); } catch (e) {}
 
+// Add tiktok_event_name to postback_config
+try { db.exec(`ALTER TABLE postback_config ADD COLUMN tiktok_event_name TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE postback_config ADD COLUMN send_to_tiktok INTEGER DEFAULT 0`); } catch (e) {}
+
 // Migrate existing rows with send_to_facebook = 1 but no facebook_event_name
 try {
   const INTERNAL_TO_FB = { lead: 'Lead', qualified: 'Lead', appointment: 'Schedule',
@@ -308,6 +312,11 @@ db.exec(`
 // Add app_id and app_secret to tiktok_config (for OAuth flow)
 try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_secret TEXT`); } catch (e) {}
+
+// Add pixel_code to tiktok_config (needed for Events API)
+try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN pixel_code TEXT`); } catch (e) {}
+// Add test_event_code to tiktok_config (for debug/testing)
+try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
 
 // Add test_event_code to facebook_config
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } catch (e) {}
