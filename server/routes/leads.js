@@ -18,6 +18,7 @@ let fetchGclidCost = null;
 let uploadConversion = null;
 let sendFacebookEvent = null;
 let uploadBingConversion = null;
+let pushLeadToSalesforce = null;
 setTimeout(() => {
   try {
     fetchGclidCost = require('./google-ads').fetchGclidCost;
@@ -34,6 +35,11 @@ setTimeout(() => {
     uploadBingConversion = require('./bing-ads').uploadBingConversion;
   } catch (e) {
     console.log('Bing Ads module not loaded yet');
+  }
+  try {
+    pushLeadToSalesforce = require('./salesforce').pushLeadToSalesforce;
+  } catch (e) {
+    console.log('Salesforce module not loaded yet');
   }
 }, 0);
 
@@ -305,6 +311,12 @@ router.post('/', async (req, res) => {
         );
         console.log(`Facebook CAPI Lead event for lead ${result.lastInsertRowid}: ${fbResult.success ? 'sent' : 'failed'}${fbResult.event_id ? ', event_id: ' + fbResult.event_id : ''}`);
       }).catch(err => console.error('Failed to send Facebook CAPI Lead event:', err));
+    }
+
+    // Auto-push to Salesforce
+    if (pushLeadToSalesforce) {
+      pushLeadToSalesforce(result.lastInsertRowid).catch(err =>
+        console.error('Salesforce auto-push error:', err));
     }
   } else {
     // Log blocked lead event
@@ -700,6 +712,11 @@ router.post('/zapier', async (req, res) => {
       const zapierLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
       const fbLeadEvent = zapierLeadConfig?.facebook_event_name || 'Lead';
       sendFacebookEvent(fbLeadEvent, { email, phone, firstName, lastName }, {}).catch(() => {});
+    }
+
+    // Auto-push to Salesforce
+    if (pushLeadToSalesforce) {
+      pushLeadToSalesforce(result.lastInsertRowid).catch(() => {});
     }
 
     res.json({ success: true, id: result.lastInsertRowid });

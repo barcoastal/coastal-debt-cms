@@ -729,6 +729,27 @@ db.exec(`
 // Add is_blocked column to leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN is_blocked INTEGER DEFAULT 0`); } catch (e) {}
 
+// Salesforce CRM integration config (singleton)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS salesforce_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    client_id TEXT,
+    client_secret_encrypted TEXT,
+    access_token_encrypted TEXT,
+    refresh_token_encrypted TEXT,
+    instance_url TEXT,
+    token_expires_at DATETIME,
+    is_enabled INTEGER DEFAULT 1,
+    connected_at DATETIME,
+    connected_by_user_id INTEGER,
+    FOREIGN KEY (connected_by_user_id) REFERENCES users(id)
+  )
+`);
+db.exec(`INSERT OR IGNORE INTO salesforce_config (id) VALUES (1)`);
+
+// Add Salesforce Lead ID column to leads
+try { db.exec(`ALTER TABLE leads ADD COLUMN salesforce_lead_id TEXT`); } catch (e) {}
+
 // Outbrain: Business Debt landing page + direct form (no pre-qual)
 const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
 if (!obFormExists) {

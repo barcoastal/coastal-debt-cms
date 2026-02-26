@@ -368,6 +368,80 @@
         </div>
       </div>
 
+      <!-- Salesforce CRM Integration -->
+      <div class="settings-card">
+        <h3>Salesforce CRM Integration</h3>
+        <p>Auto-push new leads to Salesforce as Lead objects and receive status updates via postback.</p>
+
+        <div id="sfConnectionStatus">
+          <div class="connection-status disconnected">
+            <div class="status-dot yellow"></div>
+            <div class="account-info">
+              <strong>Not Connected</strong>
+              <span>Configure your Salesforce Connected App to start pushing leads</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuration Form -->
+        <div style="margin-top: 16px;">
+          <div class="form-group">
+            <label>Client ID (Consumer Key)</label>
+            <input type="text" id="sfClientId" placeholder="Enter Salesforce Connected App Consumer Key">
+          </div>
+          <div class="form-group">
+            <label>Client Secret (Consumer Secret)</label>
+            <input type="password" id="sfClientSecret" placeholder="Enter Consumer Secret">
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="sfEnabled" checked>
+            <label for="sfEnabled" style="margin: 0;">Auto-push new leads to Salesforce</label>
+          </div>
+          <button class="btn btn-primary" onclick="saveSfConfig()">Save Configuration</button>
+          <span id="sfSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
+        </div>
+
+        <!-- Connect / Test / Push Buttons -->
+        <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-primary" id="sfConnectBtn" onclick="connectSalesforce()">Connect with Salesforce</button>
+          <button class="btn btn-secondary" onclick="testSfConnection()">Test Connection</button>
+          <button class="btn btn-secondary" onclick="pushAllToSf()">Push All Unpushed Leads</button>
+        </div>
+
+        <!-- Disconnect (shown when connected) -->
+        <div id="sfDisconnectSection" style="display: none; margin-top: 16px;">
+          <div id="sfInstanceUrl" style="color: #6b7280; margin-bottom: 8px;"></div>
+          <button class="btn btn-danger" onclick="disconnectSalesforce()">Disconnect Salesforce</button>
+        </div>
+
+        <!-- Callback URL -->
+        <div style="margin-top: 16px;">
+          <div class="form-group">
+            <label>OAuth Callback URL <small>(use this in your Salesforce Connected App)</small></label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="sfCallbackUrl" readonly style="background: #f3f4f6;">
+              <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('sfCallbackUrl').value).then(() => alert('Copied!'))">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="setup-steps" id="sfSetupSteps" style="margin-top: 16px;">
+          <h4>Setup Instructions</h4>
+          <ol>
+            <li>In Salesforce, go to <strong>Setup → App Manager → New Connected App</strong></li>
+            <li>Set <strong>Connected App Name</strong> (e.g., "CMS Integration")</li>
+            <li>Check <strong>Enable OAuth Settings</strong></li>
+            <li>Set the <strong>Callback URL</strong> to the value shown above</li>
+            <li>Add OAuth Scopes: <code>Manage user data via APIs (api)</code> and <code>Perform requests at any time (refresh_token)</code></li>
+            <li>Save, then wait 2-10 minutes for Salesforce to activate the app</li>
+            <li>Copy the <strong>Consumer Key</strong> and <strong>Consumer Secret</strong> into the fields above</li>
+            <li>Click <strong>Save Configuration</strong>, then <strong>Connect with Salesforce</strong></li>
+            <li>After connecting, click <strong>Test Connection</strong> to verify Lead access</li>
+          </ol>
+        </div>
+      </div>
+
       <!-- Meta (Facebook) Integration -->
       <div class="settings-card">
         <h3>Meta (Facebook) Integration</h3>
@@ -1433,6 +1507,125 @@
     }
 
     loadWebhooks();
+
+    // --- Salesforce CRM Integration ---
+    const sfCallbackUrl = window.location.origin + '/api/salesforce/callback';
+    document.getElementById('sfCallbackUrl').value = sfCallbackUrl;
+
+    async function loadSfConfig() {
+      try {
+        const config = await api('/api/salesforce/config');
+        document.getElementById('sfClientId').value = config.client_id || '';
+        if (config.has_client_secret) {
+          document.getElementById('sfClientSecret').value = config.client_secret || '';
+        }
+        document.getElementById('sfEnabled').checked = !!config.is_enabled;
+
+        const statusEl = document.getElementById('sfConnectionStatus');
+        const disconnectEl = document.getElementById('sfDisconnectSection');
+        const instanceEl = document.getElementById('sfInstanceUrl');
+
+        if (config.is_connected) {
+          statusEl.innerHTML = `
+            <div class="connection-status connected">
+              <div class="status-dot green"></div>
+              <div class="account-info">
+                <strong>Connected to Salesforce</strong>
+                <span>${config.instance_url}</span>
+              </div>
+            </div>`;
+          disconnectEl.style.display = 'block';
+          instanceEl.textContent = 'Instance: ' + config.instance_url;
+          document.getElementById('sfConnectBtn').style.display = 'none';
+          document.getElementById('sfSetupSteps').style.display = 'none';
+        } else {
+          statusEl.innerHTML = `
+            <div class="connection-status disconnected">
+              <div class="status-dot yellow"></div>
+              <div class="account-info">
+                <strong>Not Connected</strong>
+                <span>Configure your Salesforce Connected App to start pushing leads</span>
+              </div>
+            </div>`;
+          disconnectEl.style.display = 'none';
+          document.getElementById('sfConnectBtn').style.display = '';
+          document.getElementById('sfSetupSteps').style.display = '';
+        }
+      } catch (err) {
+        console.error('Failed to load Salesforce config:', err);
+      }
+    }
+
+    async function saveSfConfig() {
+      const statusEl = document.getElementById('sfSaveStatus');
+      try {
+        statusEl.textContent = 'Saving...';
+        await api('/api/salesforce/config', {
+          method: 'POST',
+          body: JSON.stringify({
+            client_id: document.getElementById('sfClientId').value,
+            client_secret: document.getElementById('sfClientSecret').value,
+            is_enabled: document.getElementById('sfEnabled').checked
+          })
+        });
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => statusEl.textContent = '', 3000);
+        loadSfConfig();
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    async function connectSalesforce() {
+      try {
+        const res = await api('/api/salesforce/connect');
+        if (res.url) window.location.href = res.url;
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function testSfConnection() {
+      try {
+        const res = await api('/api/salesforce/test', { method: 'POST' });
+        alert(res.message || 'Connection successful!');
+      } catch (err) {
+        alert('Test failed: ' + err.message);
+      }
+    }
+
+    async function pushAllToSf() {
+      if (!confirm('Push all unpushed leads to Salesforce? (max 100 at a time)')) return;
+      try {
+        const res = await api('/api/salesforce/push-all', { method: 'POST' });
+        alert(`Done! Pushed: ${res.pushed}, Failed: ${res.failed}, Total: ${res.total}`);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function disconnectSalesforce() {
+      if (!confirm('Disconnect Salesforce? Tokens will be cleared.')) return;
+      try {
+        await api('/api/salesforce/disconnect', { method: 'POST' });
+        loadSfConfig();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Load Salesforce config on page load
+    loadSfConfig();
+
+    // Check URL params for OAuth callback result
+    const sfParams = new URLSearchParams(window.location.search);
+    if (sfParams.get('sf_connected') === 'true') {
+      alert('Salesforce connected successfully!');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (sfParams.get('sf_error')) {
+      alert('Salesforce error: ' + sfParams.get('sf_error'));
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   </script>
 </body>
 </html>

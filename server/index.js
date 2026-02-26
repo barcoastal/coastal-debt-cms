@@ -26,6 +26,7 @@ const articlesRoutes = require('./routes/articles');
 const redtrackRoutes = require('./routes/redtrack');
 const googleSheetsRoutes = require('./routes/google-sheets');
 const tiktokLeadsRoutes = require('./routes/tiktok-leads');
+const salesforceRoutes = require('./routes/salesforce');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -130,6 +131,7 @@ app.use('/api/articles', articlesRoutes);
 app.use('/api/redtrack', redtrackRoutes);
 app.use('/api/google-sheets', googleSheetsRoutes);
 app.use('/api/tiktok-leads', tiktokLeadsRoutes);
+app.use('/api/salesforce', salesforceRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)
