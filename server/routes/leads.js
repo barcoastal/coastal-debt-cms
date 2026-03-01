@@ -711,7 +711,9 @@ router.post('/zapier', async (req, res) => {
     if (sendFacebookEvent) {
       const zapierLeadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
       const fbLeadEvent = zapierLeadConfig?.facebook_event_name || 'Lead';
-      sendFacebookEvent(fbLeadEvent, { email, phone, firstName, lastName }, {}).catch(() => {});
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.connection?.remoteAddress || req.ip || '';
+      const clientUa = req.headers['user-agent'] || '';
+      sendFacebookEvent(fbLeadEvent, { email, phone, firstName, lastName, client_ip_address: clientIp, client_user_agent: clientUa }, {}).catch(() => {});
     }
 
     // Auto-push to Salesforce
