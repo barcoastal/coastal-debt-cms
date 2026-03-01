@@ -437,6 +437,29 @@ tr:hover {
   white-space: nowrap;
 }
 
+/* Page size selector */
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+.page-size-selector button {
+  padding: 3px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--gray-600);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.page-size-selector button.active {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;

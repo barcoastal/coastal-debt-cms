@@ -279,7 +279,7 @@
               </tbody>
             </table>
           </div>
-          <div id="eventsPagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center;"></div>
+          <div id="eventsPagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
         </div>
       </div>
 
@@ -447,12 +447,14 @@
       alert('URL copied!');
     }
 
+    var currentPageSize = getPageSize('conversions', 25);
+
     async function loadEvents(page = 1) {
       currentEventsPage = page;
       const dateRange = currentRange === 'custom'
         ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
         : getDateRangeFromPreset(currentRange);
-      const params = new URLSearchParams({ page, limit: 25 });
+      const params = new URLSearchParams({ page, limit: currentPageSize });
       if (dateRange.from) params.append('from_date', dateRange.from);
       if (dateRange.to) params.append('to_date', dateRange.to);
       const res = await fetch(`/api/postback/events?${params}`);
@@ -471,12 +473,29 @@
       // Pagination
       const pagination = document.getElementById('eventsPagination');
       pagination.innerHTML = '';
-      for (let i = 1; i <= data.pagination.pages; i++) {
-        const btn = document.createElement('button');
-        btn.className = `btn btn-small ${i === currentEventsPage ? 'btn-primary' : 'btn-secondary'}`;
-        btn.textContent = i;
-        btn.onclick = () => loadEvents(i);
-        pagination.appendChild(btn);
+      if (data.pagination && data.pagination.pages > 0) {
+        if (page > 1) {
+          var prevBtn = document.createElement('button');
+          prevBtn.className = 'btn btn-small btn-secondary';
+          prevBtn.textContent = 'Prev';
+          prevBtn.onclick = function() { loadEvents(page - 1); };
+          pagination.appendChild(prevBtn);
+        }
+        var info = document.createElement('span');
+        info.style.cssText = 'font-size:13px;color:var(--gray-500);';
+        info.textContent = 'Page ' + page + ' of ' + data.pagination.pages + ' (' + data.pagination.total + ' total)';
+        pagination.appendChild(info);
+        if (page < data.pagination.pages) {
+          var nextBtn = document.createElement('button');
+          nextBtn.className = 'btn btn-small btn-secondary';
+          nextBtn.textContent = 'Next';
+          nextBtn.onclick = function() { loadEvents(page + 1); };
+          pagination.appendChild(nextBtn);
+        }
+        pagination.appendChild(renderPageSizeSelector('conversions', currentPageSize, function(size) {
+          currentPageSize = size;
+          loadEvents(1);
+        }));
       }
     }
 

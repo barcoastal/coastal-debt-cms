@@ -9,7 +9,6 @@
   <style>
     .table-container { overflow-x: auto; }
     table td { font-size: 12px; white-space: nowrap; }
-    table { min-width: 1800px; }
     .badge-source-google { background: #dbeafe; color: #1d4ed8; }
     .badge-source-facebook { background: #ede9fe; color: #6d28d9; }
     .badge-source-tiktok { background: #fce7f3; color: #db2777; }
@@ -240,7 +239,7 @@
     var allData = [];
     var filteredData = [];
     var currentPage = 1;
-    var pageSize = 50;
+    var pageSize = getPageSize('google-sheet', 50);
     var currentRange = 'all';
 
     function setRange(range, btn) {
@@ -253,12 +252,12 @@
       if (range !== 'custom') applyFilters();
     }
 
-    // Parse sheet date "MM/DD/YYYY HH:MM:SS" to Date
+    // Parse sheet date "DD/MM/YYYY HH:MM:SS" to Date
     function parseSheetDate(dateStr) {
       if (!dateStr) return null;
       var parts = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2}):(\d{2})$/);
       if (parts) {
-        return new Date(parseInt(parts[3]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
+        return new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
       }
       var d = new Date(dateStr);
       return isNaN(d.getTime()) ? null : d;
@@ -319,36 +318,32 @@
       // Pagination
       var pagination = document.getElementById('pagination');
       pagination.innerHTML = '';
-      if (totalPages > 1) {
-        // Prev button
-        if (currentPage > 1) {
-          var prevBtn = document.createElement('button');
-          prevBtn.className = 'btn btn-small btn-secondary';
-          prevBtn.textContent = 'Prev';
-          prevBtn.onclick = function() { currentPage--; renderPage(); };
-          pagination.appendChild(prevBtn);
-        }
-
-        // Page info
-        var info = document.createElement('span');
-        info.style.cssText = 'font-size:13px;color:var(--gray-500);';
-        info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + filteredData.length + ' rows)';
-        pagination.appendChild(info);
-
-        // Next button
-        if (currentPage < totalPages) {
-          var nextBtn = document.createElement('button');
-          nextBtn.className = 'btn btn-small btn-secondary';
-          nextBtn.textContent = 'Next';
-          nextBtn.onclick = function() { currentPage++; renderPage(); };
-          pagination.appendChild(nextBtn);
-        }
-      } else if (filteredData.length > 0) {
-        var info2 = document.createElement('span');
-        info2.style.cssText = 'font-size:13px;color:var(--gray-500);';
-        info2.textContent = filteredData.length + ' rows';
-        pagination.appendChild(info2);
+      if (currentPage > 1) {
+        var prevBtn = document.createElement('button');
+        prevBtn.className = 'btn btn-small btn-secondary';
+        prevBtn.textContent = 'Prev';
+        prevBtn.onclick = function() { currentPage--; renderPage(); };
+        pagination.appendChild(prevBtn);
       }
+
+      var info = document.createElement('span');
+      info.style.cssText = 'font-size:13px;color:var(--gray-500);';
+      info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + filteredData.length + ' rows)';
+      pagination.appendChild(info);
+
+      if (currentPage < totalPages) {
+        var nextBtn = document.createElement('button');
+        nextBtn.className = 'btn btn-small btn-secondary';
+        nextBtn.textContent = 'Next';
+        nextBtn.onclick = function() { currentPage++; renderPage(); };
+        pagination.appendChild(nextBtn);
+      }
+
+      pagination.appendChild(renderPageSizeSelector('google-sheet', pageSize, function(size) {
+        pageSize = size;
+        currentPage = 1;
+        renderPage();
+      }));
     }
 
     async function loadLeads() {

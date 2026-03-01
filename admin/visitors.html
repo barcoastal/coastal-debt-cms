@@ -191,7 +191,7 @@
         </div>
 
         <!-- Pagination -->
-        <div id="pagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center;"></div>
+        <div id="pagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
       </div>
     </main>
   </div>
@@ -286,6 +286,8 @@
       document.getElementById('todayVisitors').textContent = '-';
     }
 
+    var currentPageSize = getPageSize('visitors', 50);
+
     async function loadVisitors(page = 1) {
       currentPage = page;
       const search = document.getElementById('searchInput').value;
@@ -294,7 +296,7 @@
         ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
         : getDateRangeFromPreset(currentRange);
 
-      const params = new URLSearchParams({ page, limit: 50 });
+      const params = new URLSearchParams({ page, limit: currentPageSize });
       if (search) params.append('search', search);
       if (converted !== '') params.append('converted', converted);
       if (dateRange.from) params.append('from_date', dateRange.from);
@@ -316,12 +318,29 @@
       // Pagination
       const pagination = document.getElementById('pagination');
       pagination.innerHTML = '';
-      for (let i = 1; i <= data.pagination.pages; i++) {
-        const btn = document.createElement('button');
-        btn.className = `btn btn-small ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
-        btn.textContent = i;
-        btn.onclick = () => loadVisitors(i);
-        pagination.appendChild(btn);
+      if (data.pagination && data.pagination.pages > 0) {
+        if (page > 1) {
+          var prevBtn = document.createElement('button');
+          prevBtn.className = 'btn btn-small btn-secondary';
+          prevBtn.textContent = 'Prev';
+          prevBtn.onclick = function() { loadVisitors(page - 1); };
+          pagination.appendChild(prevBtn);
+        }
+        var info = document.createElement('span');
+        info.style.cssText = 'font-size:13px;color:var(--gray-500);';
+        info.textContent = 'Page ' + page + ' of ' + data.pagination.pages + ' (' + data.pagination.total + ' total)';
+        pagination.appendChild(info);
+        if (page < data.pagination.pages) {
+          var nextBtn = document.createElement('button');
+          nextBtn.className = 'btn btn-small btn-secondary';
+          nextBtn.textContent = 'Next';
+          nextBtn.onclick = function() { loadVisitors(page + 1); };
+          pagination.appendChild(nextBtn);
+        }
+        pagination.appendChild(renderPageSizeSelector('visitors', currentPageSize, function(size) {
+          currentPageSize = size;
+          loadVisitors(1);
+        }));
       }
     }
 

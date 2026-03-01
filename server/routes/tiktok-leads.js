@@ -506,12 +506,32 @@ async function syncTikTokLeads() {
         console.log(`TikTok lead/get response for ${pageId}:`, JSON.stringify(leadData).slice(0, 500));
 
         if (leadData.code === 0 && leadData.data) {
-          const leads = leadData.data?.list || leadData.data?.leads || [];
+          let leads = leadData.data?.list || leadData.data?.leads || [];
+
+          // Handle single-lead response format: { lead_data: {...}, meta_data: {...} }
+          if (!Array.isArray(leads) || leads.length === 0) {
+            if (leadData.data.lead_data && leadData.data.meta_data) {
+              const meta = leadData.data.meta_data;
+              // Skip test leads (lead_id "0")
+              if (meta.lead_id && meta.lead_id !== '0') {
+                leads = [{
+                  lead_id: meta.lead_id,
+                  form_id: meta.page_id || pageId,
+                  form_name: meta.form_name || formName,
+                  ad_id: meta.ad_id,
+                  campaign_id: meta.campaign_id,
+                  create_time: meta.create_time,
+                  fields: Object.entries(leadData.data.lead_data).map(([name, value]) => ({ name, value }))
+                }];
+              }
+            }
+          }
+
           if (Array.isArray(leads) && leads.length > 0) {
             console.log(`TikTok sync (direct): form "${formName}" returned ${leads.length} lead(s)`);
             for (const lead of leads) {
-              lead.form_id = pageId;
-              lead.form_name = formName;
+              lead.form_id = lead.form_id || pageId;
+              lead.form_name = lead.form_name || formName;
               try {
                 const result = processLead(lead, 'api_poll');
                 if (result.imported) synced++;
@@ -625,6 +645,13 @@ async function syncTikTokLeads() {
           const csvText = await downloadRes.text();
           console.log(`TikTok download: received ${csvText.length} bytes of CSV data`);
 
+          // Reject HTML error responses (CDN errors return HTML instead of CSV)
+          if (csvText.trimStart().startsWith('<') || csvText.includes('<html')) {
+            console.error(`TikTok download: received HTML error instead of CSV for form ${pageId}`);
+            errors.push(`Form ${pageId}: Download returned HTML error instead of CSV`);
+            continue;
+          }
+
           const rows = parseCSV(csvText);
           console.log(`TikTok sync: parsed ${rows.length} lead(s) from CSV for form "${formName}"`);
 
@@ -665,6 +692,118 @@ async function syncTikTokLeads() {
   }
   return { synced, message: synced === 0 ? 'No new leads found' : undefined, errors: errors.length ? errors : undefined };
 }
+
+/**
+ * Fetch missing per-lead costs for TikTok leads (mirrors Google Ads fetchMissingCosts)
+ * Uses TikTok Reporting API to get daily spend + clicks, computes average CPC per day
+ */
+async function fetchTikTokMissingCosts() {
+  const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.access_token || !config.advertiser_id) return { total: 0, fetched: 0, failed: 0 };
+
+  const leads = db.prepare(`
+    SELECT l.id, DATE(l.created_at) as lead_date
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'tiktok' AND l.cost_cents IS NULL
+    ORDER BY l.created_at DESC
+    LIMIT 100
+  `).all();
+
+  if (!leads.length) return { total: 0, fetched: 0, failed: 0 };
+
+  try {
+    // Find date range from leads
+    const dates = leads.map(l => l.lead_date).filter(Boolean);
+    const minDate = dates.reduce((a, b) => a < b ? a : b);
+    const maxDate = dates.reduce((a, b) => a > b ? a : b);
+
+    // Call TikTok Reporting API for daily spend + clicks
+    const ttRes = await fetch(
+      `https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/?` + new URLSearchParams({
+        advertiser_id: config.advertiser_id,
+        report_type: 'BASIC',
+        data_level: 'AUCTION_ADVERTISER',
+        dimensions: JSON.stringify(['stat_time_day']),
+        metrics: JSON.stringify(['spend', 'clicks']),
+        service_type: 'AUCTION',
+        start_date: minDate,
+        end_date: maxDate,
+        lifetime: 'false'
+      }),
+      { headers: { 'Access-Token': config.access_token } }
+    );
+    const ttData = await ttRes.json();
+
+    if (ttData.code !== 0) {
+      return { total: leads.length, fetched: 0, failed: leads.length, last_error: ttData.message || 'TikTok API error' };
+    }
+
+    // Build CPC by date: { date → { cost (dollars), clicks } }
+    const cpcByDate = {};
+    const rows = ttData.data?.list || [];
+    for (const row of rows) {
+      // stat_time_day may have " 00:00:00" suffix — strip it
+      const date = (row.dimensions?.stat_time_day || '').replace(/ 00:00:00$/, '');
+      if (!date) continue;
+      if (!cpcByDate[date]) cpcByDate[date] = { cost: 0, clicks: 0 };
+      cpcByDate[date].cost += parseFloat(row.metrics?.spend || 0);
+      cpcByDate[date].clicks += parseInt(row.metrics?.clicks || 0);
+    }
+
+    // Calculate overall average CPC as fallback
+    let totalCost = 0, totalClicks = 0;
+    for (const d of Object.values(cpcByDate)) {
+      totalCost += d.cost;
+      totalClicks += d.clicks;
+    }
+    const overallCpcCents = totalClicks > 0 ? Math.round(totalCost / totalClicks * 100) : null;
+
+    console.log(`TikTok CPC data: ${Object.keys(cpcByDate).length} dates, ${totalClicks} total clicks, overall avg CPC: ${overallCpcCents ? '$' + (overallCpcCents / 100).toFixed(2) : 'N/A'}`);
+
+    // Apply CPC to each lead based on its creation date
+    let fetched = 0, failed = 0;
+    for (const lead of leads) {
+      const dateData = cpcByDate[lead.lead_date];
+      let costCents = null;
+
+      if (dateData && dateData.clicks > 0) {
+        costCents = Math.round(dateData.cost / dateData.clicks * 100);
+      } else if (overallCpcCents !== null) {
+        costCents = overallCpcCents;
+      }
+
+      if (costCents !== null) {
+        db.prepare('UPDATE leads SET cost_cents = ?, cost_currency = ?, cost_fetched_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .run(costCents, 'USD', lead.id);
+        fetched++;
+      } else {
+        failed++;
+      }
+    }
+
+    if (fetched > 0) console.log(`TikTok costs: fetched ${fetched}/${leads.length} (${failed} failed)`);
+
+    const result = { total: leads.length, fetched, failed };
+    if (failed > 0 && !overallCpcCents) result.last_error = 'No TikTok cost data found for lead dates';
+    return result;
+  } catch (err) {
+    console.error('Error fetching TikTok CPC:', err);
+    return { total: leads.length, fetched: 0, failed: leads.length, last_error: err.message };
+  }
+}
+
+/**
+ * POST /fetch-all-costs — Manual trigger to fetch missing TikTok costs (authenticated)
+ */
+router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
+  try {
+    const result = await fetchTikTokMissingCosts();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 /**
  * POST /sync — Manual sync trigger (authenticated)
@@ -1008,3 +1147,4 @@ router.post('/debug/test-event', authenticateToken, async (req, res) => {
 
 module.exports = router;
 module.exports.sendTikTokEvent = sendTikTokEvent;
+module.exports.fetchTikTokMissingCosts = fetchTikTokMissingCosts;

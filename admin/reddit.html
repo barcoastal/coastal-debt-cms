@@ -28,7 +28,6 @@
     .mca-yes { color: #16a34a; font-weight: 600; }
     .mca-no { color: #6b7280; }
     table td { font-size: 12px; white-space: nowrap; }
-    table { min-width: 1600px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .row-blocked { background: #fef2f2 !important; }
     .ip-cell { font-family: monospace; font-size: 11px; }
@@ -209,7 +208,7 @@
             </tbody>
           </table>
         </div>
-        <div id="pagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;"></div>
+        <div id="pagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
       </div>
     </main>
   </div>
@@ -352,12 +351,14 @@
       }
     }
 
+    var currentPageSize = getPageSize('reddit-leads', 25);
+
     async function loadLeads(page) {
       page = page || 1;
       currentPage = page;
       try {
         const qs = buildQS();
-        const data = await api('/api/analytics/reddit/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
+        const data = await api('/api/analytics/reddit/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=' + currentPageSize);
         const tbody = document.getElementById('leadsTable');
 
         const cols = columnEditor.getVisibleColumns();
@@ -371,12 +372,11 @@
 
         const pagination = document.getElementById('pagination');
         pagination.innerHTML = '';
-        for (let i = 1; i <= data.pagination.pages; i++) {
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-small ' + (i === currentPage ? 'btn-primary' : 'btn-secondary');
-          btn.textContent = i;
-          btn.onclick = () => loadLeads(i);
-          pagination.appendChild(btn);
+        if (data.pagination && data.pagination.pages > 0) {
+          if (page > 1) { var pb = document.createElement('button'); pb.className = 'btn btn-small btn-secondary'; pb.textContent = 'Prev'; pb.onclick = function() { loadLeads(page - 1); }; pagination.appendChild(pb); }
+          var info = document.createElement('span'); info.style.cssText = 'font-size:13px;color:var(--gray-500);'; info.textContent = 'Page ' + page + ' of ' + data.pagination.pages + ' (' + data.pagination.total + ' total)'; pagination.appendChild(info);
+          if (page < data.pagination.pages) { var nb = document.createElement('button'); nb.className = 'btn btn-small btn-secondary'; nb.textContent = 'Next'; nb.onclick = function() { loadLeads(page + 1); }; pagination.appendChild(nb); }
+          pagination.appendChild(renderPageSizeSelector('reddit-leads', currentPageSize, function(s) { currentPageSize = s; loadLeads(1); }));
         }
       } catch (err) {
         console.error('Error loading leads:', err);

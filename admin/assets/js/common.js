@@ -339,6 +339,39 @@ class ColumnEditor {
   }
 }
 
+// Page size selector — allows user to choose 25/50/100 rows per page
+function getPageSize(pageId, defaultSize) {
+  var saved = localStorage.getItem('pageSize_' + pageId);
+  return saved ? parseInt(saved, 10) : (defaultSize || 50);
+}
+
+function renderPageSizeSelector(pageId, currentSize, onChange) {
+  var sizes = [25, 50, 100];
+  var html = '<div class="page-size-selector"><span>Show</span>';
+  for (var i = 0; i < sizes.length; i++) {
+    var s = sizes[i];
+    html += '<button' + (s === currentSize ? ' class="active"' : '') +
+      ' data-size="' + s + '">' + s + '</button>';
+  }
+  html += '<span>per page</span></div>';
+
+  var container = document.createElement('div');
+  container.innerHTML = html;
+  var el = container.firstChild;
+
+  el.querySelectorAll('button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var size = parseInt(btn.dataset.size, 10);
+      localStorage.setItem('pageSize_' + pageId, size);
+      el.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      if (onChange) onChange(size);
+    });
+  });
+
+  return el;
+}
+
 // Global timezone loader — fetched once, shared by all functions
 let __tz = '';
 const __tzReady = fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => { __tz = d.timezone || ''; }).catch(() => {});

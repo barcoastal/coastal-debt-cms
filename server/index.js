@@ -204,6 +204,11 @@ const { fetchMissingCosts } = require('./routes/google-ads');
 setInterval(fetchMissingCosts, 15 * 60 * 1000);
 setTimeout(fetchMissingCosts, 60 * 1000); // First run 60s after startup
 
+// Background TikTok cost fetching - every 15 minutes
+const { fetchTikTokMissingCosts } = require('./routes/tiktok-leads');
+setInterval(fetchTikTokMissingCosts, 15 * 60 * 1000);
+setTimeout(fetchTikTokMissingCosts, 90 * 1000); // 90s after startup (staggered from Google's 60s)
+
 // Start email worker (background queue processor + campaign scheduler)
 const { startWorker: startEmailWorker } = require('./email-worker');
 startEmailWorker();

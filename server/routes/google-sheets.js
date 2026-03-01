@@ -203,13 +203,13 @@ router.get('/leads', authenticateToken, async (req, res) => {
   }
 });
 
-// Parse dates like "09/07/2025 01:26:49" or "2025-09-07"
+// Parse dates like "27/01/2025 01:26:49" (DD/MM/YYYY) or "2025-09-07"
 function parseSheetDate(dateStr) {
   if (!dateStr) return 0;
-  // Try MM/DD/YYYY HH:MM:SS
+  // Try DD/MM/YYYY HH:MM:SS (Google Sheets locale format)
   const parts = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2}):(\d{2})$/);
   if (parts) {
-    return new Date(parts[3], parts[1] - 1, parts[2], parts[4], parts[5], parts[6]).getTime();
+    return new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]).getTime();
   }
   // Fallback
   const t = new Date(dateStr).getTime();

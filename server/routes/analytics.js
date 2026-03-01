@@ -367,7 +367,7 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
     const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
     const eventDateWhere = eventDateConds.length ? ' AND ' + eventDateConds.join(' AND ') : '';
 
-    const platforms = ['google', 'meta', 'bing', 'reddit', 'outbrain'];
+    const platforms = ['google', 'meta', 'tiktok', 'bing', 'reddit', 'outbrain'];
     const result = {};
 
     for (const platform of platforms) {
@@ -442,6 +442,56 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
               console.error('Failed to fetch Facebook spend:', err.message);
             }
             fbSpendCache = { data: cost, timestamp: now };
+          }
+        }
+      } else if (platform === 'tiktok') {
+        // TikTok cost from DB (per-lead cost_cents)
+        const ttCostRow = db.prepare(`
+          SELECT COALESCE(SUM(l.cost_cents), 0) as total
+          FROM leads l
+          JOIN landing_pages lp ON l.landing_page_id = lp.id
+          WHERE lp.platform = 'tiktok' ${dateWhere}
+        `).get(...dateParams);
+        cost = (ttCostRow.total || 0) / 100;
+
+        // Fallback to TikTok Reporting API if no DB costs exist
+        if (cost === 0) {
+          try {
+            const ttConfig = db.prepare('SELECT access_token, advertiser_id FROM tiktok_config WHERE id = 1').get();
+            if (ttConfig && ttConfig.access_token && ttConfig.advertiser_id) {
+              const tz = getConfiguredTimezone();
+              const ttParams = {
+                advertiser_id: ttConfig.advertiser_id,
+                report_type: 'BASIC',
+                data_level: 'AUCTION_ADVERTISER',
+                dimensions: JSON.stringify(['stat_time_day']),
+                metrics: JSON.stringify(['spend']),
+                service_type: 'AUCTION',
+                lifetime: 'false'
+              };
+              if (from && to) {
+                ttParams.start_date = from;
+                ttParams.end_date = to;
+              } else if (from) {
+                ttParams.start_date = from;
+                ttParams.end_date = getTodayInTz(tz);
+              } else {
+                const yearAgo = new Date();
+                yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                ttParams.start_date = yearAgo.toISOString().split('T')[0];
+                ttParams.end_date = getTodayInTz(tz);
+              }
+              const ttRes = await fetch(
+                `https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/?` + new URLSearchParams(ttParams),
+                { headers: { 'Access-Token': ttConfig.access_token } }
+              );
+              const ttData = await ttRes.json();
+              if (ttData.code === 0 && ttData.data?.list) {
+                cost = ttData.data.list.reduce((sum, row) => sum + parseFloat(row.metrics?.spend || 0), 0);
+              }
+            }
+          } catch (err) {
+            console.error('Platform financials - TikTok API fallback error:', err.message);
           }
         }
       } else {
@@ -625,6 +675,7 @@ router.get('/real-ad-spend', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   let googleSpend = null;
   let metaSpend = null;
+  let tiktokSpend = null;
 
   // --- Google Ads: total account spend via API ---
   try {
@@ -699,7 +750,47 @@ router.get('/real-ad-spend', authenticateToken, async (req, res) => {
     console.error('Real ad spend - Meta error:', e.message);
   }
 
-  res.json({ googleSpend, metaSpend });
+  // --- TikTok: total account spend via Reporting API ---
+  try {
+    const ttConfig = db.prepare('SELECT access_token, advertiser_id FROM tiktok_config WHERE id = 1').get();
+    if (ttConfig && ttConfig.access_token && ttConfig.advertiser_id) {
+      const ttParams = {
+        advertiser_id: ttConfig.advertiser_id,
+        report_type: 'BASIC',
+        data_level: 'AUCTION_ADVERTISER',
+        dimensions: JSON.stringify(['stat_time_day']),
+        metrics: JSON.stringify(['spend']),
+        service_type: 'AUCTION',
+        lifetime: 'false'
+      };
+      if (from && to) {
+        ttParams.start_date = from;
+        ttParams.end_date = to;
+      } else if (from) {
+        ttParams.start_date = from;
+        ttParams.end_date = getTodayInTz(getConfiguredTimezone());
+      } else {
+        const yearAgo = new Date();
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        ttParams.start_date = yearAgo.toISOString().split('T')[0];
+        ttParams.end_date = getTodayInTz(getConfiguredTimezone());
+      }
+      const ttRes = await fetch(
+        `https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/?` + new URLSearchParams(ttParams),
+        { headers: { 'Access-Token': ttConfig.access_token } }
+      );
+      const ttData = await ttRes.json();
+      if (ttData.code === 0 && ttData.data?.list) {
+        tiktokSpend = ttData.data.list.reduce((sum, row) => sum + parseFloat(row.metrics?.spend || 0), 0);
+      } else if (!ttData.error) {
+        tiktokSpend = 0;
+      }
+    }
+  } catch (e) {
+    console.error('Real ad spend - TikTok error:', e.message);
+  }
+
+  res.json({ googleSpend, metaSpend, tiktokSpend });
 });
 
 // Google Ads: Summary stats
@@ -1089,7 +1180,7 @@ router.get('/reddit/leads', authenticateToken, (req, res) => {
 });
 
 // TikTok: Summary stats
-router.get('/tiktok/summary', authenticateToken, (req, res) => {
+router.get('/tiktok/summary', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   const tz = getConfiguredTimezone();
   const dateConds = [];
@@ -1138,11 +1229,78 @@ router.get('/tiktok/summary', authenticateToken, (req, res) => {
 
   const totalLeads = leadStats.total_leads || 0;
 
+  // Cost aggregation from leads.cost_cents (per-lead attributed costs)
+  const costStats = db.prepare(`
+    SELECT COALESCE(SUM(l.cost_cents), 0) as total_cost_cents,
+           COUNT(l.cost_cents) as leads_with_cost
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    WHERE lp.platform = 'tiktok' ${dateWhere}
+  `).get(...dateParams);
+  const dbCostCents = costStats.total_cost_cents || 0;
+
+  // Fetch total spend from TikTok Reporting API for the selected date range
+  let ttSpend = 0;
+  try {
+    const ttConfig = db.prepare('SELECT access_token, advertiser_id FROM tiktok_config WHERE id = 1').get();
+    if (ttConfig && ttConfig.access_token && ttConfig.advertiser_id) {
+      const reportParams = {
+        advertiser_id: ttConfig.advertiser_id,
+        report_type: 'BASIC',
+        dimensions: ['stat_time_day'],
+        data_level: 'AUCTION_ADVERTISER',
+        metrics: ['spend'],
+        service_type: 'AUCTION',
+        lifetime: false
+      };
+      if (from && to) {
+        reportParams.start_date = from;
+        reportParams.end_date = to;
+      } else if (from) {
+        reportParams.start_date = from;
+        reportParams.end_date = getTodayInTz(tz);
+      } else {
+        const now = new Date();
+        reportParams.end_date = getTodayInTz(tz);
+        const yearAgo = new Date(now);
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        reportParams.start_date = yearAgo.toISOString().split('T')[0];
+      }
+
+      const ttRes = await fetch(
+        `https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/?` + new URLSearchParams({
+          advertiser_id: ttConfig.advertiser_id,
+          report_type: reportParams.report_type,
+          data_level: reportParams.data_level,
+          dimensions: JSON.stringify(reportParams.dimensions),
+          metrics: JSON.stringify(reportParams.metrics),
+          service_type: reportParams.service_type,
+          start_date: reportParams.start_date,
+          end_date: reportParams.end_date,
+          lifetime: 'false'
+        }),
+        { headers: { 'Access-Token': ttConfig.access_token } }
+      );
+      const ttData = await ttRes.json();
+      if (ttData.code === 0 && ttData.data && ttData.data.list) {
+        ttSpend = ttData.data.list.reduce((sum, row) => sum + parseFloat(row.metrics?.spend || 0), 0);
+      }
+    }
+  } catch (e) {
+    console.error('TikTok summary: API spend error:', e.message);
+  }
+
+  // Use TikTok API spend if available, otherwise fall back to DB costs
+  const totalSpendCents = ttSpend > 0 ? Math.round(ttSpend * 100) : dbCostCents;
+
   res.json({
     total_leads: totalLeads,
     instant_form_leads: instantFormCount || 0,
     landing_page_leads: totalLeads - (instantFormCount || 0),
-    events_sent: eventStats.events_sent || 0
+    events_sent: eventStats.events_sent || 0,
+    total_cost_cents: totalSpendCents,
+    leads_with_cost: costStats.leads_with_cost || 0,
+    avg_cpl_cents: totalLeads > 0 ? Math.round(totalSpendCents / totalLeads) : 0
   });
 });
 

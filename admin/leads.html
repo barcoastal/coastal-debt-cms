@@ -9,7 +9,6 @@
   <style>
     .table-container { overflow-x: auto; }
     table td { font-size: 12px; white-space: nowrap; }
-    table { min-width: 2000px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .editable-cell {
       cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
@@ -304,7 +303,7 @@
         </div>
 
         <!-- Pagination -->
-        <div id="pagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center;"></div>
+        <div id="pagination" style="margin-top: 20px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
       </div>
     </main>
   </div>
@@ -436,6 +435,8 @@
       });
     }
 
+    var currentPageSize = getPageSize('leads', 25);
+
     async function loadLeads(page = 1) {
       currentPage = page;
       const search = document.getElementById('searchInput').value;
@@ -453,7 +454,7 @@
       const stage = document.getElementById('stageFilter').value;
       const transferStatus = document.getElementById('transferStatusFilter').value;
 
-      const params = new URLSearchParams({ page, limit: 25 });
+      const params = new URLSearchParams({ page, limit: currentPageSize });
       if (search) params.append('search', search);
       if (platform) params.append('platform', platform);
       if (pageId) params.append('landing_page_id', pageId);
@@ -485,13 +486,29 @@
         const pagination = document.getElementById('pagination');
         pagination.innerHTML = '';
         if (data.pagination) {
-          for (let i = 1; i <= data.pagination.pages; i++) {
-            const btn = document.createElement('button');
-            btn.className = `btn btn-small ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
-            btn.textContent = i;
-            btn.onclick = () => loadLeads(i);
-            pagination.appendChild(btn);
+          var info = document.createElement('span');
+          info.style.cssText = 'font-size:13px;color:var(--gray-500);';
+          info.textContent = 'Page ' + page + ' of ' + data.pagination.pages + ' (' + data.pagination.total + ' total)';
+
+          if (page > 1) {
+            var prevBtn = document.createElement('button');
+            prevBtn.className = 'btn btn-small btn-secondary';
+            prevBtn.textContent = 'Prev';
+            prevBtn.onclick = function() { loadLeads(page - 1); };
+            pagination.appendChild(prevBtn);
           }
+          pagination.appendChild(info);
+          if (page < data.pagination.pages) {
+            var nextBtn = document.createElement('button');
+            nextBtn.className = 'btn btn-small btn-secondary';
+            nextBtn.textContent = 'Next';
+            nextBtn.onclick = function() { loadLeads(page + 1); };
+            pagination.appendChild(nextBtn);
+          }
+          pagination.appendChild(renderPageSizeSelector('leads', currentPageSize, function(size) {
+            currentPageSize = size;
+            loadLeads(1);
+          }));
         }
       } catch (err) {
         console.error('Failed to load leads:', err);
