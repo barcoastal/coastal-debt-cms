@@ -404,6 +404,7 @@
 
     function renderTable() {
       document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+      columnEditor.initResize(document.querySelector('table'));
     }
 
     const columnEditor = new ColumnEditor({

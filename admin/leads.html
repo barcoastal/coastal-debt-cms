@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css?v=5">
   <style>
     .table-container { overflow-x: auto; }
-    table td { font-size: 12px; white-space: nowrap; }
+    table td { font-size: 12px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .editable-cell {
       cursor: pointer; padding: 4px 6px; border-radius: 4px; min-width: 60px;
@@ -398,6 +398,7 @@
 
     function renderTable() {
       document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+      columnEditor.initResize(document.querySelector('table'));
     }
 
     const columnEditor = new ColumnEditor({

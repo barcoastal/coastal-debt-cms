@@ -10,7 +10,7 @@
   <style>
     .card-header { margin-bottom: 16px; }
     .card-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0; }
-    table td { font-size: 12px; white-space: nowrap; }
+    table td { font-size: 12px; }
     .profit-positive { color: #16a34a; font-weight: 600; }
     .profit-negative { color: #dc2626; font-weight: 600; }
 
@@ -286,6 +286,7 @@
 
     function renderTable() {
       document.getElementById('tableHead').innerHTML = '<th style="width:28px;"></th>' + columnEditor.renderHeader();
+      columnEditor.initResize(document.querySelector('table'));
     }
 
     let dailyChart = null;

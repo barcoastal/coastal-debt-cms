@@ -17,7 +17,7 @@
     .badge-gray { background: var(--gray-200); color: var(--gray-600); }
     .badge-yellow { background: #fef3c7; color: #92400e; }
     .badge-purple { background: #ede9fe; color: #5b21b6; }
-    table td { font-size: 12px; white-space: nowrap; }
+    table td { font-size: 12px; }
     .clickid-cell { font-family: monospace; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
     .row-blocked { background: #fef2f2 !important; }
     .ip-cell { font-family: monospace; font-size: 11px; }
@@ -330,6 +330,7 @@
 
     function renderTable() {
       document.getElementById('tableHead').innerHTML = columnEditor.renderHeader();
+      columnEditor.initResize(document.querySelector('table'));
     }
 
     let eventsChart = null;

@@ -208,7 +208,50 @@ class ColumnEditor {
   renderHeader() {
     const colMap = {};
     this.columns.forEach(c => colMap[c.key] = c);
-    return this.getVisibleColumns().map(k => '<th>' + (colMap[k] ? colMap[k].label : k) + '</th>').join('');
+    const widths = this._loadWidths();
+    return this.getVisibleColumns().map(k => {
+      var w = widths[k] ? ' style="width:' + widths[k] + 'px"' : '';
+      return '<th data-col="' + k + '"' + w + '>' + (colMap[k] ? colMap[k].label : k) + '<div class="col-resize"></div></th>';
+    }).join('');
+  }
+
+  _loadWidths() {
+    try { return JSON.parse(localStorage.getItem('colWidths_' + this.pageId) || '{}'); } catch(e) { return {}; }
+  }
+
+  _saveWidths(widths) {
+    localStorage.setItem('colWidths_' + this.pageId, JSON.stringify(widths));
+  }
+
+  initResize(tableEl) {
+    if (!tableEl) return;
+    var self = this;
+    tableEl.querySelectorAll('th .col-resize').forEach(function(handle) {
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        var th = handle.parentElement;
+        var startX = e.clientX;
+        var startW = th.offsetWidth;
+        handle.classList.add('active');
+        function onMove(ev) {
+          var newW = Math.max(40, startW + ev.clientX - startX);
+          th.style.width = newW + 'px';
+        }
+        function onUp() {
+          handle.classList.remove('active');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          // Save all current widths
+          var widths = self._loadWidths();
+          tableEl.querySelectorAll('th[data-col]').forEach(function(h) {
+            widths[h.dataset.col] = h.offsetWidth;
+          });
+          self._saveWidths(widths);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
   }
 
   isVisible(key) {
