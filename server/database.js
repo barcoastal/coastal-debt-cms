@@ -309,6 +309,18 @@ db.exec(`
   )
 `);
 
+// Create reddit_ads_config table (singleton)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reddit_ads_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    account_id TEXT,
+    client_id TEXT,
+    client_secret TEXT,
+    refresh_token TEXT,
+    connected_at DATETIME
+  )
+`);
+
 // Add app_id and app_secret to tiktok_config (for OAuth flow)
 try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE tiktok_config ADD COLUMN app_secret TEXT`); } catch (e) {}

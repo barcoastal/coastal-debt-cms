@@ -494,6 +494,26 @@ router.get('/platform-financials', authenticateToken, async (req, res) => {
             console.error('Platform financials - TikTok API fallback error:', err.message);
           }
         }
+      } else if (platform === 'reddit') {
+        // Reddit cost from DB (per-lead cost_cents)
+        const rdCostRow = db.prepare(`
+          SELECT COALESCE(SUM(l.cost_cents), 0) as total
+          FROM leads l
+          JOIN landing_pages lp ON l.landing_page_id = lp.id
+          WHERE lp.platform = 'reddit' ${dateWhere}
+        `).get(...dateParams);
+        cost = (rdCostRow.total || 0) / 100;
+
+        // Fallback to Reddit Ads API if no DB costs exist
+        if (cost === 0) {
+          try {
+            const { getRedditTotalSpend } = require('./reddit-ads');
+            const rdSpend = await getRedditTotalSpend(from, to);
+            if (rdSpend !== null) cost = rdSpend;
+          } catch (err) {
+            console.error('Platform financials - Reddit API fallback error:', err.message);
+          }
+        }
       } else {
         // All other platforms: cost from leads.cost_cents
         const otherCostRow = db.prepare(`
@@ -790,7 +810,16 @@ router.get('/real-ad-spend', authenticateToken, async (req, res) => {
     console.error('Real ad spend - TikTok error:', e.message);
   }
 
-  res.json({ googleSpend, metaSpend, tiktokSpend });
+  // --- Reddit: total account spend via Reporting API ---
+  let redditSpend = null;
+  try {
+    const { getRedditTotalSpend } = require('./reddit-ads');
+    redditSpend = await getRedditTotalSpend(from, to);
+  } catch (e) {
+    console.error('Real ad spend - Reddit error:', e.message);
+  }
+
+  res.json({ googleSpend, metaSpend, tiktokSpend, redditSpend });
 });
 
 // Google Ads: Summary stats

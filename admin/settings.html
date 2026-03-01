@@ -649,6 +649,42 @@
         </div>
       </div>
 
+      <!-- Reddit Ads Configuration -->
+      <div class="settings-card">
+        <h3>Reddit Ads</h3>
+        <p style="margin-bottom: 16px;">Connect your Reddit Ads account to fetch ad spend and per-lead costs.</p>
+
+        <div class="form-group">
+          <label>Account ID</label>
+          <input type="text" id="rdAccountId" placeholder="e.g. t2_abc123">
+          <small style="color: #666;">Your Reddit Ads account ID (found in Reddit Ads Manager URL)</small>
+        </div>
+
+        <div class="form-group">
+          <label>Client ID</label>
+          <input type="text" id="rdClientId" placeholder="Your Reddit app client ID">
+          <small style="color: #666;">From <a href="https://www.reddit.com/prefs/apps" target="_blank">reddit.com/prefs/apps</a> (create a "script" or "web app" type app)</small>
+        </div>
+
+        <div class="form-group">
+          <label>Client Secret</label>
+          <input type="password" id="rdClientSecret" placeholder="Your Reddit app client secret">
+        </div>
+
+        <div class="form-group">
+          <label>Refresh Token</label>
+          <input type="password" id="rdRefreshToken" placeholder="OAuth2 refresh token">
+          <small style="color: #666;">Obtained through the Reddit OAuth2 authorization flow</small>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-primary" onclick="saveRedditConfig()">Save Configuration</button>
+          <button class="btn btn-secondary" onclick="testRedditConnection()">Test Connection</button>
+          <button class="btn btn-secondary" onclick="fetchRedditCosts()">Fetch Costs Now</button>
+        </div>
+        <span id="rdSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
+      </div>
+
       <!-- Inbound Webhooks -->
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -1057,6 +1093,73 @@
     }
 
     loadTikTokConfig();
+
+    // --- Reddit Ads ---
+    async function loadRedditConfig() {
+      try {
+        const config = await api('/api/reddit-ads/config');
+        if (config.account_id) document.getElementById('rdAccountId').value = config.account_id;
+        if (config.client_id) document.getElementById('rdClientId').value = config.client_id;
+        if (config.has_client_secret) document.getElementById('rdClientSecret').placeholder = 'Saved (hidden)';
+        if (config.has_refresh_token) document.getElementById('rdRefreshToken').placeholder = 'Saved (hidden)';
+      } catch (e) { console.error('Failed to load Reddit config:', e); }
+    }
+
+    async function saveRedditConfig() {
+      const status = document.getElementById('rdSaveStatus');
+      status.textContent = 'Saving...';
+      try {
+        const body = {
+          account_id: document.getElementById('rdAccountId').value.trim(),
+          client_id: document.getElementById('rdClientId').value.trim(),
+          client_secret: document.getElementById('rdClientSecret').value.trim() || undefined,
+          refresh_token: document.getElementById('rdRefreshToken').value.trim() || undefined
+        };
+        await api('/api/reddit-ads/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        status.textContent = 'Saved!';
+        status.style.color = '#10b981';
+        setTimeout(() => { status.textContent = ''; }, 3000);
+        loadRedditConfig();
+      } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+        status.style.color = '#ef4444';
+      }
+    }
+
+    async function testRedditConnection() {
+      const status = document.getElementById('rdSaveStatus');
+      status.textContent = 'Testing...';
+      status.style.color = '#6b7280';
+      try {
+        const res = await api('/api/reddit-ads/test-connection', { method: 'POST' });
+        if (res.success) {
+          status.textContent = 'Connected!';
+          status.style.color = '#10b981';
+        } else {
+          status.textContent = 'Failed: ' + (res.error || 'Unknown error');
+          status.style.color = '#ef4444';
+        }
+      } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+        status.style.color = '#ef4444';
+      }
+    }
+
+    async function fetchRedditCosts() {
+      const status = document.getElementById('rdSaveStatus');
+      status.textContent = 'Fetching costs...';
+      status.style.color = '#6b7280';
+      try {
+        const res = await api('/api/reddit-ads/fetch-all-costs', { method: 'POST' });
+        status.textContent = `Done: ${res.fetched}/${res.total} leads updated` + (res.last_error ? ` (${res.last_error})` : '');
+        status.style.color = res.fetched > 0 ? '#10b981' : '#f59e0b';
+      } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+        status.style.color = '#ef4444';
+      }
+    }
+
+    loadRedditConfig();
 
     // --- Bing Ads ---
     async function checkBingStatus() {

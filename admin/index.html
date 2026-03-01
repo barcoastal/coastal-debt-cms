@@ -178,8 +178,8 @@
         </div>
       </div>
 
-      <!-- KPI Row 2: Google Cost / Meta Cost / TikTok Cost / CPL / Active Pages -->
-      <div class="stats-grid" style="grid-template-columns: repeat(5, 1fr);">
+      <!-- KPI Row 2: Google Cost / Meta Cost / TikTok Cost / Reddit Cost / CPL / Active Pages -->
+      <div class="stats-grid" style="grid-template-columns: repeat(6, 1fr);">
         <div class="stat-card">
           <div class="stat-label">
             <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:4px;" fill="none" stroke="#4285F4" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -199,6 +199,12 @@
             TikTok Cost
           </div>
           <div class="stat-value" style="color:#000;font-size:1.5rem;" id="statTikTokCost">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" style="display:flex;align-items:center;gap:6px;">
+            Reddit Cost
+          </div>
+          <div class="stat-value" style="color:#FF4500;font-size:1.5rem;" id="statRedditCost">-</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Avg CPL</div>
@@ -394,9 +400,11 @@
         let gCost = (stats.googleCost || 0) / 100;
         let mCost = (stats.metaCost || 0) / 100;
         let ttCost = 0;
+        let rdCost = 0;
         document.getElementById('statGoogleCost').textContent = fmtMoney(gCost);
         document.getElementById('statMetaCost').textContent = fmtMoney(mCost);
         document.getElementById('statTikTokCost').textContent = fmtMoney(ttCost);
+        document.getElementById('statRedditCost').textContent = fmtMoney(rdCost);
         document.getElementById('statAvgCPL').textContent = fmtMoney(filteredLeads > 0 ? filteredCostDollars / filteredLeads : 0);
 
         // Fetch real spend from APIs (async, updates cards when ready)
@@ -413,11 +421,15 @@
             ttCost = spend.tiktokSpend;
             document.getElementById('statTikTokCost').textContent = fmtMoney(ttCost);
           }
+          if (spend.redditSpend !== null) {
+            rdCost = spend.redditSpend;
+            document.getElementById('statRedditCost').textContent = fmtMoney(rdCost);
+          }
           // Recalculate total cost + profit + CPL with real spend
-          const realTotalCost = gCost + mCost + ttCost;
+          const realTotalCost = gCost + mCost + ttCost + rdCost;
           const realProfit = filteredRevenue - realTotalCost;
           document.getElementById('statCost').textContent = fmtMoney(realTotalCost);
-          document.getElementById('statCostSub').textContent = 'Google: ' + fmtMoney(gCost) + ' · Meta: ' + fmtMoney(mCost) + ' · TikTok: ' + fmtMoney(ttCost);
+          document.getElementById('statCostSub').textContent = 'Google: ' + fmtMoney(gCost) + ' · Meta: ' + fmtMoney(mCost) + ' · TikTok: ' + fmtMoney(ttCost) + ' · Reddit: ' + fmtMoney(rdCost);
           const pEl = document.getElementById('statProfit');
           pEl.textContent = fmtMoney(realProfit);
           pEl.style.color = realProfit >= 0 ? '#10b981' : '#ef4444';
