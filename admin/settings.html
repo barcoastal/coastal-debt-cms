@@ -624,8 +624,13 @@
           <button class="btn btn-primary" onclick="saveTikTokConfig()">Save Configuration</button>
           <button class="btn btn-secondary" onclick="connectTikTok()" id="ttConnectBtn" style="background: #00f2ea; color: #000; border-color: #00f2ea;">Connect with TikTok</button>
           <button class="btn btn-secondary" onclick="syncTikTokNow()" id="ttSyncBtn">Sync Leads Now</button>
+          <button class="btn btn-secondary" onclick="diagnoseTikTok()" id="ttDiagBtn" style="background: #f59e0b; color: #000; border-color: #f59e0b;">Diagnose Forms</button>
         </div>
         <span id="ttSaveStatus" style="margin-left: 12px; color: #6b7280;"></span>
+
+        <!-- Diagnostic results -->
+        <div id="ttDiagResults" style="display: none; margin-top: 16px; background: #1a1a2e; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; color: #e0e0e0; max-height: 400px; overflow-y: auto;">
+        </div>
 
         <div class="form-group" style="margin-top: 20px;">
           <label>Webhook URL (for TikTok Instant Form leads)</label>
@@ -636,15 +641,21 @@
           <small style="color: #666;">Paste this URL in TikTok Ads Manager &rarr; Lead Gen Form &rarr; CRM &rarr; <strong>Custom API</strong> &rarr; Webhook URL</small>
         </div>
 
+        <div style="margin-top: 12px;">
+          <button class="btn btn-secondary" onclick="subscribeTikTokWebhook()" id="ttSubBtn">Subscribe to Lead Events</button>
+          <span id="ttSubStatus" style="margin-left: 8px; color: #6b7280; font-size: 13px;"></span>
+          <br><small style="color: #666;">Auto-subscribe via TikTok Marketing API so leads are pushed to the webhook automatically.</small>
+        </div>
+
         <div class="setup-steps" style="margin-top: 20px;">
           <h4>Setup Instructions</h4>
           <ol>
             <li>Enter your <strong>App ID</strong> and <strong>App Secret</strong> from the <a href="https://business-api.tiktok.com/portal/apps/" target="_blank">TikTok Developer Portal</a></li>
             <li>Enter your <strong>Advertiser ID</strong> and select a <strong>Default Landing Page</strong> (optional)</li>
             <li>Click <strong>Save Configuration</strong>, then <strong>Connect with TikTok</strong></li>
-            <li>Copy the <strong>Webhook URL</strong> above</li>
-            <li>In TikTok Ads Manager, edit your Lead Gen form &rarr; CRM Integration &rarr; <strong>Custom API</strong> &rarr; paste the webhook URL</li>
-            <li>New leads from the instant form will appear in the CMS instantly</li>
+            <li><strong>Option A:</strong> Click <strong>Subscribe to Lead Events</strong> above (auto-pushes all leads)</li>
+            <li><strong>Option B:</strong> Copy the <strong>Webhook URL</strong> above, then in TikTok Ads Manager, edit each Lead Gen form &rarr; CRM Integration &rarr; <strong>Custom API</strong> &rarr; paste URL</li>
+            <li>Click <strong>Diagnose Forms</strong> to see which forms, campaigns, and ads are visible to the API</li>
           </ol>
         </div>
       </div>
@@ -1089,6 +1100,111 @@
       } finally {
         btn.disabled = false;
         btn.textContent = 'Sync Leads Now';
+      }
+    }
+
+    async function diagnoseTikTok() {
+      const btn = document.getElementById('ttDiagBtn');
+      const box = document.getElementById('ttDiagResults');
+      btn.disabled = true;
+      btn.textContent = 'Diagnosing...';
+      box.style.display = 'block';
+      box.innerHTML = '<span style="color: #f59e0b;">Querying TikTok API for forms, campaigns, and ads...</span>';
+      try {
+        const res = await api('/api/tiktok-leads/debug/forms');
+        let html = '<div style="color: #10b981; margin-bottom: 12px; font-weight: bold;">Diagnostic Results</div>';
+
+        // Summary
+        const s = res.summary || {};
+        html += `<div style="margin-bottom: 12px;">
+          <strong>Summary:</strong> ${s.forms_count || 0} forms | ${s.campaigns_count || 0} campaigns | ${s.ads_count || 0} ads | ${s.ads_with_page_id || 0} ads with page_id
+        </div>`;
+
+        if (s.forms_missing_from_page_get?.length) {
+          html += `<div style="color: #f59e0b; margin-bottom: 8px;">Forms found in ads but missing from /page/get/:</div>`;
+          for (const m of s.forms_missing_from_page_get) {
+            html += `<div style="padding-left: 12px;">Ad: ${m.ad_name} (ad_id: ${m.ad_id}) → page_id: ${m.page_id}</div>`;
+          }
+        }
+
+        // Forms
+        html += `<div style="margin-top: 12px; color: #00f2ea; font-weight: bold;">Forms (from /page/get/):</div>`;
+        if (res.forms?.length) {
+          for (const f of res.forms) {
+            html += `<div style="padding: 4px 0 4px 12px; border-bottom: 1px solid #333;">
+              ${f.page_name || f.name || 'Unnamed'} | page_id: ${f.page_id || f.id} | status: ${f.status || 'N/A'}
+            </div>`;
+          }
+        } else {
+          html += '<div style="padding-left: 12px; color: #ef4444;">No forms returned by /page/get/</div>';
+        }
+
+        // Campaigns
+        html += `<div style="margin-top: 12px; color: #00f2ea; font-weight: bold;">Campaigns:</div>`;
+        if (res.campaigns?.length) {
+          for (const c of res.campaigns) {
+            html += `<div style="padding: 4px 0 4px 12px; border-bottom: 1px solid #333;">
+              ${c.campaign_name} | ID: ${c.campaign_id} | Status: ${c.status || c.operation_status} | Objective: ${c.objective_type || 'N/A'}
+            </div>`;
+          }
+        } else {
+          html += '<div style="padding-left: 12px; color: #666;">No campaigns found</div>';
+        }
+
+        // Ads with page_id
+        html += `<div style="margin-top: 12px; color: #00f2ea; font-weight: bold;">Ads (with lead form info):</div>`;
+        const adsWithPage = (res.ads || []).filter(a => a.page_id);
+        if (adsWithPage.length) {
+          for (const a of adsWithPage) {
+            html += `<div style="padding: 4px 0 4px 12px; border-bottom: 1px solid #333;">
+              ${a.ad_name} | ad_id: ${a.ad_id} | page_id: ${a.page_id} | status: ${a.status || a.operation_status}
+            </div>`;
+          }
+        } else {
+          html += '<div style="padding-left: 12px; color: #f59e0b;">No ads have page_id set — TikTok API may not expose form references for these ads. Use webhook instead.</div>';
+        }
+
+        // Errors
+        if (res.errors?.length) {
+          html += `<div style="margin-top: 12px; color: #ef4444; font-weight: bold;">API Errors:</div>`;
+          for (const e of res.errors) {
+            html += `<div style="padding-left: 12px;">${e.endpoint}: ${e.message || e.error}</div>`;
+          }
+        }
+
+        box.innerHTML = html;
+      } catch (e) {
+        box.innerHTML = '<span style="color: #ef4444;">Diagnostic failed: ' + e.message + '</span>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Diagnose Forms';
+      }
+    }
+
+    async function subscribeTikTokWebhook() {
+      const btn = document.getElementById('ttSubBtn');
+      const status = document.getElementById('ttSubStatus');
+      btn.disabled = true;
+      btn.textContent = 'Subscribing...';
+      status.textContent = '';
+      try {
+        const res = await api('/api/tiktok-leads/subscribe-webhook', { method: 'POST' });
+        if (res.success) {
+          status.textContent = 'Subscribed successfully!';
+          status.style.color = '#10b981';
+        } else {
+          status.textContent = res.error || 'Subscription failed';
+          status.style.color = '#ef4444';
+          if (res.callback_url) {
+            status.textContent += ` (webhook: ${res.callback_url})`;
+          }
+        }
+      } catch (e) {
+        status.textContent = 'Failed: ' + e.message;
+        status.style.color = '#ef4444';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Subscribe to Lead Events';
       }
     }
 

@@ -328,8 +328,25 @@ function processLead(leadData, source) {
 }
 
 /**
- * POST /webhook — Receive leads from TikTok Instant Form (Custom API webhook)
- * Configure this URL in TikTok Ads Manager → Lead Gen Form → CRM → Custom API
+ * GET /webhook — TikTok webhook URL verification (challenge-response)
+ * TikTok sends GET with ?challenge=xxx when subscribing; we must echo it back.
+ */
+router.get('/webhook', (req, res) => {
+  const challenge = req.query.challenge;
+  if (challenge) {
+    console.log('TikTok webhook verification challenge received');
+    return res.status(200).send(challenge);
+  }
+  res.status(200).json({ status: 'ok', message: 'TikTok webhook endpoint active' });
+});
+
+/**
+ * POST /webhook — Receive leads from TikTok (CRM webhook + Marketing API subscription)
+ *
+ * Handles multiple payload formats:
+ * 1. Per-form CRM webhook: { lead_id, form_id, user_info: [...] }
+ * 2. Marketing API subscription: { event: "LEAD_GEN", data: { lead_id, lead_data: {...} } }
+ * 3. Array of leads / nested under data.leads
  */
 router.post('/webhook', (req, res) => {
   // Always respond 200 immediately so TikTok doesn't retry
@@ -339,24 +356,38 @@ router.post('/webhook', (req, res) => {
   console.log('TikTok webhook received:', JSON.stringify(payload).slice(0, 2000));
 
   try {
-    // Handle different payload structures
-    // Structure 1: single lead object
-    // Structure 2: array of leads
-    // Structure 3: nested under data/leads key
     let leads = [];
 
-    if (Array.isArray(payload)) {
+    // Format: Marketing API subscription event
+    if (payload.event && payload.data && (payload.data.lead_id || payload.data.lead_data)) {
+      const d = payload.data;
+      const leadObj = {
+        lead_id: d.lead_id,
+        form_id: d.page_id || d.form_id,
+        form_name: d.form_name || '',
+        ad_id: d.ad_id || '',
+        campaign_id: d.campaign_id || '',
+        create_time: d.create_time || payload.timestamp,
+        fields: d.lead_data
+          ? Object.entries(d.lead_data).map(([name, value]) => ({ name, value }))
+          : d.user_info || []
+      };
+      leads = [leadObj];
+    }
+    // Format: array of leads
+    else if (Array.isArray(payload)) {
       leads = payload;
     } else if (payload.leads && Array.isArray(payload.leads)) {
       leads = payload.leads;
     } else if (payload.data?.leads && Array.isArray(payload.data.leads)) {
       leads = payload.data.leads;
-    } else if (payload.lead_id || payload.id || payload.fields || payload.field_data || payload.user_info) {
+    }
+    // Format: single lead object (CRM webhook)
+    else if (payload.lead_id || payload.id || payload.fields || payload.field_data || payload.user_info) {
       leads = [payload];
     } else if (payload.data && (payload.data.lead_id || payload.data.fields)) {
       leads = [payload.data];
     } else {
-      // Unknown format — treat entire payload as a single lead
       console.log('TikTok webhook: unknown payload format, treating as single lead');
       leads = [payload];
     }
@@ -386,6 +417,47 @@ router.get('/webhook-url', authenticateToken, (req, res) => {
   const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   const webhookUrl = `${baseUrl.replace(/\/$/, '')}/api/tiktok-leads/webhook`;
   res.json({ webhook_url: webhookUrl });
+});
+
+/**
+ * POST /subscribe-webhook — Subscribe to TikTok lead events via Marketing API
+ * This registers the webhook URL with TikTok so leads are pushed automatically
+ */
+router.post('/subscribe-webhook', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.access_token || !config.app_id) {
+    return res.status(400).json({ error: 'TikTok not configured (need access_token and app_id)' });
+  }
+
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const callbackUrl = `${baseUrl.replace(/\/$/, '')}/api/tiktok-leads/webhook`;
+
+  try {
+    // Try subscribing via the app event subscription API
+    const subRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/app/subscribe/', {
+      method: 'POST',
+      headers: {
+        'Access-Token': config.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        app_id: config.app_id,
+        callback_url: callbackUrl,
+        event_type: 'LEAD_GEN'
+      })
+    });
+
+    const subData = await subRes.json();
+    console.log('TikTok webhook subscription response:', JSON.stringify(subData));
+
+    if (subData.code === 0) {
+      res.json({ success: true, message: 'Subscribed to TikTok lead events', callback_url: callbackUrl });
+    } else {
+      res.json({ success: false, error: subData.message || 'Subscription failed (code: ' + subData.code + ')', callback_url: callbackUrl, raw: subData });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message, callback_url: callbackUrl });
+  }
 });
 
 /**
