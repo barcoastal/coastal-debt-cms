@@ -463,7 +463,7 @@ async function syncTikTokLeads() {
   const errors = [];
 
   try {
-    // Step 1: List all instant forms via /page/get/
+    // Step 1: List instant forms via /page/get/
     const formsUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/page/get/');
     formsUrl.searchParams.set('advertiser_id', config.advertiser_id);
     formsUrl.searchParams.set('page_size', '100');
@@ -473,18 +473,52 @@ async function syncTikTokLeads() {
     const formsData = await formsRes.json();
     console.log('TikTok forms response:', JSON.stringify(formsData).slice(0, 1000));
 
-    if (formsData.code !== 0) {
-      const errMsg = formsData.message || 'API error (code: ' + formsData.code + ')';
-      console.error('TikTok forms API error:', errMsg);
-      return { synced: 0, error: errMsg };
+    let forms = [];
+    if (formsData.code === 0) {
+      forms = formsData.data?.list || formsData.data?.pages || formsData.data?.forms || [];
+    } else {
+      console.warn('TikTok /page/get/ error:', formsData.message || formsData.code);
     }
 
-    const forms = formsData.data?.list || formsData.data?.pages || formsData.data?.forms || [];
+    // Step 1b: Also discover forms from active ads (ads may reference page_ids not returned by /page/get/)
+    try {
+      const adsUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/ad/get/');
+      adsUrl.searchParams.set('advertiser_id', config.advertiser_id);
+      adsUrl.searchParams.set('page_size', '100');
+      adsUrl.searchParams.set('fields', JSON.stringify(['ad_id', 'ad_name', 'page_id', 'campaign_id', 'adgroup_id', 'status']));
+
+      const adsRes = await fetch(adsUrl.toString(), { headers });
+      const adsData = await adsRes.json();
+
+      if (adsData.code === 0) {
+        const ads = adsData.data?.list || [];
+        const knownPageIds = new Set(forms.map(f => f.page_id || f.form_id || f.id));
+
+        for (const ad of ads) {
+          const pageId = ad.page_id || ad.instant_form_id;
+          if (pageId && !knownPageIds.has(String(pageId))) {
+            console.log(`TikTok sync: discovered form ${pageId} from ad "${ad.ad_name}" (ad_id: ${ad.ad_id})`);
+            forms.push({
+              page_id: String(pageId),
+              page_name: ad.ad_name ? `Ad: ${ad.ad_name}` : `Ad ${ad.ad_id}`,
+              _from_ad: true,
+              _ad_id: ad.ad_id,
+              _campaign_id: ad.campaign_id
+            });
+            knownPageIds.add(String(pageId));
+          }
+        }
+      }
+    } catch (adsErr) {
+      console.warn('TikTok sync: failed to discover forms from ads:', adsErr.message);
+    }
+
     if (!forms.length) {
+      console.log('TikTok sync: no forms found via /page/get/ or /ad/get/, skipping');
       return { synced: 0, message: 'No lead gen forms found for this advertiser' };
     }
 
-    console.log(`TikTok sync: found ${forms.length} form(s)`);
+    console.log(`TikTok sync: found ${forms.length} form(s) total`);
 
     // Step 2: For each form, try direct lead access first, then fall back to task-based download
     for (const form of forms) {
@@ -815,6 +849,84 @@ router.post('/sync', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+/**
+ * GET /debug/forms — Diagnostic: show all forms, campaigns, ads visible in TikTok API
+ */
+router.get('/debug/forms', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.access_token || !config.advertiser_id) {
+    return res.status(400).json({ error: 'TikTok not configured' });
+  }
+
+  const headers = { 'Access-Token': config.access_token, 'Content-Type': 'application/json' };
+  const result = { forms: [], campaigns: [], ads: [], errors: [] };
+
+  // 1. List forms via /page/get/
+  try {
+    const url = new URL('https://business-api.tiktok.com/open_api/v1.3/page/get/');
+    url.searchParams.set('advertiser_id', config.advertiser_id);
+    url.searchParams.set('page_size', '100');
+    const r = await fetch(url.toString(), { headers });
+    const d = await r.json();
+    if (d.code === 0) {
+      result.forms = d.data?.list || d.data?.pages || [];
+    } else {
+      result.errors.push({ endpoint: '/page/get/', code: d.code, message: d.message });
+    }
+  } catch (err) {
+    result.errors.push({ endpoint: '/page/get/', error: err.message });
+  }
+
+  // 2. List campaigns
+  try {
+    const url = new URL('https://business-api.tiktok.com/open_api/v1.3/campaign/get/');
+    url.searchParams.set('advertiser_id', config.advertiser_id);
+    url.searchParams.set('page_size', '100');
+    url.searchParams.set('fields', JSON.stringify(['campaign_id', 'campaign_name', 'status', 'objective_type', 'create_time']));
+    const r = await fetch(url.toString(), { headers });
+    const d = await r.json();
+    if (d.code === 0) {
+      result.campaigns = d.data?.list || [];
+    } else {
+      result.errors.push({ endpoint: '/campaign/get/', code: d.code, message: d.message });
+    }
+  } catch (err) {
+    result.errors.push({ endpoint: '/campaign/get/', error: err.message });
+  }
+
+  // 3. List ads (to discover page_ids)
+  try {
+    const url = new URL('https://business-api.tiktok.com/open_api/v1.3/ad/get/');
+    url.searchParams.set('advertiser_id', config.advertiser_id);
+    url.searchParams.set('page_size', '100');
+    url.searchParams.set('fields', JSON.stringify(['ad_id', 'ad_name', 'page_id', 'campaign_id', 'adgroup_id', 'status', 'create_time']));
+    const r = await fetch(url.toString(), { headers });
+    const d = await r.json();
+    if (d.code === 0) {
+      result.ads = d.data?.list || [];
+    } else {
+      result.errors.push({ endpoint: '/ad/get/', code: d.code, message: d.message });
+    }
+  } catch (err) {
+    result.errors.push({ endpoint: '/ad/get/', error: err.message });
+  }
+
+  // Summary
+  const formPageIds = new Set(result.forms.map(f => String(f.page_id || f.id)));
+  const adPageIds = result.ads.filter(a => a.page_id).map(a => ({ ad_id: a.ad_id, ad_name: a.ad_name, page_id: a.page_id }));
+  const missingForms = adPageIds.filter(a => !formPageIds.has(String(a.page_id)));
+
+  result.summary = {
+    forms_count: result.forms.length,
+    campaigns_count: result.campaigns.length,
+    ads_count: result.ads.length,
+    ads_with_page_id: adPageIds.length,
+    forms_missing_from_page_get: missingForms
+  };
+
+  res.json(result);
 });
 
 // Background sync - poll every 5 minutes
