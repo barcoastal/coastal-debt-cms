@@ -346,6 +346,9 @@ try { db.exec(`ALTER TABLE leads ADD COLUMN total_debt_sign TEXT`); } catch (e) 
 // Add permissions column to users if not exist
 try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'`); } catch (e) {}
 
+// Add template_type column to landing_pages (form = default/existing, call = phone-focused)
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN template_type TEXT DEFAULT 'form'`); } catch (e) {}
+
 // Form: skip pre-qualification steps (debt amount + MCA question)
 try { db.exec(`ALTER TABLE forms ADD COLUMN skip_pre_qual INTEGER DEFAULT 0`); } catch (e) {}
 

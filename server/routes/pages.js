@@ -147,7 +147,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 
 // Create landing page
 router.post('/', authenticateToken, (req, res) => {
-  const { name, slug, platform, traffic_source, form_id } = req.body;
+  const { name, slug, platform, traffic_source, form_id, template_type } = req.body;
 
   if (!name || !slug) {
     return res.status(400).json({ error: 'Name and slug required' });
@@ -155,11 +155,12 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const validTemplateType = template_type === 'call' ? 'call' : 'form';
 
   try {
     const result = db.prepare(`
-      INSERT INTO landing_pages (name, slug, platform, traffic_source, form_id, content, sections_visible, hidden_fields)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO landing_pages (name, slug, platform, traffic_source, form_id, content, sections_visible, hidden_fields, template_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       name,
       safeSlug,
@@ -168,7 +169,8 @@ router.post('/', authenticateToken, (req, res) => {
       form_id || null,
       JSON.stringify(defaultContent),
       JSON.stringify(defaultSectionsVisible),
-      JSON.stringify({})
+      JSON.stringify({}),
+      validTemplateType
     );
 
     // Generate the landing page HTML
@@ -186,7 +188,7 @@ router.post('/', authenticateToken, (req, res) => {
 
 // Update landing page
 router.put('/:id', authenticateToken, (req, res) => {
-  const { name, slug, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active } = req.body;
+  const { name, slug, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active, template_type } = req.body;
 
   const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
   if (!page) {
@@ -194,11 +196,12 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
+  const validTemplateType = template_type === 'call' ? 'call' : (template_type === 'form' ? 'form' : page.template_type);
 
   db.prepare(`
     UPDATE landing_pages SET
       name = ?, slug = ?, platform = ?, traffic_source = ?, webhook_url = ?, form_id = ?,
-      content = ?, sections_visible = ?, hidden_fields = ?, is_active = ?,
+      content = ?, sections_visible = ?, hidden_fields = ?, is_active = ?, template_type = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
@@ -212,6 +215,7 @@ router.put('/:id', authenticateToken, (req, res) => {
     sections_visible ? JSON.stringify(sections_visible) : page.sections_visible,
     hidden_fields ? JSON.stringify(hidden_fields) : page.hidden_fields,
     is_active !== undefined ? (is_active ? 1 : 0) : page.is_active,
+    validTemplateType,
     req.params.id
   );
 
@@ -303,7 +307,8 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templatePath = path.join(__dirname, '..', '..', 'templates', 'landing-page.html');
+  const templateFile = page.template_type === 'call' ? 'landing-page-call.html' : 'landing-page.html';
+  const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
   if (!fs.existsSync(templatePath)) {
     console.log('Template not found, skipping generation');

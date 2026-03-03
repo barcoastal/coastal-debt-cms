@@ -288,4 +288,32 @@ router.get('/export/csv', authenticateToken, (req, res) => {
   res.send(csv);
 });
 
+// Track phone click (public endpoint - called from landing pages)
+router.post('/phone-click', (req, res) => {
+  const { eli_clickid, page_slug } = req.body;
+
+  if (!eli_clickid) {
+    return res.status(400).json({ error: 'eli_clickid required' });
+  }
+
+  try {
+    // Mark visitor as converted
+    db.prepare(`
+      UPDATE visitors SET converted = 1, last_visit = CURRENT_TIMESTAMP
+      WHERE eli_clickid = ?
+    `).run(eli_clickid);
+
+    // Log activity
+    db.prepare(`
+      INSERT INTO activity_logs (action, entity_type, details, created_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    `).run('phone_click', 'visitor', JSON.stringify({ eli_clickid, page_slug: page_slug || '' }));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Phone click tracking error:', err.message);
+    res.status(500).json({ error: 'Failed to track phone click' });
+  }
+});
+
 module.exports = router;
