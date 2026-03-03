@@ -254,24 +254,6 @@ async function syncPageLeads(pageId, pageToken, pageName, config) {
             console.error('Failed to create lead event for synced FB lead:', evtErr);
           }
 
-          // Send CAPI Lead event for instant form leads (for match quality / attribution)
-          try {
-            const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-            const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
-            const fbc = fields._fbclid ? `fb.1.${Date.now()}.${fields._fbclid}` : '';
-            sendFacebookEvent(fbLeadEvent, {
-              email: fields.email || '',
-              phone: fields.phone || '',
-              firstName: fields.first_name || '',
-              lastName: fields.last_name || '',
-              fbc,
-              fbp: '',
-              client_ip_address: '',
-              client_user_agent: ''
-            }, {}).catch(err => console.error('CAPI Lead for FB instant form failed:', err));
-          } catch (capiErr) {
-            console.error('Failed to send CAPI for FB instant form lead:', capiErr);
-          }
         }
         } // end while (pagination)
       } catch (formErr) {
@@ -946,25 +928,6 @@ async function processLeadgenEvent(leadgenId, config) {
       `).run(result.lastInsertRowid, eliClickId, leadConfig?.conversion_action_id || null);
     } catch (err) {
       console.error('Failed to create lead event for FB lead:', err);
-    }
-
-    // Send CAPI Lead event for instant form webhook leads (for match quality / attribution)
-    try {
-      const leadConfig = db.prepare(`SELECT facebook_event_name FROM postback_config WHERE event_name = 'lead' AND is_active = 1`).get();
-      const fbLeadEvent = leadConfig?.facebook_event_name || 'Lead';
-      const fbc = fields._fbclid ? `fb.1.${Date.now()}.${fields._fbclid}` : '';
-      sendFacebookEvent(fbLeadEvent, {
-        email: fields.email || '',
-        phone: fields.phone || '',
-        firstName: fields.first_name || '',
-        lastName: fields.last_name || '',
-        fbc,
-        fbp: '',
-        client_ip_address: '',
-        client_user_agent: ''
-      }, {}).catch(err => console.error('CAPI Lead for FB webhook lead failed:', err));
-    } catch (capiErr) {
-      console.error('Failed to send CAPI for FB webhook lead:', capiErr);
     }
 
   } catch (err) {
