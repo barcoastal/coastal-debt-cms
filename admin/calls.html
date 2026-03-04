@@ -51,6 +51,14 @@
     .action-btn.play-btn { border-color: #3052FF; color: #3052FF; }
     .action-btn.transcribe-btn { border-color: #f59e0b; color: #92400e; }
 
+    .event-badges { display: flex; flex-wrap: wrap; gap: 3px; }
+    .event-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+    .event-badge.phonecall { background: #dbeafe; color: #1e40af; }
+    .event-badge.lead { background: #dcfce7; color: #166534; }
+    .event-badge.opportunity { background: #fff7ed; color: #9a3412; }
+    .event-badge.contract, .event-badge.closed { background: #f3e8ff; color: #6b21a8; }
+    .event-badge.default { background: #f3f4f6; color: #374151; }
+
     .clickable-row { cursor: pointer; }
     .clickable-row:hover { background: #f9fafb; }
 
@@ -252,10 +260,10 @@
               <th>Caller</th>
               <th>Campaign</th>
               <th>Keyword</th>
-              <th>Ad Group</th>
               <th>Duration</th>
               <th>Score</th>
               <th>Transferred</th>
+              <th>RT Events</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -325,6 +333,9 @@
         return;
       }
 
+      // Collect call IDs that need RT events fetched
+      const needEvents = [];
+
       let html = '';
       for (const c of calls) {
         const date = c.call_start ? new Date(c.call_start).toLocaleString() : '-';
@@ -335,19 +346,45 @@
         const hasRecording = c.recording_url ? true : false;
         const transcriptStatus = c.transcript_status;
 
+        // RT Events column
+        let eventsHtml = '';
+        if (c.rt_events) {
+          try {
+            const events = JSON.parse(c.rt_events);
+            if (events.length > 0) {
+              eventsHtml = '<div class="event-badges">' + events.map(e => {
+                const t = (e.type || '').toLowerCase();
+                let cls = 'default';
+                if (t === 'phonecall') cls = 'phonecall';
+                else if (t.includes('lead')) cls = 'lead';
+                else if (t === 'opportunity') cls = 'opportunity';
+                else if (t.includes('contract') || t.includes('closed')) cls = 'contract';
+                return `<span class="event-badge ${cls}">${esc(e.type)}</span>`;
+              }).join('') + '</div>';
+            } else {
+              eventsHtml = '<span style="color:#d1d5db;font-size:11px;">none</span>';
+            }
+          } catch (e) { eventsHtml = '-'; }
+        } else if (c.rt_clickid) {
+          eventsHtml = '<span style="color:#9ca3af;font-size:11px;" id="evLoad-' + c.id + '">...</span>';
+          needEvents.push(c.id);
+        } else {
+          eventsHtml = '<span style="color:#d1d5db;font-size:11px;">-</span>';
+        }
+
         html += `<tr class="clickable-row" onclick="toggleExpand(${c.id}, this)">
           <td>${date}</td>
           <td>${esc(caller)}</td>
           <td>${esc(c.campaign_name || '-')}</td>
           <td>${esc(c.keyword || '-')}</td>
-          <td>${esc(c.ad_group || '-')}</td>
           <td class="duration-cell">${duration}</td>
           <td>${scoreHtml}</td>
           <td>${transferHtml}</td>
+          <td>${eventsHtml}</td>
           <td onclick="event.stopPropagation()">
             ${hasRecording ? `<button class="action-btn play-btn" onclick="playRecording(${c.id}, this)">Play</button>` : ''}
             ${hasRecording && transcriptStatus !== 'completed' ? `<button class="action-btn transcribe-btn" id="transcribeBtn${c.id}" onclick="transcribeCall(${c.id})">${transcriptStatus === 'failed' ? 'Retry' : 'Transcribe'}</button>` : ''}
-            ${transcriptStatus === 'processing' ? '<span class="spinner-small" id="spinner-${c.id}"></span>' : ''}
+            ${transcriptStatus === 'processing' ? '<span class="spinner-small"></span>' : ''}
           </td>
         </tr>
         <tr class="expand-row" id="expand-${c.id}">
@@ -357,6 +394,11 @@
         </tr>`;
       }
       tbody.innerHTML = html;
+
+      // Batch-fetch RT events for calls that need them
+      if (needEvents.length > 0) {
+        fetchEventsBatch(needEvents);
+      }
 
       // Pagination
       const { page, total, totalPages } = pagination;
@@ -556,27 +598,31 @@
     }
 
     function pollTranscript(id, btn) {
+      let attempts = 0;
       const interval = setInterval(async () => {
+        attempts++;
         try {
           const status = await api('/api/retreaver/calls/' + id + '/transcript-status');
           if (status.transcript_status === 'completed') {
             clearInterval(interval);
-            if (btn) btn.textContent = 'Done!';
+            if (btn) { btn.textContent = 'Done!'; btn.style.color = '#16a34a'; }
             loadStats();
-            const expandRow = document.getElementById('expand-' + id);
-            if (expandRow && expandRow.classList.contains('open')) {
-              toggleExpand(id, null);
-              setTimeout(() => toggleExpand(id, null), 100);
-            }
+            loadCalls(currentPage);
           } else if (status.transcript_status === 'failed') {
             clearInterval(interval);
-            if (btn) { btn.textContent = 'Failed'; btn.style.color = '#ef4444'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Retry'; btn.style.color = '#ef4444'; }
+            const errMsg = status.score_reason || 'Unknown error';
+            alert('Transcription failed: ' + errMsg);
+          } else if (attempts > 60) {
+            // 5 min timeout
+            clearInterval(interval);
+            if (btn) { btn.disabled = false; btn.textContent = 'Retry'; btn.style.color = '#ef4444'; }
           }
-          // else still processing, keep polling
         } catch (e) {
           clearInterval(interval);
+          if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
         }
-      }, 5000); // Poll every 5 seconds
+      }, 5000);
     }
 
     // Batch transcribe
@@ -614,6 +660,32 @@
         btn.textContent = 'Sync Failed';
         btn.disabled = false;
         alert('Sync failed: ' + e.message);
+      }
+    }
+
+    // Batch fetch RT events for calls that need them
+    async function fetchEventsBatch(callIds) {
+      try {
+        const result = await api('/api/retreaver/calls/fetch-events-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ call_ids: callIds })
+        });
+        if (result.fetched > 0) {
+          // Reload to show cached events
+          loadCalls(currentPage);
+        } else {
+          // Mark loading indicators as done
+          for (const id of callIds) {
+            const el = document.getElementById('evLoad-' + id);
+            if (el) el.textContent = '-';
+          }
+        }
+      } catch (e) {
+        for (const id of callIds) {
+          const el = document.getElementById('evLoad-' + id);
+          if (el) el.textContent = '-';
+        }
       }
     }
 

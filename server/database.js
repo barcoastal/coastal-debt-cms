@@ -1211,6 +1211,9 @@ db.exec(`
 try { db.exec(`ALTER TABLE retreaver_config ADD COLUMN campaign_filter_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE retreaver_config ADD COLUMN campaign_filter_name TEXT`); } catch (e) {}
 
+// Add rt_events cache column to calls
+try { db.exec(`ALTER TABLE calls ADD COLUMN rt_events TEXT`); } catch (e) {}
+
 // Migration: rename full_name to first_name + last_name in all forms
 (function() {
   var forms = db.prepare('SELECT id, fields FROM forms').all();

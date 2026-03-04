@@ -424,6 +424,10 @@ router.get('/calls/:id/events', requireAuth, async (req, res) => {
       clickid: item.clickid
     }));
 
+    // Cache event summaries in DB
+    const eventSummaries = events.map(e => ({ type: e.type, payout: e.payout, conv_time: e.conv_time }));
+    db.prepare('UPDATE calls SET rt_events = ? WHERE id = ?').run(JSON.stringify(eventSummaries), req.params.id);
+
     res.json({ events, total: data.total || events.length });
   } catch (err) {
     console.error('RedTrack events error:', err.message);
@@ -517,8 +521,9 @@ Return ONLY valid JSON, no markdown fences.`
 
     console.log(`Transcription complete for call ${call.id}: score=${result.score}`);
   } catch (err) {
-    console.error(`Transcription error for call ${callId}:`, err.message);
-    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', callId);
+    const safeMsg = (err.message || 'Unknown error').replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***').slice(0, 500);
+    console.error(`Transcription error for call ${callId}:`, safeMsg);
+    db.prepare('UPDATE calls SET transcript_status = ?, score_reason = ? WHERE id = ?').run('failed', 'Error: ' + safeMsg, callId);
   }
 }
 
@@ -786,6 +791,80 @@ router.get('/webhook', async (req, res) => {
     console.error(`Retreaver webhook error:`, err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── TEST API KEY ─────────────────────────────────────────
+
+router.get('/test-api-key', requireAuth, async (req, res) => {
+  const rawKey = process.env.ANTHROPIC_API_KEY || '';
+  const cleanKey = rawKey.replace(/\s+/g, '');
+  if (!cleanKey) {
+    return res.json({ success: false, error: 'ANTHROPIC_API_KEY not set in environment' });
+  }
+
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({ apiKey: cleanKey });
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 50,
+      messages: [{ role: 'user', content: 'Reply with only the word "OK"' }]
+    });
+    const reply = msg.content[0]?.text || '';
+    res.json({ success: true, reply, key_length: cleanKey.length, key_prefix: cleanKey.slice(0, 10) + '...' });
+  } catch (err) {
+    const safeMsg = (err.message || '').replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***');
+    res.json({ success: false, error: safeMsg, key_length: cleanKey.length, key_prefix: cleanKey.slice(0, 10) + '...' });
+  }
+});
+
+// ─── RT EVENTS BATCH ─────────────────────────────────────
+
+// POST /calls/fetch-events-batch — Fetch and cache RedTrack events for calls
+router.post('/calls/fetch-events-batch', requireAuth, async (req, res) => {
+  const callIds = req.body.call_ids || [];
+  // Get calls that have rt_clickid but no cached events
+  let calls;
+  if (callIds.length > 0) {
+    const placeholders = callIds.map(() => '?').join(',');
+    calls = db.prepare(`SELECT id, rt_clickid, call_start FROM calls WHERE id IN (${placeholders}) AND rt_clickid IS NOT NULL AND rt_clickid != '' AND rt_events IS NULL`).all(...callIds);
+  } else {
+    calls = db.prepare(`SELECT id, rt_clickid, call_start FROM calls WHERE rt_clickid IS NOT NULL AND rt_clickid != '' AND rt_events IS NULL ORDER BY call_start DESC LIMIT 25`).all();
+  }
+
+  let fetched = 0, errors = 0;
+  for (const call of calls) {
+    try {
+      const callDate = call.call_start ? new Date(call.call_start) : new Date();
+      const dateFrom = new Date(callDate);
+      dateFrom.setDate(dateFrom.getDate() - 7);
+      const dateTo = new Date(callDate);
+      dateTo.setDate(dateTo.getDate() + 30);
+
+      const url = `https://api.redtrack.io/conversions?api_key=${REDTRACK_API_KEY}&clickid=${encodeURIComponent(call.rt_clickid)}&date_from=${dateFrom.toISOString().split('T')[0]}&date_to=${dateTo.toISOString().split('T')[0]}`;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const data = await resp.json();
+        const items = data.items || data || [];
+        const events = (Array.isArray(items) ? items : []).map(item => ({
+          type: item.type || '',
+          payout: item.payout || 0,
+          conv_time: item.conv_time || ''
+        }));
+        db.prepare('UPDATE calls SET rt_events = ? WHERE id = ?').run(JSON.stringify(events), call.id);
+        fetched++;
+      } else {
+        // Cache empty array so we don't re-fetch
+        db.prepare('UPDATE calls SET rt_events = ? WHERE id = ?').run('[]', call.id);
+        errors++;
+      }
+    } catch (err) {
+      db.prepare('UPDATE calls SET rt_events = ? WHERE id = ?').run('[]', call.id);
+      errors++;
+    }
+  }
+
+  res.json({ fetched, errors, total: calls.length });
 });
 
 // ─── BACKGROUND SYNC ──────────────────────────────────────
