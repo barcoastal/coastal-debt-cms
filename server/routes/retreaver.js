@@ -58,8 +58,16 @@ router.get('/campaigns', requireAuth, async (req, res) => {
       const text = await resp.text();
       return res.status(resp.status).json({ error: `Retreaver API error: ${resp.status} - ${text}` });
     }
-    const campaigns = await resp.json();
-    res.json({ campaigns: Array.isArray(campaigns) ? campaigns : [] });
+    const raw = await resp.json();
+    // Retreaver returns [{campaign: {id, name, ...}}, ...] — unwrap
+    let campaigns = [];
+    if (Array.isArray(raw)) {
+      campaigns = raw.map(item => {
+        const c = item.campaign || item;
+        return { id: c.id, name: c.name || c.display_name || ('Campaign ' + c.id) };
+      });
+    }
+    res.json({ campaigns });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
