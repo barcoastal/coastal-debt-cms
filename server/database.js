@@ -1390,4 +1390,39 @@ try { db.exec(`ALTER TABLE calls ADD COLUMN rt_events TEXT`); } catch (e) {}
   }
 })();
 
+// Ad Generator: projects and generations
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ad_projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    reference_images TEXT DEFAULT '[]',
+    created_by_id INTEGER,
+    created_by_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS ad_generations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    model TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    size_label TEXT NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    status TEXT DEFAULT 'pending',
+    image_url TEXT,
+    external_job_id TEXT,
+    external_image_url TEXT,
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    FOREIGN KEY (project_id) REFERENCES ad_projects(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_ad_gen_project ON ad_generations(project_id);
+  CREATE INDEX IF NOT EXISTS idx_ad_gen_status ON ad_generations(status);
+`);
+
 module.exports = db;

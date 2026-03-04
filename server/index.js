@@ -29,6 +29,7 @@ const tiktokLeadsRoutes = require('./routes/tiktok-leads');
 const salesforceRoutes = require('./routes/salesforce');
 const redditAdsRoutes = require('./routes/reddit-ads');
 const retreaverRoutes = require('./routes/retreaver');
+const adGeneratorRoutes = require('./routes/ad-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -136,6 +137,7 @@ app.use('/api/tiktok-leads', tiktokLeadsRoutes);
 app.use('/api/salesforce', salesforceRoutes);
 app.use('/api/reddit-ads', redditAdsRoutes);
 app.use('/api/retreaver', retreaverRoutes);
+app.use('/api/ad-generator', adGeneratorRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)
