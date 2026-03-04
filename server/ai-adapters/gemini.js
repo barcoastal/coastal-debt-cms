@@ -1,45 +1,24 @@
-// Google Gemini Imagen 3 adapter
-// Docs: https://ai.google.dev/gemini-api/docs/image-generation
+// Google Gemini Imagen 4 adapter
+// Docs: https://ai.google.dev/gemini-api/docs/imagen
 
 const fs = require('fs');
 const path = require('path');
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
-  const contents = [];
-
-  // Add reference images as inline base64 parts
-  if (referenceImageUrls && referenceImageUrls.length > 0) {
-    for (const url of referenceImageUrls) {
-      try {
-        const imageData = await fetchImageAsBase64(url);
-        if (imageData) {
-          contents.push({
-            inlineData: {
-              mimeType: imageData.mimeType,
-              data: imageData.base64
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Failed to fetch reference image for Gemini:', e.message);
-      }
-    }
-  }
-
-  // Add text prompt
-  contents.push({ text: prompt });
-
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({
         instances: [{ prompt: prompt }],
         parameters: {
           sampleCount: 1,
           aspectRatio: size.geminiAspect,
-          outputOptions: { mimeType: 'image/png' }
+          personGeneration: 'allow_adult'
         }
       })
     }

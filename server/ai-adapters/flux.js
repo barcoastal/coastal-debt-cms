@@ -18,18 +18,14 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
     input.prompt_strength = 0.75;
   }
 
-  const res = await fetch(`${BASE_URL}/predictions`, {
+  const res = await fetch(`${BASE_URL}/models/black-forest-labs/flux-1.1-pro/predictions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'Prefer': 'respond-async'
     },
-    body: JSON.stringify({
-      version: null,
-      model: 'black-forest-labs/flux-1.1-pro',
-      input
-    })
+    body: JSON.stringify({ input })
   });
 
   if (!res.ok) {
