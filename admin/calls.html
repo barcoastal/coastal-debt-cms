@@ -346,8 +346,8 @@
           <td>${transferHtml}</td>
           <td onclick="event.stopPropagation()">
             ${hasRecording ? `<button class="action-btn play-btn" onclick="playRecording(${c.id}, this)">Play</button>` : ''}
-            ${hasRecording && transcriptStatus !== 'completed' ? `<button class="action-btn transcribe-btn" id="transcribeBtn${c.id}" onclick="transcribeCall(${c.id})">Transcribe</button>` : ''}
-            ${transcriptStatus === 'processing' ? '<span class="spinner-small"></span>' : ''}
+            ${hasRecording && transcriptStatus !== 'completed' ? `<button class="action-btn transcribe-btn" id="transcribeBtn${c.id}" onclick="transcribeCall(${c.id})">${transcriptStatus === 'failed' ? 'Retry' : 'Transcribe'}</button>` : ''}
+            ${transcriptStatus === 'processing' ? '<span class="spinner-small" id="spinner-${c.id}"></span>' : ''}
           </td>
         </tr>
         <tr class="expand-row" id="expand-${c.id}">
@@ -536,12 +536,22 @@
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span> Processing...'; }
 
       try {
-        await api('/api/retreaver/calls/' + id + '/transcribe', { method: 'POST' });
+        const resp = await fetch('/api/retreaver/calls/' + id + '/transcribe', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        // Handle HTML error pages (Railway timeout)
+        const contentType = resp.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Server returned non-JSON response (status ' + resp.status + '). Deploy may still be in progress — try again in a minute.');
+        }
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Unknown error');
         // Poll for completion
         pollTranscript(id, btn);
       } catch (e) {
-        if (btn) { btn.textContent = 'Failed'; btn.style.color = '#ef4444'; }
-        alert('Transcription failed: ' + e.message);
+        if (btn) { btn.disabled = false; btn.textContent = 'Retry'; btn.style.color = '#ef4444'; }
+        alert('Transcription error: ' + e.message);
       }
     }
 

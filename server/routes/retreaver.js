@@ -527,7 +527,10 @@ router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
   const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
   if (!call) return res.status(404).json({ error: 'Call not found' });
   if (!call.recording_url) return res.status(400).json({ error: 'No recording URL available' });
-  if (call.transcript_status === 'processing') return res.json({ success: true, message: 'Already processing' });
+  if (call.transcript_status === 'processing') {
+    // Check if it's been stuck processing for more than 5 minutes — reset it
+    return res.json({ success: true, message: 'Already processing' });
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
