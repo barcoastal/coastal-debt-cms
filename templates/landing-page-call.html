@@ -46,6 +46,9 @@
       --gray-200:#e5e7eb;
       --gray-600:#4b5563;
       --gray-800:#1f2937;
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --headline-hl:{{colors.headlineHighlight}};
     }
     body{font-family:'Aeonik','Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--gray-800);line-height:1.6;background:var(--brand-white);font-weight:400}
     .container{max-width:1200px;margin:0 auto;padding:0 20px}
@@ -55,8 +58,8 @@
     .header-inner{display:flex;justify-content:space-between;align-items:center}
     .logo{display:flex;align-items:center;cursor:default}
     .logo img{height:36px;width:auto}
-    .header-call-btn{display:inline-flex;align-items:center;gap:8px;background:var(--brand-orange);color:var(--brand-white);font-weight:700;text-decoration:none;font-size:0.95rem;padding:12px 24px;border-radius:50px;transition:all 0.2s;animation:pulse-orange 2s infinite}
-    .header-call-btn:hover{background:var(--brand-orange-dark);transform:translateY(-1px)}
+    .header-call-btn{display:inline-flex;align-items:center;gap:8px;background:var(--cta-btn);color:var(--brand-white);font-weight:700;text-decoration:none;font-size:0.95rem;padding:12px 24px;border-radius:50px;transition:all 0.2s;animation:pulse-orange 2s infinite}
+    .header-call-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
     .header-call-btn svg{width:18px;height:18px}
 
     /* Pulse animations */
@@ -84,12 +87,12 @@
     .hero-content{max-width:700px;margin:0 auto;text-align:center;padding-top:10px}
     .hero-badge{display:inline-block;background:rgba(48,82,255,0.08);color:var(--brand-blue);padding:8px 20px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:20px}
     .hero h1{font-size:2.8rem;font-weight:800;line-height:1.15;margin-bottom:20px;color:var(--brand-black)}
-    .hero h1 span{color:var(--brand-blue)}
+    .hero h1 span{color:var(--headline-hl)}
     .hero-sub{font-size:1.15rem;color:#6b7280;margin-bottom:30px;line-height:1.6;max-width:600px;margin-left:auto;margin-right:auto}
 
     /* Giant Call Button */
-    .call-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:500px;margin:0 auto;height:72px;background:var(--brand-orange);color:var(--brand-white);border-radius:16px;font-size:1.4rem;font-weight:800;text-decoration:none;transition:all 0.2s;animation:pulse-glow 2s infinite;cursor:pointer}
-    .call-btn:hover{background:var(--brand-orange-dark);transform:translateY(-2px)}
+    .call-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:500px;margin:0 auto;height:72px;background:var(--cta-btn);color:var(--brand-white);border-radius:16px;font-size:1.4rem;font-weight:800;text-decoration:none;transition:all 0.2s;animation:pulse-glow 2s infinite;cursor:pointer}
+    .call-btn:hover{background:var(--cta-btn-hover);transform:translateY(-2px)}
     .call-btn svg{width:28px;height:28px;flex-shrink:0}
     .call-btn-sub{text-align:center;color:var(--gray-600);font-size:0.9rem;margin-top:10px}
 
@@ -178,8 +181,8 @@
     .cta-footer{background:var(--brand-blue);padding:70px 0;text-align:center}
     .cta-footer h2{color:var(--brand-white);font-size:2.2rem;margin-bottom:10px;font-weight:800}
     .cta-footer p{color:rgba(255,255,255,0.9);font-size:1.15rem;margin-bottom:28px}
-    .cta-footer .call-btn{background:var(--brand-orange);color:var(--brand-white);animation:pulse-glow 2s infinite;box-shadow:0 4px 20px rgba(255,144,0,0.3)}
-    .cta-footer .call-btn:hover{background:var(--brand-orange-dark);transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,144,0,0.4)}
+    .cta-footer .call-btn{background:var(--cta-btn);color:var(--brand-white);animation:pulse-glow 2s infinite;box-shadow:0 4px 20px rgba(255,144,0,0.3)}
+    .cta-footer .call-btn:hover{background:var(--cta-btn-hover);transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,144,0,0.4)}
     .cta-hours{color:rgba(255,255,255,0.7);font-size:0.9rem;margin-top:16px}
 
     /* Footer */
@@ -190,7 +193,7 @@
 
     /* Mobile Sticky CTA */
     .mobile-sticky-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--brand-white);padding:10px 16px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.15)}
-    .mobile-sticky-cta a{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;background:var(--brand-orange);color:var(--brand-white);font-weight:800;font-size:1.1rem;text-decoration:none;padding:16px 20px;border-radius:14px;animation:bounce-subtle 2s infinite}
+    .mobile-sticky-cta a{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;background:var(--cta-btn);color:var(--brand-white);font-weight:800;font-size:1.1rem;text-decoration:none;padding:16px 20px;border-radius:14px;animation:bounce-subtle 2s infinite}
     .mobile-sticky-cta a svg{width:22px;height:22px}
 
     /* Responsive */

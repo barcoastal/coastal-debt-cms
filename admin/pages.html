@@ -51,6 +51,15 @@
     .ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .ai-msg { margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.9); }
     .ai-err { margin-top: 8px; font-size: 12px; color: #fca5a5; }
+    .badge-purple { background: #ede9fe; color: #7c3aed; }
+    .ab-results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .ab-variant-card { border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; text-align: center; }
+    .ab-variant-card.variant-a { border-color: #3b82f6; }
+    .ab-variant-card.variant-b { border-color: #8b5cf6; }
+    .ab-variant-card h4 { font-size: 14px; margin-bottom: 12px; }
+    .ab-variant-card .ab-stat { font-size: 2rem; font-weight: 700; color: #1f2937; }
+    .ab-variant-card .ab-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .ab-winner-select { margin-top: 16px; display: flex; gap: 8px; justify-content: center; align-items: center; }
   </style>
 </head>
 <body>
@@ -336,6 +345,49 @@
           </div>
         </div>
 
+        <!-- Colors -->
+        <div class="edit-section">
+          <h3 class="section-header" onclick="toggleSection('colors')">
+            <span>Colors</span>
+            <span class="toggle-icon">+</span>
+          </h3>
+          <div class="section-content hidden" id="section-colors">
+            <div class="form-row">
+              <div class="form-group">
+                <label>CTA Button Color</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="editCtaButtonColor" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="editCtaButtonColorHex" placeholder="#3052FF" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>CTA Button Hover</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="editCtaButtonHover" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="editCtaButtonHoverHex" placeholder="#2442d4" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
+                <small style="color:#666">Leave default for auto-darkened version</small>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Headline Highlight Color</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="editHeadlineHighlightColor" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="editHeadlineHighlightColorHex" placeholder="#3052FF" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Primary Blue</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="editPrimaryColor" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="editPrimaryColorHex" placeholder="#3052FF" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- SEO & Browser Tab -->
         <div class="edit-section">
           <h3 class="section-header" onclick="toggleSection('seo')">
@@ -556,6 +608,19 @@
     </div>
   </div>
 
+  <!-- A/B Test Modal -->
+  <div class="modal-overlay" id="abTestModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>A/B Test</h2>
+        <button class="modal-close" onclick="hideModal('abTestModal')">&times;</button>
+      </div>
+      <div id="abTestContent">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/common.js?v=6"></script>
   <script>
     async function loadPages() {
@@ -568,7 +633,10 @@
       } else {
         tbody.innerHTML = pages.map(page => `
           <tr>
-            <td><strong>${page.name}</strong></td>
+            <td>
+              <strong>${page.name}</strong>
+              ${page.ab_test_variant ? `<span class="badge badge-purple" style="margin-left:6px">A/B: ${page.ab_test_variant}</span>` : ''}
+            </td>
             <td><code>/lp/${page.slug}/</code></td>
             <td><span class="badge badge-blue">${page.platform}</span></td>
             <td><span class="badge ${page.template_type === 'call' ? 'badge-green' : 'badge-blue'}">${page.template_type === 'call' ? 'Call Now' : 'Form'}</span></td>
@@ -582,6 +650,7 @@
             <td class="actions">
               <a href="/lp/${page.slug}/" target="_blank" class="action-btn action-btn-view">View</a>
               <button class="action-btn action-btn-edit" onclick="editPage(${page.id})">Edit</button>
+              ${!page.ab_test_variant || page.ab_test_variant === 'A' ? `<button class="action-btn" style="background:#ede9fe;color:#7c3aed" onclick="showAbTest(${page.id})">A/B Test</button>` : ''}
               <button class="action-btn action-btn-delete" onclick="deletePage(${page.id})">Delete</button>
             </td>
           </tr>
@@ -631,6 +700,26 @@
     });
 
     let currentEditContent = {}; // Store existing content for merging
+
+    // Color picker sync: keep color input and hex text input in sync
+    function syncColorPicker(colorId, hexId) {
+      const colorEl = document.getElementById(colorId);
+      const hexEl = document.getElementById(hexId);
+      colorEl.addEventListener('input', () => { hexEl.value = colorEl.value; });
+      hexEl.addEventListener('input', () => {
+        const v = hexEl.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) colorEl.value = v;
+      });
+    }
+    syncColorPicker('editCtaButtonColor', 'editCtaButtonColorHex');
+    syncColorPicker('editCtaButtonHover', 'editCtaButtonHoverHex');
+    syncColorPicker('editHeadlineHighlightColor', 'editHeadlineHighlightColorHex');
+    syncColorPicker('editPrimaryColor', 'editPrimaryColorHex');
+
+    function setColorField(colorId, hexId, value) {
+      document.getElementById(colorId).value = value || '#3052FF';
+      document.getElementById(hexId).value = value || '#3052FF';
+    }
 
     function toggleSection(sectionId) {
       const content = document.getElementById('section-' + sectionId);
@@ -707,6 +796,13 @@
       document.getElementById('editCtaSubtitle').value = content.ctaSubtitle || '';
       document.getElementById('editCtaButton').value = content.ctaButton || '';
 
+      // Colors section
+      const colors = content.colors || {};
+      setColorField('editCtaButtonColor', 'editCtaButtonColorHex', colors.ctaButton || '#3052FF');
+      setColorField('editCtaButtonHover', 'editCtaButtonHoverHex', colors.ctaButtonHover || '#2442d4');
+      setColorField('editHeadlineHighlightColor', 'editHeadlineHighlightColorHex', colors.headlineHighlight || '#3052FF');
+      setColorField('editPrimaryColor', 'editPrimaryColorHex', colors.primary || '#3052FF');
+
       showModal('editModal');
     }
 
@@ -731,9 +827,19 @@
         { title: document.getElementById('editStep3Title').value, description: document.getElementById('editStep3Desc').value }
       ];
 
+      // Collect color values
+      const editedColors = {
+        ...(currentEditContent.colors || {}),
+        ctaButton: document.getElementById('editCtaButtonColorHex').value || '#3052FF',
+        ctaButtonHover: document.getElementById('editCtaButtonHoverHex').value || '#2442d4',
+        headlineHighlight: document.getElementById('editHeadlineHighlightColorHex').value || '#3052FF',
+        primary: document.getElementById('editPrimaryColorHex').value || '#3052FF'
+      };
+
       // Build content object, merging with existing to preserve fields not in form
       const content = {
         ...currentEditContent, // Preserve existing fields (colors, caseStudiesTitle, etc.)
+        colors: editedColors,
         pageTitle: document.getElementById('editPageTitle').value,
         metaDescription: document.getElementById('editMetaDescription').value,
         phone: document.getElementById('editPhone').value,
@@ -899,6 +1005,91 @@
         err.textContent = e.message || 'Generation failed'; err.style.display = 'block'; msg.style.display = 'none';
       } finally {
         btn.disabled = false; btn.textContent = 'Generate Content for This Page';
+      }
+    }
+
+    async function showAbTest(pageId) {
+      const res = await fetch(`/api/pages/${pageId}`);
+      const page = await res.json();
+      const container = document.getElementById('abTestContent');
+
+      if (page.ab_test_id) {
+        // Test is active — show results
+        const testsRes = await fetch('/api/pages/ab-tests');
+        const tests = await testsRes.json();
+        const test = tests.find(t => t.ab_test_id === page.ab_test_id);
+        if (!test) { alert('A/B test data not found'); return; }
+
+        const totalA = test.page_a_leads || 0;
+        const totalB = test.page_b_leads || 0;
+        const total = totalA + totalB;
+
+        container.innerHTML = `
+          <div style="padding: 20px;">
+            <p style="color:#6b7280;margin-bottom:16px">A/B test is active. Visitors to <strong>${test.page_a_slug}</strong> are randomly split 50/50 between variants.</p>
+            <div class="ab-results">
+              <div class="ab-variant-card variant-a">
+                <h4>Variant A (Control)</h4>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:8px"><code>/lp/${test.page_a_slug}/</code></div>
+                <div class="ab-stat">${totalA}</div>
+                <div class="ab-label">leads</div>
+                ${total > 0 ? `<div class="ab-label">${Math.round(totalA / total * 100)}% of total</div>` : ''}
+              </div>
+              <div class="ab-variant-card variant-b">
+                <h4>Variant B</h4>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:8px"><code>/lp/${test.page_b_slug}/</code></div>
+                <div class="ab-stat">${totalB}</div>
+                <div class="ab-label">leads</div>
+                ${total > 0 ? `<div class="ab-label">${Math.round(totalB / total * 100)}% of total</div>` : ''}
+              </div>
+            </div>
+            <div class="ab-winner-select">
+              <span style="font-size:14px;font-weight:600">End test &amp; pick winner:</span>
+              <button class="btn btn-primary btn-small" onclick="endAbTest(${test.page_a_id}, 'A')">Keep A</button>
+              <button class="btn btn-primary btn-small" style="background:#7c3aed" onclick="endAbTest(${test.page_a_id}, 'B')">Keep B</button>
+              <button class="btn btn-secondary btn-small" onclick="endAbTest(${test.page_a_id}, '')">End (no winner)</button>
+            </div>
+          </div>
+        `;
+      } else {
+        // No test — offer to create one
+        container.innerHTML = `
+          <div style="padding: 20px;">
+            <p style="margin-bottom:12px">Create an A/B test for <strong>${page.name}</strong>.</p>
+            <p style="color:#6b7280;font-size:14px;margin-bottom:16px">This will clone the page as variant B (<code>/lp/${page.slug}-b/</code>). Visitors to the original URL will be randomly split 50/50 between both variants using a cookie.</p>
+            <p style="color:#6b7280;font-size:14px;margin-bottom:20px">Edit variant B after creating the test to change its content (headlines, CTA colors, etc.).</p>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="hideModal('abTestModal')">Cancel</button>
+              <button class="btn btn-primary" onclick="startAbTest(${page.id})">Create A/B Test</button>
+            </div>
+          </div>
+        `;
+      }
+
+      showModal('abTestModal');
+    }
+
+    async function startAbTest(pageId) {
+      try {
+        const res = await api(`/api/pages/${pageId}/ab-test`, { method: 'POST' });
+        hideModal('abTestModal');
+        loadPages();
+        alert(`A/B test started! Variant B created at /lp/${res.variant_b.slug}/. Edit variant B to change its content.`);
+      } catch (err) {
+        alert(err.message || 'Failed to start A/B test');
+      }
+    }
+
+    async function endAbTest(pageId, winner) {
+      const msg = winner ? `End A/B test and keep variant ${winner}? The other variant will be deleted.` : 'End A/B test without a winner? Variant B will be deleted.';
+      if (!confirm(msg)) return;
+
+      try {
+        await api(`/api/pages/${pageId}/ab-test?winner=${winner}`, { method: 'DELETE' });
+        hideModal('abTestModal');
+        loadPages();
+      } catch (err) {
+        alert(err.message || 'Failed to end A/B test');
       }
     }
 

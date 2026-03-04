@@ -352,6 +352,10 @@ try { db.exec(`ALTER TABLE landing_pages ADD COLUMN template_type TEXT DEFAULT '
 // Form: skip pre-qualification steps (debt amount + MCA question)
 try { db.exec(`ALTER TABLE forms ADD COLUMN skip_pre_qual INTEGER DEFAULT 0`); } catch (e) {}
 
+// A/B Testing columns on landing_pages
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_test_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_test_variant TEXT`); } catch (e) {}
+
 // CRM + Email Marketing columns on leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN assigned_to INTEGER`); } catch (e) {}
