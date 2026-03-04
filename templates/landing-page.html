@@ -692,7 +692,8 @@
             utm_medium: params.get('utm_medium') || '',
             utm_campaign: params.get('utm_campaign') || '',
             utm_term: params.get('utm_term') || '',
-            utm_content: params.get('utm_content') || ''
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
           })
         }).catch(function(){});
 
@@ -1132,6 +1133,7 @@
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       // Always re-check rt_clickid at submit time from all sources
       if (!data.rt_clickid) {
@@ -1269,6 +1271,7 @@
         data[cleanKey] = val;
       });
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       if (!data.rt_clickid) data.rt_clickid = getRtClickId();
 

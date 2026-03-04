@@ -108,30 +108,6 @@ const defaultSectionsVisible = {
   cta: true
 };
 
-// Get active A/B tests with lead counts
-router.get('/ab-tests', authenticateToken, (req, res) => {
-  const tests = db.prepare(`
-    SELECT ab_test_id,
-      MAX(CASE WHEN ab_test_variant = 'A' THEN lp.id END) as page_a_id,
-      MAX(CASE WHEN ab_test_variant = 'A' THEN lp.name END) as page_a_name,
-      MAX(CASE WHEN ab_test_variant = 'A' THEN lp.slug END) as page_a_slug,
-      MAX(CASE WHEN ab_test_variant = 'B' THEN lp.id END) as page_b_id,
-      MAX(CASE WHEN ab_test_variant = 'B' THEN lp.name END) as page_b_name,
-      MAX(CASE WHEN ab_test_variant = 'B' THEN lp.slug END) as page_b_slug
-    FROM landing_pages lp
-    WHERE ab_test_id IS NOT NULL
-    GROUP BY ab_test_id
-  `).all();
-
-  // Add lead counts
-  tests.forEach(test => {
-    test.page_a_leads = db.prepare('SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ?').get(test.page_a_id)?.c || 0;
-    test.page_b_leads = db.prepare('SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ?').get(test.page_b_id)?.c || 0;
-  });
-
-  res.json(tests);
-});
-
 // Get all landing pages
 router.get('/', authenticateToken, (req, res) => {
   const pages = db.prepare(`
@@ -291,97 +267,42 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Page deleted' });
 });
 
-// Start A/B test - clone page as variant B
-router.post('/:id/ab-test', authenticateToken, (req, res) => {
+// Save A/B test config (inline same-URL split testing)
+router.put('/:id/ab-config', authenticateToken, (req, res) => {
   const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
   if (!page) return res.status(404).json({ error: 'Page not found' });
-  if (page.ab_test_id) return res.status(400).json({ error: 'Page already has an active A/B test' });
 
-  const crypto = require('crypto');
-  const abTestId = crypto.randomBytes(8).toString('hex');
-  const variantBSlug = page.slug + '-b';
-
-  // Check variant B slug doesn't exist
-  const existing = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(variantBSlug);
-  if (existing) return res.status(400).json({ error: `Slug "${variantBSlug}" already exists. Remove it first.` });
-
-  // Clone page as variant B
-  try {
-    const result = db.prepare(`
-      INSERT INTO landing_pages (slug, name, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active, template_type, ab_test_id, ab_test_variant)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'B')
-    `).run(
-      variantBSlug,
-      page.name + ' (Variant B)',
-      page.platform,
-      page.traffic_source,
-      page.webhook_url,
-      page.form_id,
-      page.content,
-      page.sections_visible,
-      page.hidden_fields,
-      page.is_active,
-      page.template_type,
-      abTestId
-    );
-
-    // Set original as variant A
-    db.prepare('UPDATE landing_pages SET ab_test_id = ?, ab_test_variant = ? WHERE id = ?')
-      .run(abTestId, 'A', page.id);
-
-    // Regenerate both pages (A gets split JS, B is normal)
-    generateLandingPage(page.id);
-    generateLandingPage(result.lastInsertRowid);
-
-    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ab_test', page.id, `Started A/B test on page: ${page.name}`, req.ip);
-    res.json({
-      ab_test_id: abTestId,
-      variant_a: { id: page.id, slug: page.slug },
-      variant_b: { id: result.lastInsertRowid, slug: variantBSlug }
-    });
-  } catch (err) {
-    console.error('A/B test creation error:', err);
-    res.status(500).json({ error: 'Failed to create A/B test' });
+  const { ab_config } = req.body;
+  if (!ab_config || typeof ab_config !== 'object') {
+    return res.status(400).json({ error: 'ab_config object required' });
   }
+
+  db.prepare('UPDATE landing_pages SET ab_config = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(JSON.stringify(ab_config), req.params.id);
+
+  // Regenerate page with new AB config
+  generateLandingPage(req.params.id);
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'ab_test', parseInt(req.params.id), `${ab_config.enabled ? 'Enabled' : 'Disabled'} A/B test on page: ${page.name}`, req.ip);
+  res.json({ message: 'A/B config saved' });
 });
 
-// End A/B test
-router.delete('/:id/ab-test', authenticateToken, (req, res) => {
-  const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
+// Get A/B test stats (per-variant visitors, leads)
+router.get('/:id/ab-stats', authenticateToken, (req, res) => {
+  const page = db.prepare('SELECT id, slug, ab_config FROM landing_pages WHERE id = ?').get(req.params.id);
   if (!page) return res.status(404).json({ error: 'Page not found' });
-  if (!page.ab_test_id) return res.status(400).json({ error: 'No active A/B test on this page' });
 
-  const winner = req.query.winner; // 'A' or 'B'
+  const pageId = page.id;
 
-  // Find both variants
-  const variants = db.prepare('SELECT * FROM landing_pages WHERE ab_test_id = ?').all(page.ab_test_id);
-  const variantA = variants.find(v => v.ab_test_variant === 'A');
-  const variantB = variants.find(v => v.ab_test_variant === 'B');
+  const visitorA = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'A'").get(`%${page.slug}%`)?.c || 0;
+  const visitorB = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'B'").get(`%${page.slug}%`)?.c || 0;
+  const leadA = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'A'").get(pageId)?.c || 0;
+  const leadB = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'B'").get(pageId)?.c || 0;
 
-  // Clear A/B test fields from both
-  db.prepare('UPDATE landing_pages SET ab_test_id = NULL, ab_test_variant = NULL WHERE ab_test_id = ?')
-    .run(page.ab_test_id);
-
-  // If winner is B, swap: copy B content to A slug, then delete B
-  if (winner === 'B' && variantA && variantB) {
-    db.prepare('UPDATE landing_pages SET content = ?, name = ? WHERE id = ?')
-      .run(variantB.content, variantA.name, variantA.id);
-    // Delete variant B page and its files
-    const bDir = path.join(__dirname, '..', '..', 'public', variantB.slug);
-    if (fs.existsSync(bDir)) fs.rmSync(bDir, { recursive: true });
-    db.prepare('DELETE FROM landing_pages WHERE id = ?').run(variantB.id);
-  } else if (variantB) {
-    // Winner is A or no winner specified - just delete B
-    const bDir = path.join(__dirname, '..', '..', 'public', variantB.slug);
-    if (fs.existsSync(bDir)) fs.rmSync(bDir, { recursive: true });
-    db.prepare('DELETE FROM landing_pages WHERE id = ?').run(variantB.id);
-  }
-
-  // Regenerate variant A (removes split JS)
-  if (variantA) generateLandingPage(variantA.id);
-
-  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'ended', 'ab_test', page.id, `Ended A/B test on page: ${page.name}${winner ? ' (winner: ' + winner + ')' : ''}`, req.ip);
-  res.json({ message: 'A/B test ended', winner: winner || null });
+  res.json({
+    visitors: { A: visitorA, B: visitorB },
+    leads: { A: leadA, B: leadB }
+  });
 });
 
 // Generate landing page HTML
@@ -529,13 +450,55 @@ function generateLandingPage(pageId) {
     console.error('Failed to inject branding:', err);
   }
 
-  // Inject A/B test split script for variant A pages
-  if (page.ab_test_id && page.ab_test_variant === 'A') {
-    const variantB = db.prepare('SELECT slug FROM landing_pages WHERE ab_test_id = ? AND ab_test_variant = ?').get(page.ab_test_id, 'B');
-    if (variantB) {
-      const abScript = `<script>(function(){var t='${page.ab_test_id}',b='${variantB.slug}';var c=document.cookie.match('ab_'+t+'=([^;]+)');var v=c?c[1]:(Math.random()<.5?'A':'B');if(!c)document.cookie='ab_'+t+'='+v+';path=/;max-age=2592000';if(v==='B')window.location.replace('/lp/'+b+'/');})();</script>`;
-      html = html.replace('</head>', abScript + '\n</head>');
-    }
+  // Inject inline A/B test script (same-URL split testing)
+  const abConfig = JSON.parse(page.ab_config || '{}');
+  if (abConfig.enabled && abConfig.variantB) {
+    const abJson = JSON.stringify({
+      id: page.id,
+      split: abConfig.split || 50,
+      variantB: abConfig.variantB
+    });
+    const abScript = `<script>
+(function(){
+  var cfg=${abJson};
+  var ck=document.cookie.match('ab_'+cfg.id+'=([^;]+)');
+  var v=ck?ck[1]:(Math.random()*100<cfg.split?'B':'A');
+  if(!ck)document.cookie='ab_'+cfg.id+'='+v+';path=/;max-age=2592000';
+  window._abVariant=v;
+  if(v==='B'){
+    var c=cfg.variantB.colors||{};
+    if(c.ctaButton)document.documentElement.style.setProperty('--cta-btn',c.ctaButton);
+    if(c.ctaButtonHover)document.documentElement.style.setProperty('--cta-btn-hover',c.ctaButtonHover);
+    if(c.headlineHighlight)document.documentElement.style.setProperty('--headline-hl',c.headlineHighlight);
+    document.addEventListener('DOMContentLoaded',function(){
+      var b=cfg.variantB;
+      function t(sel,val){if(!val)return;var el=document.querySelector(sel);if(el)el.textContent=val;}
+      if(b.headline||b.headlineLine2||b.headlineHighlight){
+        var h1=document.querySelector('.hero h1');
+        if(h1){
+          var hl=b.headline||h1.getAttribute('data-ab-headline')||'';
+          var l2=b.headlineLine2||h1.getAttribute('data-ab-line2')||'';
+          var hi=b.headlineHighlight||h1.getAttribute('data-ab-highlight')||'';
+          h1.innerHTML=hl+'<br>'+l2+' <span>'+hi+'</span>';
+        }
+      }
+      t('.hero-badge',b.badge);
+      t('.hero-sub',b.subheadline);
+      t('.form-title',b.formTitle);
+      t('.form-subtitle',b.formSubtitle);
+      t('.submit-btn',b.formButton);
+      t('.cta-footer h2',b.ctaTitle);
+    });
+  }
+})();
+</script>`;
+    html = html.replace('</head>', abScript + '\n</head>');
+
+    // Embed original headline data as attributes for fallback
+    html = html.replace(
+      /<h1>([^<]*)<br>([^<]*)<span>/,
+      (match, headline, line2) => `<h1 data-ab-headline="${headline.trim()}" data-ab-line2="${line2.trim()}" data-ab-highlight="${(mergedContent.headlineHighlight || '').replace(/"/g, '&quot;')}">${headline}<br>${line2}<span>`
+    );
   }
 
   // Create the page directory and save

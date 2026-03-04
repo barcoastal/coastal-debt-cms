@@ -37,7 +37,8 @@ router.post('/track', async (req, res) => {
     utm_medium,
     utm_campaign,
     utm_term,
-    utm_content
+    utm_content,
+    ab_variant
   } = req.body;
 
   // Get rt_clickid from: body → cookie → referer URL param
@@ -74,9 +75,10 @@ router.post('/track', async (req, res) => {
         utm_medium = COALESCE(NULLIF(?, ''), utm_medium),
         utm_campaign = COALESCE(NULLIF(?, ''), utm_campaign),
         utm_term = COALESCE(NULLIF(?, ''), utm_term),
-        utm_content = COALESCE(NULLIF(?, ''), utm_content)
+        utm_content = COALESCE(NULLIF(?, ''), utm_content),
+        ab_variant = COALESCE(NULLIF(?, ''), ab_variant)
       WHERE eli_clickid = ?
-    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', utm_source || '', utm_medium || '', utm_campaign || '', utm_term || '', utm_content || '', eli_clickid);
+    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', utm_source || '', utm_medium || '', utm_campaign || '', utm_term || '', utm_content || '', ab_variant || '', eli_clickid);
 
     res.json({ success: true, visitor_id: existing.id, returning: true });
   } else {
@@ -87,8 +89,8 @@ router.post('/track', async (req, res) => {
         user_agent, browser, browser_version, os, os_version, device_type,
         screen_width, screen_height, language, timezone,
         referrer_url, landing_page,
-        utm_source, utm_medium, utm_campaign, utm_term, utm_content
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content, ab_variant
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eli_clickid,
       gclid || '',
@@ -114,7 +116,8 @@ router.post('/track', async (req, res) => {
       utm_medium || '',
       utm_campaign || '',
       utm_term || '',
-      utm_content || ''
+      utm_content || '',
+      ab_variant || ''
     );
 
     // Try to get geo info from IP (async, don't wait)

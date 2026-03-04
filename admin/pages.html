@@ -610,7 +610,7 @@
 
   <!-- A/B Test Modal -->
   <div class="modal-overlay" id="abTestModal">
-    <div class="modal" style="max-width: 600px;">
+    <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <h2>A/B Test</h2>
         <button class="modal-close" onclick="hideModal('abTestModal')">&times;</button>
@@ -635,7 +635,7 @@
           <tr>
             <td>
               <strong>${page.name}</strong>
-              ${page.ab_test_variant ? `<span class="badge badge-purple" style="margin-left:6px">A/B: ${page.ab_test_variant}</span>` : ''}
+              ${(() => { try { const ab = typeof page.content === 'object' ? page.content : {}; const abCfg = JSON.parse(page.ab_config || '{}'); return abCfg.enabled ? '<span class="badge badge-purple" style="margin-left:6px">A/B Active</span>' : ''; } catch(e){ return ''; } })()}
             </td>
             <td><code>/lp/${page.slug}/</code></td>
             <td><span class="badge badge-blue">${page.platform}</span></td>
@@ -650,7 +650,7 @@
             <td class="actions">
               <a href="/lp/${page.slug}/" target="_blank" class="action-btn action-btn-view">View</a>
               <button class="action-btn action-btn-edit" onclick="editPage(${page.id})">Edit</button>
-              ${!page.ab_test_variant || page.ab_test_variant === 'A' ? `<button class="action-btn" style="background:#ede9fe;color:#7c3aed" onclick="showAbTest(${page.id})">A/B Test</button>` : ''}
+              <button class="action-btn" style="background:#ede9fe;color:#7c3aed" onclick="showAbTest(${page.id})">A/B Test</button>
               <button class="action-btn action-btn-delete" onclick="deletePage(${page.id})">Delete</button>
             </td>
           </tr>
@@ -1008,88 +1008,220 @@
       }
     }
 
+    let abCurrentPageId = null;
+    let abCurrentConfig = {};
+
     async function showAbTest(pageId) {
       const res = await fetch(`/api/pages/${pageId}`);
       const page = await res.json();
+      abCurrentPageId = pageId;
+      const abConfig = JSON.parse(page.ab_config || '{}');
+      abCurrentConfig = abConfig;
+      const content = page.content || {};
       const container = document.getElementById('abTestContent');
 
-      if (page.ab_test_id) {
-        // Test is active — show results
-        const testsRes = await fetch('/api/pages/ab-tests');
-        const tests = await testsRes.json();
-        const test = tests.find(t => t.ab_test_id === page.ab_test_id);
-        if (!test) { alert('A/B test data not found'); return; }
+      // Build variant B form with current overrides
+      const vb = abConfig.variantB || {};
+      const vbColors = vb.colors || {};
 
-        const totalA = test.page_a_leads || 0;
-        const totalB = test.page_b_leads || 0;
-        const total = totalA + totalB;
+      container.innerHTML = `
+        <div style="padding: 20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <label class="toggle">
+              <input type="checkbox" id="abEnabled" ${abConfig.enabled ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="font-weight:600">Enable A/B Test</span>
+          </div>
 
-        container.innerHTML = `
-          <div style="padding: 20px;">
-            <p style="color:#6b7280;margin-bottom:16px">A/B test is active. Visitors to <strong>${test.page_a_slug}</strong> are randomly split 50/50 between variants.</p>
-            <div class="ab-results">
-              <div class="ab-variant-card variant-a">
-                <h4>Variant A (Control)</h4>
-                <div style="font-size:12px;color:#6b7280;margin-bottom:8px"><code>/lp/${test.page_a_slug}/</code></div>
-                <div class="ab-stat">${totalA}</div>
-                <div class="ab-label">leads</div>
-                ${total > 0 ? `<div class="ab-label">${Math.round(totalA / total * 100)}% of total</div>` : ''}
+          <div id="abConfigBody" style="${abConfig.enabled ? '' : 'opacity:0.5;pointer-events:none'}">
+            <div class="form-group" style="margin-bottom:16px">
+              <label style="font-weight:600">Traffic Split (% to Variant B)</label>
+              <div style="display:flex;align-items:center;gap:12px">
+                <input type="range" id="abSplit" min="1" max="99" value="${abConfig.split || 50}" style="flex:1">
+                <span id="abSplitLabel" style="font-weight:700;min-width:80px;text-align:center">${100 - (abConfig.split || 50)}% / ${abConfig.split || 50}%</span>
               </div>
-              <div class="ab-variant-card variant-b">
-                <h4>Variant B</h4>
-                <div style="font-size:12px;color:#6b7280;margin-bottom:8px"><code>/lp/${test.page_b_slug}/</code></div>
-                <div class="ab-stat">${totalB}</div>
-                <div class="ab-label">leads</div>
-                ${total > 0 ? `<div class="ab-label">${Math.round(totalB / total * 100)}% of total</div>` : ''}
+              <small style="color:#6b7280">A: ${100 - (abConfig.split || 50)}% &nbsp;|&nbsp; B: ${abConfig.split || 50}%</small>
+            </div>
+
+            <h4 style="margin:16px 0 12px;font-size:14px;color:#7c3aed">Variant B Overrides</h4>
+            <p style="color:#6b7280;font-size:13px;margin-bottom:12px">Leave fields empty to keep the same as variant A (the default page content).</p>
+
+            <div class="form-group">
+              <label>Badge</label>
+              <input type="text" id="abBadge" value="${vb.badge || ''}" placeholder="${content.badge || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Headline</label>
+              <input type="text" id="abHeadline" value="${vb.headline || ''}" placeholder="${content.headline || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Headline Line 2</label>
+              <input type="text" id="abHeadlineLine2" value="${vb.headlineLine2 || ''}" placeholder="${content.headlineLine2 || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Headline Highlight</label>
+              <input type="text" id="abHeadlineHighlight" value="${vb.headlineHighlight || ''}" placeholder="${content.headlineHighlight || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Subheadline</label>
+              <textarea id="abSubheadline" rows="2" placeholder="${(content.subheadline || 'Same as A').substring(0, 80)}...">${vb.subheadline || ''}</textarea>
+            </div>
+            <div class="form-group">
+              <label>Form Title</label>
+              <input type="text" id="abFormTitle" value="${vb.formTitle || ''}" placeholder="${content.formTitle || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Form Subtitle</label>
+              <input type="text" id="abFormSubtitle" value="${vb.formSubtitle || ''}" placeholder="${content.formSubtitle || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>Form Button Text</label>
+              <input type="text" id="abFormButton" value="${vb.formButton || ''}" placeholder="${content.formButton || 'Same as A'}">
+            </div>
+            <div class="form-group">
+              <label>CTA Title</label>
+              <input type="text" id="abCtaTitle" value="${vb.ctaTitle || ''}" placeholder="${content.ctaTitle || 'Same as A'}">
+            </div>
+
+            <h4 style="margin:16px 0 12px;font-size:14px;color:#7c3aed">Variant B Colors</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>CTA Button</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="abCtaColor" value="${vbColors.ctaButton || content.colors?.ctaButton || '#3052FF'}" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="abCtaColorHex" value="${vbColors.ctaButton || ''}" placeholder="Same as A" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>CTA Button Hover</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="abCtaHoverColor" value="${vbColors.ctaButtonHover || content.colors?.ctaButtonHover || '#2442d4'}" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                  <input type="text" id="abCtaHoverColorHex" value="${vbColors.ctaButtonHover || ''}" placeholder="Same as A" style="flex:1;font-family:monospace;font-size:13px">
+                </div>
               </div>
             </div>
-            <div class="ab-winner-select">
-              <span style="font-size:14px;font-weight:600">End test &amp; pick winner:</span>
-              <button class="btn btn-primary btn-small" onclick="endAbTest(${test.page_a_id}, 'A')">Keep A</button>
-              <button class="btn btn-primary btn-small" style="background:#7c3aed" onclick="endAbTest(${test.page_a_id}, 'B')">Keep B</button>
-              <button class="btn btn-secondary btn-small" onclick="endAbTest(${test.page_a_id}, '')">End (no winner)</button>
+            <div class="form-group">
+              <label>Headline Highlight Color</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="color" id="abHlColor" value="${vbColors.headlineHighlight || content.colors?.headlineHighlight || '#3052FF'}" style="width:48px;height:36px;padding:2px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer">
+                <input type="text" id="abHlColorHex" value="${vbColors.headlineHighlight || ''}" placeholder="Same as A" style="flex:1;font-family:monospace;font-size:13px">
+              </div>
             </div>
           </div>
-        `;
-      } else {
-        // No test — offer to create one
-        container.innerHTML = `
-          <div style="padding: 20px;">
-            <p style="margin-bottom:12px">Create an A/B test for <strong>${page.name}</strong>.</p>
-            <p style="color:#6b7280;font-size:14px;margin-bottom:16px">This will clone the page as variant B (<code>/lp/${page.slug}-b/</code>). Visitors to the original URL will be randomly split 50/50 between both variants using a cookie.</p>
-            <p style="color:#6b7280;font-size:14px;margin-bottom:20px">Edit variant B after creating the test to change its content (headlines, CTA colors, etc.).</p>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" onclick="hideModal('abTestModal')">Cancel</button>
-              <button class="btn btn-primary" onclick="startAbTest(${page.id})">Create A/B Test</button>
+
+          <div id="abStatsSection" style="margin-top:20px;${abConfig.enabled ? '' : 'display:none'}">
+            <h4 style="margin-bottom:12px;font-size:14px">Results</h4>
+            <div class="ab-results" id="abStatsGrid">
+              <div style="text-align:center;color:#6b7280;grid-column:span 2">Loading stats...</div>
             </div>
           </div>
-        `;
-      }
+
+          <div class="modal-footer" style="margin-top:20px">
+            <button class="btn btn-secondary" onclick="hideModal('abTestModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveAbConfig()">Save A/B Config</button>
+          </div>
+        </div>
+      `;
+
+      // Wire up toggle
+      document.getElementById('abEnabled').addEventListener('change', function() {
+        const body = document.getElementById('abConfigBody');
+        const stats = document.getElementById('abStatsSection');
+        if (this.checked) {
+          body.style.opacity = '1'; body.style.pointerEvents = 'auto';
+          stats.style.display = '';
+        } else {
+          body.style.opacity = '0.5'; body.style.pointerEvents = 'none';
+          stats.style.display = 'none';
+        }
+      });
+
+      // Wire up slider
+      document.getElementById('abSplit').addEventListener('input', function() {
+        const b = parseInt(this.value);
+        document.getElementById('abSplitLabel').textContent = (100 - b) + '% / ' + b + '%';
+      });
+
+      // Wire up color pickers
+      syncColorPicker('abCtaColor', 'abCtaColorHex');
+      syncColorPicker('abCtaHoverColor', 'abCtaHoverColorHex');
+      syncColorPicker('abHlColor', 'abHlColorHex');
+
+      // Load stats
+      if (abConfig.enabled) loadAbStats(pageId);
 
       showModal('abTestModal');
     }
 
-    async function startAbTest(pageId) {
+    async function loadAbStats(pageId) {
       try {
-        const res = await api(`/api/pages/${pageId}/ab-test`, { method: 'POST' });
-        hideModal('abTestModal');
-        loadPages();
-        alert(`A/B test started! Variant B created at /lp/${res.variant_b.slug}/. Edit variant B to change its content.`);
+        const res = await api(`/api/pages/${pageId}/ab-stats`);
+        const grid = document.getElementById('abStatsGrid');
+        const totalVisitors = res.visitors.A + res.visitors.B;
+        const totalLeads = res.leads.A + res.leads.B;
+        const crA = res.visitors.A > 0 ? (res.leads.A / res.visitors.A * 100).toFixed(1) : '0.0';
+        const crB = res.visitors.B > 0 ? (res.leads.B / res.visitors.B * 100).toFixed(1) : '0.0';
+
+        grid.innerHTML = `
+          <div class="ab-variant-card variant-a">
+            <h4>Variant A (Control)</h4>
+            <div class="ab-stat">${res.visitors.A}</div>
+            <div class="ab-label">visitors</div>
+            <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.A}</div>
+            <div class="ab-label">leads (${crA}% CR)</div>
+          </div>
+          <div class="ab-variant-card variant-b">
+            <h4>Variant B</h4>
+            <div class="ab-stat">${res.visitors.B}</div>
+            <div class="ab-label">visitors</div>
+            <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.B}</div>
+            <div class="ab-label">leads (${crB}% CR)</div>
+          </div>
+        `;
       } catch (err) {
-        alert(err.message || 'Failed to start A/B test');
+        document.getElementById('abStatsGrid').innerHTML = '<div style="color:#ef4444;grid-column:span 2">Failed to load stats</div>';
       }
     }
 
-    async function endAbTest(pageId, winner) {
-      const msg = winner ? `End A/B test and keep variant ${winner}? The other variant will be deleted.` : 'End A/B test without a winner? Variant B will be deleted.';
-      if (!confirm(msg)) return;
+    async function saveAbConfig() {
+      const enabled = document.getElementById('abEnabled').checked;
+      const split = parseInt(document.getElementById('abSplit').value) || 50;
+
+      // Collect variant B overrides (only non-empty values)
+      const variantB = {};
+      const fields = {
+        badge: 'abBadge', headline: 'abHeadline', headlineLine2: 'abHeadlineLine2',
+        headlineHighlight: 'abHeadlineHighlight', subheadline: 'abSubheadline',
+        formTitle: 'abFormTitle', formSubtitle: 'abFormSubtitle', formButton: 'abFormButton',
+        ctaTitle: 'abCtaTitle'
+      };
+      Object.entries(fields).forEach(([key, id]) => {
+        const val = document.getElementById(id)?.value?.trim();
+        if (val) variantB[key] = val;
+      });
+
+      // Collect color overrides (only non-empty hex values)
+      const colors = {};
+      const ctaHex = document.getElementById('abCtaColorHex')?.value?.trim();
+      const ctaHoverHex = document.getElementById('abCtaHoverColorHex')?.value?.trim();
+      const hlHex = document.getElementById('abHlColorHex')?.value?.trim();
+      if (ctaHex && /^#[0-9a-fA-F]{6}$/.test(ctaHex)) colors.ctaButton = ctaHex;
+      if (ctaHoverHex && /^#[0-9a-fA-F]{6}$/.test(ctaHoverHex)) colors.ctaButtonHover = ctaHoverHex;
+      if (hlHex && /^#[0-9a-fA-F]{6}$/.test(hlHex)) colors.headlineHighlight = hlHex;
+      if (Object.keys(colors).length > 0) variantB.colors = colors;
+
+      const abConfig = { enabled, split, variantB };
 
       try {
-        await api(`/api/pages/${pageId}/ab-test?winner=${winner}`, { method: 'DELETE' });
+        await api(`/api/pages/${abCurrentPageId}/ab-config`, {
+          method: 'PUT',
+          body: JSON.stringify({ ab_config: abConfig })
+        });
         hideModal('abTestModal');
         loadPages();
       } catch (err) {
-        alert(err.message || 'Failed to end A/B test');
+        alert(err.message || 'Failed to save A/B config');
       }
     }
 
