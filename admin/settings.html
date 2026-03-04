@@ -1992,12 +1992,13 @@
         const data = await api('/api/retreaver/campaigns');
         if (data.campaigns && data.campaigns.length > 0) {
           for (const c of data.campaigns) {
-            const id = c.id?.toString() || c.uuid || '';
-            const name = c.name || 'Campaign ' + id;
+            // Use cid (hash) for filtering calls, fall back to numeric id
+            const filterKey = c.cid || c.id?.toString() || '';
+            const name = c.name || 'Campaign ' + filterKey;
             const opt = document.createElement('option');
-            opt.value = id;
+            opt.value = filterKey;
             opt.textContent = name;
-            if (id === currentVal) opt.selected = true;
+            if (filterKey === currentVal) opt.selected = true;
             select.appendChild(opt);
           }
         } else {

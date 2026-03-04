@@ -76,7 +76,11 @@ router.get('/campaigns', requireAuth, async (req, res) => {
     if (Array.isArray(raw)) {
       campaigns = raw.map(item => {
         const c = item.campaign || item;
-        return { id: c.id, name: c.name || c.display_name || ('Campaign ' + c.id) };
+        return {
+          id: c.id,
+          cid: c.cid || c.client_cid || '',
+          name: c.name || c.display_name || ('Campaign ' + c.id)
+        };
       });
     }
     res.json({ campaigns });
@@ -117,7 +121,7 @@ async function syncCalls() {
     while (true) {
       let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
       if (config.campaign_filter_id) {
-        url += `&campaign_id=${encodeURIComponent(config.campaign_filter_id)}`;
+        url += `&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
       }
       const resp = await fetch(url);
       if (!resp.ok) break;
@@ -251,7 +255,7 @@ router.get('/debug-sync', requireAuth, async (req, res) => {
   try {
     let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=2`;
     if (config.campaign_filter_id) {
-      url += `&campaign_id=${encodeURIComponent(config.campaign_filter_id)}`;
+      url += `&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
     }
     const resp = await fetch(url);
     if (!resp.ok) {
