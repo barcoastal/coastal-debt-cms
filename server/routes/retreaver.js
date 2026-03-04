@@ -433,22 +433,14 @@ router.get('/calls/:id/events', requireAuth, async (req, res) => {
 
 // ─── TRANSCRIBE + SCORE ────────────────────────────────────
 
-// POST /calls/:id/transcribe - Single call transcription + scoring
-router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
-  const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
-  if (!call) return res.status(404).json({ error: 'Call not found' });
-  if (!call.recording_url) return res.status(400).json({ error: 'No recording URL available' });
+// Background transcription worker
+async function transcribeCallBackground(callId) {
+  const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
+  if (!call || !call.recording_url) return;
 
   try {
-    // Check for API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is not set');
-    }
-
-    // Update status to processing
     db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
 
-    // Download the audio file
     console.log(`Transcribing call ${call.id}: downloading from ${call.recording_url.slice(0, 80)}...`);
     const audioResp = await fetch(call.recording_url);
     if (!audioResp.ok) throw new Error(`Failed to download recording: ${audioResp.status}`);
@@ -457,20 +449,16 @@ router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
     const sizeMB = (audioBuffer.length / 1024 / 1024).toFixed(1);
     console.log(`Transcribing call ${call.id}: audio size ${sizeMB}MB, duration ${call.duration}s`);
 
-    // Check file size — Claude supports up to ~25MB audio
     if (audioBuffer.length > 25 * 1024 * 1024) {
       throw new Error(`Recording too large (${sizeMB}MB). Maximum is 25MB.`);
     }
 
     const base64Audio = audioBuffer.toString('base64');
 
-    // Determine media type from URL or default to mp3
     let mediaType = 'audio/mpeg';
     if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
     else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
 
-    // Call Claude API for transcription + scoring
-    // Clean API key — remove any whitespace/newlines that break headers
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
     const Anthropic = require('@anthropic-ai/sdk');
     const anthropic = new Anthropic({ apiKey });
@@ -510,16 +498,9 @@ Return ONLY valid JSON, no markdown fences.`
     });
 
     const responseText = message.content[0].text.trim();
-    let result;
-    try {
-      // Strip markdown fences if present
-      const cleaned = responseText.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
-      result = JSON.parse(cleaned);
-    } catch (parseErr) {
-      throw new Error('Failed to parse Claude response as JSON: ' + responseText.slice(0, 200));
-    }
+    const cleaned = responseText.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+    const result = JSON.parse(cleaned);
 
-    // Save to database
     db.prepare(`UPDATE calls SET
       transcript = ?,
       call_score = ?,
@@ -534,94 +515,64 @@ Return ONLY valid JSON, no markdown fences.`
       call.id
     );
 
-    res.json({
-      success: true,
-      transcript: result.transcript,
-      score: result.score,
-      score_reason: result.score_reason,
-      transferred: result.transferred,
-      summary: result.summary
-    });
+    console.log(`Transcription complete for call ${call.id}: score=${result.score}`);
   } catch (err) {
-    console.error('Transcription error:', err.message);
-    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', call.id);
-    // Never expose API keys in error messages
-    const safeError = err.message.replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***');
-    res.status(500).json({ error: safeError });
+    console.error(`Transcription error for call ${callId}:`, err.message);
+    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', callId);
   }
+}
+
+// POST /calls/:id/transcribe - Kick off async transcription
+router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
+  const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (!call.recording_url) return res.status(400).json({ error: 'No recording URL available' });
+  if (call.transcript_status === 'processing') return res.json({ success: true, message: 'Already processing' });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
+  }
+
+  // Mark as processing and respond immediately
+  db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
+
+  // Process in background (don't await)
+  transcribeCallBackground(call.id);
+
+  res.json({ success: true, message: 'Transcription started — check back in a minute' });
 });
 
-// POST /calls/transcribe-batch - Process up to 10 pending calls
+// GET /calls/:id/transcript-status - Poll for transcription status
+router.get('/calls/:id/transcript-status', requireAuth, (req, res) => {
+  const call = db.prepare('SELECT transcript_status, transcript, call_score, score_reason, transferred FROM calls WHERE id = ?').get(req.params.id);
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  res.json(call);
+});
+
+// POST /calls/transcribe-batch - Kick off async batch transcription
 router.post('/calls/transcribe-batch', requireAuth, async (req, res) => {
-  const pending = db.prepare(`SELECT id FROM calls WHERE transcript_status = 'pending' AND recording_url != '' AND recording_url IS NOT NULL ORDER BY call_start DESC LIMIT 10`).all();
-
-  if (pending.length === 0) return res.json({ processed: 0, message: 'No pending calls to transcribe' });
-
-  let processed = 0, failed = 0;
-  for (const row of pending) {
-    try {
-      // Make internal request to single transcribe endpoint
-      const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(row.id);
-      if (!call || !call.recording_url) continue;
-
-      db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
-
-      const audioResp = await fetch(call.recording_url);
-      if (!audioResp.ok) { db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', call.id); failed++; continue; }
-
-      const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
-      const base64Audio = audioBuffer.toString('base64');
-
-      let mediaType = 'audio/mpeg';
-      if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
-      else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
-
-      const apiKey2 = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
-      const Anthropic = require('@anthropic-ai/sdk');
-      const anthropic = new Anthropic({ apiKey: apiKey2 });
-
-      const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 4096,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'audio', source: { type: 'base64', media_type: mediaType, data: base64Audio } },
-            { type: 'text', text: `You are analyzing a phone call for Coastal Debt Resolve, an MCA debt settlement company.
-
-Listen to this call and return a JSON object with:
-1. transcript — full conversation with speaker labels (Agent: / Caller:)
-2. score — qualification score 1-10
-3. score_reason — brief explanation of the score
-4. transferred — boolean, was the call transferred to a specialist?
-5. summary — one-sentence summary
-
-SCORING:
-- 10: Call was transferred to a specialist/closer
-- 8-9: Qualified — has MCA/business debt, interested in settlement services
-- 5-7: Partial — some interest, gathering info, uncertain
-- 3-4: Low — not the right fit, not interested, unqualified
-- 1-2: Spam, wrong number, hangup, or <30 seconds
-
-Return ONLY valid JSON, no markdown fences.` }
-          ]
-        }]
-      });
-
-      const cleaned = message.content[0].text.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
-      const result = JSON.parse(cleaned);
-
-      db.prepare(`UPDATE calls SET transcript = ?, call_score = ?, score_reason = ?, transferred = ?, transcript_status = 'completed' WHERE id = ?`)
-        .run(result.transcript || '', result.score || 0, result.score_reason || '', result.transferred ? 1 : 0, call.id);
-      processed++;
-    } catch (err) {
-      console.error(`Batch transcribe error for call ${row.id}:`, err.message);
-      db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', row.id);
-      failed++;
-    }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
   }
 
-  res.json({ processed, failed, total: pending.length });
+  const pending = db.prepare(`SELECT id FROM calls WHERE transcript_status = 'pending' AND recording_url != '' AND recording_url IS NOT NULL ORDER BY call_start DESC LIMIT 10`).all();
+
+  if (pending.length === 0) return res.json({ queued: 0, message: 'No pending calls to transcribe' });
+
+  // Mark all as processing
+  for (const row of pending) {
+    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', row.id);
+  }
+
+  // Process sequentially in background (don't await)
+  (async () => {
+    for (const row of pending) {
+      await transcribeCallBackground(row.id);
+    }
+    console.log(`Batch transcription complete: ${pending.length} calls processed`);
+  })();
+
+  res.json({ queued: pending.length, message: `${pending.length} calls queued for transcription` });
 });
 
 // ─── STATS ────────────────────────────────────────────────

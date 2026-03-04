@@ -530,25 +530,43 @@
       audio.play();
     }
 
-    // Transcribe single call
+    // Transcribe single call (async — polls for completion)
     async function transcribeCall(id) {
       const btn = document.getElementById('transcribeBtn' + id);
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span>'; }
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span> Processing...'; }
 
       try {
-        const result = await api('/api/retreaver/calls/' + id + '/transcribe', { method: 'POST' });
-        if (btn) btn.textContent = 'Done!';
-        loadStats();
-        // Refresh the expanded row if open
-        const expandRow = document.getElementById('expand-' + id);
-        if (expandRow && expandRow.classList.contains('open')) {
-          toggleExpand(id, null);
-          setTimeout(() => toggleExpand(id, null), 100);
-        }
+        await api('/api/retreaver/calls/' + id + '/transcribe', { method: 'POST' });
+        // Poll for completion
+        pollTranscript(id, btn);
       } catch (e) {
         if (btn) { btn.textContent = 'Failed'; btn.style.color = '#ef4444'; }
         alert('Transcription failed: ' + e.message);
       }
+    }
+
+    function pollTranscript(id, btn) {
+      const interval = setInterval(async () => {
+        try {
+          const status = await api('/api/retreaver/calls/' + id + '/transcript-status');
+          if (status.transcript_status === 'completed') {
+            clearInterval(interval);
+            if (btn) btn.textContent = 'Done!';
+            loadStats();
+            const expandRow = document.getElementById('expand-' + id);
+            if (expandRow && expandRow.classList.contains('open')) {
+              toggleExpand(id, null);
+              setTimeout(() => toggleExpand(id, null), 100);
+            }
+          } else if (status.transcript_status === 'failed') {
+            clearInterval(interval);
+            if (btn) { btn.textContent = 'Failed'; btn.style.color = '#ef4444'; }
+          }
+          // else still processing, keep polling
+        } catch (e) {
+          clearInterval(interval);
+        }
+      }, 5000); // Poll every 5 seconds
     }
 
     // Batch transcribe
