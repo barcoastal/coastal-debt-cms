@@ -252,24 +252,51 @@ router.get('/debug-sync', requireAuth, async (req, res) => {
   const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
   if (!config || !config.api_key) return res.status(400).json({ error: 'Not configured' });
 
+  const results = {};
+
+  // Show saved config (masked)
+  results.config = {
+    company_id: config.company_id,
+    campaign_filter_id: config.campaign_filter_id || '(none)',
+    campaign_filter_name: config.campaign_filter_name || '(none)',
+    api_key_last4: config.api_key ? config.api_key.slice(-4) : '(empty)'
+  };
+
   try {
-    let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=2`;
+    // Try WITHOUT campaign filter first
+    const urlAll = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=2`;
+    const respAll = await fetch(urlAll);
+    if (respAll.ok) {
+      const dataAll = await respAll.json();
+      results.without_filter = {
+        is_array: Array.isArray(dataAll),
+        length: Array.isArray(dataAll) ? dataAll.length : null,
+        first_item_keys: Array.isArray(dataAll) && dataAll.length > 0 ? Object.keys(dataAll[0]) : null,
+        first_item: Array.isArray(dataAll) && dataAll.length > 0 ? dataAll[0] : dataAll,
+      };
+    } else {
+      results.without_filter = { status: respAll.status, body: await respAll.text() };
+    }
+
+    // Try WITH campaign filter
     if (config.campaign_filter_id) {
-      url += `&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
+      const urlFiltered = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=2&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
+      const respFiltered = await fetch(urlFiltered);
+      if (respFiltered.ok) {
+        const dataFiltered = await respFiltered.json();
+        results.with_filter = {
+          filter_param: `client_cid=${config.campaign_filter_id}`,
+          is_array: Array.isArray(dataFiltered),
+          length: Array.isArray(dataFiltered) ? dataFiltered.length : null,
+          first_item_keys: Array.isArray(dataFiltered) && dataFiltered.length > 0 ? Object.keys(dataFiltered[0]) : null,
+          first_item: Array.isArray(dataFiltered) && dataFiltered.length > 0 ? dataFiltered[0] : dataFiltered,
+        };
+      } else {
+        results.with_filter = { status: respFiltered.status, body: await respFiltered.text() };
+      }
     }
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const text = await resp.text();
-      return res.json({ status: resp.status, raw_response: text });
-    }
-    const data = await resp.json();
-    res.json({
-      is_array: Array.isArray(data),
-      length: Array.isArray(data) ? data.length : null,
-      first_item_keys: Array.isArray(data) && data.length > 0 ? Object.keys(data[0]) : null,
-      first_item: Array.isArray(data) && data.length > 0 ? data[0] : data,
-      raw_type: typeof data
-    });
+
+    res.json(results);
   } catch (err) {
     res.json({ error: err.message });
   }
