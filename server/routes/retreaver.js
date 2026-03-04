@@ -168,81 +168,18 @@ async function syncCalls() {
       console.log(`Retreaver sync page ${page}: ${rawCalls.length} calls`);
 
       for (const rawCall of rawCalls) {
-        // Retreaver wraps each call in {call: {...}} — unwrap it
         const call = rawCall.call || rawCall;
-        const uuid = call.uuid;
-        if (!uuid) continue;
+        if (!call.uuid) continue;
 
-        // Check for duplicate
-        const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(uuid);
+        // Check duplicate before processing
+        const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(call.uuid);
         if (existing) { skipped++; continue; }
 
-        // Extract tags object
-        let tags = {};
         try {
-          if (call.tags && typeof call.tags === 'object') tags = call.tags;
-          else if (call.tags && typeof call.tags === 'string') tags = JSON.parse(call.tags);
-        } catch (e) {}
-
-        // RedTrack click ID — Retreaver stores as "red_track_clickid" in tags
-        const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || '';
-
-        // Extract keyword and ad group from visitor_url UTM params
-        let keyword = '', adGroup = '', utmCampaign = '';
-        if (call.visitor_url) {
-          try {
-            const vUrl = new URL(call.visitor_url);
-            keyword = vUrl.searchParams.get('utm_term') || vUrl.searchParams.get('hsa_kw') || '';
-            adGroup = vUrl.searchParams.get('hsa_grp') || vUrl.searchParams.get('sub4') || '';
-            utmCampaign = vUrl.searchParams.get('utm_campaign') || '';
-          } catch (e) {}
-        }
-
-        // Campaign info — API gives cid + system_campaign_id, not name
-        const campaignId = call.cid || call.system_campaign_id?.toString() || '';
-        const campaignName = campaignFilterName || utmCampaign || ('Campaign ' + campaignId);
-
-        // Converted = Retreaver's equivalent of "transferred"
-        const transferred = call.converted ? 1 : 0;
-
-        // Caller number
-        const callerNumber = call.caller || '';
-        const formattedCaller = formatPhoneNumber(callerNumber);
-
-        // Match to visitor/lead via rt_clickid
-        let visitorId = null, eliClickid = '', leadId = null;
-        if (rtClickid) {
-          const visitor = db.prepare('SELECT id, eli_clickid FROM visitors WHERE rt_clickid = ?').get(rtClickid);
-          if (visitor) {
-            visitorId = visitor.id;
-            eliClickid = visitor.eli_clickid || '';
-          }
-          const lead = db.prepare('SELECT id FROM leads WHERE rt_clickid = ?').get(rtClickid);
-          if (lead) leadId = lead.id;
-        }
-
-        try {
-          db.prepare(`INSERT INTO calls (
-            retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
-            ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
-            duration, status, disposition, transferred, recording_url,
-            transcript_status, tags, metadata, call_start, call_end
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
-            uuid, callerNumber, formattedCaller, campaignName, campaignId,
-            adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
-            call.total_duration || call.dialed_call_duration || 0,
-            call.status || '',
-            call.hung_up_by || '',
-            transferred,
-            call.recording_url || '',
-            JSON.stringify(tags),
-            JSON.stringify({ visitor_url: call.visitor_url || '', via: call.via || '', caller_state: call.caller_state || '', caller_city: call.caller_city || '' }),
-            call.start_time || call.created_at || null,
-            call.end_time || null
-          );
+          processCallData(call, campaignFilterName);
           synced++;
         } catch (insertErr) {
-          console.error(`Retreaver sync: insert error for ${uuid}: ${insertErr.message}`);
+          console.error(`Retreaver sync: insert error for ${call.uuid}: ${insertErr.message}`);
           errors++;
         }
       }
@@ -626,6 +563,193 @@ router.get('/stats', requireAuth, (req, res) => {
     top_campaigns: topCampaigns,
     pending_transcripts: pendingTranscripts
   });
+});
+
+// ─── WEBHOOK (REAL-TIME) ─────────────────────────────────
+
+// Helper: process a single call object from the API and insert into DB
+function processCallData(call, campaignFilterName) {
+  const uuid = call.uuid;
+  if (!uuid) return null;
+
+  // Check for duplicate
+  const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(uuid);
+  if (existing) return null;
+
+  // Extract tags object
+  let tags = {};
+  try {
+    if (call.tags && typeof call.tags === 'object') tags = call.tags;
+    else if (call.tags && typeof call.tags === 'string') tags = JSON.parse(call.tags);
+  } catch (e) {}
+
+  // RedTrack click ID
+  const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || '';
+
+  // Extract keyword and ad group from visitor_url UTM params
+  let keyword = '', adGroup = '', utmCampaign = '';
+  if (call.visitor_url) {
+    try {
+      const vUrl = new URL(call.visitor_url);
+      keyword = vUrl.searchParams.get('utm_term') || vUrl.searchParams.get('hsa_kw') || '';
+      adGroup = vUrl.searchParams.get('hsa_grp') || vUrl.searchParams.get('sub4') || '';
+      utmCampaign = vUrl.searchParams.get('utm_campaign') || '';
+    } catch (e) {}
+  }
+
+  const campaignId = call.cid || call.system_campaign_id?.toString() || '';
+  const campaignName = campaignFilterName || utmCampaign || ('Campaign ' + campaignId);
+  const transferred = call.converted ? 1 : 0;
+  const callerNumber = call.caller || '';
+  const formattedCaller = formatPhoneNumber(callerNumber);
+
+  // Match to visitor/lead via rt_clickid
+  let visitorId = null, eliClickid = '', leadId = null;
+  if (rtClickid) {
+    const visitor = db.prepare('SELECT id, eli_clickid FROM visitors WHERE rt_clickid = ?').get(rtClickid);
+    if (visitor) { visitorId = visitor.id; eliClickid = visitor.eli_clickid || ''; }
+    const lead = db.prepare('SELECT id FROM leads WHERE rt_clickid = ?').get(rtClickid);
+    if (lead) leadId = lead.id;
+  }
+
+  db.prepare(`INSERT INTO calls (
+    retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
+    ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
+    duration, status, disposition, transferred, recording_url,
+    transcript_status, tags, metadata, call_start, call_end
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
+    uuid, callerNumber, formattedCaller, campaignName, campaignId,
+    adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
+    call.total_duration || call.dialed_call_duration || 0,
+    call.status || '',
+    call.hung_up_by || '',
+    transferred,
+    call.recording_url || '',
+    JSON.stringify(tags),
+    JSON.stringify({ visitor_url: call.visitor_url || '', via: call.via || '', caller_state: call.caller_state || '', caller_city: call.caller_city || '' }),
+    call.start_time || call.created_at || null,
+    call.end_time || null
+  );
+
+  return uuid;
+}
+
+// Generate or get webhook key
+function getWebhookKey() {
+  let row = db.prepare("SELECT value FROM settings WHERE key = 'retreaver_webhook_key'").get();
+  if (!row) {
+    const crypto = require('crypto');
+    const key = crypto.randomBytes(24).toString('hex');
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('retreaver_webhook_key', ?)").run(key);
+    return key;
+  }
+  return row.value;
+}
+
+// GET /webhook-url - Show the webhook URL to configure in Retreaver
+router.get('/webhook-url', requireAuth, (req, res) => {
+  const key = getWebhookKey();
+  const base = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  const webhookUrl = `${base}/api/retreaver/webhook?key=${key}&call_uuid=[call_uuid]`;
+  res.json({ webhook_url: webhookUrl, key });
+});
+
+// POST /webhook - Real-time call ingestion from Retreaver (no auth — secured by key)
+router.post('/webhook', async (req, res) => {
+  const key = req.query.key;
+  const storedKey = db.prepare("SELECT value FROM settings WHERE key = 'retreaver_webhook_key'").get();
+  if (!key || !storedKey || key !== storedKey.value) {
+    return res.status(401).json({ error: 'Invalid webhook key' });
+  }
+
+  const callUuid = req.query.call_uuid || req.body.call_uuid || req.body.uuid;
+  if (!callUuid) {
+    return res.status(400).json({ error: 'Missing call_uuid' });
+  }
+
+  // Check duplicate before making API call
+  const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(callUuid);
+  if (existing) {
+    return res.json({ status: 'duplicate', message: 'Call already exists' });
+  }
+
+  // Fetch full call details from Retreaver API
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) {
+    return res.status(500).json({ error: 'Retreaver not configured' });
+  }
+
+  try {
+    const url = `https://api.retreaver.com/calls/${callUuid}.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error(`Retreaver webhook: failed to fetch call ${callUuid}: ${resp.status}`);
+      return res.status(502).json({ error: `Failed to fetch call details: ${resp.status}` });
+    }
+
+    const data = await resp.json();
+    const call = data.call || data;
+
+    const campaignFilterName = config.campaign_filter_name || '';
+    const inserted = processCallData(call, campaignFilterName);
+
+    if (inserted) {
+      console.log(`Retreaver webhook: ingested call ${callUuid}`);
+      res.json({ status: 'ok', message: 'Call ingested', uuid: callUuid });
+    } else {
+      res.json({ status: 'duplicate', message: 'Call already exists' });
+    }
+  } catch (err) {
+    console.error(`Retreaver webhook error for ${callUuid}:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Also support GET for webhook (some systems use GET)
+router.get('/webhook', async (req, res) => {
+  const key = req.query.key;
+  const storedKey = db.prepare("SELECT value FROM settings WHERE key = 'retreaver_webhook_key'").get();
+  if (!key || !storedKey || key !== storedKey.value) {
+    return res.status(401).json({ error: 'Invalid webhook key' });
+  }
+
+  const callUuid = req.query.call_uuid;
+  if (!callUuid || callUuid === '[call_uuid]') {
+    return res.json({ status: 'ok', message: 'Webhook endpoint active' });
+  }
+
+  const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(callUuid);
+  if (existing) {
+    return res.json({ status: 'duplicate', message: 'Call already exists' });
+  }
+
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) {
+    return res.status(500).json({ error: 'Retreaver not configured' });
+  }
+
+  try {
+    const url = `https://api.retreaver.com/calls/${callUuid}.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      return res.status(502).json({ error: `Failed to fetch call: ${resp.status}` });
+    }
+
+    const data = await resp.json();
+    const call = data.call || data;
+    const campaignFilterName = config.campaign_filter_name || '';
+    const inserted = processCallData(call, campaignFilterName);
+
+    if (inserted) {
+      console.log(`Retreaver webhook (GET): ingested call ${callUuid}`);
+      res.json({ status: 'ok', message: 'Call ingested', uuid: callUuid });
+    } else {
+      res.json({ status: 'duplicate', message: 'Call already exists' });
+    }
+  } catch (err) {
+    console.error(`Retreaver webhook error:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── BACKGROUND SYNC ──────────────────────────────────────
