@@ -120,11 +120,37 @@ async function syncCalls() {
   // Resolve campaign name from filter
   const campaignFilterName = config.campaign_filter_name || '';
 
+  // If campaign_filter_id looks numeric, resolve it to the cid hash
+  let campaignCid = config.campaign_filter_id || '';
+  if (campaignCid && /^\d+$/.test(campaignCid)) {
+    try {
+      console.log(`Retreaver sync: resolving numeric campaign ID ${campaignCid} to cid hash...`);
+      const campResp = await fetch(`https://api.retreaver.com/campaigns.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}`);
+      if (campResp.ok) {
+        const camps = await campResp.json();
+        if (Array.isArray(camps)) {
+          for (const item of camps) {
+            const c = item.campaign || item;
+            if (c.id?.toString() === campaignCid && c.cid) {
+              console.log(`Retreaver sync: resolved campaign ${campaignCid} → cid ${c.cid}`);
+              campaignCid = c.cid;
+              // Update DB so we don't have to resolve again
+              db.prepare('UPDATE retreaver_config SET campaign_filter_id = ? WHERE id = 1').run(c.cid);
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Retreaver sync: failed to resolve campaign cid:', e.message);
+    }
+  }
+
   try {
     while (true) {
       let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
-      if (config.campaign_filter_id) {
-        url += `&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
+      if (campaignCid) {
+        url += `&client_cid=${encodeURIComponent(campaignCid)}`;
       }
       const resp = await fetch(url);
       if (!resp.ok) {
