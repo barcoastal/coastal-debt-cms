@@ -1902,7 +1902,9 @@
       try {
         const config = await api('/api/retreaver/config');
         if (config.has_key) {
-          document.getElementById('rvApiKey').value = config.api_key || '';
+          const apiKeyInput = document.getElementById('rvApiKey');
+          apiKeyInput.value = '';
+          apiKeyInput.placeholder = config.api_key || 'Key saved — enter new key to change';
           document.getElementById('rvCompanyId').value = config.company_id || '';
           // Set campaign filter if saved
           if (config.campaign_filter_id) {
@@ -1934,11 +1936,12 @@
       const statusEl = document.getElementById('rvSaveStatus');
       statusEl.textContent = 'Saving...';
       try {
+        const apiKeyVal = document.getElementById('rvApiKey').value;
         await api('/api/retreaver/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            api_key: document.getElementById('rvApiKey').value,
+            api_key: apiKeyVal || '••••••keep',
             company_id: document.getElementById('rvCompanyId').value,
             campaign_filter_id: document.getElementById('rvCampaignId').value || '',
             campaign_filter_name: document.getElementById('rvCampaignId').selectedOptions[0]?.textContent || ''

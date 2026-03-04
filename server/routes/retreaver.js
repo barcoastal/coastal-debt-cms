@@ -35,8 +35,20 @@ router.get('/config', requireAuth, (req, res) => {
 
 // POST /config - Save API key + company ID + campaign filter
 router.post('/config', requireAuth, (req, res) => {
-  const { api_key, company_id, campaign_filter_id, campaign_filter_name } = req.body;
-  if (!api_key || !company_id) return res.status(400).json({ error: 'API key and company ID are required' });
+  let { api_key, company_id, campaign_filter_id, campaign_filter_name } = req.body;
+  if (!company_id) return res.status(400).json({ error: 'Company ID is required' });
+
+  // If API key is masked (starts with dots), keep the existing one
+  const isMasked = api_key && api_key.includes('••');
+  if (isMasked) {
+    const existing = db.prepare('SELECT api_key FROM retreaver_config WHERE id = 1').get();
+    if (existing) {
+      api_key = existing.api_key;
+    } else {
+      return res.status(400).json({ error: 'API key is required' });
+    }
+  }
+  if (!api_key) return res.status(400).json({ error: 'API key is required' });
 
   db.prepare(`INSERT INTO retreaver_config (id, api_key, company_id, campaign_filter_id, campaign_filter_name, connected_at)
     VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
