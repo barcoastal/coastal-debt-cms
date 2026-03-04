@@ -114,8 +114,11 @@ async function syncCalls() {
   const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
   if (!config || !config.api_key) return { synced: 0, skipped: 0, error: 'Not configured' };
 
-  let synced = 0, skipped = 0, page = 1;
+  let synced = 0, skipped = 0, errors = 0, page = 1;
   const perPage = 25;
+
+  // Resolve campaign name from filter
+  const campaignFilterName = config.campaign_filter_name || '';
 
   try {
     while (true) {
@@ -124,60 +127,60 @@ async function syncCalls() {
         url += `&client_cid=${encodeURIComponent(config.campaign_filter_id)}`;
       }
       const resp = await fetch(url);
-      if (!resp.ok) break;
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        console.error(`Retreaver sync: API error ${resp.status} on page ${page}: ${errText}`);
+        return { synced, skipped, error: `API error ${resp.status}: ${errText}` };
+      }
 
       const rawCalls = await resp.json();
       if (!Array.isArray(rawCalls) || rawCalls.length === 0) {
-        console.log(`Retreaver sync page ${page}: empty or not array (type: ${typeof rawCalls}, isArray: ${Array.isArray(rawCalls)}, length: ${Array.isArray(rawCalls) ? rawCalls.length : 'N/A'})`);
+        if (page === 1) console.log('Retreaver sync: no calls returned from API');
         break;
       }
 
-      console.log(`Retreaver sync page ${page}: got ${rawCalls.length} calls. First item keys: ${rawCalls.length > 0 ? Object.keys(rawCalls[0]).join(', ') : 'none'}`);
+      console.log(`Retreaver sync page ${page}: ${rawCalls.length} calls`);
 
       for (const rawCall of rawCalls) {
         // Retreaver wraps each call in {call: {...}} — unwrap it
         const call = rawCall.call || rawCall;
-        const uuid = call.uuid || call.id?.toString();
-        if (!uuid) { console.log('Retreaver sync: skipping call with no uuid, keys:', Object.keys(call).join(', ')); continue; }
+        const uuid = call.uuid;
+        if (!uuid) continue;
 
         // Check for duplicate
         const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(uuid);
         if (existing) { skipped++; continue; }
 
-        // Extract rt_clickid from tags/parameters
-        let rtClickid = '';
+        // Extract tags object
         let tags = {};
-        let metadata = {};
         try {
-          if (call.tags) tags = typeof call.tags === 'string' ? JSON.parse(call.tags) : call.tags;
-          if (call.tag_values) {
-            const tagVals = typeof call.tag_values === 'string' ? JSON.parse(call.tag_values) : call.tag_values;
-            if (tagVals) tags = { ...tags, ...tagVals };
-          }
+          if (call.tags && typeof call.tags === 'object') tags = call.tags;
+          else if (call.tags && typeof call.tags === 'string') tags = JSON.parse(call.tags);
         } catch (e) {}
 
-        // Look for rt_clickid in multiple places
-        rtClickid = call.rt_clickid || call.sub_id || tags.rt_clickid || tags.sub_id || '';
+        // RedTrack click ID — Retreaver stores as "red_track_clickid" in tags
+        const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || '';
 
-        // Check call parameters/tracking params
-        if (!rtClickid && call.tracking_parameters) {
-          const params = typeof call.tracking_parameters === 'string'
-            ? JSON.parse(call.tracking_parameters) : call.tracking_parameters;
-          rtClickid = params.rt_clickid || params.sub_id || '';
+        // Extract keyword and ad group from visitor_url UTM params
+        let keyword = '', adGroup = '', utmCampaign = '';
+        if (call.visitor_url) {
+          try {
+            const vUrl = new URL(call.visitor_url);
+            keyword = vUrl.searchParams.get('utm_term') || vUrl.searchParams.get('hsa_kw') || '';
+            adGroup = vUrl.searchParams.get('hsa_grp') || vUrl.searchParams.get('sub4') || '';
+            utmCampaign = vUrl.searchParams.get('utm_campaign') || '';
+          } catch (e) {}
         }
 
-        // Extract campaign info
-        const campaignName = call.campaign?.name || call.campaign_name || '';
-        const campaignId = call.campaign?.id?.toString() || call.campaign_id?.toString() || '';
-        const adGroup = call.ad_group || tags.ad_group || tags.adgroup || '';
-        const keyword = call.keyword || tags.keyword || '';
+        // Campaign info — API gives cid + system_campaign_id, not name
+        const campaignId = call.cid || call.system_campaign_id?.toString() || '';
+        const campaignName = campaignFilterName || utmCampaign || ('Campaign ' + campaignId);
 
-        // Determine if call was transferred
-        const transferred = call.transferred ? 1 :
-          (call.disposition || '').toLowerCase().includes('transfer') ? 1 : 0;
+        // Converted = Retreaver's equivalent of "transferred"
+        const transferred = call.converted ? 1 : 0;
 
-        // Format caller number
-        const callerNumber = call.caller_number || call.caller_id || call.from || '';
+        // Caller number
+        const callerNumber = call.caller || '';
         const formattedCaller = formatPhoneNumber(callerNumber);
 
         // Match to visitor/lead via rt_clickid
@@ -193,29 +196,29 @@ async function syncCalls() {
         }
 
         try {
-          metadata = call.metadata || {};
-          if (typeof metadata === 'string') metadata = JSON.parse(metadata);
-        } catch (e) { metadata = {}; }
-
-        db.prepare(`INSERT INTO calls (
-          retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
-          ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
-          duration, status, disposition, transferred, recording_url,
-          transcript_status, tags, metadata, call_start, call_end
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
-          uuid, callerNumber, formattedCaller, campaignName, campaignId,
-          adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
-          call.duration || 0,
-          call.status || '',
-          call.disposition || '',
-          transferred,
-          call.recording_url || call.recording || '',
-          JSON.stringify(tags),
-          JSON.stringify(metadata),
-          call.started_at || call.call_start || call.created_at || null,
-          call.ended_at || call.call_end || null
-        );
-        synced++;
+          db.prepare(`INSERT INTO calls (
+            retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
+            ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
+            duration, status, disposition, transferred, recording_url,
+            transcript_status, tags, metadata, call_start, call_end
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
+            uuid, callerNumber, formattedCaller, campaignName, campaignId,
+            adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
+            call.total_duration || call.dialed_call_duration || 0,
+            call.status || '',
+            call.hung_up_by || '',
+            transferred,
+            call.recording_url || '',
+            JSON.stringify(tags),
+            JSON.stringify({ visitor_url: call.visitor_url || '', via: call.via || '', caller_state: call.caller_state || '', caller_city: call.caller_city || '' }),
+            call.start_time || call.created_at || null,
+            call.end_time || null
+          );
+          synced++;
+        } catch (insertErr) {
+          console.error(`Retreaver sync: insert error for ${uuid}: ${insertErr.message}`);
+          errors++;
+        }
       }
 
       // If fewer results than per_page, we're on the last page
@@ -226,10 +229,11 @@ async function syncCalls() {
     // Update last_sync_at
     db.prepare('UPDATE retreaver_config SET last_sync_at = CURRENT_TIMESTAMP WHERE id = 1').run();
 
-    return { synced, skipped };
+    console.log(`Retreaver sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors`);
+    return { synced, skipped, errors };
   } catch (err) {
     console.error('Retreaver sync error:', err.message);
-    return { synced, skipped, error: err.message };
+    return { synced, skipped, errors, error: err.message };
   }
 }
 
