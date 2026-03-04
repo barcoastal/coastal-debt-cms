@@ -110,12 +110,19 @@ async function syncCalls() {
       const resp = await fetch(url);
       if (!resp.ok) break;
 
-      const calls = await resp.json();
-      if (!Array.isArray(calls) || calls.length === 0) break;
+      const rawCalls = await resp.json();
+      if (!Array.isArray(rawCalls) || rawCalls.length === 0) {
+        console.log(`Retreaver sync page ${page}: empty or not array (type: ${typeof rawCalls}, isArray: ${Array.isArray(rawCalls)}, length: ${Array.isArray(rawCalls) ? rawCalls.length : 'N/A'})`);
+        break;
+      }
 
-      for (const call of calls) {
+      console.log(`Retreaver sync page ${page}: got ${rawCalls.length} calls. First item keys: ${rawCalls.length > 0 ? Object.keys(rawCalls[0]).join(', ') : 'none'}`);
+
+      for (const rawCall of rawCalls) {
+        // Retreaver wraps each call in {call: {...}} — unwrap it
+        const call = rawCall.call || rawCall;
         const uuid = call.uuid || call.id?.toString();
-        if (!uuid) continue;
+        if (!uuid) { console.log('Retreaver sync: skipping call with no uuid, keys:', Object.keys(call).join(', ')); continue; }
 
         // Check for duplicate
         const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(uuid);
@@ -196,7 +203,7 @@ async function syncCalls() {
       }
 
       // If fewer results than per_page, we're on the last page
-      if (calls.length < perPage) break;
+      if (rawCalls.length < perPage) break;
       page++;
     }
 
@@ -222,6 +229,34 @@ function formatPhoneNumber(num) {
 router.post('/sync', requireAuth, async (req, res) => {
   const result = await syncCalls();
   res.json(result);
+});
+
+// GET /debug-sync - Show raw API response structure (for debugging)
+router.get('/debug-sync', requireAuth, async (req, res) => {
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) return res.status(400).json({ error: 'Not configured' });
+
+  try {
+    let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=2`;
+    if (config.campaign_filter_id) {
+      url += `&campaign_id=${encodeURIComponent(config.campaign_filter_id)}`;
+    }
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.json({ status: resp.status, raw_response: text });
+    }
+    const data = await resp.json();
+    res.json({
+      is_array: Array.isArray(data),
+      length: Array.isArray(data) ? data.length : null,
+      first_item_keys: Array.isArray(data) && data.length > 0 ? Object.keys(data[0]) : null,
+      first_item: Array.isArray(data) && data.length > 0 ? data[0] : data,
+      raw_type: typeof data
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
 });
 
 // ─── CALL DATA ────────────────────────────────────────────
