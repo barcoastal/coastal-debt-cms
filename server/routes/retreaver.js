@@ -470,8 +470,10 @@ router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
     else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
 
     // Call Claude API for transcription + scoring
+    // Clean API key — remove any whitespace/newlines that break headers
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
     const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic();
+    const anthropic = new Anthropic({ apiKey });
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
@@ -543,7 +545,9 @@ Return ONLY valid JSON, no markdown fences.`
   } catch (err) {
     console.error('Transcription error:', err.message);
     db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', call.id);
-    res.status(500).json({ error: err.message });
+    // Never expose API keys in error messages
+    const safeError = err.message.replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***');
+    res.status(500).json({ error: safeError });
   }
 });
 
@@ -572,8 +576,9 @@ router.post('/calls/transcribe-batch', requireAuth, async (req, res) => {
       if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
       else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
 
+      const apiKey2 = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
       const Anthropic = require('@anthropic-ai/sdk');
-      const anthropic = new Anthropic();
+      const anthropic = new Anthropic({ apiKey: apiKey2 });
 
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-5-20250929',
