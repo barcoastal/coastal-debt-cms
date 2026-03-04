@@ -33,6 +33,15 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
     text: `${prompt}\n\nGenerate this as a ${size.width}x${size.height} image with ${size.geminiAspect} aspect ratio.`
   });
 
+  console.log(`[Gemini] Generating with model ${MODEL}, ${parts.length} parts, size ${size.width}x${size.height}`);
+
+  const requestBody = {
+    contents: [{ parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT']
+    }
+  };
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
     {
@@ -41,27 +50,29 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE']
-        }
-      })
+      body: JSON.stringify(requestBody)
     }
   );
 
   if (!res.ok) {
     const errText = await res.text();
+    console.error(`[Gemini] API error (${res.status}):`, errText);
     throw new Error(`Gemini API error (${res.status}): ${errText}`);
   }
 
   const data = await res.json();
+
+  // Check for blocked content
+  if (data.promptFeedback && data.promptFeedback.blockReason) {
+    throw new Error(`Gemini blocked prompt: ${data.promptFeedback.blockReason}`);
+  }
 
   // Extract image from response parts
   if (data.candidates && data.candidates[0] && data.candidates[0].content) {
     const responseParts = data.candidates[0].content.parts || [];
     for (const part of responseParts) {
       if (part.inline_data && part.inline_data.data) {
+        console.log(`[Gemini] Got image, mime: ${part.inline_data.mime_type}, size: ${part.inline_data.data.length} chars`);
         return {
           jobId: null,
           status: 'completed',
@@ -69,8 +80,19 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
         };
       }
     }
+    // Log what we got if no image
+    console.error('[Gemini] Response parts had no image:', JSON.stringify(responseParts.map(p => Object.keys(p))));
   }
 
+  // Check finish reason
+  if (data.candidates && data.candidates[0]) {
+    const finishReason = data.candidates[0].finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      throw new Error(`Gemini generation stopped: ${finishReason}`);
+    }
+  }
+
+  console.error('[Gemini] Full response:', JSON.stringify(data).substring(0, 500));
   throw new Error('Gemini returned no image data');
 }
 
@@ -96,11 +118,15 @@ async function fetchImageAsBase64(url) {
         mimeType: mimeMap[ext] || 'image/png'
       };
     }
+    console.warn(`[Gemini] Local file not found: ${filePath}`);
   }
 
   // Fetch remote URL
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.warn(`[Gemini] Failed to fetch reference image ${url}: ${res.status}`);
+    return null;
+  }
   const buffer = Buffer.from(await res.arrayBuffer());
   const contentType = res.headers.get('content-type') || 'image/png';
   return {

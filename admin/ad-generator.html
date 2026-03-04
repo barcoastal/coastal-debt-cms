@@ -63,6 +63,12 @@
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } .gen-grid { grid-template-columns: 1fr; } }
     .error-text { color: #991b1b; font-size: 12px; margin-top: 4px; word-break: break-word; }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #cbd5e1; transition: 0.2s; border-radius: 20px; }
+    .switch .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: #fff; transition: 0.2s; border-radius: 50%; }
+    .switch input:checked + .slider { background: #3052FF; }
+    .switch input:checked + .slider:before { transform: translateX(16px); }
   </style>
 </head>
 <body>
@@ -265,9 +271,28 @@
         <!-- Generation Controls -->
         <div class="gen-controls">
           <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px;">Generate Ad Creatives</h3>
+
+          <!-- Brand Pre-prompt Toggle -->
+          <div style="margin-bottom: 16px; border: 1px solid #e0e7ff; border-radius: 8px; overflow: hidden;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #eef1ff; cursor: pointer;" onclick="toggleBrandPrompt()">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label class="switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" id="brandPromptToggle" checked onchange="toggleBrandPromptVisual()">
+                  <span class="slider"></span>
+                </label>
+                <span style="font-weight: 600; font-size: 13px; color: #1f2937;">Brand Pre-prompt</span>
+                <span style="font-size: 11px; color: #6b7280;">(Coastal Debt brand guidelines auto-injected)</span>
+              </div>
+              <svg id="brandChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div id="brandPromptBody" style="display: none; padding: 12px 14px; background: #f8f9ff; border-top: 1px solid #e0e7ff;">
+              <pre id="brandPromptText" style="font-size: 12px; color: #374151; white-space: pre-wrap; word-break: break-word; margin: 0; font-family: inherit; line-height: 1.5; max-height: 240px; overflow-y: auto;"></pre>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Prompt</label>
-            <textarea id="genPrompt" class="prompt-area" placeholder="Describe the ad creative you want to generate. Be specific about style, text, colors, and composition..."></textarea>
+            <textarea id="genPrompt" class="prompt-area" placeholder="Describe the ad creative you want to generate. The brand pre-prompt is automatically prepended when enabled above..."></textarea>
           </div>
           <div>
             <label style="font-weight: 600; font-size: 14px; display: block; margin-bottom: 8px;">AI Model</label>
@@ -341,6 +366,30 @@
     let selectedModel = 'gemini';
     let pollingInterval = null;
     let activeGenIds = [];
+    let brandPrepromptText = '';
+
+    function toggleBrandPrompt() {
+      const body = document.getElementById('brandPromptBody');
+      const chevron = document.getElementById('brandChevron');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
+
+    function toggleBrandPromptVisual() {
+      // Just visual, the actual flag is read at generation time
+    }
+
+    async function loadBrandPreprompt() {
+      try {
+        const res = await fetch('/api/ad-generator/brand-preprompt');
+        const data = await res.json();
+        brandPrepromptText = data.preprompt || '';
+        document.getElementById('brandPromptText').textContent = brandPrepromptText;
+      } catch (err) {
+        console.error('Failed to load brand preprompt:', err);
+      }
+    }
 
     const SIZE_META = {
       feed_landscape: { name: 'Feed / Landscape', dims: '1200x628', aspect: '~16:9' },
@@ -477,7 +526,7 @@
         const res = await fetch('/api/ad-generator/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ project_id: currentProjectId, model: selectedModel, prompt })
+          body: JSON.stringify({ project_id: currentProjectId, model: selectedModel, prompt, use_brand_prompt: document.getElementById('brandPromptToggle').checked })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -683,6 +732,7 @@
     // Init
     loadProjects();
     loadAISettings();
+    loadBrandPreprompt();
   </script>
 </body>
 </html>

@@ -76,6 +76,24 @@ const upload = multer({
   }
 });
 
+// ============ BRAND PRE-PROMPT ============
+
+const BRAND_PREPROMPT = `You are generating a static Facebook ad image for Coastal Debt Resolve, an MCA (Merchant Cash Advance) debt settlement company.
+
+BRAND GUIDELINES — follow these strictly:
+- Color palette: Primary blue #3052FF ("Future Blue"), light background #F2F4F9 ("Cyan Blue"), black #000000 for text, white #FFFFFF, accent orange #FF9000, secondary blue #7FB2FF
+- Typography: Clean, modern sans-serif font (Aeonik style). Headlines in bold/medium weight, body text in regular weight.
+- Logo: "Coastal Debt" wordmark with a chevron (>) icon and "RESOLVE" tagline below. Place the logo in the bottom-left or top-left corner.
+- Tone: Professional, empathetic, trustworthy. Never use fear tactics. Warm but authoritative.
+- Photography style: Diverse business owners ages 21-54, positive expressions, neutral color palette with blue/cool accents. Settings include small businesses, offices, handshakes.
+- Design style: Clean, modern layout. Use white or light (#F2F4F9) backgrounds. Blue (#3052FF) for headlines and CTAs. Curved edge text boxes and outlines. Minimal clutter.
+- Icons: Line/stroke style only (no solid fills), 3pt stroke weight.
+- Composition: Don't overlay text on people's faces. Maintain clear visual hierarchy with heading, subheading, and body text at three distinct sizes.
+- Ad elements: Include a clear headline, supporting text, and a call-to-action button (blue #3052FF background with white text, or orange #FF9000 for urgency).
+- Website: coastaldebtresolve.com should appear at the bottom.
+
+IMPORTANT: This is a static ad image, NOT a webpage. Generate a complete, finished ad creative ready for Facebook Ads.`;
+
 // Size definitions
 const AD_SIZES = [
   { label: 'feed_landscape', name: 'Feed / Landscape', width: 1200, height: 628, ar: '191:100', geminiAspect: '16:9' },
@@ -164,11 +182,17 @@ router.delete('/projects/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Project deleted' });
 });
 
+// ============ BRAND PRE-PROMPT ENDPOINT ============
+
+router.get('/brand-preprompt', authenticateToken, (req, res) => {
+  res.json({ preprompt: BRAND_PREPROMPT });
+});
+
 // ============ GENERATION ============
 
 // Start generation for all 4 sizes
 router.post('/generate', authenticateToken, (req, res) => {
-  const { project_id, model, prompt } = req.body;
+  const { project_id, model, prompt, use_brand_prompt } = req.body;
 
   if (!project_id || !model || !prompt) {
     return res.status(400).json({ error: 'project_id, model, and prompt are required' });
@@ -197,8 +221,9 @@ router.post('/generate', authenticateToken, (req, res) => {
   }
 
   // Fire-and-forget: process each generation in background
+  const useBrand = use_brand_prompt !== false; // default true
   for (let i = 0; i < AD_SIZES.length; i++) {
-    processGeneration(generationIds[i], model, prompt, referenceImages, AD_SIZES[i]);
+    processGeneration(generationIds[i], model, prompt, referenceImages, AD_SIZES[i], useBrand);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_generation', null, `Started ${model} generation for project #${project_id}`, req.ip);
@@ -288,7 +313,7 @@ router.post('/settings', authenticateToken, (req, res) => {
 
 // ============ BACKGROUND PROCESSING ============
 
-async function processGeneration(genId, model, prompt, referenceImageUrls, size) {
+async function processGeneration(genId, model, prompt, referenceImageUrls, size, useBrand = true) {
   try {
     db.prepare('UPDATE ad_generations SET status = ? WHERE id = ?').run('processing', genId);
 
@@ -304,11 +329,16 @@ async function processGeneration(genId, model, prompt, referenceImageUrls, size)
       extraConfig.channel = db.prepare('SELECT value FROM settings WHERE key = ?').get('useapi_channel')?.value || '';
     }
 
+    // Build full prompt with optional brand pre-prompt
+    const fullPrompt = useBrand
+      ? `${BRAND_PREPROMPT}\n\nUSER REQUEST:\n${prompt}`
+      : prompt;
+
     // Make absolute URLs from relative paths for external APIs
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const absoluteUrls = referenceImageUrls.map(u => u.startsWith('http') ? u : `${baseUrl}${u}`);
 
-    const result = await adapter.generate(apiKey, prompt, absoluteUrls, size, extraConfig);
+    const result = await adapter.generate(apiKey, fullPrompt, absoluteUrls, size, extraConfig);
 
     // Gemini returns synchronously
     if (result.status === 'completed') {
