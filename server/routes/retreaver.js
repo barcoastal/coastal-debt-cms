@@ -317,12 +317,12 @@ router.get('/calls', requireAuth, (req, res) => {
     params.push(parseInt(req.query.transferred));
   }
   if (req.query.date_from) {
-    where.push('call_start >= ?');
+    where.push('date(call_start) >= ?');
     params.push(req.query.date_from);
   }
   if (req.query.date_to) {
-    where.push('call_start <= ?');
-    params.push(req.query.date_to + ' 23:59:59');
+    where.push('date(call_start) <= ?');
+    params.push(req.query.date_to);
   }
   if (req.query.transcript_status) {
     where.push('transcript_status = ?');
@@ -972,6 +972,14 @@ router.post('/calls/fetch-events-batch', requireAuth, async (req, res) => {
   }
 
   res.json({ fetched, errors, total: calls.length });
+});
+
+// DELETE /calls - Clear all calls
+router.delete('/calls', requireAuth, (req, res) => {
+  const count = db.prepare('SELECT COUNT(*) as c FROM calls').get().c;
+  db.prepare('DELETE FROM calls').run();
+  console.log(`Cleared all ${count} calls`);
+  res.json({ deleted: count });
 });
 
 // ─── BACKGROUND SYNC ──────────────────────────────────────
