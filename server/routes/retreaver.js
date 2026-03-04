@@ -115,6 +115,7 @@ async function syncCalls() {
   if (!config || !config.api_key) return { synced: 0, skipped: 0, error: 'Not configured' };
 
   let synced = 0, skipped = 0, errors = 0, page = 1;
+  const newCallIds = []; // Track newly inserted calls for auto-transcription
   const perPage = 25;
 
   // Resolve campaign name from filter
@@ -176,7 +177,8 @@ async function syncCalls() {
         if (existing) { skipped++; continue; }
 
         try {
-          processCallData(call, campaignFilterName);
+          const inserted = processCallData(call, campaignFilterName);
+          if (inserted && inserted.hasRecording) newCallIds.push(inserted.id);
           synced++;
         } catch (insertErr) {
           console.error(`Retreaver sync: insert error for ${call.uuid}: ${insertErr.message}`);
@@ -193,6 +195,20 @@ async function syncCalls() {
     db.prepare('UPDATE retreaver_config SET last_sync_at = CURRENT_TIMESTAMP WHERE id = 1').run();
 
     console.log(`Retreaver sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors`);
+
+    // Auto-transcribe new calls in background (if OpenAI key is set)
+    if (newCallIds.length > 0 && process.env.OPENAI_API_KEY) {
+      console.log(`Auto-transcribing ${newCallIds.length} new calls...`);
+      (async () => {
+        for (const id of newCallIds) {
+          try { await transcribeCallBackground(id); } catch (e) {
+            console.error(`Auto-transcribe error for call ${id}:`, e.message);
+          }
+        }
+        console.log(`Auto-transcription batch complete: ${newCallIds.length} calls`);
+      })();
+    }
+
     return { synced, skipped, errors };
   } catch (err) {
     console.error('Retreaver sync error:', err.message);
@@ -736,7 +752,7 @@ function processCallData(call, campaignFilterName) {
     if (lead) leadId = lead.id;
   }
 
-  db.prepare(`INSERT INTO calls (
+  const result = db.prepare(`INSERT INTO calls (
     retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
     ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
     duration, status, disposition, transferred, recording_url,
@@ -755,7 +771,7 @@ function processCallData(call, campaignFilterName) {
     call.end_time || null
   );
 
-  return uuid;
+  return { uuid, id: result.lastInsertRowid, hasRecording: !!call.recording_url };
 }
 
 // Generate or get webhook key
@@ -819,6 +835,10 @@ router.post('/webhook', async (req, res) => {
 
     if (inserted) {
       console.log(`Retreaver webhook: ingested call ${callUuid}`);
+      // Auto-transcribe in background
+      if (inserted.hasRecording && process.env.OPENAI_API_KEY) {
+        transcribeCallBackground(inserted.id);
+      }
       res.json({ status: 'ok', message: 'Call ingested', uuid: callUuid });
     } else {
       res.json({ status: 'duplicate', message: 'Call already exists' });
@@ -866,6 +886,10 @@ router.get('/webhook', async (req, res) => {
 
     if (inserted) {
       console.log(`Retreaver webhook (GET): ingested call ${callUuid}`);
+      // Auto-transcribe in background
+      if (inserted.hasRecording && process.env.OPENAI_API_KEY) {
+        transcribeCallBackground(inserted.id);
+      }
       res.json({ status: 'ok', message: 'Call ingested', uuid: callUuid });
     } else {
       res.json({ status: 'duplicate', message: 'Call already exists' });
