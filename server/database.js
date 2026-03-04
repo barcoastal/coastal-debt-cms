@@ -356,6 +356,12 @@ try { db.exec(`ALTER TABLE forms ADD COLUMN skip_pre_qual INTEGER DEFAULT 0`); }
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_test_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_test_variant TEXT`); } catch (e) {}
 
+// A/B Testing: inline config (same-URL split testing)
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_config TEXT DEFAULT '{}'`); } catch (e) {}
+// Track which variant a visitor/lead was assigned
+try { db.exec(`ALTER TABLE visitors ADD COLUMN ab_variant TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN ab_variant TEXT`); } catch (e) {}
+
 // CRM + Email Marketing columns on leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN assigned_to INTEGER`); } catch (e) {}
