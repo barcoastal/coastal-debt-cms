@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image-preview';
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
   const parts = [];
