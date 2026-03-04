@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calls | Coastal Debt CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <style>
+    .table-container { overflow-x: auto; }
+    table td { font-size: 12px; }
+    .stats-row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: #f9fafb; padding: 20px; border-radius: 8px; flex: 1; min-width: 160px; }
+    .stat-card h3 { font-size: 2rem; margin: 0 0 5px 0; color: #3052FF; }
+    .stat-card p { margin: 0; color: #6b7280; font-size: 0.9rem; }
+
+    .score-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .score-high { background: #dcfce7; color: #166534; }
+    .score-mid { background: #fef3c7; color: #92400e; }
+    .score-low { background: #fee2e2; color: #991b1b; }
+
+    .transfer-yes { color: #16a34a; font-weight: 600; }
+    .transfer-no { color: #6b7280; }
+
+    .duration-cell { font-family: monospace; font-size: 11px; }
+
+    .filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+    .filters-bar .form-group { margin-bottom: 0; }
+    .filters-bar .form-group label { font-size: 11px; color: #6b7280; margin-bottom: 2px; display: block; }
+    .filters-bar input, .filters-bar select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+    .filters-bar input[type="date"] { width: 140px; }
+
+    .expand-row { display: none; }
+    .expand-row.open { display: table-row; }
+    .expand-content { padding: 16px 24px; background: #f9fafb; }
+
+    .transcript-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap; margin: 12px 0; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .detail-section { background: #fff; border-radius: 8px; padding: 12px 16px; border: 1px solid #e5e7eb; }
+    .detail-section h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
+    .detail-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+    .detail-label { color: #6b7280; }
+    .detail-value { font-weight: 500; }
+
+    .audio-player { margin: 12px 0; }
+    .audio-player audio { width: 100%; max-width: 500px; }
+
+    .action-btn { background: none; border: 1px solid #d1d5db; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin: 0 2px; }
+    .action-btn:hover { background: #f3f4f6; }
+    .action-btn.play-btn { border-color: #3052FF; color: #3052FF; }
+    .action-btn.transcribe-btn { border-color: #f59e0b; color: #92400e; }
+
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover { background: #f9fafb; }
+
+    .spinner-small { display: inline-block; width: 14px; height: 14px; border: 2px solid #d1d5db; border-top-color: #3052FF; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .batch-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="nautilus-brand">NAUTILUS</span>
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/calls.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Calls
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/tiktok.html">TikTok</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/reddit.html">Reddit</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+          <a href="/admin/fb-deep-events.html">FB Deep Events</a>
+          <a href="/admin/tiktok-debug.html">TikTok Debug</a>
+        </div>
+        <a href="/admin/redtrack.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          RedTrack
+        </a>
+        <a href="/admin/google-sheet.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Google Sheet
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <h1>Calls</h1>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="transcribeBatch()" id="batchBtn">Transcribe All Pending</button>
+          <button class="btn btn-primary" onclick="syncNow()" id="syncBtn">Sync Now</button>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card">
+          <h3 id="statTotal">0</h3>
+          <p>Total Calls</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="statAvgScore">0</h3>
+          <p>Avg Score</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="statTransferRate">0%</h3>
+          <p>Transfer Rate</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="statTopKeyword">-</h3>
+          <p>Top Keyword</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="statPending">0</h3>
+          <p>Pending Transcripts</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="form-group">
+          <label>From</label>
+          <input type="date" id="filterFrom">
+        </div>
+        <div class="form-group">
+          <label>To</label>
+          <input type="date" id="filterTo">
+        </div>
+        <div class="form-group">
+          <label>Campaign</label>
+          <input type="text" id="filterCampaign" placeholder="Campaign name..." style="width:150px;">
+        </div>
+        <div class="form-group">
+          <label>Keyword</label>
+          <input type="text" id="filterKeyword" placeholder="Keyword..." style="width:130px;">
+        </div>
+        <div class="form-group">
+          <label>Min Score</label>
+          <select id="filterScoreMin" style="width:80px;">
+            <option value="">Any</option>
+            <option value="8">8+</option>
+            <option value="5">5+</option>
+            <option value="1">1+</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Transferred</label>
+          <select id="filterTransferred" style="width:90px;">
+            <option value="">All</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="loadCalls(1)" style="height:34px;">Filter</button>
+        <button class="btn btn-secondary" onclick="clearFilters()" style="height:34px;background:#f3f4f6;color:#374151;">Clear</button>
+      </div>
+
+      <!-- Calls Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Caller</th>
+              <th>Campaign</th>
+              <th>Keyword</th>
+              <th>Ad Group</th>
+              <th>Duration</th>
+              <th>Score</th>
+              <th>Transferred</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="callsTable">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <span id="paginationInfo" style="color: #6b7280; font-size: 13px;"></span>
+        <div style="display: flex; gap: 8px;" id="paginationControls"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="assets/js/common.js?v=6"></script>
+  <script>
+    let currentPage = 1;
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const stats = await api('/api/retreaver/stats');
+        document.getElementById('statTotal').textContent = stats.total_calls;
+        document.getElementById('statAvgScore').textContent = stats.avg_score;
+        document.getElementById('statTransferRate').textContent = stats.transfer_rate + '%';
+        document.getElementById('statTopKeyword').textContent = stats.top_keywords?.[0]?.keyword || '-';
+        document.getElementById('statPending').textContent = stats.pending_transcripts;
+      } catch (e) {}
+    }
+
+    // Load calls
+    async function loadCalls(page) {
+      currentPage = page || 1;
+      const params = new URLSearchParams({ page: currentPage, limit: 25 });
+      const from = document.getElementById('filterFrom').value;
+      const to = document.getElementById('filterTo').value;
+      const campaign = document.getElementById('filterCampaign').value;
+      const keyword = document.getElementById('filterKeyword').value;
+      const scoreMin = document.getElementById('filterScoreMin').value;
+      const transferred = document.getElementById('filterTransferred').value;
+
+      if (from) params.set('date_from', from);
+      if (to) params.set('date_to', to);
+      if (campaign) params.set('campaign', campaign);
+      if (keyword) params.set('keyword', keyword);
+      if (scoreMin) params.set('score_min', scoreMin);
+      if (transferred !== '') params.set('transferred', transferred);
+
+      try {
+        const data = await api('/api/retreaver/calls?' + params.toString());
+        renderCalls(data.calls, data.pagination);
+      } catch (e) {
+        document.getElementById('callsTable').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#ef4444;">Error loading calls: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function renderCalls(calls, pagination) {
+      const tbody = document.getElementById('callsTable');
+      if (!calls || calls.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af;">No calls found. Click "Sync Now" to fetch calls from Retreaver.</td></tr>';
+        document.getElementById('paginationInfo').textContent = '';
+        document.getElementById('paginationControls').innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      for (const c of calls) {
+        const date = c.call_start ? new Date(c.call_start).toLocaleString() : '-';
+        const caller = c.formatted_caller_number || c.caller_number || '-';
+        const duration = formatDuration(c.duration);
+        const scoreHtml = renderScore(c.call_score);
+        const transferHtml = c.transferred ? '<span class="transfer-yes">Yes</span>' : '<span class="transfer-no">No</span>';
+        const hasRecording = c.recording_url ? true : false;
+        const transcriptStatus = c.transcript_status;
+
+        html += `<tr class="clickable-row" onclick="toggleExpand(${c.id}, this)">
+          <td>${date}</td>
+          <td>${esc(caller)}</td>
+          <td>${esc(c.campaign_name || '-')}</td>
+          <td>${esc(c.keyword || '-')}</td>
+          <td>${esc(c.ad_group || '-')}</td>
+          <td class="duration-cell">${duration}</td>
+          <td>${scoreHtml}</td>
+          <td>${transferHtml}</td>
+          <td onclick="event.stopPropagation()">
+            ${hasRecording ? `<button class="action-btn play-btn" onclick="playRecording(${c.id}, this)">Play</button>` : ''}
+            ${hasRecording && transcriptStatus !== 'completed' ? `<button class="action-btn transcribe-btn" id="transcribeBtn${c.id}" onclick="transcribeCall(${c.id})">Transcribe</button>` : ''}
+            ${transcriptStatus === 'processing' ? '<span class="spinner-small"></span>' : ''}
+          </td>
+        </tr>
+        <tr class="expand-row" id="expand-${c.id}">
+          <td colspan="9">
+            <div class="expand-content" id="expandContent-${c.id}">Loading...</div>
+          </td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+
+      // Pagination
+      const { page, total, totalPages } = pagination;
+      document.getElementById('paginationInfo').textContent = `Showing ${(page-1)*25+1}-${Math.min(page*25, total)} of ${total} calls`;
+
+      let pagHtml = '';
+      if (page > 1) pagHtml += `<button class="btn btn-secondary btn-small" onclick="loadCalls(${page-1})">Prev</button>`;
+      if (page < totalPages) pagHtml += `<button class="btn btn-secondary btn-small" onclick="loadCalls(${page+1})">Next</button>`;
+      document.getElementById('paginationControls').innerHTML = pagHtml;
+    }
+
+    function formatDuration(seconds) {
+      if (!seconds) return '0:00';
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return m + ':' + String(s).padStart(2, '0');
+    }
+
+    function renderScore(score) {
+      if (score === null || score === undefined) return '<span style="color:#9ca3af">-</span>';
+      let cls = 'score-low';
+      if (score >= 8) cls = 'score-high';
+      else if (score >= 5) cls = 'score-mid';
+      return `<span class="score-badge ${cls}">${score}/10</span>`;
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // Toggle expandable row
+    async function toggleExpand(id, row) {
+      const expandRow = document.getElementById('expand-' + id);
+      if (expandRow.classList.contains('open')) {
+        expandRow.classList.remove('open');
+        return;
+      }
+
+      // Close all other expanded rows
+      document.querySelectorAll('.expand-row.open').forEach(r => r.classList.remove('open'));
+      expandRow.classList.add('open');
+
+      const content = document.getElementById('expandContent-' + id);
+      content.innerHTML = 'Loading...';
+
+      try {
+        const data = await api('/api/retreaver/calls/' + id);
+        const c = data.call;
+
+        let html = '<div class="detail-grid">';
+
+        // Call Info
+        html += `<div class="detail-section">
+          <h4>Call Details</h4>
+          <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${esc(c.status)}</span></div>
+          <div class="detail-row"><span class="detail-label">Disposition</span><span class="detail-value">${esc(c.disposition || '-')}</span></div>
+          <div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value">${formatDuration(c.duration)}</span></div>
+          <div class="detail-row"><span class="detail-label">RT Click ID</span><span class="detail-value" style="font-family:monospace;font-size:11px;">${esc(c.rt_clickid || '-')}</span></div>
+          <div class="detail-row"><span class="detail-label">ELI Click ID</span><span class="detail-value" style="font-family:monospace;font-size:11px;">${esc(c.eli_clickid || '-')}</span></div>
+        </div>`;
+
+        // Linked Lead/Visitor
+        html += `<div class="detail-section">
+          <h4>Linked Data</h4>`;
+        if (data.lead) {
+          html += `<div class="detail-row"><span class="detail-label">Lead</span><span class="detail-value"><a href="/admin/leads.html#lead-${data.lead.id}">${esc(data.lead.first_name)} ${esc(data.lead.last_name)}</a></span></div>`;
+          html += `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${esc(data.lead.email || '-')}</span></div>`;
+          html += `<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${esc(data.lead.phone || '-')}</span></div>`;
+          html += `<div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value">${esc(data.lead.stage || '-')}</span></div>`;
+        } else {
+          html += '<div style="color:#9ca3af;font-size:13px;">No linked lead</div>';
+        }
+        if (data.visitor) {
+          html += `<div class="detail-row" style="margin-top:8px;"><span class="detail-label">Visitor ID</span><span class="detail-value">${data.visitor.id}</span></div>`;
+        }
+        html += '</div>';
+
+        html += '</div>';
+
+        // Audio Player
+        if (c.recording_url) {
+          html += `<div class="audio-player">
+            <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">Recording</h4>
+            <audio controls preload="none" style="width:100%;max-width:500px;">
+              <source src="/api/retreaver/calls/${c.id}/recording" type="audio/mpeg">
+              Your browser does not support audio playback.
+            </audio>
+          </div>`;
+        }
+
+        // Transcript
+        if (c.transcript) {
+          html += `<div>
+            <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:16px 0 8px;">Transcript</h4>
+            <div class="transcript-box">${esc(c.transcript)}</div>
+          </div>`;
+        }
+
+        // Score
+        if (c.call_score !== null) {
+          html += `<div style="margin-top:12px;">
+            <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">Score & Analysis</h4>
+            <div style="font-size:14px;">${renderScore(c.call_score)} <span style="color:#6b7280;font-size:13px;margin-left:8px;">${esc(c.score_reason)}</span></div>
+          </div>`;
+        }
+
+        content.innerHTML = html;
+      } catch (e) {
+        content.innerHTML = '<div style="color:#ef4444;">Error loading details: ' + e.message + '</div>';
+      }
+    }
+
+    // Play recording inline
+    function playRecording(id, btn) {
+      // If there's already a player next to this button, remove it
+      const existing = btn.parentElement.querySelector('audio');
+      if (existing) { existing.remove(); return; }
+
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.preload = 'auto';
+      audio.style.cssText = 'display:block;margin-top:4px;width:200px;height:28px;';
+      audio.innerHTML = `<source src="/api/retreaver/calls/${id}/recording" type="audio/mpeg">`;
+      btn.parentElement.appendChild(audio);
+      audio.play();
+    }
+
+    // Transcribe single call
+    async function transcribeCall(id) {
+      const btn = document.getElementById('transcribeBtn' + id);
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span>'; }
+
+      try {
+        const result = await api('/api/retreaver/calls/' + id + '/transcribe', { method: 'POST' });
+        if (btn) btn.textContent = 'Done!';
+        loadStats();
+        // Refresh the expanded row if open
+        const expandRow = document.getElementById('expand-' + id);
+        if (expandRow && expandRow.classList.contains('open')) {
+          toggleExpand(id, null);
+          setTimeout(() => toggleExpand(id, null), 100);
+        }
+      } catch (e) {
+        if (btn) { btn.textContent = 'Failed'; btn.style.color = '#ef4444'; }
+        alert('Transcription failed: ' + e.message);
+      }
+    }
+
+    // Batch transcribe
+    async function transcribeBatch() {
+      const btn = document.getElementById('batchBtn');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      try {
+        const result = await api('/api/retreaver/calls/transcribe-batch', { method: 'POST' });
+        btn.textContent = `Done! ${result.processed} processed, ${result.failed} failed`;
+        loadStats();
+        loadCalls(currentPage);
+        setTimeout(() => { btn.textContent = 'Transcribe All Pending'; btn.disabled = false; }, 3000);
+      } catch (e) {
+        btn.textContent = 'Failed';
+        btn.disabled = false;
+        alert('Batch transcription failed: ' + e.message);
+      }
+    }
+
+    // Sync now
+    async function syncNow() {
+      const btn = document.getElementById('syncBtn');
+      btn.disabled = true;
+      btn.textContent = 'Syncing...';
+
+      try {
+        const result = await api('/api/retreaver/sync', { method: 'POST' });
+        btn.textContent = `Synced ${result.synced} calls`;
+        loadStats();
+        loadCalls(currentPage);
+        setTimeout(() => { btn.textContent = 'Sync Now'; btn.disabled = false; }, 3000);
+      } catch (e) {
+        btn.textContent = 'Sync Failed';
+        btn.disabled = false;
+        alert('Sync failed: ' + e.message);
+      }
+    }
+
+    // Clear filters
+    function clearFilters() {
+      document.getElementById('filterFrom').value = '';
+      document.getElementById('filterTo').value = '';
+      document.getElementById('filterCampaign').value = '';
+      document.getElementById('filterKeyword').value = '';
+      document.getElementById('filterScoreMin').value = '';
+      document.getElementById('filterTransferred').value = '';
+      loadCalls(1);
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      loadCalls(1);
+    });
+  </script>
+</body>
+</html>

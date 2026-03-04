@@ -1160,6 +1160,53 @@ if (!obFormExists) {
   }
 }
 
+// Retreaver call tracking config (singleton)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS retreaver_config (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    api_key TEXT,
+    company_id TEXT,
+    last_sync_at DATETIME,
+    connected_at DATETIME
+  );
+
+  CREATE TABLE IF NOT EXISTS calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    retreaver_uuid TEXT UNIQUE,
+    caller_number TEXT,
+    formatted_caller_number TEXT,
+    campaign_name TEXT,
+    campaign_id TEXT,
+    ad_group TEXT,
+    keyword TEXT,
+    rt_clickid TEXT,
+    eli_clickid TEXT,
+    visitor_id INTEGER,
+    lead_id INTEGER,
+    duration INTEGER DEFAULT 0,
+    status TEXT,
+    disposition TEXT,
+    transferred INTEGER DEFAULT 0,
+    recording_url TEXT,
+    transcript TEXT,
+    transcript_status TEXT DEFAULT 'pending',
+    call_score INTEGER,
+    score_reason TEXT,
+    tags TEXT DEFAULT '{}',
+    metadata TEXT DEFAULT '{}',
+    call_start DATETIME,
+    call_end DATETIME,
+    synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (visitor_id) REFERENCES visitors(id),
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_calls_rt ON calls(rt_clickid);
+  CREATE INDEX IF NOT EXISTS idx_calls_eli ON calls(eli_clickid);
+  CREATE INDEX IF NOT EXISTS idx_calls_start ON calls(call_start);
+  CREATE INDEX IF NOT EXISTS idx_calls_uuid ON calls(retreaver_uuid);
+`);
+
 // Migration: rename full_name to first_name + last_name in all forms
 (function() {
   var forms = db.prepare('SELECT id, fields FROM forms').all();

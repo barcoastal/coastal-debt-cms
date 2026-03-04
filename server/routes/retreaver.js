@@ -1,0 +1,527 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../database');
+
+// Auth middleware (same as other routes)
+function requireAuth(req, res, next) {
+  const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'coastal-debt-secret-key-change-in-production');
+    req.user = decoded;
+    next();
+  } catch (e) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// ─── CONFIG ───────────────────────────────────────────────
+
+// GET /config - Return config (mask API key)
+router.get('/config', requireAuth, (req, res) => {
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config) return res.json({});
+  res.json({
+    api_key: config.api_key ? '••••••' + config.api_key.slice(-4) : '',
+    company_id: config.company_id || '',
+    last_sync_at: config.last_sync_at,
+    connected_at: config.connected_at,
+    has_key: !!config.api_key
+  });
+});
+
+// POST /config - Save API key + company ID
+router.post('/config', requireAuth, (req, res) => {
+  const { api_key, company_id } = req.body;
+  if (!api_key || !company_id) return res.status(400).json({ error: 'API key and company ID are required' });
+
+  db.prepare(`INSERT INTO retreaver_config (id, api_key, company_id, connected_at)
+    VALUES (1, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET api_key = excluded.api_key, company_id = excluded.company_id, connected_at = CURRENT_TIMESTAMP`)
+    .run(api_key, company_id);
+
+  res.json({ success: true });
+});
+
+// POST /test - Test connection by fetching 1 call
+router.post('/test', requireAuth, async (req, res) => {
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) return res.status(400).json({ error: 'Retreaver not configured' });
+
+  try {
+    const url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=1`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ error: `Retreaver API error: ${resp.status} - ${text}` });
+    }
+    const data = await resp.json();
+    res.json({ success: true, message: `Connected! Found ${Array.isArray(data) ? data.length : 0} call(s) in test.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── CALL SYNC ────────────────────────────────────────────
+
+async function syncCalls() {
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) return { synced: 0, skipped: 0, error: 'Not configured' };
+
+  let synced = 0, skipped = 0, page = 1;
+  const perPage = 25;
+
+  try {
+    while (true) {
+      const url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
+      const resp = await fetch(url);
+      if (!resp.ok) break;
+
+      const calls = await resp.json();
+      if (!Array.isArray(calls) || calls.length === 0) break;
+
+      for (const call of calls) {
+        const uuid = call.uuid || call.id?.toString();
+        if (!uuid) continue;
+
+        // Check for duplicate
+        const existing = db.prepare('SELECT id FROM calls WHERE retreaver_uuid = ?').get(uuid);
+        if (existing) { skipped++; continue; }
+
+        // Extract rt_clickid from tags/parameters
+        let rtClickid = '';
+        let tags = {};
+        let metadata = {};
+        try {
+          if (call.tags) tags = typeof call.tags === 'string' ? JSON.parse(call.tags) : call.tags;
+          if (call.tag_values) {
+            const tagVals = typeof call.tag_values === 'string' ? JSON.parse(call.tag_values) : call.tag_values;
+            if (tagVals) tags = { ...tags, ...tagVals };
+          }
+        } catch (e) {}
+
+        // Look for rt_clickid in multiple places
+        rtClickid = call.rt_clickid || call.sub_id || tags.rt_clickid || tags.sub_id || '';
+
+        // Check call parameters/tracking params
+        if (!rtClickid && call.tracking_parameters) {
+          const params = typeof call.tracking_parameters === 'string'
+            ? JSON.parse(call.tracking_parameters) : call.tracking_parameters;
+          rtClickid = params.rt_clickid || params.sub_id || '';
+        }
+
+        // Extract campaign info
+        const campaignName = call.campaign?.name || call.campaign_name || '';
+        const campaignId = call.campaign?.id?.toString() || call.campaign_id?.toString() || '';
+        const adGroup = call.ad_group || tags.ad_group || tags.adgroup || '';
+        const keyword = call.keyword || tags.keyword || '';
+
+        // Determine if call was transferred
+        const transferred = call.transferred ? 1 :
+          (call.disposition || '').toLowerCase().includes('transfer') ? 1 : 0;
+
+        // Format caller number
+        const callerNumber = call.caller_number || call.caller_id || call.from || '';
+        const formattedCaller = formatPhoneNumber(callerNumber);
+
+        // Match to visitor/lead via rt_clickid
+        let visitorId = null, eliClickid = '', leadId = null;
+        if (rtClickid) {
+          const visitor = db.prepare('SELECT id, eli_clickid FROM visitors WHERE rt_clickid = ?').get(rtClickid);
+          if (visitor) {
+            visitorId = visitor.id;
+            eliClickid = visitor.eli_clickid || '';
+          }
+          const lead = db.prepare('SELECT id FROM leads WHERE rt_clickid = ?').get(rtClickid);
+          if (lead) leadId = lead.id;
+        }
+
+        try {
+          metadata = call.metadata || {};
+          if (typeof metadata === 'string') metadata = JSON.parse(metadata);
+        } catch (e) { metadata = {}; }
+
+        db.prepare(`INSERT INTO calls (
+          retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
+          ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
+          duration, status, disposition, transferred, recording_url,
+          transcript_status, tags, metadata, call_start, call_end
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
+          uuid, callerNumber, formattedCaller, campaignName, campaignId,
+          adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
+          call.duration || 0,
+          call.status || '',
+          call.disposition || '',
+          transferred,
+          call.recording_url || call.recording || '',
+          JSON.stringify(tags),
+          JSON.stringify(metadata),
+          call.started_at || call.call_start || call.created_at || null,
+          call.ended_at || call.call_end || null
+        );
+        synced++;
+      }
+
+      // If fewer results than per_page, we're on the last page
+      if (calls.length < perPage) break;
+      page++;
+    }
+
+    // Update last_sync_at
+    db.prepare('UPDATE retreaver_config SET last_sync_at = CURRENT_TIMESTAMP WHERE id = 1').run();
+
+    return { synced, skipped };
+  } catch (err) {
+    console.error('Retreaver sync error:', err.message);
+    return { synced, skipped, error: err.message };
+  }
+}
+
+function formatPhoneNumber(num) {
+  if (!num) return '';
+  const digits = num.replace(/\D/g, '');
+  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits[0] === '1') return `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  return num;
+}
+
+// POST /sync - Manual sync trigger
+router.post('/sync', requireAuth, async (req, res) => {
+  const result = await syncCalls();
+  res.json(result);
+});
+
+// ─── CALL DATA ────────────────────────────────────────────
+
+// GET /calls - Paginated list with filters
+router.get('/calls', requireAuth, (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 25;
+  const offset = (page - 1) * limit;
+
+  let where = ['1=1'];
+  let params = [];
+
+  if (req.query.campaign) {
+    where.push('campaign_name LIKE ?');
+    params.push(`%${req.query.campaign}%`);
+  }
+  if (req.query.keyword) {
+    where.push('keyword LIKE ?');
+    params.push(`%${req.query.keyword}%`);
+  }
+  if (req.query.score_min) {
+    where.push('call_score >= ?');
+    params.push(parseInt(req.query.score_min));
+  }
+  if (req.query.score_max) {
+    where.push('call_score <= ?');
+    params.push(parseInt(req.query.score_max));
+  }
+  if (req.query.transferred !== undefined && req.query.transferred !== '') {
+    where.push('transferred = ?');
+    params.push(parseInt(req.query.transferred));
+  }
+  if (req.query.date_from) {
+    where.push('call_start >= ?');
+    params.push(req.query.date_from);
+  }
+  if (req.query.date_to) {
+    where.push('call_start <= ?');
+    params.push(req.query.date_to + ' 23:59:59');
+  }
+  if (req.query.transcript_status) {
+    where.push('transcript_status = ?');
+    params.push(req.query.transcript_status);
+  }
+
+  const whereClause = where.join(' AND ');
+
+  const total = db.prepare(`SELECT COUNT(*) as count FROM calls WHERE ${whereClause}`).get(...params).count;
+  const calls = db.prepare(`SELECT * FROM calls WHERE ${whereClause} ORDER BY call_start DESC LIMIT ? OFFSET ?`)
+    .all(...params, limit, offset);
+
+  res.json({
+    calls,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  });
+});
+
+// GET /calls/:id - Single call detail with linked visitor/lead
+router.get('/calls/:id', requireAuth, (req, res) => {
+  const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+
+  let visitor = null, lead = null;
+  if (call.visitor_id) visitor = db.prepare('SELECT * FROM visitors WHERE id = ?').get(call.visitor_id);
+  if (call.lead_id) lead = db.prepare('SELECT id, first_name, last_name, email, phone, company_name, debt_amount, stage, created_at FROM leads WHERE id = ?').get(call.lead_id);
+
+  res.json({ call, visitor, lead });
+});
+
+// GET /calls/:id/recording - Proxy audio stream from Retreaver
+router.get('/calls/:id/recording', requireAuth, async (req, res) => {
+  const call = db.prepare('SELECT recording_url FROM calls WHERE id = ?').get(req.params.id);
+  if (!call || !call.recording_url) return res.status(404).json({ error: 'No recording available' });
+
+  try {
+    const resp = await fetch(call.recording_url);
+    if (!resp.ok) return res.status(resp.status).json({ error: 'Failed to fetch recording' });
+
+    const contentType = resp.headers.get('content-type') || 'audio/mpeg';
+    res.setHeader('Content-Type', contentType);
+    if (resp.headers.get('content-length')) {
+      res.setHeader('Content-Length', resp.headers.get('content-length'));
+    }
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    // Pipe the response body
+    const reader = resp.body.getReader();
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) { res.end(); return; }
+        res.write(value);
+      }
+    };
+    await pump();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── TRANSCRIBE + SCORE ────────────────────────────────────
+
+// POST /calls/:id/transcribe - Single call transcription + scoring
+router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
+  const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (!call.recording_url) return res.status(400).json({ error: 'No recording URL available' });
+
+  try {
+    // Update status to processing
+    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
+
+    // Download the audio file
+    const audioResp = await fetch(call.recording_url);
+    if (!audioResp.ok) throw new Error(`Failed to download recording: ${audioResp.status}`);
+
+    const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
+    const base64Audio = audioBuffer.toString('base64');
+
+    // Determine media type from URL or default to mp3
+    let mediaType = 'audio/mpeg';
+    if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
+    else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
+
+    // Call Claude API for transcription + scoring
+    const Anthropic = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic();
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 4096,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'audio',
+            source: { type: 'base64', media_type: mediaType, data: base64Audio }
+          },
+          {
+            type: 'text',
+            text: `You are analyzing a phone call for Coastal Debt Resolve, an MCA debt settlement company.
+
+Listen to this call and return a JSON object with:
+1. transcript — full conversation with speaker labels (Agent: / Caller:)
+2. score — qualification score 1-10
+3. score_reason — brief explanation of the score
+4. transferred — boolean, was the call transferred to a specialist?
+5. summary — one-sentence summary
+
+SCORING:
+- 10: Call was transferred to a specialist/closer
+- 8-9: Qualified — has MCA/business debt, interested in settlement services
+- 5-7: Partial — some interest, gathering info, uncertain
+- 3-4: Low — not the right fit, not interested, unqualified
+- 1-2: Spam, wrong number, hangup, or <30 seconds
+
+Return ONLY valid JSON, no markdown fences.`
+          }
+        ]
+      }]
+    });
+
+    const responseText = message.content[0].text.trim();
+    let result;
+    try {
+      // Strip markdown fences if present
+      const cleaned = responseText.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+      result = JSON.parse(cleaned);
+    } catch (parseErr) {
+      throw new Error('Failed to parse Claude response as JSON: ' + responseText.slice(0, 200));
+    }
+
+    // Save to database
+    db.prepare(`UPDATE calls SET
+      transcript = ?,
+      call_score = ?,
+      score_reason = ?,
+      transferred = ?,
+      transcript_status = 'completed'
+      WHERE id = ?`).run(
+      result.transcript || '',
+      result.score || 0,
+      result.score_reason || result.summary || '',
+      result.transferred ? 1 : 0,
+      call.id
+    );
+
+    res.json({
+      success: true,
+      transcript: result.transcript,
+      score: result.score,
+      score_reason: result.score_reason,
+      transferred: result.transferred,
+      summary: result.summary
+    });
+  } catch (err) {
+    console.error('Transcription error:', err.message);
+    db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', call.id);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /calls/transcribe-batch - Process up to 10 pending calls
+router.post('/calls/transcribe-batch', requireAuth, async (req, res) => {
+  const pending = db.prepare(`SELECT id FROM calls WHERE transcript_status = 'pending' AND recording_url != '' AND recording_url IS NOT NULL ORDER BY call_start DESC LIMIT 10`).all();
+
+  if (pending.length === 0) return res.json({ processed: 0, message: 'No pending calls to transcribe' });
+
+  let processed = 0, failed = 0;
+  for (const row of pending) {
+    try {
+      // Make internal request to single transcribe endpoint
+      const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(row.id);
+      if (!call || !call.recording_url) continue;
+
+      db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
+
+      const audioResp = await fetch(call.recording_url);
+      if (!audioResp.ok) { db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', call.id); failed++; continue; }
+
+      const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
+      const base64Audio = audioBuffer.toString('base64');
+
+      let mediaType = 'audio/mpeg';
+      if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
+      else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
+
+      const Anthropic = require('@anthropic-ai/sdk');
+      const anthropic = new Anthropic();
+
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'audio', source: { type: 'base64', media_type: mediaType, data: base64Audio } },
+            { type: 'text', text: `You are analyzing a phone call for Coastal Debt Resolve, an MCA debt settlement company.
+
+Listen to this call and return a JSON object with:
+1. transcript — full conversation with speaker labels (Agent: / Caller:)
+2. score — qualification score 1-10
+3. score_reason — brief explanation of the score
+4. transferred — boolean, was the call transferred to a specialist?
+5. summary — one-sentence summary
+
+SCORING:
+- 10: Call was transferred to a specialist/closer
+- 8-9: Qualified — has MCA/business debt, interested in settlement services
+- 5-7: Partial — some interest, gathering info, uncertain
+- 3-4: Low — not the right fit, not interested, unqualified
+- 1-2: Spam, wrong number, hangup, or <30 seconds
+
+Return ONLY valid JSON, no markdown fences.` }
+          ]
+        }]
+      });
+
+      const cleaned = message.content[0].text.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+      const result = JSON.parse(cleaned);
+
+      db.prepare(`UPDATE calls SET transcript = ?, call_score = ?, score_reason = ?, transferred = ?, transcript_status = 'completed' WHERE id = ?`)
+        .run(result.transcript || '', result.score || 0, result.score_reason || '', result.transferred ? 1 : 0, call.id);
+      processed++;
+    } catch (err) {
+      console.error(`Batch transcribe error for call ${row.id}:`, err.message);
+      db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('failed', row.id);
+      failed++;
+    }
+  }
+
+  res.json({ processed, failed, total: pending.length });
+});
+
+// ─── STATS ────────────────────────────────────────────────
+
+router.get('/stats', requireAuth, (req, res) => {
+  const totalCalls = db.prepare('SELECT COUNT(*) as count FROM calls').get().count;
+  const avgScore = db.prepare('SELECT AVG(call_score) as avg FROM calls WHERE call_score IS NOT NULL').get().avg || 0;
+  const transferCount = db.prepare('SELECT COUNT(*) as count FROM calls WHERE transferred = 1').get().count;
+  const transferRate = totalCalls > 0 ? (transferCount / totalCalls * 100).toFixed(1) : 0;
+
+  const topKeywords = db.prepare(`SELECT keyword, COUNT(*) as count FROM calls WHERE keyword != '' AND keyword IS NOT NULL GROUP BY keyword ORDER BY count DESC LIMIT 5`).all();
+  const topCampaigns = db.prepare(`SELECT campaign_name, COUNT(*) as count FROM calls WHERE campaign_name != '' AND campaign_name IS NOT NULL GROUP BY campaign_name ORDER BY count DESC LIMIT 5`).all();
+  const pendingTranscripts = db.prepare(`SELECT COUNT(*) as count FROM calls WHERE transcript_status = 'pending' AND recording_url != '' AND recording_url IS NOT NULL`).get().count;
+
+  res.json({
+    total_calls: totalCalls,
+    avg_score: Math.round(avgScore * 10) / 10,
+    transfer_rate: parseFloat(transferRate),
+    transfer_count: transferCount,
+    top_keywords: topKeywords,
+    top_campaigns: topCampaigns,
+    pending_transcripts: pendingTranscripts
+  });
+});
+
+// ─── BACKGROUND SYNC ──────────────────────────────────────
+
+let retreaverSyncInterval = null;
+function startRetreaverBackgroundSync() {
+  if (retreaverSyncInterval) return;
+  retreaverSyncInterval = setInterval(async () => {
+    try {
+      const config = db.prepare('SELECT api_key FROM retreaver_config WHERE id = 1').get();
+      if (config && config.api_key) {
+        await syncCalls();
+      }
+    } catch (err) {
+      console.error('Retreaver background sync error:', err.message);
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+
+  // First sync 20s after startup (staggered from other syncs)
+  setTimeout(async () => {
+    try {
+      const config = db.prepare('SELECT api_key FROM retreaver_config WHERE id = 1').get();
+      if (config && config.api_key) {
+        console.log('Running initial Retreaver call sync...');
+        const result = await syncCalls();
+        if (result.synced > 0) {
+          console.log(`Retreaver initial sync: imported ${result.synced} calls`);
+        }
+      }
+    } catch (err) {
+      console.error('Retreaver initial sync error:', err.message);
+    }
+  }, 20 * 1000);
+}
+
+// Start background sync
+startRetreaverBackgroundSync();
+
+module.exports = router;
