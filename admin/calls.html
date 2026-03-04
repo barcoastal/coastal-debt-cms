@@ -215,6 +215,14 @@
       <!-- Filters -->
       <div class="filters-bar">
         <div class="form-group">
+          <label>Quick</label>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-secondary btn-small date-preset" onclick="setDatePreset('today')" style="font-size:11px;padding:4px 8px;">Today</button>
+            <button class="btn btn-secondary btn-small date-preset" onclick="setDatePreset('yesterday')" style="font-size:11px;padding:4px 8px;">Yesterday</button>
+            <button class="btn btn-secondary btn-small date-preset" onclick="setDatePreset('mtd')" style="font-size:11px;padding:4px 8px;">MTD</button>
+          </div>
+        </div>
+        <div class="form-group">
           <label>From</label>
           <input type="date" id="filterFrom">
         </div>
@@ -687,6 +695,28 @@
           if (el) el.textContent = '-';
         }
       }
+    }
+
+    // Date presets
+    function setDatePreset(preset) {
+      const today = new Date();
+      const fmt = d => d.toISOString().split('T')[0];
+      document.querySelectorAll('.date-preset').forEach(b => b.style.background = '');
+
+      if (preset === 'today') {
+        document.getElementById('filterFrom').value = fmt(today);
+        document.getElementById('filterTo').value = fmt(today);
+      } else if (preset === 'yesterday') {
+        const y = new Date(today);
+        y.setDate(y.getDate() - 1);
+        document.getElementById('filterFrom').value = fmt(y);
+        document.getElementById('filterTo').value = fmt(y);
+      } else if (preset === 'mtd') {
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('filterFrom').value = fmt(first);
+        document.getElementById('filterTo').value = fmt(today);
+      }
+      loadCalls(1);
     }
 
     // Clear filters
