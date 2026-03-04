@@ -1207,6 +1207,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_calls_uuid ON calls(retreaver_uuid);
 `);
 
+// Add campaign_id filter to retreaver_config
+try { db.exec(`ALTER TABLE retreaver_config ADD COLUMN campaign_filter_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE retreaver_config ADD COLUMN campaign_filter_name TEXT`); } catch (e) {}
+
 // Migration: rename full_name to first_name + last_name in all forms
 (function() {
   var forms = db.prepare('SELECT id, fields FROM forms').all();

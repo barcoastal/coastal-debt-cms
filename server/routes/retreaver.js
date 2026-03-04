@@ -25,23 +25,44 @@ router.get('/config', requireAuth, (req, res) => {
   res.json({
     api_key: config.api_key ? '••••••' + config.api_key.slice(-4) : '',
     company_id: config.company_id || '',
+    campaign_filter_id: config.campaign_filter_id || '',
+    campaign_filter_name: config.campaign_filter_name || '',
     last_sync_at: config.last_sync_at,
     connected_at: config.connected_at,
     has_key: !!config.api_key
   });
 });
 
-// POST /config - Save API key + company ID
+// POST /config - Save API key + company ID + campaign filter
 router.post('/config', requireAuth, (req, res) => {
-  const { api_key, company_id } = req.body;
+  const { api_key, company_id, campaign_filter_id, campaign_filter_name } = req.body;
   if (!api_key || !company_id) return res.status(400).json({ error: 'API key and company ID are required' });
 
-  db.prepare(`INSERT INTO retreaver_config (id, api_key, company_id, connected_at)
-    VALUES (1, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(id) DO UPDATE SET api_key = excluded.api_key, company_id = excluded.company_id, connected_at = CURRENT_TIMESTAMP`)
-    .run(api_key, company_id);
+  db.prepare(`INSERT INTO retreaver_config (id, api_key, company_id, campaign_filter_id, campaign_filter_name, connected_at)
+    VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET api_key = excluded.api_key, company_id = excluded.company_id, campaign_filter_id = excluded.campaign_filter_id, campaign_filter_name = excluded.campaign_filter_name, connected_at = CURRENT_TIMESTAMP`)
+    .run(api_key, company_id, campaign_filter_id || null, campaign_filter_name || null);
 
   res.json({ success: true });
+});
+
+// GET /campaigns - List Retreaver campaigns for the dropdown
+router.get('/campaigns', requireAuth, async (req, res) => {
+  const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
+  if (!config || !config.api_key) return res.status(400).json({ error: 'Retreaver not configured' });
+
+  try {
+    const url = `https://api.retreaver.com/campaigns.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ error: `Retreaver API error: ${resp.status} - ${text}` });
+    }
+    const campaigns = await resp.json();
+    res.json({ campaigns: Array.isArray(campaigns) ? campaigns : [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /test - Test connection by fetching 1 call
@@ -74,7 +95,10 @@ async function syncCalls() {
 
   try {
     while (true) {
-      const url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
+      let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
+      if (config.campaign_filter_id) {
+        url += `&campaign_id=${encodeURIComponent(config.campaign_filter_id)}`;
+      }
       const resp = await fetch(url);
       if (!resp.ok) break;
 

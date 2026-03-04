@@ -727,6 +727,17 @@
           <small style="color: #666;">Your Retreaver company/account identifier</small>
         </div>
 
+        <div class="form-group">
+          <label>Campaign</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="rvCampaignId" style="flex:1;">
+              <option value="">All Campaigns</option>
+            </select>
+            <button class="btn btn-secondary" onclick="loadRetreaverCampaigns()" style="white-space:nowrap;">Load Campaigns</button>
+          </div>
+          <small style="color: #666;">Only sync calls from this campaign. Save API key + Company ID first, then click "Load Campaigns".</small>
+        </div>
+
         <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" onclick="saveRetreaverConfig()">Save Configuration</button>
           <button class="btn btn-secondary" onclick="testRetreaverConnection()">Test Connection</button>
@@ -1893,12 +1904,21 @@
         if (config.has_key) {
           document.getElementById('rvApiKey').value = config.api_key || '';
           document.getElementById('rvCompanyId').value = config.company_id || '';
+          // Set campaign filter if saved
+          if (config.campaign_filter_id) {
+            const select = document.getElementById('rvCampaignId');
+            const opt = document.createElement('option');
+            opt.value = config.campaign_filter_id;
+            opt.textContent = config.campaign_filter_name || 'Campaign ' + config.campaign_filter_id;
+            opt.selected = true;
+            select.appendChild(opt);
+          }
           document.getElementById('rvConnectionStatus').innerHTML = `
             <div class="connection-status connected">
               <div class="status-dot green"></div>
               <div class="account-info">
                 <strong>Connected</strong>
-                <span>API key configured${config.connected_at ? ' on ' + formatDate(config.connected_at) : ''}</span>
+                <span>API key configured${config.connected_at ? ' on ' + formatDate(config.connected_at) : ''}${config.campaign_filter_name ? ' &middot; Campaign: ' + config.campaign_filter_name : ''}</span>
               </div>
             </div>`;
           if (config.last_sync_at) {
@@ -1919,7 +1939,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: document.getElementById('rvApiKey').value,
-            company_id: document.getElementById('rvCompanyId').value
+            company_id: document.getElementById('rvCompanyId').value,
+            campaign_filter_id: document.getElementById('rvCampaignId').value || '',
+            campaign_filter_name: document.getElementById('rvCampaignId').selectedOptions[0]?.textContent || ''
           })
         });
         statusEl.textContent = 'Saved!';
@@ -1956,6 +1978,30 @@
       } catch (err) {
         statusEl.textContent = 'Sync failed: ' + err.message;
         statusEl.style.color = '#ef4444';
+      }
+    }
+
+    async function loadRetreaverCampaigns() {
+      const select = document.getElementById('rvCampaignId');
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">All Campaigns</option>';
+      try {
+        const data = await api('/api/retreaver/campaigns');
+        if (data.campaigns && data.campaigns.length > 0) {
+          for (const c of data.campaigns) {
+            const id = c.id?.toString() || c.uuid || '';
+            const name = c.name || 'Campaign ' + id;
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name;
+            if (id === currentVal) opt.selected = true;
+            select.appendChild(opt);
+          }
+        } else {
+          alert('No campaigns found. Make sure API key and Company ID are saved first.');
+        }
+      } catch (err) {
+        alert('Failed to load campaigns: ' + err.message);
       }
     }
 
