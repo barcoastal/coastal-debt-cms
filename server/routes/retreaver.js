@@ -368,6 +368,69 @@ router.get('/calls/:id/recording', requireAuth, async (req, res) => {
   }
 });
 
+// ─── REDTRACK EVENTS ─────────────────────────────────────
+
+const REDTRACK_API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
+
+// GET /calls/:id/events - Fetch RedTrack conversion events for a call's clickid
+router.get('/calls/:id/events', requireAuth, async (req, res) => {
+  const call = db.prepare('SELECT rt_clickid, call_start FROM calls WHERE id = ?').get(req.params.id);
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (!call.rt_clickid) return res.json({ events: [], message: 'No RedTrack click ID for this call' });
+
+  try {
+    // Need date range for RedTrack API — use call date ± 7 days
+    const callDate = call.call_start ? new Date(call.call_start) : new Date();
+    const dateFrom = new Date(callDate);
+    dateFrom.setDate(dateFrom.getDate() - 7);
+    const dateTo = new Date(callDate);
+    dateTo.setDate(dateTo.getDate() + 30);
+
+    const url = `https://api.redtrack.io/conversions?api_key=${REDTRACK_API_KEY}&clickid=${encodeURIComponent(call.rt_clickid)}&date_from=${dateFrom.toISOString().split('T')[0]}&date_to=${dateTo.toISOString().split('T')[0]}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ error: `RedTrack API error: ${resp.status} - ${text}` });
+    }
+
+    const data = await resp.json();
+    const items = data.items || data || [];
+
+    // Map to clean event objects
+    const events = (Array.isArray(items) ? items : []).map(item => ({
+      id: item.id,
+      type: item.type,
+      campaign: item.campaign,
+      offer: item.offer,
+      source: item.source,
+      keyword: item.rt_keyword || item.sub2 || '',
+      ad_group_id: item.rt_adgroup_id || item.sub4 || '',
+      campaign_id: item.rt_campaign_id || item.sub6 || '',
+      ad_id: item.rt_ad_id || item.sub5 || '',
+      utm_campaign: item.rt_campaign || item.sub1 || '',
+      payout: item.payout || 0,
+      revenue: item.payout || 0,
+      cost: item.cost || 0,
+      city: item.city,
+      region: item.region,
+      country: item.country,
+      device: item.device,
+      os: item.os,
+      browser: item.browser,
+      track_time: item.track_time,
+      conv_time: item.conv_time,
+      page_url: item.page_url || item.page || '',
+      ref_id: item.ref_id || '',
+      clickid: item.clickid
+    }));
+
+    res.json({ events, total: data.total || events.length });
+  } catch (err) {
+    console.error('RedTrack events error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── TRANSCRIBE + SCORE ────────────────────────────────────
 
 // POST /calls/:id/transcribe - Single call transcription + scoring
@@ -377,14 +440,28 @@ router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
   if (!call.recording_url) return res.status(400).json({ error: 'No recording URL available' });
 
   try {
+    // Check for API key
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+    }
+
     // Update status to processing
     db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
 
     // Download the audio file
+    console.log(`Transcribing call ${call.id}: downloading from ${call.recording_url.slice(0, 80)}...`);
     const audioResp = await fetch(call.recording_url);
     if (!audioResp.ok) throw new Error(`Failed to download recording: ${audioResp.status}`);
 
     const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
+    const sizeMB = (audioBuffer.length / 1024 / 1024).toFixed(1);
+    console.log(`Transcribing call ${call.id}: audio size ${sizeMB}MB, duration ${call.duration}s`);
+
+    // Check file size — Claude supports up to ~25MB audio
+    if (audioBuffer.length > 25 * 1024 * 1024) {
+      throw new Error(`Recording too large (${sizeMB}MB). Maximum is 25MB.`);
+    }
+
     const base64Audio = audioBuffer.toString('base64');
 
     // Determine media type from URL or default to mp3

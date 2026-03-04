@@ -466,7 +466,50 @@
           </div>`;
         }
 
+        // RedTrack Events placeholder
+        html += `<div id="rtEvents-${c.id}" style="margin-top:16px;">
+          <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">RedTrack Events</h4>
+          <div style="color:#9ca3af;font-size:13px;">${c.rt_clickid ? 'Loading events...' : 'No click ID — cannot fetch events'}</div>
+        </div>`;
+
         content.innerHTML = html;
+
+        // Fetch RedTrack events async
+        if (c.rt_clickid) {
+          try {
+            const evData = await api('/api/retreaver/calls/' + id + '/events');
+            const evContainer = document.getElementById('rtEvents-' + c.id);
+            if (evData.events && evData.events.length > 0) {
+              let evHtml = `<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">RedTrack Events (${evData.events.length})</h4>`;
+              evHtml += '<table style="width:100%;font-size:13px;border-collapse:collapse;"><thead><tr style="background:#f3f4f6;text-align:left;">';
+              evHtml += '<th style="padding:6px 8px;">Type</th><th style="padding:6px 8px;">Time</th><th style="padding:6px 8px;">Campaign</th><th style="padding:6px 8px;">Keyword</th><th style="padding:6px 8px;">Payout</th><th style="padding:6px 8px;">Location</th></tr></thead><tbody>';
+              for (const ev of evData.events) {
+                const evType = ev.type || '-';
+                const evTime = ev.conv_time ? new Date(ev.conv_time).toLocaleString() : '-';
+                const evKeyword = ev.keyword || '-';
+                const evCampaign = ev.utm_campaign || ev.campaign || '-';
+                const evPayout = ev.payout ? '$' + Number(ev.payout).toLocaleString() : '-';
+                const evLoc = [ev.city, ev.region].filter(Boolean).join(', ') || '-';
+                const typeColor = evType === 'phonecall' ? '#3052FF' : evType.includes('lead') ? '#16a34a' : evType === 'opportunity' ? '#FF9000' : evType.includes('closed') || evType.includes('contract') ? '#7c3aed' : '#6b7280';
+                evHtml += `<tr style="border-bottom:1px solid #f3f4f6;">
+                  <td style="padding:6px 8px;"><span style="background:${typeColor}15;color:${typeColor};padding:2px 8px;border-radius:10px;font-size:12px;font-weight:500;">${esc(evType)}</span></td>
+                  <td style="padding:6px 8px;">${evTime}</td>
+                  <td style="padding:6px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(evCampaign)}">${esc(evCampaign)}</td>
+                  <td style="padding:6px 8px;">${esc(evKeyword)}</td>
+                  <td style="padding:6px 8px;font-weight:500;">${evPayout}</td>
+                  <td style="padding:6px 8px;">${esc(evLoc)}</td>
+                </tr>`;
+              }
+              evHtml += '</tbody></table>';
+              evContainer.innerHTML = evHtml;
+            } else {
+              evContainer.innerHTML = '<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">RedTrack Events</h4><div style="color:#9ca3af;font-size:13px;">No events found for this click ID</div>';
+            }
+          } catch (evErr) {
+            const evContainer = document.getElementById('rtEvents-' + c.id);
+            if (evContainer) evContainer.innerHTML = '<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin:0 0 8px;">RedTrack Events</h4><div style="color:#ef4444;font-size:13px;">Error: ' + evErr.message + '</div>';
+          }
+        }
       } catch (e) {
         content.innerHTML = '<div style="color:#ef4444;">Error loading details: ' + e.message + '</div>';
       }
