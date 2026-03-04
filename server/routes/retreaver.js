@@ -437,7 +437,7 @@ router.get('/calls/:id/events', requireAuth, async (req, res) => {
 
 // ─── TRANSCRIBE + SCORE ────────────────────────────────────
 
-// Background transcription worker
+// Background transcription worker — Step 1: OpenAI Whisper, Step 2: Claude scoring
 async function transcribeCallBackground(callId) {
   const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
   if (!call || !call.recording_url) return;
@@ -445,6 +445,7 @@ async function transcribeCallBackground(callId) {
   try {
     db.prepare('UPDATE calls SET transcript_status = ? WHERE id = ?').run('processing', call.id);
 
+    // --- Step 1: Download audio ---
     console.log(`Transcribing call ${call.id}: downloading from ${call.recording_url.slice(0, 80)}...`);
     const audioResp = await fetch(call.recording_url);
     if (!audioResp.ok) throw new Error(`Failed to download recording: ${audioResp.status}`);
@@ -457,47 +458,126 @@ async function transcribeCallBackground(callId) {
       throw new Error(`Recording too large (${sizeMB}MB). Maximum is 25MB.`);
     }
 
-    const base64Audio = audioBuffer.toString('base64');
+    // --- Step 2: Transcribe with OpenAI Whisper ---
+    const openaiKey = (process.env.OPENAI_API_KEY || '').replace(/\s+/g, '');
+    if (!openaiKey) throw new Error('OPENAI_API_KEY not configured on server');
 
-    let mediaType = 'audio/mpeg';
-    if (call.recording_url.includes('.wav')) mediaType = 'audio/wav';
-    else if (call.recording_url.includes('.mp4') || call.recording_url.includes('.m4a')) mediaType = 'audio/mp4';
+    // Determine file extension for the form upload
+    let ext = 'mp3';
+    if (call.recording_url.includes('.wav')) ext = 'wav';
+    else if (call.recording_url.includes('.mp4')) ext = 'mp4';
+    else if (call.recording_url.includes('.m4a')) ext = 'm4a';
 
-    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
+    // Build multipart form data manually
+    const boundary = '----FormBoundary' + Date.now().toString(36);
+    const formParts = [];
+
+    // File part
+    formParts.push(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="call.${ext}"\r\n` +
+      `Content-Type: audio/${ext === 'mp3' ? 'mpeg' : ext}\r\n\r\n`
+    );
+    formParts.push(audioBuffer);
+    formParts.push('\r\n');
+
+    // Model part
+    formParts.push(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="model"\r\n\r\n` +
+      `whisper-1\r\n`
+    );
+
+    // Language hint
+    formParts.push(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="language"\r\n\r\n` +
+      `en\r\n`
+    );
+
+    // Response format
+    formParts.push(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="response_format"\r\n\r\n` +
+      `text\r\n`
+    );
+
+    formParts.push(`--${boundary}--\r\n`);
+
+    // Combine parts into a single buffer
+    const bodyParts = formParts.map(p => typeof p === 'string' ? Buffer.from(p) : p);
+    const formBody = Buffer.concat(bodyParts);
+
+    console.log(`Transcribing call ${call.id}: sending to OpenAI Whisper...`);
+    const whisperResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      body: formBody
+    });
+
+    if (!whisperResp.ok) {
+      const errText = await whisperResp.text();
+      throw new Error(`Whisper API error ${whisperResp.status}: ${errText.slice(0, 300)}`);
+    }
+
+    const transcript = await whisperResp.text();
+    console.log(`Transcribing call ${call.id}: Whisper returned ${transcript.length} chars`);
+
+    if (!transcript || transcript.trim().length < 5) {
+      // Very short or empty — likely silence/hangup
+      db.prepare(`UPDATE calls SET
+        transcript = ?,
+        call_score = 1,
+        score_reason = 'No speech detected — likely hangup or silence',
+        transferred = 0,
+        transcript_status = 'completed'
+        WHERE id = ?`).run(transcript || '(no speech)', call.id);
+      console.log(`Transcription complete for call ${call.id}: no speech detected, score=1`);
+      return;
+    }
+
+    // --- Step 3: Score with Claude ---
+    const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s+/g, '');
+    if (!anthropicKey) {
+      // Save transcript without scoring
+      db.prepare(`UPDATE calls SET transcript = ?, transcript_status = 'completed' WHERE id = ?`).run(transcript, call.id);
+      console.log(`Transcription complete for call ${call.id}: saved transcript (no scoring — ANTHROPIC_API_KEY missing)`);
+      return;
+    }
+
     const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey });
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
 
+    console.log(`Transcribing call ${call.id}: scoring with Claude...`);
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
+      max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: [
-          {
-            type: 'audio',
-            source: { type: 'base64', media_type: mediaType, data: base64Audio }
-          },
-          {
-            type: 'text',
-            text: `You are analyzing a phone call for Coastal Debt Resolve, an MCA debt settlement company.
+        content: `You are analyzing a phone call transcript for Coastal Debt Resolve, an MCA debt settlement company.
 
-Listen to this call and return a JSON object with:
-1. transcript — full conversation with speaker labels (Agent: / Caller:)
-2. score — qualification score 1-10
-3. score_reason — brief explanation of the score
-4. transferred — boolean, was the call transferred to a specialist?
-5. summary — one-sentence summary
+Here is the transcript:
+---
+${transcript}
+---
+
+Return a JSON object with:
+1. score — qualification score 1-10
+2. score_reason — brief explanation of the score (1 sentence)
+3. transferred — boolean, was the call transferred to a specialist?
+4. summary — one-sentence summary of the call
 
 SCORING:
 - 10: Call was transferred to a specialist/closer
 - 8-9: Qualified — has MCA/business debt, interested in settlement services
 - 5-7: Partial — some interest, gathering info, uncertain
 - 3-4: Low — not the right fit, not interested, unqualified
-- 1-2: Spam, wrong number, hangup, or <30 seconds
+- 1-2: Spam, wrong number, hangup, or <30 seconds of conversation
 
 Return ONLY valid JSON, no markdown fences.`
-          }
-        ]
       }]
     });
 
@@ -512,7 +592,7 @@ Return ONLY valid JSON, no markdown fences.`
       transferred = ?,
       transcript_status = 'completed'
       WHERE id = ?`).run(
-      result.transcript || '',
+      transcript,
       result.score || 0,
       result.score_reason || result.summary || '',
       result.transferred ? 1 : 0,
@@ -521,7 +601,10 @@ Return ONLY valid JSON, no markdown fences.`
 
     console.log(`Transcription complete for call ${call.id}: score=${result.score}`);
   } catch (err) {
-    const safeMsg = (err.message || 'Unknown error').replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***').slice(0, 500);
+    const safeMsg = (err.message || 'Unknown error')
+      .replace(/sk-ant-[a-zA-Z0-9_-]+/g, 'sk-ant-***')
+      .replace(/sk-[a-zA-Z0-9]{20,}/g, 'sk-***')
+      .slice(0, 500);
     console.error(`Transcription error for call ${callId}:`, safeMsg);
     db.prepare('UPDATE calls SET transcript_status = ?, score_reason = ? WHERE id = ?').run('failed', 'Error: ' + safeMsg, callId);
   }
@@ -537,8 +620,8 @@ router.post('/calls/:id/transcribe', requireAuth, async (req, res) => {
     return res.json({ success: true, message: 'Already processing' });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(400).json({ error: 'OPENAI_API_KEY not configured on server. Add it in Railway environment variables.' });
   }
 
   // Mark as processing and respond immediately
@@ -559,8 +642,8 @@ router.get('/calls/:id/transcript-status', requireAuth, (req, res) => {
 
 // POST /calls/transcribe-batch - Kick off async batch transcription
 router.post('/calls/transcribe-batch', requireAuth, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(400).json({ error: 'OPENAI_API_KEY not configured on server. Add it in Railway environment variables.' });
   }
 
   const pending = db.prepare(`SELECT id FROM calls WHERE transcript_status = 'pending' AND recording_url != '' AND recording_url IS NOT NULL ORDER BY call_start DESC LIMIT 10`).all();
