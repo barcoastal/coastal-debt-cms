@@ -237,7 +237,7 @@ router.get('/generations/batch-status', authenticateToken, (req, res) => {
   if (ids.length === 0) return res.json([]);
 
   const placeholders = ids.map(() => '?').join(',');
-  const generations = db.prepare(`SELECT id, status, image_url, error_message, size_label FROM ad_generations WHERE id IN (${placeholders})`).all(...ids);
+  const generations = db.prepare(`SELECT id, status, image_url, edited_image_url, error_message, size_label, width, height FROM ad_generations WHERE id IN (${placeholders})`).all(...ids);
   res.json(generations);
 });
 
@@ -309,6 +309,82 @@ router.post('/settings', authenticateToken, (req, res) => {
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'ad_generator_settings', null, 'Updated AI API keys', req.ip);
   res.json({ message: 'Settings saved' });
+});
+
+// ============ LOGO ============
+
+// Logo multer instance
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `ad-logo-${Date.now()}${ext}`);
+  }
+});
+const logoUpload = multer({
+  storage: logoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.png', '.jpg', '.jpeg', '.webp', '.svg'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .png, .jpg, .jpeg, .webp, .svg files are allowed'));
+    }
+  }
+});
+
+// Get stored logo URL
+router.get('/logo', authenticateToken, (req, res) => {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('ad_generator_logo_url');
+  res.json({ logo_url: row ? row.value : null });
+});
+
+// Upload logo
+router.post('/logo', authenticateToken, (req, res) => {
+  logoUpload.single('logo')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 5MB)' : err.message });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const logoUrl = `/lp/uploads/${req.file.filename}`;
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?')
+      .run('ad_generator_logo_url', logoUrl, logoUrl);
+
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'ad_generator_logo', null, 'Uploaded ad generator logo', req.ip);
+    res.json({ logo_url: logoUrl, message: 'Logo uploaded' });
+  });
+});
+
+// ============ SAVE EDIT ============
+
+router.post('/generations/:id/save-edit', authenticateToken, async (req, res) => {
+  const { image_base64 } = req.body;
+  if (!image_base64) return res.status(400).json({ error: 'image_base64 is required' });
+
+  const gen = db.prepare('SELECT id FROM ad_generations WHERE id = ?').get(req.params.id);
+  if (!gen) return res.status(404).json({ error: 'Generation not found' });
+
+  try {
+    // Strip data URI prefix if present
+    const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, '');
+    const filename = `ad-edited-${gen.id}-${Date.now()}.png`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+
+    const editedUrl = `/lp/uploads/${filename}`;
+    db.prepare('UPDATE ad_generations SET edited_image_url = ? WHERE id = ?').run(editedUrl, gen.id);
+
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'ad_generation', gen.id, 'Saved edited ad image', req.ip);
+    res.json({ edited_image_url: editedUrl, message: 'Edit saved' });
+  } catch (err) {
+    console.error('Save edit error:', err);
+    res.status(500).json({ error: 'Failed to save edited image' });
+  }
 });
 
 // ============ BACKGROUND PROCESSING ============

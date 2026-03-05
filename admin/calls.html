@@ -272,6 +272,7 @@
               <th>Caller</th>
               <th>Campaign</th>
               <th>Keyword</th>
+              <th>Visitor URL</th>
               <th>Duration</th>
               <th>Score</th>
               <th>Transferred</th>
@@ -280,7 +281,7 @@
             </tr>
           </thead>
           <tbody id="callsTable">
-            <tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af;">Loading...</td></tr>
+            <tr><td colspan="10" style="text-align:center;padding:40px;color:#9ca3af;">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -332,14 +333,14 @@
         const data = await api('/api/retreaver/calls?' + params.toString());
         renderCalls(data.calls, data.pagination);
       } catch (e) {
-        document.getElementById('callsTable').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#ef4444;">Error loading calls: ' + e.message + '</td></tr>';
+        document.getElementById('callsTable').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:#ef4444;">Error loading calls: ' + e.message + '</td></tr>';
       }
     }
 
     function renderCalls(calls, pagination) {
       const tbody = document.getElementById('callsTable');
       if (!calls || calls.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af;">No calls found. Click "Sync Now" to fetch calls from Retreaver.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:#9ca3af;">No calls found. Click "Sync Now" to fetch calls from Retreaver.</td></tr>';
         document.getElementById('paginationInfo').textContent = '';
         document.getElementById('paginationControls').innerHTML = '';
         return;
@@ -384,11 +385,24 @@
           eventsHtml = '<span style="color:#d1d5db;font-size:11px;">-</span>';
         }
 
+        // Visitor URL — show just the path for brevity
+        let visitorUrlDisplay = '-';
+        if (c.visitor_url) {
+          try {
+            const vu = new URL(c.visitor_url);
+            visitorUrlDisplay = vu.pathname + (vu.search ? '?' + vu.searchParams.toString().slice(0, 30) : '');
+            if (visitorUrlDisplay.length > 40) visitorUrlDisplay = visitorUrlDisplay.slice(0, 37) + '...';
+          } catch (e) {
+            visitorUrlDisplay = c.visitor_url.length > 40 ? c.visitor_url.slice(0, 37) + '...' : c.visitor_url;
+          }
+        }
+
         html += `<tr class="clickable-row" onclick="toggleExpand(${c.id}, this)">
           <td>${date}</td>
           <td>${esc(caller)}</td>
           <td>${esc(c.campaign_name || '-')}</td>
           <td>${esc(c.keyword || '-')}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;" title="${esc(c.visitor_url || '')}">${c.visitor_url ? `<a href="${esc(c.visitor_url)}" target="_blank" onclick="event.stopPropagation()" style="color:#3052FF;">${esc(visitorUrlDisplay)}</a>` : '<span style="color:#d1d5db;">-</span>'}</td>
           <td class="duration-cell">${duration}</td>
           <td>${scoreHtml}</td>
           <td>${transferHtml}</td>
@@ -400,7 +414,7 @@
           </td>
         </tr>
         <tr class="expand-row" id="expand-${c.id}">
-          <td colspan="9">
+          <td colspan="10">
             <div class="expand-content" id="expandContent-${c.id}">Loading...</div>
           </td>
         </tr>`;
@@ -471,6 +485,7 @@
           <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${esc(c.status)}</span></div>
           <div class="detail-row"><span class="detail-label">Disposition</span><span class="detail-value">${esc(c.disposition || '-')}</span></div>
           <div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value">${formatDuration(c.duration)}</span></div>
+          <div class="detail-row"><span class="detail-label">Visitor URL</span><span class="detail-value" style="font-size:11px;word-break:break-all;">${c.visitor_url ? `<a href="${esc(c.visitor_url)}" target="_blank" style="color:#3052FF;">${esc(c.visitor_url)}</a>` : '-'}</span></div>
           <div class="detail-row"><span class="detail-label">RT Click ID</span><span class="detail-value" style="font-family:monospace;font-size:11px;">${esc(c.rt_clickid || '-')}</span></div>
           <div class="detail-row"><span class="detail-label">ELI Click ID</span><span class="detail-value" style="font-family:monospace;font-size:11px;">${esc(c.eli_clickid || '-')}</span></div>
         </div>`;

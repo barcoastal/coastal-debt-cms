@@ -110,6 +110,27 @@ router.post('/test', requireAuth, async (req, res) => {
 
 // ─── CALL SYNC ────────────────────────────────────────────
 
+// Pre-fetch campaign list and build cid → name map
+async function fetchCampaignMap(apiKey, companyId) {
+  const map = {};
+  try {
+    const resp = await fetch(`https://api.retreaver.com/campaigns.json?api_key=${encodeURIComponent(apiKey)}&company_id=${encodeURIComponent(companyId)}`);
+    if (resp.ok) {
+      const raw = await resp.json();
+      if (Array.isArray(raw)) {
+        for (const item of raw) {
+          const c = item.campaign || item;
+          if (c.cid) map[c.cid] = c.name || c.display_name || ('Campaign ' + c.id);
+          if (c.id) map[c.id.toString()] = c.name || c.display_name || ('Campaign ' + c.id);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Retreaver: failed to fetch campaign map:', e.message);
+  }
+  return map;
+}
+
 async function syncCalls() {
   const config = db.prepare('SELECT * FROM retreaver_config WHERE id = 1').get();
   if (!config || !config.api_key) return { synced: 0, skipped: 0, error: 'Not configured' };
@@ -118,14 +139,22 @@ async function syncCalls() {
   const newCallIds = []; // Track newly inserted calls for auto-transcription
   const perPage = 25;
 
-  // Resolve campaign name from filter
-  const campaignFilterName = config.campaign_filter_name || '';
+  // Pre-fetch all campaigns for name resolution
+  const campaignMap = await fetchCampaignMap(config.api_key, config.company_id);
+  console.log(`Retreaver sync: loaded ${Object.keys(campaignMap).length / 2} campaigns for name resolution`);
 
   // If campaign_filter_id looks numeric, resolve it to the cid hash
   let campaignCid = config.campaign_filter_id || '';
   if (campaignCid && /^\d+$/.test(campaignCid)) {
+    // Look up in our map
+    for (const [key, name] of Object.entries(campaignMap)) {
+      if (key === campaignCid && key.length > 10) {
+        // This is a cid (hash), not a numeric ID
+        continue;
+      }
+    }
+    // Try resolving from campaign list
     try {
-      console.log(`Retreaver sync: resolving numeric campaign ID ${campaignCid} to cid hash...`);
       const campResp = await fetch(`https://api.retreaver.com/campaigns.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}`);
       if (campResp.ok) {
         const camps = await campResp.json();
@@ -135,7 +164,6 @@ async function syncCalls() {
             if (c.id?.toString() === campaignCid && c.cid) {
               console.log(`Retreaver sync: resolved campaign ${campaignCid} → cid ${c.cid}`);
               campaignCid = c.cid;
-              // Update DB so we don't have to resolve again
               db.prepare('UPDATE retreaver_config SET campaign_filter_id = ? WHERE id = 1').run(c.cid);
               break;
             }
@@ -150,6 +178,7 @@ async function syncCalls() {
   try {
     while (true) {
       let url = `https://api.retreaver.com/calls.json?api_key=${encodeURIComponent(config.api_key)}&company_id=${encodeURIComponent(config.company_id)}&per_page=${perPage}&page=${page}`;
+      // Only filter by campaign if one is set
       if (campaignCid) {
         url += `&client_cid=${encodeURIComponent(campaignCid)}`;
       }
@@ -177,7 +206,7 @@ async function syncCalls() {
         if (existing) { skipped++; continue; }
 
         try {
-          const inserted = processCallData(call, campaignFilterName);
+          const inserted = processCallData(call, campaignMap);
           if (inserted && inserted.hasRecording) newCallIds.push(inserted.id);
           synced++;
         } catch (insertErr) {
@@ -708,7 +737,8 @@ router.get('/stats', requireAuth, (req, res) => {
 // ─── WEBHOOK (REAL-TIME) ─────────────────────────────────
 
 // Helper: process a single call object from the API and insert into DB
-function processCallData(call, campaignFilterName) {
+// campaignMap: { cid → name, numericId → name } for resolving campaign names
+function processCallData(call, campaignMap) {
   const uuid = call.uuid;
   if (!uuid) return null;
 
@@ -726,19 +756,24 @@ function processCallData(call, campaignFilterName) {
   // RedTrack click ID
   const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || '';
 
+  // Visitor URL (store directly)
+  const visitorUrl = call.visitor_url || '';
+
   // Extract keyword and ad group from visitor_url UTM params
   let keyword = '', adGroup = '', utmCampaign = '';
-  if (call.visitor_url) {
+  if (visitorUrl) {
     try {
-      const vUrl = new URL(call.visitor_url);
+      const vUrl = new URL(visitorUrl);
       keyword = vUrl.searchParams.get('utm_term') || vUrl.searchParams.get('hsa_kw') || '';
       adGroup = vUrl.searchParams.get('hsa_grp') || vUrl.searchParams.get('sub4') || '';
       utmCampaign = vUrl.searchParams.get('utm_campaign') || '';
     } catch (e) {}
   }
 
+  // Resolve campaign name from map (cid → name), fall back to UTM, then generic
   const campaignId = call.cid || call.system_campaign_id?.toString() || '';
-  const campaignName = campaignFilterName || utmCampaign || ('Campaign ' + campaignId);
+  const mapObj = typeof campaignMap === 'object' && campaignMap !== null ? campaignMap : {};
+  const campaignName = mapObj[campaignId] || mapObj[call.system_campaign_id?.toString()] || utmCampaign || (campaignId ? ('Campaign ' + campaignId) : 'Unknown');
   const transferred = call.converted ? 1 : 0;
   const callerNumber = call.caller || '';
   const formattedCaller = formatPhoneNumber(callerNumber);
@@ -756,8 +791,8 @@ function processCallData(call, campaignFilterName) {
     retreaver_uuid, caller_number, formatted_caller_number, campaign_name, campaign_id,
     ad_group, keyword, rt_clickid, eli_clickid, visitor_id, lead_id,
     duration, status, disposition, transferred, recording_url,
-    transcript_status, tags, metadata, call_start, call_end
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
+    visitor_url, transcript_status, tags, metadata, call_start, call_end
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`).run(
     uuid, callerNumber, formattedCaller, campaignName, campaignId,
     adGroup, keyword, rtClickid, eliClickid, visitorId, leadId,
     call.total_duration || call.dialed_call_duration || 0,
@@ -765,8 +800,9 @@ function processCallData(call, campaignFilterName) {
     call.hung_up_by || '',
     transferred,
     call.recording_url || '',
+    visitorUrl,
     JSON.stringify(tags),
-    JSON.stringify({ visitor_url: call.visitor_url || '', via: call.via || '', caller_state: call.caller_state || '', caller_city: call.caller_city || '' }),
+    JSON.stringify({ via: call.via || '', caller_state: call.caller_state || '', caller_city: call.caller_city || '' }),
     call.start_time || call.created_at || null,
     call.end_time || null
   );
@@ -830,8 +866,8 @@ router.post('/webhook', async (req, res) => {
     const data = await resp.json();
     const call = data.call || data;
 
-    const campaignFilterName = config.campaign_filter_name || '';
-    const inserted = processCallData(call, campaignFilterName);
+    const campaignMap = await fetchCampaignMap(config.api_key, config.company_id);
+    const inserted = processCallData(call, campaignMap);
 
     if (inserted) {
       console.log(`Retreaver webhook: ingested call ${callUuid}`);
@@ -881,8 +917,8 @@ router.get('/webhook', async (req, res) => {
 
     const data = await resp.json();
     const call = data.call || data;
-    const campaignFilterName = config.campaign_filter_name || '';
-    const inserted = processCallData(call, campaignFilterName);
+    const campaignMap = await fetchCampaignMap(config.api_key, config.company_id);
+    const inserted = processCallData(call, campaignMap);
 
     if (inserted) {
       console.log(`Retreaver webhook (GET): ingested call ${callUuid}`);

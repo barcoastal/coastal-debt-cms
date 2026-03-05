@@ -1425,4 +1425,26 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ad_gen_status ON ad_generations(status);
 `);
 
+// Add edited_image_url column to ad_generations (for design editor)
+try { db.exec(`ALTER TABLE ad_generations ADD COLUMN edited_image_url TEXT`); } catch (e) {}
+
+// Add visitor_url column to calls (was buried in metadata JSON)
+try { db.exec(`ALTER TABLE calls ADD COLUMN visitor_url TEXT DEFAULT ''`); } catch (e) {}
+
+// Backfill visitor_url from metadata JSON for existing calls
+try {
+  const callsToMigrate = db.prepare(`SELECT id, metadata FROM calls WHERE visitor_url = '' AND metadata IS NOT NULL AND metadata != '{}'`).all();
+  let migrated = 0;
+  for (const c of callsToMigrate) {
+    try {
+      const meta = JSON.parse(c.metadata);
+      if (meta.visitor_url) {
+        db.prepare('UPDATE calls SET visitor_url = ? WHERE id = ?').run(meta.visitor_url, c.id);
+        migrated++;
+      }
+    } catch (e) {}
+  }
+  if (migrated > 0) console.log(`Backfilled visitor_url for ${migrated} calls`);
+} catch (e) {}
+
 module.exports = db;

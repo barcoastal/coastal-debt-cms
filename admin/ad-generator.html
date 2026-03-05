@@ -69,7 +69,63 @@
     .switch .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: #fff; transition: 0.2s; border-radius: 50%; }
     .switch input:checked + .slider { background: #3052FF; }
     .switch input:checked + .slider:before { transform: translateX(16px); }
+
+    /* ============ DESIGN EDITOR MODAL ============ */
+    .editor-overlay {
+      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85);
+      display: none; flex-direction: row;
+    }
+    .editor-overlay.open { display: flex; }
+    .editor-canvas-area {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative; background: #1a1a2e;
+    }
+    .editor-canvas-wrapper {
+      position: relative; transform-origin: center center;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    }
+    .editor-sidebar {
+      width: 300px; background: #fff; overflow-y: auto; display: flex; flex-direction: column;
+      border-left: 1px solid #e5e7eb;
+    }
+    .editor-sidebar-header {
+      padding: 16px 20px; border-bottom: 1px solid #e5e7eb;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .editor-sidebar-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1f2937; }
+    .editor-sidebar-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; line-height: 1; }
+    .editor-sidebar-close:hover { color: #dc2626; }
+    .editor-section {
+      padding: 16px 20px; border-bottom: 1px solid #f3f4f6;
+    }
+    .editor-section h4 {
+      font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase;
+      letter-spacing: 0.05em; margin: 0 0 10px;
+    }
+    .editor-section .form-input { font-size: 13px; padding: 8px 10px; }
+    .editor-section .btn { font-size: 12px; padding: 7px 12px; }
+    .editor-logo-preview {
+      width: 100%; max-height: 60px; object-fit: contain; background: #f9fafb;
+      border: 1px dashed #d1d5db; border-radius: 6px; padding: 8px; margin-bottom: 8px;
+    }
+    .editor-pos-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .editor-pos-btns .btn { flex: 1; min-width: 50px; font-size: 11px; padding: 5px 6px; }
+    .editor-quick-btns { display: flex; flex-direction: column; gap: 6px; }
+    .editor-quick-btns .btn { text-align: left; font-size: 12px; }
+    .editor-actions { padding: 16px 20px; margin-top: auto; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 8px; }
+    .editor-actions .btn { width: 100%; text-align: center; }
+    .editor-selected-info {
+      display: none; padding: 12px 20px; background: #fef3c7; border-bottom: 1px solid #fde68a;
+    }
+    .editor-selected-info.visible { display: flex; align-items: center; justify-content: space-between; }
+    .editor-color-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+    .editor-color-row input[type="color"] { width: 32px; height: 32px; border: 1px solid #d1d5db; border-radius: 4px; padding: 1px; cursor: pointer; }
+    @media (max-width: 900px) {
+      .editor-overlay { flex-direction: column; }
+      .editor-sidebar { width: 100%; max-height: 45vh; border-left: none; border-top: 1px solid #e5e7eb; }
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.4.0/dist/fabric.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -360,6 +416,93 @@
     </div>
   </div>
 
+  <!-- Design Editor Modal -->
+  <div class="editor-overlay" id="editorOverlay">
+    <div class="editor-canvas-area">
+      <div class="editor-canvas-wrapper" id="editorCanvasWrapper">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+    </div>
+    <div class="editor-sidebar">
+      <div class="editor-sidebar-header">
+        <h3>Design Editor</h3>
+        <button class="editor-sidebar-close" onclick="closeEditor()">&times;</button>
+      </div>
+
+      <!-- Selected Object -->
+      <div class="editor-selected-info" id="editorSelectedInfo">
+        <span style="font-size:13px;font-weight:600;color:#92400e;">Object selected</span>
+        <button class="btn btn-secondary btn-small" onclick="deleteSelected()" style="color:#dc2626;font-size:11px;">Delete</button>
+      </div>
+
+      <!-- Logo Section -->
+      <div class="editor-section">
+        <h4>Logo</h4>
+        <img id="editorLogoPreview" class="editor-logo-preview" src="" alt="No logo" style="display:none;">
+        <div id="editorLogoUploadArea">
+          <input type="file" id="editorLogoFile" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadEditorLogo(this)">
+          <button class="btn btn-secondary" onclick="document.getElementById('editorLogoFile').click()" style="width:100%;font-size:12px;">Upload Logo</button>
+        </div>
+        <button class="btn btn-primary" id="addLogoBtn" onclick="addLogoToCanvas()" style="width:100%;margin-top:8px;display:none;">Add to Canvas</button>
+        <div class="editor-pos-btns" id="logoPosButtons" style="display:none;">
+          <button class="btn btn-secondary" onclick="positionLogo('tl')">Top-Left</button>
+          <button class="btn btn-secondary" onclick="positionLogo('tr')">Top-Right</button>
+          <button class="btn btn-secondary" onclick="positionLogo('bl')">Bot-Left</button>
+          <button class="btn btn-secondary" onclick="positionLogo('br')">Bot-Right</button>
+        </div>
+      </div>
+
+      <!-- Text Section -->
+      <div class="editor-section">
+        <h4>Add Text</h4>
+        <input type="text" id="editorTextInput" class="form-input" placeholder="Enter text..." style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select id="editorFontSize" class="form-input" style="width:50%;">
+            <option value="24">24px</option>
+            <option value="32">32px</option>
+            <option value="40">40px</option>
+            <option value="48" selected>48px</option>
+            <option value="56">56px</option>
+            <option value="64">64px</option>
+            <option value="72">72px</option>
+            <option value="96">96px</option>
+          </select>
+          <select id="editorFontWeight" class="form-input" style="width:50%;">
+            <option value="normal">Regular</option>
+            <option value="bold" selected>Bold</option>
+          </select>
+        </div>
+        <div class="editor-color-row">
+          <label style="font-size:12px;color:#6b7280;">Text</label>
+          <input type="color" id="editorTextColor" value="#ffffff">
+          <label style="font-size:12px;color:#6b7280;margin-left:8px;">Background</label>
+          <input type="color" id="editorTextBg" value="#3052FF">
+          <label class="switch" style="margin-left:4px;" title="Enable text background">
+            <input type="checkbox" id="editorTextBgEnabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button class="btn btn-primary" onclick="addTextToCanvas()" style="width:100%;margin-top:10px;">Add Text</button>
+      </div>
+
+      <!-- Quick Add -->
+      <div class="editor-section">
+        <h4>Quick Add</h4>
+        <div class="editor-quick-btns">
+          <button class="btn btn-secondary" onclick="addPresetText('Get Your Free Consultation', 40, 'bold', '#FFFFFF', '#3052FF')">CTA Button</button>
+          <button class="btn btn-secondary" onclick="addPresetText('coastaldebtresolve.com', 28, 'normal', '#FFFFFF', null)">Website URL</button>
+          <button class="btn btn-secondary" onclick="addPresetText('(888) 961-5338', 32, 'bold', '#FFFFFF', null)">Phone Number</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="editor-actions">
+        <button class="btn btn-primary" onclick="saveEditorImage()">Save &amp; Export PNG</button>
+        <button class="btn btn-secondary" onclick="closeEditor()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/common.js?v=6"></script>
   <script>
     let currentProjectId = null;
@@ -553,9 +696,13 @@
       const grid = document.getElementById('genGrid');
       grid.innerHTML = generations.map(g => {
         const meta = SIZE_META[g.size_label] || { name: g.size_label, dims: '', aspect: '' };
+        const displayUrl = g.edited_image_url || g.image_url;
         let body = '';
-        if (g.status === 'completed' && g.image_url) {
-          body = `<img src="${g.image_url}" alt="${meta.name}">`;
+        if (g.status === 'completed' && displayUrl) {
+          body = `<img src="${displayUrl}" alt="${meta.name}">`;
+          if (g.edited_image_url) {
+            body += `<span style="position:absolute;top:8px;right:8px;background:#3052FF;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;">Edited</span>`;
+          }
         } else if (g.status === 'failed') {
           body = `<div style="text-align:center;"><span class="status-badge status-failed">Failed</span><div class="error-text">${escapeHtml(g.error_message || 'Unknown error')}</div></div>`;
         } else {
@@ -563,8 +710,9 @@
         }
 
         const actions = g.status === 'completed'
-          ? `<a class="btn btn-primary" href="${g.image_url}" download style="text-decoration:none;text-align:center;">Download</a>
-             <button class="btn btn-secondary" onclick="regenerate(${g.id})">Regenerate</button>`
+          ? `<a class="btn btn-primary" href="${displayUrl}" download style="text-decoration:none;text-align:center;">Download</a>
+             <button class="btn btn-secondary" onclick="openEditor(${g.id}, '${g.image_url}', ${g.width || 1200}, ${g.height || 628})">Edit</button>
+             <button class="btn btn-secondary" onclick="regenerate(${g.id})">Regen</button>`
           : g.status === 'failed'
             ? `<button class="btn btn-secondary" onclick="regenerate(${g.id})">Retry</button>`
             : '';
@@ -574,7 +722,7 @@
             <span class="size-label">${meta.name}</span>
             <span class="aspect-badge">${meta.dims}</span>
           </div>
-          <div class="gen-card-body">${body}</div>
+          <div class="gen-card-body" style="position:relative;">${body}</div>
           ${actions ? `<div class="gen-card-actions">${actions}</div>` : ''}
         </div>`;
       }).join('');
@@ -672,9 +820,10 @@
         historySection.innerHTML = '<h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Previous Generations</h3>' +
           groups.slice(1).map(group => {
             const date = new Date(group.created_at).toLocaleString();
-            const thumbs = group.items.filter(g => g.image_url).map(g =>
-              `<a href="${g.image_url}" target="_blank"><img src="${g.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" alt="${g.size_label}"></a>`
-            ).join('');
+            const thumbs = group.items.filter(g => g.image_url).map(g => {
+              const dispUrl = g.edited_image_url || g.image_url;
+              return `<a href="${dispUrl}" target="_blank"><img src="${dispUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" alt="${g.size_label}"></a>`;
+            }).join('');
             return `<div class="history-group">
               <div class="history-group-header">${escapeHtml(group.model)} &middot; ${date}</div>
               <div class="history-group-prompt">"${escapeHtml(group.prompt)}"</div>
@@ -729,10 +878,297 @@
       return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ============ DESIGN EDITOR ============
+
+    let editorCanvas = null;
+    let editorGenId = null;
+    let editorOriginalImageUrl = null;
+    let editorLogoUrl = null;
+    let editorCanvasWidth = 1200;
+    let editorCanvasHeight = 628;
+
+    // Load persisted logo on page load
+    async function loadEditorLogo() {
+      try {
+        const res = await fetch('/api/ad-generator/logo');
+        const data = await res.json();
+        if (data.logo_url) {
+          editorLogoUrl = data.logo_url;
+          const preview = document.getElementById('editorLogoPreview');
+          preview.src = data.logo_url;
+          preview.style.display = 'block';
+          document.getElementById('addLogoBtn').style.display = 'block';
+          document.getElementById('logoPosButtons').style.display = 'flex';
+        }
+      } catch (e) { console.error('Load logo error:', e); }
+    }
+
+    async function uploadEditorLogo(input) {
+      if (!input.files.length) return;
+      const form = new FormData();
+      form.append('logo', input.files[0]);
+      try {
+        const res = await fetch('/api/ad-generator/logo', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        editorLogoUrl = data.logo_url;
+        const preview = document.getElementById('editorLogoPreview');
+        preview.src = data.logo_url;
+        preview.style.display = 'block';
+        document.getElementById('addLogoBtn').style.display = 'block';
+        document.getElementById('logoPosButtons').style.display = 'flex';
+      } catch (err) {
+        alert('Logo upload failed: ' + err.message);
+      }
+    }
+
+    function openEditor(genId, imageUrl, width, height) {
+      editorGenId = genId;
+      editorOriginalImageUrl = imageUrl;
+      editorCanvasWidth = width || 1200;
+      editorCanvasHeight = height || 628;
+
+      // Show overlay
+      document.getElementById('editorOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Initialize canvas
+      initEditorCanvas(imageUrl, editorCanvasWidth, editorCanvasHeight);
+    }
+
+    function closeEditor() {
+      document.getElementById('editorOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      if (editorCanvas) {
+        editorCanvas.dispose();
+        editorCanvas = null;
+      }
+    }
+
+    function initEditorCanvas(imageUrl, w, h) {
+      const wrapper = document.getElementById('editorCanvasWrapper');
+      const canvasEl = document.getElementById('editorCanvas');
+
+      // Dispose previous
+      if (editorCanvas) { editorCanvas.dispose(); }
+
+      // Set canvas element size
+      canvasEl.width = w;
+      canvasEl.height = h;
+
+      editorCanvas = new fabric.Canvas('editorCanvas', {
+        width: w,
+        height: h,
+        selection: true,
+        preserveObjectStacking: true
+      });
+
+      // Custom control colors
+      fabric.Object.prototype.set({
+        borderColor: '#3052FF',
+        cornerColor: '#3052FF',
+        cornerStyle: 'circle',
+        cornerSize: 10,
+        transparentCorners: false
+      });
+
+      // Scale canvas to fit viewport
+      fitCanvasToViewport(w, h);
+
+      // Load background image
+      fabric.Image.fromURL(imageUrl, function(img) {
+        editorCanvas.setBackgroundImage(img, editorCanvas.renderAll.bind(editorCanvas), {
+          scaleX: w / img.width,
+          scaleY: h / img.height
+        });
+      }, { crossOrigin: 'anonymous' });
+
+      // Selection events
+      editorCanvas.on('selection:created', showSelectedInfo);
+      editorCanvas.on('selection:updated', showSelectedInfo);
+      editorCanvas.on('selection:cleared', hideSelectedInfo);
+
+      // Handle window resize
+      window._editorResizeHandler = function() { fitCanvasToViewport(w, h); };
+      window.addEventListener('resize', window._editorResizeHandler);
+    }
+
+    function fitCanvasToViewport(w, h) {
+      const area = document.querySelector('.editor-canvas-area');
+      if (!area) return;
+      const pad = 40;
+      const maxW = area.clientWidth - pad * 2;
+      const maxH = area.clientHeight - pad * 2;
+      const scale = Math.min(maxW / w, maxH / h, 1);
+
+      const wrapper = document.getElementById('editorCanvasWrapper');
+      wrapper.style.width = w + 'px';
+      wrapper.style.height = h + 'px';
+      wrapper.style.transform = `scale(${scale})`;
+    }
+
+    function showSelectedInfo() {
+      document.getElementById('editorSelectedInfo').classList.add('visible');
+    }
+    function hideSelectedInfo() {
+      document.getElementById('editorSelectedInfo').classList.remove('visible');
+    }
+
+    function deleteSelected() {
+      if (!editorCanvas) return;
+      const active = editorCanvas.getActiveObject();
+      if (active) {
+        editorCanvas.remove(active);
+        editorCanvas.discardActiveObject();
+        editorCanvas.renderAll();
+      }
+    }
+
+    function addLogoToCanvas() {
+      if (!editorCanvas || !editorLogoUrl) return;
+
+      fabric.Image.fromURL(editorLogoUrl, function(img) {
+        // Scale logo to ~20% of canvas width
+        const targetW = editorCanvasWidth * 0.2;
+        const scale = targetW / img.width;
+        img.set({
+          left: 30,
+          top: editorCanvasHeight - (img.height * scale) - 30,
+          scaleX: scale,
+          scaleY: scale
+        });
+        editorCanvas.add(img);
+        editorCanvas.setActiveObject(img);
+        editorCanvas.renderAll();
+      }, { crossOrigin: 'anonymous' });
+    }
+
+    function positionLogo(pos) {
+      if (!editorCanvas) return;
+      const active = editorCanvas.getActiveObject();
+      if (!active) {
+        // Find last image that's not the background
+        const objects = editorCanvas.getObjects();
+        const logos = objects.filter(o => o.type === 'image');
+        if (!logos.length) { alert('Add a logo first'); return; }
+        editorCanvas.setActiveObject(logos[logos.length - 1]);
+      }
+      const obj = editorCanvas.getActiveObject();
+      if (!obj) return;
+
+      const margin = 30;
+      const objW = obj.getScaledWidth();
+      const objH = obj.getScaledHeight();
+
+      switch (pos) {
+        case 'tl': obj.set({ left: margin, top: margin }); break;
+        case 'tr': obj.set({ left: editorCanvasWidth - objW - margin, top: margin }); break;
+        case 'bl': obj.set({ left: margin, top: editorCanvasHeight - objH - margin }); break;
+        case 'br': obj.set({ left: editorCanvasWidth - objW - margin, top: editorCanvasHeight - objH - margin }); break;
+      }
+      editorCanvas.renderAll();
+    }
+
+    function addTextToCanvas() {
+      if (!editorCanvas) return;
+      const text = document.getElementById('editorTextInput').value.trim();
+      if (!text) { alert('Enter text first'); return; }
+
+      const fontSize = parseInt(document.getElementById('editorFontSize').value) || 48;
+      const fontWeight = document.getElementById('editorFontWeight').value;
+      const textColor = document.getElementById('editorTextColor').value;
+      const bgEnabled = document.getElementById('editorTextBgEnabled').checked;
+      const bgColor = bgEnabled ? document.getElementById('editorTextBg').value : null;
+
+      const textObj = new fabric.Textbox(text, {
+        left: editorCanvasWidth * 0.1,
+        top: editorCanvasHeight * 0.4,
+        width: editorCanvasWidth * 0.8,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        fill: textColor,
+        textAlign: 'center',
+        backgroundColor: bgColor || '',
+        padding: bgColor ? 12 : 0,
+        editable: true,
+        splitByGrapheme: false
+      });
+
+      editorCanvas.add(textObj);
+      editorCanvas.setActiveObject(textObj);
+      editorCanvas.renderAll();
+      document.getElementById('editorTextInput').value = '';
+    }
+
+    function addPresetText(text, fontSize, fontWeight, color, bgColor) {
+      if (!editorCanvas) return;
+
+      const textObj = new fabric.Textbox(text, {
+        left: editorCanvasWidth * 0.1,
+        top: editorCanvasHeight * 0.5,
+        width: editorCanvasWidth * 0.8,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        fill: color,
+        textAlign: 'center',
+        backgroundColor: bgColor || '',
+        padding: bgColor ? 14 : 0,
+        editable: true,
+        splitByGrapheme: false
+      });
+
+      editorCanvas.add(textObj);
+      editorCanvas.setActiveObject(textObj);
+      editorCanvas.renderAll();
+    }
+
+    async function saveEditorImage() {
+      if (!editorCanvas || !editorGenId) return;
+
+      // Deselect objects so handles don't appear in export
+      editorCanvas.discardActiveObject();
+      editorCanvas.renderAll();
+
+      const dataUrl = editorCanvas.toDataURL({ format: 'png', quality: 1, multiplier: 1 });
+
+      try {
+        const res = await fetch(`/api/ad-generator/generations/${editorGenId}/save-edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: dataUrl })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        closeEditor();
+        // Refresh the project to show updated image
+        if (currentProjectId) openProject(currentProjectId);
+      } catch (err) {
+        alert('Save failed: ' + err.message);
+      }
+    }
+
+    // Keyboard shortcut: Delete/Backspace to remove selected object, Escape to close
+    document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('editorOverlay').classList.contains('open')) return;
+      // Don't intercept if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+      } else if (e.key === 'Escape') {
+        closeEditor();
+      }
+    });
+
     // Init
     loadProjects();
     loadAISettings();
     loadBrandPreprompt();
+    loadEditorLogo();
   </script>
 </body>
 </html>
