@@ -60,6 +60,13 @@
     .ab-variant-card .ab-stat { font-size: 2rem; font-weight: 700; color: #1f2937; }
     .ab-variant-card .ab-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
     .ab-winner-select { margin-top: 16px; display: flex; gap: 8px; justify-content: center; align-items: center; }
+    .faq-edit-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; position: relative; background: #f9fafb; }
+    .faq-edit-item .form-group { margin-bottom: 8px; }
+    .faq-edit-item .form-group:last-of-type { margin-bottom: 0; }
+    .faq-remove-btn { position: absolute; top: 8px; right: 8px; background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+    .faq-remove-btn:hover { background: #fecaca; }
+    .faq-add-btn { background: #f0fdf4; color: #16a34a; border: 1px dashed #86efac; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+    .faq-add-btn:hover { background: #dcfce7; }
   </style>
 </head>
 <body>
@@ -543,6 +550,8 @@
               <label>Section Subtitle</label>
               <input type="text" id="editFaqSubtitle" placeholder="Get the facts before making a decision">
             </div>
+            <div id="editFaqItems"></div>
+            <button type="button" class="faq-add-btn" onclick="addFaqItem()">+ Add FAQ</button>
           </div>
         </div>
 
@@ -786,6 +795,7 @@
       // FAQ section
       document.getElementById('editFaqTitle').value = content.faqTitle || '';
       document.getElementById('editFaqSubtitle').value = content.faqSubtitle || '';
+      renderFaqItems(content.faqItems || []);
 
       // Testimonials section
       document.getElementById('editTestimonialsTitle').value = content.testimonialsTitle || '';
@@ -865,6 +875,10 @@
         comparisonCtaText: document.getElementById('editComparisonCtaText').value,
         faqTitle: document.getElementById('editFaqTitle').value,
         faqSubtitle: document.getElementById('editFaqSubtitle').value,
+        faqItems: Array.from(document.querySelectorAll('#editFaqItems .faq-edit-item')).map(el => ({
+          question: el.querySelector('.faq-question').value,
+          answer: el.querySelector('.faq-answer').value
+        })),
         testimonialsTitle: document.getElementById('editTestimonialsTitle').value,
         testimonialsSubtitle: document.getElementById('editTestimonialsSubtitle').value,
         empathyTitle: document.getElementById('editEmpathyTitle').value,
@@ -912,6 +926,50 @@
         .replace(/\s+/g, '-');
       document.getElementById('createSlug').value = slug;
     });
+
+    function renderFaqItems(items) {
+      const container = document.getElementById('editFaqItems');
+      container.innerHTML = items.map((item, i) => `
+        <div class="faq-edit-item">
+          <button type="button" class="faq-remove-btn" onclick="removeFaqItem(this)">Remove</button>
+          <div class="form-group">
+            <label>Question ${i + 1}</label>
+            <input type="text" class="faq-question" value="${(item.question || '').replace(/"/g, '&quot;')}" placeholder="Enter question...">
+          </div>
+          <div class="form-group">
+            <label>Answer</label>
+            <textarea class="faq-answer" rows="2" placeholder="Enter answer...">${item.answer || ''}</textarea>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addFaqItem() {
+      const container = document.getElementById('editFaqItems');
+      const count = container.querySelectorAll('.faq-edit-item').length;
+      const div = document.createElement('div');
+      div.className = 'faq-edit-item';
+      div.innerHTML = `
+        <button type="button" class="faq-remove-btn" onclick="removeFaqItem(this)">Remove</button>
+        <div class="form-group">
+          <label>Question ${count + 1}</label>
+          <input type="text" class="faq-question" placeholder="Enter question...">
+        </div>
+        <div class="form-group">
+          <label>Answer</label>
+          <textarea class="faq-answer" rows="2" placeholder="Enter answer..."></textarea>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeFaqItem(btn) {
+      btn.closest('.faq-edit-item').remove();
+      // Re-number labels
+      document.querySelectorAll('#editFaqItems .faq-edit-item').forEach((el, i) => {
+        el.querySelector('label').textContent = 'Question ' + (i + 1);
+      });
+    }
 
     async function generateAI() {
       const input = document.getElementById('aiKeywordsEdit').value.trim();
@@ -989,7 +1047,9 @@
         if (c.faq) {
           document.getElementById('editFaqTitle').value = c.faq.title || '';
           document.getElementById('editFaqSubtitle').value = c.faq.subtitle || '';
-          currentEditContent.faqItems = c.faq.items || [];
+          const faqItems = c.faq.items || [];
+          currentEditContent.faqItems = faqItems;
+          renderFaqItems(faqItems);
         }
 
         // Final CTA
