@@ -387,6 +387,51 @@ router.post('/generations/:id/save-edit', authenticateToken, async (req, res) =>
   }
 });
 
+// ============ GENERATE AD COPY (AI) ============
+
+router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
+  const { prompt, size_label } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+  const fallback = { headline: 'Settle Your Business Debt', cta: 'Get a Free Consultation' };
+
+  try {
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) return res.json(fallback);
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const sizeHint = size_label ? ` The ad size is "${size_label}".` : '';
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `You write ad copy for Coastal Debt Resolve, an MCA debt settlement company. Given the ad prompt below, produce a short headline (max 8 words) and a CTA (max 5 words).${sizeHint}
+
+Ad prompt: "${prompt}"
+
+Respond with ONLY valid JSON: {"headline":"...","cta":"..."}`
+      }]
+    });
+
+    const text = message.content[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return res.json(fallback);
+
+    const parsed = JSON.parse(match[0]);
+    res.json({
+      headline: (parsed.headline || fallback.headline).slice(0, 80),
+      cta: (parsed.cta || fallback.cta).slice(0, 40)
+    });
+  } catch (err) {
+    console.error('Ad copy generation error:', err.message);
+    res.json(fallback);
+  }
+});
+
 // ============ BACKGROUND PROCESSING ============
 
 async function processGeneration(genId, model, prompt, referenceImageUrls, size, useBrand = true) {

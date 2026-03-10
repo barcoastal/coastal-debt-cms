@@ -120,6 +120,18 @@
     .editor-selected-info.visible { display: flex; align-items: center; justify-content: space-between; }
     .editor-color-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
     .editor-color-row input[type="color"] { width: 32px; height: 32px; border: 1px solid #d1d5db; border-radius: 4px; padding: 1px; cursor: pointer; }
+    /* Auto-Compose loading overlay */
+    .editor-compose-loading {
+      position: absolute; inset: 0; z-index: 10;
+      background: rgba(26,26,46,0.80);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; color: #fff; font-size: 15px; font-weight: 500;
+    }
+    .editor-compose-loading .spinner-lg {
+      width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: #3052FF; border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+
     @media (max-width: 900px) {
       .editor-overlay { flex-direction: column; }
       .editor-sidebar { width: 100%; max-height: 45vh; border-left: none; border-top: 1px solid #e5e7eb; }
@@ -510,6 +522,7 @@
     let pollingInterval = null;
     let activeGenIds = [];
     let brandPrepromptText = '';
+    let generationsCache = {};
 
     function toggleBrandPrompt() {
       const body = document.getElementById('brandPromptBody');
@@ -694,6 +707,9 @@
 
     function renderGenCards(generations) {
       const grid = document.getElementById('genGrid');
+      // Populate cache
+      generations.forEach(g => { generationsCache[g.id] = g; });
+
       grid.innerHTML = generations.map(g => {
         const meta = SIZE_META[g.size_label] || { name: g.size_label, dims: '', aspect: '' };
         const displayUrl = g.edited_image_url || g.image_url;
@@ -711,6 +727,7 @@
 
         const actions = g.status === 'completed'
           ? `<a class="btn btn-primary" href="${displayUrl}" download style="text-decoration:none;text-align:center;">Download</a>
+             <button class="btn btn-secondary" onclick="autoCompose(${g.id}, '${g.image_url}', ${g.width || 1200}, ${g.height || 628}, '${g.size_label}')" style="background:#eef1ff;color:#3052FF;font-weight:600;">Auto-Compose</button>
              <button class="btn btn-secondary" onclick="openEditor(${g.id}, '${g.image_url}', ${g.width || 1200}, ${g.height || 628})">Edit</button>
              <button class="btn btn-secondary" onclick="regenerate(${g.id})">Regen</button>`
           : g.status === 'failed'
@@ -779,6 +796,9 @@
     // ============ GENERATION HISTORY ============
 
     function renderGenerations(generations) {
+      // Populate cache with full generation data (includes prompt field)
+      generations.forEach(g => { generationsCache[g.id] = g; });
+
       const resultsSection = document.getElementById('resultsSection');
       const historySection = document.getElementById('historySection');
 
@@ -1122,6 +1142,104 @@
       editorCanvas.add(textObj);
       editorCanvas.setActiveObject(textObj);
       editorCanvas.renderAll();
+    }
+
+    // ============ AUTO-COMPOSE ============
+
+    function waitForCanvasReady() {
+      return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const check = () => {
+          if (editorCanvas && editorCanvas.backgroundImage) return resolve();
+          if (Date.now() - start > 10000) return reject(new Error('Canvas load timeout'));
+          setTimeout(check, 100);
+        };
+        check();
+      });
+    }
+
+    async function autoCompose(genId, imageUrl, width, height, sizeLabel) {
+      // Step 1: Open editor with background image
+      openEditor(genId, imageUrl, width, height);
+
+      // Show loading overlay
+      const canvasArea = document.querySelector('.editor-canvas-area');
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'editor-compose-loading';
+      loadingEl.innerHTML = '<div class="spinner-lg"></div><div>Generating ad copy...</div>';
+      canvasArea.appendChild(loadingEl);
+
+      try {
+        // Step 2: Generate ad copy via AI
+        const cached = generationsCache[genId];
+        const prompt = (cached && cached.prompt) || 'MCA debt settlement ad';
+
+        const [copyRes] = await Promise.all([
+          fetch('/api/ad-generator/generate-ad-copy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, size_label: sizeLabel })
+          }),
+          waitForCanvasReady()
+        ]);
+
+        const { headline, cta } = await copyRes.json();
+
+        // Determine if vertical format
+        const isVertical = sizeLabel === 'story_reel';
+
+        // Auto-place headline
+        const headlineFontSize = Math.round(width * 0.055);
+        const headlineTop = isVertical ? height * 0.05 : height * 0.08;
+
+        const headlineObj = new fabric.Textbox(headline, {
+          left: width * 0.1,
+          top: headlineTop,
+          width: width * 0.8,
+          fontSize: headlineFontSize,
+          fontWeight: 'bold',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fill: '#FFFFFF',
+          textAlign: 'center',
+          editable: true,
+          splitByGrapheme: false,
+          shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', blur: 8, offsetX: 2, offsetY: 2 })
+        });
+        editorCanvas.add(headlineObj);
+
+        // Auto-place CTA
+        const ctaFontSize = Math.round(width * 0.035);
+        const ctaTop = isVertical ? height * 0.55 : height * 0.75;
+
+        const ctaObj = new fabric.Textbox(cta, {
+          left: width * 0.2,
+          top: ctaTop,
+          width: width * 0.6,
+          fontSize: ctaFontSize,
+          fontWeight: 'bold',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fill: '#FFFFFF',
+          textAlign: 'center',
+          backgroundColor: '#3052FF',
+          padding: 14,
+          editable: true,
+          splitByGrapheme: false,
+          rx: 8,
+          ry: 8
+        });
+        editorCanvas.add(ctaObj);
+
+        // Step 3: Auto-place logo if available
+        if (editorLogoUrl) {
+          addLogoToCanvas();
+        }
+
+        editorCanvas.renderAll();
+      } catch (err) {
+        console.error('Auto-compose error:', err);
+      } finally {
+        loadingEl.remove();
+      }
     }
 
     async function saveEditorImage() {
