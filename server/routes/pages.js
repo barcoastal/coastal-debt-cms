@@ -158,7 +158,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTemplateType = template_type === 'call' ? 'call' : 'form';
+  const validTemplateType = template_type === 'call' ? 'call' : (template_type === 'game' ? 'game' : 'form');
 
   try {
     const result = db.prepare(`
@@ -199,7 +199,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTemplateType = template_type === 'call' ? 'call' : (template_type === 'form' ? 'form' : page.template_type);
+  const validTemplateType = template_type === 'call' ? 'call' : (template_type === 'game' ? 'game' : (template_type === 'form' ? 'form' : page.template_type));
 
   db.prepare(`
     UPDATE landing_pages SET
@@ -348,7 +348,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFile = page.template_type === 'call' ? 'landing-page-call.html' : 'landing-page.html';
+  const templateFile = page.template_type === 'call' ? 'landing-page-call.html' : (page.template_type === 'game' ? 'landing-page-game.html' : 'landing-page.html');
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
   if (!fs.existsSync(templatePath)) {
