@@ -978,7 +978,7 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     if (from) dateClause += ` AND segments.date >= '${from}'`;
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
-    const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
+    const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.top_impression_percentage, metrics.absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
 
     console.log('[Competition IS] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
