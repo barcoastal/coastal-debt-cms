@@ -78,21 +78,17 @@ const upload = multer({
 
 // ============ BRAND PRE-PROMPT ============
 
-const BRAND_PREPROMPT = `You are generating a static Facebook ad image for Coastal Debt Resolve, an MCA (Merchant Cash Advance) debt settlement company.
+const BRAND_PREPROMPT = `You are generating a background image for a Facebook ad for Coastal Debt Resolve, an MCA (Merchant Cash Advance) debt settlement company. Text, logos, and CTAs will be added separately in a design editor — do NOT include any text, words, letters, logos, watermarks, or UI elements in the image.
 
 BRAND GUIDELINES — follow these strictly:
-- Color palette: Primary blue #3052FF ("Future Blue"), light background #F2F4F9 ("Cyan Blue"), black #000000 for text, white #FFFFFF, accent orange #FF9000, secondary blue #7FB2FF
-- Typography: Clean, modern sans-serif font (Aeonik style). Headlines in bold/medium weight, body text in regular weight.
-- Logo: "Coastal Debt" wordmark with a chevron (>) icon and "RESOLVE" tagline below. Place the logo in the bottom-left or top-left corner.
-- Tone: Professional, empathetic, trustworthy. Never use fear tactics. Warm but authoritative.
+- Color palette: Primary blue #3052FF ("Future Blue"), light background #F2F4F9 ("Cyan Blue"), accent orange #FF9000, secondary blue #7FB2FF
+- Tone: Professional, empathetic, trustworthy. Warm but authoritative.
 - Photography style: Diverse business owners ages 21-54, positive expressions, neutral color palette with blue/cool accents. Settings include small businesses, offices, handshakes.
-- Design style: Clean, modern layout. Use white or light (#F2F4F9) backgrounds. Blue (#3052FF) for headlines and CTAs. Curved edge text boxes and outlines. Minimal clutter.
+- Design style: Clean, modern layout. Use white or light (#F2F4F9) backgrounds with blue accents. Minimal clutter. Leave open space for text overlays.
 - Icons: Line/stroke style only (no solid fills), 3pt stroke weight.
-- Composition: Don't overlay text on people's faces. Maintain clear visual hierarchy with heading, subheading, and body text at three distinct sizes.
-- Ad elements: Include a clear headline, supporting text, and a call-to-action button (blue #3052FF background with white text, or orange #FF9000 for urgency).
-- Website: coastaldebtresolve.com should appear at the bottom.
+- Composition: Leave clear areas (especially top and bottom) where text can be placed later. Do not fill the entire image with busy detail.
 
-IMPORTANT: This is a static ad image, NOT a webpage. Generate a complete, finished ad creative ready for Facebook Ads.`;
+CRITICAL: Generate ONLY a background image — NO text, NO words, NO letters, NO logos, NO buttons, NO call-to-action overlays. The image should be a clean visual that works as a backdrop for text added in post-production.`;
 
 // Size definitions
 const AD_SIZES = [
