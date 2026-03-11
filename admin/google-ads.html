@@ -361,35 +361,35 @@
           </div>
         </div>
 
-        <!-- Quality Score -->
-        <div class="qs-grid" id="qsSection" style="display:none;">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Quality Score Distribution</h3></div>
-            <div style="max-width:300px;margin:0 auto;">
-              <canvas id="qsChart"></canvas>
-            </div>
+        <!-- Quality Score Distribution -->
+        <div class="card" id="qsSection" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Quality Score Distribution</h3></div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:8px;">
+            <div style="max-width:220px;"><canvas id="qsChart"></canvas></div>
             <div class="qs-avg" id="qsAvg"></div>
           </div>
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Keyword Quality Scores</h3></div>
-            <div class="table-container" style="max-height:450px;overflow-y:auto;">
-              <table class="resizable-table">
-                <thead>
-                  <tr>
-                    <th style="min-width:120px;">Keyword<span class="col-resize"></span></th>
-                    <th style="min-width:100px;">Ad Group<span class="col-resize"></span></th>
-                    <th>QS<span class="col-resize"></span></th>
-                    <th>Ad Relevance<span class="col-resize"></span></th>
-                    <th>Landing Page<span class="col-resize"></span></th>
-                    <th>Expected CTR<span class="col-resize"></span></th>
-                    <th>Impr<span class="col-resize"></span></th>
-                    <th>Clicks<span class="col-resize"></span></th>
-                    <th>Cost</th>
-                  </tr>
-                </thead>
-                <tbody id="qsTable"></tbody>
-              </table>
-            </div>
+        </div>
+
+        <!-- Keyword Quality Scores -->
+        <div class="card" id="qsTableCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Keyword Quality Scores</h3></div>
+          <div class="table-container" style="max-height:500px;overflow-y:auto;">
+            <table class="resizable-table">
+              <thead>
+                <tr>
+                  <th style="min-width:120px;">Keyword<span class="col-resize"></span></th>
+                  <th style="min-width:100px;">Ad Group<span class="col-resize"></span></th>
+                  <th>QS<span class="col-resize"></span></th>
+                  <th>Ad Relevance<span class="col-resize"></span></th>
+                  <th>Landing Page<span class="col-resize"></span></th>
+                  <th>Expected CTR<span class="col-resize"></span></th>
+                  <th>Impr<span class="col-resize"></span></th>
+                  <th>Clicks<span class="col-resize"></span></th>
+                  <th>Cost</th>
+                </tr>
+              </thead>
+              <tbody id="qsTable"></tbody>
+            </table>
           </div>
         </div>
 
@@ -774,6 +774,7 @@
       document.getElementById('auctionInsightsLink').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
+      document.getElementById('qsTableCard').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
 
       try {
@@ -840,6 +841,7 @@
         // Quality Score
         if (qsData.connected) {
           document.getElementById('qsSection').style.display = '';
+          document.getElementById('qsTableCard').style.display = '';
           const dist = qsData.distribution || {};
           const labels = Object.keys(dist).sort((a,b) => a - b);
           const values = labels.map(k => dist[k]);
