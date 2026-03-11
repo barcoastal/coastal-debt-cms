@@ -331,12 +331,8 @@
               <thead>
                 <tr>
                   <th>Domain</th>
-                  <th>Impression Share</th>
-                  <th>Overlap Rate</th>
-                  <th>Position Above Rate</th>
                   <th>Top of Page %</th>
                   <th>Abs Top of Page %</th>
-                  <th>Outranking Share</th>
                 </tr>
               </thead>
               <tbody id="auctionInsightsTable"></tbody>
@@ -829,12 +825,8 @@
             const isYou = i === 0 && c.domain && c.impression_share && (c.impression_share >= (isData.overview?.search_impression_share || 0) - 0.02);
             return `<tr style="${isYou ? 'background:#eff6ff;font-weight:600;' : ''}">
               <td>${escapeHtml(c.domain)}${isYou ? ' <span class="badge badge-blue" style="font-size:10px;">You</span>' : ''}</td>
-              <td style="color:${isColor(c.impression_share)}">${fmtPct(c.impression_share)}</td>
-              <td>${fmtPct(c.overlap_rate)}</td>
-              <td>${fmtPct(c.position_above_rate)}</td>
-              <td>${fmtPct(c.top_impression_pct)}</td>
-              <td>${fmtPct(c.abs_top_impression_pct)}</td>
-              <td>${fmtPct(c.outranking_share)}</td>
+              <td style="color:${isColor(c.top_impression_pct)}">${fmtPct(c.top_impression_pct)}</td>
+              <td style="color:${isColor(c.abs_top_impression_pct)};font-weight:700;">${fmtPct(c.abs_top_impression_pct)}</td>
             </tr>`;
           }).join('');
         }
