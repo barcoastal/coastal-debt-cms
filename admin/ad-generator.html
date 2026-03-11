@@ -43,8 +43,13 @@
     .step-split {
       display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;
     }
+    /* Canvas steps: give canvas more room, controls get a fixed 320px column */
+    .step-split.canvas-layout {
+      grid-template-columns: 1fr 320px;
+    }
+    .step-split > * { min-width: 0; } /* prevent grid blowout */
     @media (max-width: 900px) {
-      .step-split { grid-template-columns: 1fr; }
+      .step-split, .step-split.canvas-layout { grid-template-columns: 1fr; }
     }
 
     /* ============ SIZE CARDS ============ */
@@ -128,9 +133,9 @@
     .canvas-container-wrapper {
       background: #1a1a2e; border-radius: 12px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      min-height: 400px; position: relative;
+      min-height: 400px; position: relative; width: 100%;
     }
-    .canvas-scale-wrapper { transform-origin: center center; }
+    .canvas-scale-wrapper { transform-origin: top left; }
     .controls-panel {
       background: #fff; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px;
     }
@@ -454,7 +459,7 @@
 
       <!-- ============ STEP 2: ADD TEXT ============ -->
       <div class="step-panel" id="step2">
-        <div class="step-split">
+        <div class="step-split canvas-layout">
           <!-- Left: Canvas -->
           <div>
             <div class="canvas-container-wrapper" id="canvasWrapper">
@@ -537,7 +542,7 @@
 
       <!-- ============ STEP 3: ADD LOGO ============ -->
       <div class="step-panel" id="step3">
-        <div class="step-split">
+        <div class="step-split canvas-layout">
           <!-- Left: Same Canvas -->
           <div>
             <div class="canvas-container-wrapper" id="canvasWrapper3">
@@ -915,15 +920,19 @@
         : document.getElementById('canvasWrapper');
       if (!wrapper) return;
 
-      const pad = 20;
+      const pad = 16;
       const maxW = wrapper.clientWidth - pad * 2;
-      const maxH = 500;
+      const maxH = Math.max(window.innerHeight - 240, 400);
       const scale = Math.min(maxW / canvasW, maxH / canvasH, 1);
 
       const scaleWrapper = document.getElementById('canvasScaleWrapper');
       scaleWrapper.style.width = canvasW + 'px';
       scaleWrapper.style.height = canvasH + 'px';
       scaleWrapper.style.transform = `scale(${scale})`;
+
+      // Set wrapper height to match the scaled canvas so layout doesn't collapse
+      wrapper.style.height = (canvasH * scale + pad * 2) + 'px';
+      wrapper.style.minHeight = '0';
     }
 
     function showSelectedInfo() {
