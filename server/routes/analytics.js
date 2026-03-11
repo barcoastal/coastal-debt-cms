@@ -1065,15 +1065,30 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     if (from) dateClause += ` AND segments.date >= '${from}'`;
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
-    const gaql = `SELECT campaign_auction_insight.display_domain, metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`;
+    // Try multiple query approaches — field names vary by API version
+    const queries = [
+      `SELECT metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`,
+      `SELECT metrics.impression_share, metrics.overlap_rate, metrics.position_above_rate, metrics.top_impression_percentage, metrics.absolute_top_impression_percentage, metrics.outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`
+    ];
 
-    console.log('[Competition AI] GAQL:', gaql);
-    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql })
-    });
-    const gData = await gRes.json();
-    console.log('[Competition AI] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
-    if (gData.results?.[0]) console.log('[Competition AI] sample:', JSON.stringify(gData.results[0]).substring(0, 500));
+    let gData = null;
+    let queryUsed = 0;
+    for (let i = 0; i < queries.length; i++) {
+      console.log(`[Competition AI] trying query ${i}:`, queries[i]);
+      const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+        method: 'POST', headers, body: JSON.stringify({ query: queries[i] })
+      });
+      gData = await gRes.json();
+      if (!gData.error) { queryUsed = i; break; }
+      console.log(`[Competition AI] query ${i} failed:`, gData.error?.details?.[0]?.errors?.[0]?.message || gData.error?.message);
+    }
+
+    if (gData.results?.length) {
+      console.log('[Competition AI] success with query', queryUsed, '— results:', gData.results.length);
+      console.log('[Competition AI] full first row:', JSON.stringify(gData.results[0]));
+      console.log('[Competition AI] all keys in result[0]:', Object.keys(gData.results[0]));
+      if (gData.results[0].metrics) console.log('[Competition AI] metric keys:', Object.keys(gData.results[0].metrics));
+    }
 
     if (gData.error) {
       const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
@@ -1082,21 +1097,23 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     }
 
     // Aggregate per-domain (rows may repeat per campaign/date)
+    // Try all possible field paths — API response structure varies
     const domainMap = {};
     for (const r of (gData.results || [])) {
-      const domain = r.campaignAuctionInsight?.displayDomain || r.auctionInsight?.displayDomain || 'Unknown';
+      const domain = r.campaignAuctionInsight?.displayDomain || r.displayDomain || r.domain || JSON.stringify(Object.keys(r).filter(k => k !== 'metrics'));
       const m = r.metrics || {};
       if (!domainMap[domain]) {
         domainMap[domain] = { count: 0, is: 0, overlap: 0, posAbove: 0, topPct: 0, absTopPct: 0, outranking: 0 };
       }
       const d = domainMap[domain];
       d.count++;
-      d.is += (m.auctionInsightSearchImpressionShare ?? 0);
-      d.overlap += (m.auctionInsightSearchOverlapRate ?? 0);
-      d.posAbove += (m.auctionInsightSearchPositionAboveRate ?? 0);
-      d.topPct += (m.auctionInsightSearchTopImpressionPercentage ?? 0);
-      d.absTopPct += (m.auctionInsightSearchAbsoluteTopImpressionPercentage ?? 0);
-      d.outranking += (m.auctionInsightSearchOutrankingShare ?? 0);
+      // Try both prefixed and unprefixed metric names
+      d.is += (m.auctionInsightSearchImpressionShare ?? m.impressionShare ?? 0);
+      d.overlap += (m.auctionInsightSearchOverlapRate ?? m.overlapRate ?? 0);
+      d.posAbove += (m.auctionInsightSearchPositionAboveRate ?? m.positionAboveRate ?? 0);
+      d.topPct += (m.auctionInsightSearchTopImpressionPercentage ?? m.topImpressionPercentage ?? 0);
+      d.absTopPct += (m.auctionInsightSearchAbsoluteTopImpressionPercentage ?? m.absoluteTopImpressionPercentage ?? 0);
+      d.outranking += (m.auctionInsightSearchOutrankingShare ?? m.outrankingShare ?? 0);
     }
 
     const competitors = Object.entries(domainMap).map(([domain, d]) => ({
