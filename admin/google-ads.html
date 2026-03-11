@@ -343,17 +343,43 @@
           <div id="campaignChartsGrid" class="campaign-charts-grid"></div>
         </div>
 
-        <!-- Auction Insights — Link to Google Ads UI -->
-        <div class="card" id="auctionInsightsLink" style="display:none;">
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:200px;">
-              <h3 style="margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--gray-800);">Competitor Domains & Auction Insights</h3>
-              <p style="margin:0;font-size:13px;color:var(--gray-500);line-height:1.5;">See exactly which competitor domains are bidding against you, their impression share, overlap rate, outranking share, and position above rate. This data is only available directly in the Google Ads interface.</p>
-            </div>
-            <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" class="btn btn-primary" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <!-- Auction Insights — Data Table or Fallback Link -->
+        <div class="card" id="auctionInsightsCard" style="display:none;">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <h3 class="card-title">Competitor Domains & Auction Insights</h3>
+            <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               View in Google Ads
             </a>
+          </div>
+          <!-- Fallback when API doesn't support auction insights -->
+          <div id="auctionInsightsFallback" style="display:none;padding:16px 20px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:200px;">
+                <p style="margin:0;font-size:13px;color:var(--gray-500);line-height:1.5;">Auction insight data is not available via the API for this account. You can view competitor domains, impression share, overlap rate, outranking share, and position above rate directly in the Google Ads interface.</p>
+              </div>
+              <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" class="btn btn-primary" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                View in Google Ads
+              </a>
+            </div>
+          </div>
+          <!-- Data table when auction insights are available -->
+          <div id="auctionInsightsTable" style="display:none;">
+            <div class="table-container">
+              <table class="resizable-table">
+                <thead><tr>
+                  <th>Display URL Domain</th>
+                  <th>Impression Share</th>
+                  <th>Overlap Rate</th>
+                  <th>Position Above Rate</th>
+                  <th>Top of Page Rate</th>
+                  <th>Abs. Top of Page Rate</th>
+                  <th>Outranking Share</th>
+                </tr></thead>
+                <tbody id="auctionInsightsTbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -365,12 +391,12 @@
               <thead>
                 <tr>
                   <th style="min-width:160px;">Campaign<span class="col-resize"></span></th>
-                  <th>Impressions<span class="col-resize"></span></th>
-                  <th>Search IS<span class="col-resize"></span></th>
-                  <th>Lost to Budget<span class="col-resize"></span></th>
-                  <th>Lost to Rank<span class="col-resize"></span></th>
-                  <th>Top IS<span class="col-resize"></span></th>
-                  <th>Abs Top IS</th>
+                  <th title="Total number of times your ads were shown">Impressions<span class="col-resize"></span></th>
+                  <th title="Search Impression Share — % of eligible searches where your ad actually appeared. The rest went to competitors or were missed.">Search IS<span class="col-resize"></span></th>
+                  <th title="Lost to Budget — % of impressions you missed because your daily budget ran out. Increase budget to capture these.">Lost to Budget<span class="col-resize"></span></th>
+                  <th title="Lost to Rank — % of impressions you missed because competitors had higher Ad Rank (better bids, quality score, or extensions). Improve QS or raise bids to win these.">Lost to Rank<span class="col-resize"></span></th>
+                  <th title="Top Impression Share — % of eligible impressions where your ad appeared above the organic search results (top of page).">Top IS<span class="col-resize"></span></th>
+                  <th title="Absolute Top Impression Share — % of eligible impressions where your ad appeared as the very first ad (#1 position). The most competitive spot.">Abs Top IS</th>
                 </tr>
               </thead>
               <tbody id="campaignISTable"></tbody>
@@ -868,17 +894,18 @@
       document.getElementById('isCards').style.display = 'none';
       document.getElementById('compPositionCard').style.display = 'none';
       document.getElementById('campaignChartsCard').style.display = 'none';
-      document.getElementById('auctionInsightsLink').style.display = 'none';
+      document.getElementById('auctionInsightsCard').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('qsTableCard').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
 
       try {
-        const [isData, qsData, stData] = await Promise.all([
+        const [isData, qsData, stData, aiData] = await Promise.all([
           api('/api/analytics/google-ads/impression-share' + qs),
           api('/api/analytics/google-ads/quality-scores' + qs),
-          api('/api/analytics/google-ads/search-terms' + qs)
+          api('/api/analytics/google-ads/search-terms' + qs),
+          api('/api/analytics/google-ads/auction-insights' + qs)
         ]);
 
         if (!isData.connected) {
@@ -918,8 +945,30 @@
         // Per-Campaign Competitive Position Charts
         renderCampaignCharts(isData.campaigns);
 
-        // Auction Insights link
-        document.getElementById('auctionInsightsLink').style.display = '';
+        // Auction Insights — table or fallback
+        document.getElementById('auctionInsightsCard').style.display = '';
+        if (aiData.available && aiData.domains && aiData.domains.length) {
+          document.getElementById('auctionInsightsFallback').style.display = 'none';
+          document.getElementById('auctionInsightsTable').style.display = '';
+          const fmtAiPct = v => v != null ? (v * 100).toFixed(2) + '%' : '-';
+          document.getElementById('auctionInsightsTbody').innerHTML = aiData.domains.map(d => {
+            const isYou = d.domain.toLowerCase() === 'you';
+            const rowStyle = isYou ? ' style="font-weight:700;background:rgba(48,82,255,0.06);"' : '';
+            const domainStyle = isYou ? ' style="color:#3052FF;font-weight:700;"' : '';
+            return `<tr${rowStyle}>
+              <td${domainStyle}>${escapeHtml(d.domain)}</td>
+              <td>${fmtAiPct(d.impression_share)}</td>
+              <td>${fmtAiPct(d.overlap_rate)}</td>
+              <td>${fmtAiPct(d.position_above_rate)}</td>
+              <td>${fmtAiPct(d.top_of_page_rate)}</td>
+              <td>${fmtAiPct(d.abs_top_of_page_rate)}</td>
+              <td>${fmtAiPct(d.outranking_share)}</td>
+            </tr>`;
+          }).join('');
+        } else {
+          document.getElementById('auctionInsightsTable').style.display = 'none';
+          document.getElementById('auctionInsightsFallback').style.display = '';
+        }
 
         // Campaign IS Table
         const cTable = document.getElementById('campaignISTable');
