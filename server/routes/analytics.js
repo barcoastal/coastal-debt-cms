@@ -986,7 +986,8 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     });
     const gData = await gRes.json();
     console.log('[Competition IS] results count:', gData.results?.length, 'error:', gData.error?.message || 'none');
-    if (gData.results?.[0]) console.log('[Competition IS] sample row metrics:', JSON.stringify(gData.results[0].metrics));
+    if (gData.results?.[0]) console.log('[Competition IS] sample row metrics keys:', Object.keys(gData.results[0].metrics || {}));
+    if (gData.results?.[0]) console.log('[Competition IS] sample row full:', JSON.stringify(gData.results[0]).substring(0, 800));
 
     if (gData.error) {
       const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
@@ -995,6 +996,7 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     }
 
     // Without segments.date in SELECT, results are already aggregated per campaign
+    // Note: API may return fields without "search" prefix depending on version
     const campaigns = (gData.results || []).map(r => {
       const m = r.metrics || {};
       return {
@@ -1003,12 +1005,12 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
         impressions: parseInt(m.impressions || '0', 10),
         clicks: parseInt(m.clicks || '0', 10),
         cost: parseInt(m.costMicros || '0', 10) / 1000000,
-        search_impression_share: m.searchImpressionShare ?? null,
-        budget_lost_is: m.searchBudgetLostImpressionShare ?? null,
-        rank_lost_is: m.searchRankLostImpressionShare ?? null,
-        top_is: m.searchTopImpressionPercentage ?? null,
-        abs_top_is: m.searchAbsoluteTopImpressionPercentage ?? null,
-        exact_match_is: m.searchExactMatchImpressionShare ?? null
+        search_impression_share: m.searchImpressionShare ?? m.impressionShare ?? null,
+        budget_lost_is: m.searchBudgetLostImpressionShare ?? m.budgetLostImpressionShare ?? null,
+        rank_lost_is: m.searchRankLostImpressionShare ?? m.rankLostImpressionShare ?? null,
+        top_is: m.searchTopImpressionPercentage ?? m.topImpressionPercentage ?? null,
+        abs_top_is: m.searchAbsoluteTopImpressionPercentage ?? m.absoluteTopImpressionPercentage ?? null,
+        exact_match_is: m.searchExactMatchImpressionShare ?? m.exactMatchImpressionShare ?? null
       };
     });
 
