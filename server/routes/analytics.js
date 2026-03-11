@@ -982,7 +982,7 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
 
     console.log('[Competition IS] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 10000 })
+      method: 'POST', headers, body: JSON.stringify({ query: gaql })
     });
     const gData = await gRes.json();
     console.log('[Competition IS] results count:', gData.results?.length, 'error:', gData.error?.message || 'none');
@@ -1077,8 +1077,8 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
     console.log('[Competition QS metrics] GAQL:', metricsGaql);
 
     const [qsRes, metricsRes] = await Promise.all([
-      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: qsGaql, pageSize: 10000 }) }),
-      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: metricsGaql, pageSize: 10000 }) })
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: qsGaql }) }),
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: metricsGaql }) })
     ]);
     const [qsData, metricsData] = await Promise.all([qsRes.json(), metricsRes.json()]);
 
@@ -1169,7 +1169,7 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
 
     console.log('[Competition ST] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 200 })
+      method: 'POST', headers, body: JSON.stringify({ query: gaql })
     });
     const gData = await gRes.json();
     console.log('[Competition ST] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
