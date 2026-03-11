@@ -323,23 +323,6 @@
           </div>
         </div>
 
-        <!-- Auction Insights: Competitor Brands -->
-        <div class="card" id="auctionInsightsCard" style="display:none;">
-          <div class="card-header"><h3 class="card-title">Auction Insights — Competitor Brands</h3></div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Domain</th>
-                  <th>Top of Page %</th>
-                  <th>Abs Top of Page %</th>
-                </tr>
-              </thead>
-              <tbody id="auctionInsightsTable"></tbody>
-            </table>
-          </div>
-        </div>
-
         <!-- Campaign IS Table -->
         <div class="card" id="campaignISCard" style="display:none;">
           <div class="card-header"><h3 class="card-title">Campaign Impression Share</h3></div>
@@ -754,17 +737,15 @@
       document.getElementById('compFilters').style.display = 'none';
       document.getElementById('isCards').style.display = 'none';
       document.getElementById('compPositionCard').style.display = 'none';
-      document.getElementById('auctionInsightsCard').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
 
       try {
-        const [isData, qsData, stData, aiData] = await Promise.all([
+        const [isData, qsData, stData] = await Promise.all([
           api('/api/analytics/google-ads/impression-share' + qs),
           api('/api/analytics/google-ads/quality-scores' + qs),
-          api('/api/analytics/google-ads/search-terms' + qs),
-          api('/api/analytics/google-ads/auction-insights' + qs).catch(() => ({ connected: true, competitors: [] }))
+          api('/api/analytics/google-ads/search-terms' + qs)
         ]);
 
         if (!isData.connected) {
@@ -773,7 +754,7 @@
         }
 
         // Show any API errors for debugging
-        const errors = [isData.error, qsData.error, stData.error, aiData.error].filter(Boolean);
+        const errors = [isData.error, qsData.error, stData.error].filter(Boolean);
         content.innerHTML = errors.length ? '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#991b1b;font-size:13px;"><strong>API Errors:</strong> ' + errors.map(e => escapeHtml(e)).join(' | ') + '</div>' : '';
         document.getElementById('compFilters').style.display = '';
 
@@ -816,19 +797,6 @@
               <td>${fmtPct(c.top_is)}</td>
               <td>${fmtPct(c.abs_top_is)}</td>
             </tr>`).join('');
-        }
-
-        // Auction Insights — Competitor Brands
-        if (aiData.competitors && aiData.competitors.length) {
-          document.getElementById('auctionInsightsCard').style.display = '';
-          document.getElementById('auctionInsightsTable').innerHTML = aiData.competitors.map((c, i) => {
-            const isYou = i === 0 && c.domain && c.impression_share && (c.impression_share >= (isData.overview?.search_impression_share || 0) - 0.02);
-            return `<tr style="${isYou ? 'background:#eff6ff;font-weight:600;' : ''}">
-              <td>${escapeHtml(c.domain)}${isYou ? ' <span class="badge badge-blue" style="font-size:10px;">You</span>' : ''}</td>
-              <td style="color:${isColor(c.top_impression_pct)}">${fmtPct(c.top_impression_pct)}</td>
-              <td style="color:${isColor(c.abs_top_impression_pct)};font-weight:700;">${fmtPct(c.abs_top_impression_pct)}</td>
-            </tr>`;
-          }).join('');
         }
 
         // Quality Score
