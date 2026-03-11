@@ -1044,6 +1044,78 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
   }
 });
 
+// Google Ads: Auction Insights — competitor brand domains
+router.get('/google-ads/auction-insights', authenticateToken, async (req, res) => {
+  const { from, to } = req.query;
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.refresh_token_encrypted || !gConfig.customer_id) {
+      return res.json({ connected: false, competitors: [] });
+    }
+    const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
+    if (!devToken) return res.json({ connected: false, competitors: [] });
+
+    const accessToken = await getGoogleAccessToken(gConfig);
+    const customerId = gConfig.customer_id.replace(/-/g, '');
+    const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
+    const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
+    if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+
+    let dateClause = '';
+    if (from) dateClause += ` AND segments.date >= '${from}'`;
+    if (to) dateClause += ` AND segments.date <= '${to}'`;
+
+    const gaql = `SELECT auction_insight.display_domain, metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`;
+
+    console.log('[Competition AI] GAQL:', gaql);
+    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: gaql })
+    });
+    const gData = await gRes.json();
+    console.log('[Competition AI] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
+    if (gData.results?.[0]) console.log('[Competition AI] sample:', JSON.stringify(gData.results[0]).substring(0, 500));
+
+    if (gData.error) {
+      const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
+      console.error('Google Ads AI error:', JSON.stringify(gData.error).substring(0, 1000));
+      return res.json({ connected: true, competitors: [], error: 'Auction Insights: ' + (gData.error.message || '') + (errDetails ? ' — ' + errDetails : '') });
+    }
+
+    // Aggregate per-domain (rows may repeat per campaign/date)
+    const domainMap = {};
+    for (const r of (gData.results || [])) {
+      const domain = r.auctionInsight?.displayDomain || 'Unknown';
+      const m = r.metrics || {};
+      if (!domainMap[domain]) {
+        domainMap[domain] = { count: 0, is: 0, overlap: 0, posAbove: 0, topPct: 0, absTopPct: 0, outranking: 0 };
+      }
+      const d = domainMap[domain];
+      d.count++;
+      d.is += (m.auctionInsightSearchImpressionShare ?? 0);
+      d.overlap += (m.auctionInsightSearchOverlapRate ?? 0);
+      d.posAbove += (m.auctionInsightSearchPositionAboveRate ?? 0);
+      d.topPct += (m.auctionInsightSearchTopImpressionPercentage ?? 0);
+      d.absTopPct += (m.auctionInsightSearchAbsoluteTopImpressionPercentage ?? 0);
+      d.outranking += (m.auctionInsightSearchOutrankingShare ?? 0);
+    }
+
+    const competitors = Object.entries(domainMap).map(([domain, d]) => ({
+      domain,
+      impression_share: d.count > 0 ? d.is / d.count : null,
+      overlap_rate: d.count > 0 ? d.overlap / d.count : null,
+      position_above_rate: d.count > 0 ? d.posAbove / d.count : null,
+      top_impression_pct: d.count > 0 ? d.topPct / d.count : null,
+      abs_top_impression_pct: d.count > 0 ? d.absTopPct / d.count : null,
+      outranking_share: d.count > 0 ? d.outranking / d.count : null
+    })).sort((a, b) => (b.impression_share || 0) - (a.impression_share || 0));
+
+    res.json({ connected: true, competitors });
+  } catch (e) {
+    console.error('Auction insights error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Google Ads: Quality Scores (Competition)
 // Quality score is a snapshot (current value) — queried without date filter.
 // Metrics (impressions, clicks, cost) use date filter via a separate aggregation approach.

@@ -302,15 +302,45 @@
         <div class="card" id="compPositionCard" style="display:none;">
           <div class="card-header"><h3 class="card-title">Competitive Position — You vs Competitors</h3></div>
           <div class="qs-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-            <div><canvas id="chartSearchIS"></canvas></div>
-            <div><canvas id="chartTopIS"></canvas></div>
-            <div><canvas id="chartAbsTopIS"></canvas></div>
+            <div style="text-align:center;">
+              <canvas id="chartSearchIS"></canvas>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:8px;line-height:1.4;">How often your ad appeared out of all eligible searches. Higher = more visibility vs competitors.</p>
+            </div>
+            <div style="text-align:center;">
+              <canvas id="chartTopIS"></canvas>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:8px;line-height:1.4;">How often your ad appeared above the organic results. Competitors with higher bids/QS take the rest.</p>
+            </div>
+            <div style="text-align:center;">
+              <canvas id="chartAbsTopIS"></canvas>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:8px;line-height:1.4;">How often your ad was the very first ad (#1 position). The most competitive and valuable spot.</p>
+            </div>
           </div>
-          <div style="display:flex;gap:24px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+          <div style="display:flex;gap:24px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#3052FF;vertical-align:middle;margin-right:4px;"></span> Your Impressions</span>
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#dc2626;vertical-align:middle;margin-right:4px;"></span> Competitors (Lost to Rank)</span>
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#f59e0b;vertical-align:middle;margin-right:4px;"></span> Lost to Budget</span>
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#e5e7eb;vertical-align:middle;margin-right:4px;"></span> Other / Unknown</span>
+          </div>
+        </div>
+
+        <!-- Auction Insights: Competitor Brands -->
+        <div class="card" id="auctionInsightsCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Auction Insights — Competitor Brands</h3></div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Domain</th>
+                  <th>Impression Share</th>
+                  <th>Overlap Rate</th>
+                  <th>Position Above Rate</th>
+                  <th>Top of Page %</th>
+                  <th>Abs Top of Page %</th>
+                  <th>Outranking Share</th>
+                </tr>
+              </thead>
+              <tbody id="auctionInsightsTable"></tbody>
+            </table>
           </div>
         </div>
 
@@ -728,15 +758,17 @@
       document.getElementById('compFilters').style.display = 'none';
       document.getElementById('isCards').style.display = 'none';
       document.getElementById('compPositionCard').style.display = 'none';
+      document.getElementById('auctionInsightsCard').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
 
       try {
-        const [isData, qsData, stData] = await Promise.all([
+        const [isData, qsData, stData, aiData] = await Promise.all([
           api('/api/analytics/google-ads/impression-share' + qs),
           api('/api/analytics/google-ads/quality-scores' + qs),
-          api('/api/analytics/google-ads/search-terms' + qs)
+          api('/api/analytics/google-ads/search-terms' + qs),
+          api('/api/analytics/google-ads/auction-insights' + qs).catch(() => ({ connected: true, competitors: [] }))
         ]);
 
         if (!isData.connected) {
@@ -745,7 +777,7 @@
         }
 
         // Show any API errors for debugging
-        const errors = [isData.error, qsData.error, stData.error].filter(Boolean);
+        const errors = [isData.error, qsData.error, stData.error, aiData.error].filter(Boolean);
         content.innerHTML = errors.length ? '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#991b1b;font-size:13px;"><strong>API Errors:</strong> ' + errors.map(e => escapeHtml(e)).join(' | ') + '</div>' : '';
         document.getElementById('compFilters').style.display = '';
 
@@ -788,6 +820,23 @@
               <td>${fmtPct(c.top_is)}</td>
               <td>${fmtPct(c.abs_top_is)}</td>
             </tr>`).join('');
+        }
+
+        // Auction Insights — Competitor Brands
+        if (aiData.competitors && aiData.competitors.length) {
+          document.getElementById('auctionInsightsCard').style.display = '';
+          document.getElementById('auctionInsightsTable').innerHTML = aiData.competitors.map((c, i) => {
+            const isYou = i === 0 && c.domain && c.impression_share && (c.impression_share >= (isData.overview?.search_impression_share || 0) - 0.02);
+            return `<tr style="${isYou ? 'background:#eff6ff;font-weight:600;' : ''}">
+              <td>${escapeHtml(c.domain)}${isYou ? ' <span class="badge badge-blue" style="font-size:10px;">You</span>' : ''}</td>
+              <td style="color:${isColor(c.impression_share)}">${fmtPct(c.impression_share)}</td>
+              <td>${fmtPct(c.overlap_rate)}</td>
+              <td>${fmtPct(c.position_above_rate)}</td>
+              <td>${fmtPct(c.top_impression_pct)}</td>
+              <td>${fmtPct(c.abs_top_impression_pct)}</td>
+              <td>${fmtPct(c.outranking_share)}</td>
+            </tr>`;
+          }).join('');
         }
 
         // Quality Score
