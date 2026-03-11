@@ -323,6 +323,20 @@
           </div>
         </div>
 
+        <!-- Auction Insights — Link to Google Ads UI -->
+        <div class="card" id="auctionInsightsLink" style="display:none;">
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <h3 style="margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--gray-800);">Competitor Domains & Auction Insights</h3>
+              <p style="margin:0;font-size:13px;color:var(--gray-500);line-height:1.5;">See exactly which competitor domains are bidding against you, their impression share, overlap rate, outranking share, and position above rate. This data is only available directly in the Google Ads interface.</p>
+            </div>
+            <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" class="btn btn-primary" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View in Google Ads
+            </a>
+          </div>
+        </div>
+
         <!-- Campaign IS Table -->
         <div class="card" id="campaignISCard" style="display:none;">
           <div class="card-header"><h3 class="card-title">Campaign Impression Share</h3></div>
@@ -737,6 +751,7 @@
       document.getElementById('compFilters').style.display = 'none';
       document.getElementById('isCards').style.display = 'none';
       document.getElementById('compPositionCard').style.display = 'none';
+      document.getElementById('auctionInsightsLink').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
@@ -781,6 +796,9 @@
 
         // Competitive Position Charts
         renderCompPositionCharts(ov);
+
+        // Auction Insights link
+        document.getElementById('auctionInsightsLink').style.display = '';
 
         // Campaign IS Table
         const cTable = document.getElementById('campaignISTable');
