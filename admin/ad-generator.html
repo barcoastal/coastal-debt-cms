@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ad Generator | Coastal Debt CMS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:wght@400;700&family=Bebas+Neue&family=Nunito:wght@400;700&family=Work+Sans:wght@400;700&family=DM+Sans:wght@400;700&family=Space+Grotesk:wght@400;700&family=Outfit:wght@400;700&family=Plus+Jakarta+Sans:wght@400;700&family=Barlow:wght@400;700&family=Urbanist:wght@400;700&family=Archivo:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=5">
   <style>
     /* ============ WIZARD STEP INDICATOR ============ */
@@ -209,6 +210,9 @@
     .download-size-btn .dl-size-name { font-weight: 600; font-size: 12px; }
     .download-size-btn .dl-size-dims { font-size: 11px; color: var(--gray-400); }
     .download-size-btn.current-size { border-color: #3052FF; background: #eef1ff; }
+
+    /* ============ FONT SELECTOR ============ */
+    #fontFamily { font-size: 13px; }
 
     .compose-loading .spinner-ring {
       width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.2);
@@ -482,6 +486,28 @@
               <div class="controls-section">
                 <h4>Add Text</h4>
                 <input type="text" id="textInput" class="form-input" placeholder="Enter text..." style="margin-bottom:8px;">
+                <select id="fontFamily" class="form-input" style="margin-bottom:8px;">
+                  <option value="Arial, Helvetica, sans-serif">Arial</option>
+                  <option value="'Inter', sans-serif" selected>Inter</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Open Sans', sans-serif">Open Sans</option>
+                  <option value="'Lato', sans-serif">Lato</option>
+                  <option value="'Oswald', sans-serif">Oswald</option>
+                  <option value="'Raleway', sans-serif">Raleway</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                  <option value="'Nunito', sans-serif">Nunito</option>
+                  <option value="'Work Sans', sans-serif">Work Sans</option>
+                  <option value="'DM Sans', sans-serif">DM Sans</option>
+                  <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                  <option value="'Outfit', sans-serif">Outfit</option>
+                  <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
+                  <option value="'Barlow', sans-serif">Barlow</option>
+                  <option value="'Urbanist', sans-serif">Urbanist</option>
+                  <option value="'Archivo', sans-serif">Archivo</option>
+                </select>
                 <div style="display:flex;gap:8px;margin-bottom:8px;">
                   <select id="fontSize" class="form-input" style="width:50%;">
                     <option value="24">24px</option>
@@ -963,6 +989,7 @@
 
       const fSize = parseInt(document.getElementById('fontSize').value) || 48;
       const fWeight = document.getElementById('fontWeight').value;
+      const fFamily = document.getElementById('fontFamily').value;
       const color = document.getElementById('textColor').value;
       const bgEnabled = document.getElementById('textBgEnabled').checked;
       const bgColor = bgEnabled ? document.getElementById('textBgColor').value : null;
@@ -973,7 +1000,7 @@
         width: canvasW * 0.8,
         fontSize: fSize,
         fontWeight: fWeight,
-        fontFamily: 'Arial, Helvetica, sans-serif',
+        fontFamily: fFamily,
         fill: color,
         textAlign: 'center',
         backgroundColor: bgColor || '',
@@ -990,6 +1017,7 @@
 
     function addPresetText(text, fontSize, fontWeight, color, bgColor) {
       if (!canvas) return;
+      const fFamily = document.getElementById('fontFamily').value;
 
       const textObj = new fabric.Textbox(text, {
         left: canvasW * 0.1,
@@ -997,7 +1025,7 @@
         width: canvasW * 0.8,
         fontSize: fontSize,
         fontWeight: fontWeight,
-        fontFamily: 'Arial, Helvetica, sans-serif',
+        fontFamily: fFamily,
         fill: color,
         textAlign: 'center',
         backgroundColor: bgColor || '',
@@ -1031,6 +1059,7 @@
         const { headline, cta } = await res.json();
 
         const isVertical = selectedSize === 'story_reel';
+        const fFamily = document.getElementById('fontFamily').value;
 
         // Headline
         const headlineFontSize = Math.round(canvasW * 0.055);
@@ -1042,7 +1071,7 @@
           width: canvasW * 0.8,
           fontSize: headlineFontSize,
           fontWeight: 'bold',
-          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontFamily: fFamily,
           fill: '#FFFFFF',
           textAlign: 'center',
           editable: true,
@@ -1061,7 +1090,7 @@
           width: canvasW * 0.6,
           fontSize: ctaFontSize,
           fontWeight: 'bold',
-          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontFamily: fFamily,
           fill: '#FFFFFF',
           textAlign: 'center',
           backgroundColor: '#3052FF',
