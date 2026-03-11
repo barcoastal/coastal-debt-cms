@@ -182,6 +182,21 @@ router.delete('/projects/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Project deleted' });
 });
 
+// ============ REFERENCE IMAGE UPLOAD (no project) ============
+
+router.post('/upload-references', authenticateToken, (req, res) => {
+  upload.array('reference_images', 3)(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 5MB)' : err.message });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    const urls = (req.files || []).map(f => `/lp/uploads/${f.filename}`);
+    res.json({ urls });
+  });
+});
+
 // ============ BRAND PRE-PROMPT ENDPOINT ============
 
 router.get('/brand-preprompt', authenticateToken, (req, res) => {
@@ -190,43 +205,54 @@ router.get('/brand-preprompt', authenticateToken, (req, res) => {
 
 // ============ GENERATION ============
 
-// Start generation for all 4 sizes
+// Start generation — supports single size (size_label) or all 4 sizes; project_id is optional
 router.post('/generate', authenticateToken, (req, res) => {
-  const { project_id, model, prompt, use_brand_prompt } = req.body;
+  const { project_id, model, prompt, use_brand_prompt, size_label, reference_image_urls } = req.body;
 
-  if (!project_id || !model || !prompt) {
-    return res.status(400).json({ error: 'project_id, model, and prompt are required' });
+  if (!model || !prompt) {
+    return res.status(400).json({ error: 'model and prompt are required' });
   }
 
   if (!['midjourney', 'flux', 'gemini'].includes(model)) {
     return res.status(400).json({ error: 'Invalid model. Use: midjourney, flux, or gemini' });
   }
 
-  const project = db.prepare('SELECT * FROM ad_projects WHERE id = ?').get(project_id);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
+  // Determine reference images: from project (if given) or from request body
+  let referenceImages = [];
+  if (project_id) {
+    const project = db.prepare('SELECT * FROM ad_projects WHERE id = ?').get(project_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    try { referenceImages = JSON.parse(project.reference_images || '[]'); } catch (e) { referenceImages = []; }
+  } else if (Array.isArray(reference_image_urls)) {
+    referenceImages = reference_image_urls;
+  }
 
-  let referenceImages;
-  try { referenceImages = JSON.parse(project.reference_images || '[]'); } catch (e) { referenceImages = []; }
+  // Determine which sizes to generate
+  let sizesToGenerate = AD_SIZES;
+  if (size_label) {
+    const found = AD_SIZES.find(s => s.label === size_label);
+    if (!found) return res.status(400).json({ error: `Invalid size_label. Use: ${AD_SIZES.map(s => s.label).join(', ')}` });
+    sizesToGenerate = [found];
+  }
 
-  // Create 4 generation rows
   const insert = db.prepare(`
     INSERT INTO ad_generations (project_id, model, prompt, size_label, width, height, status)
     VALUES (?, ?, ?, ?, ?, ?, 'pending')
   `);
 
   const generationIds = [];
-  for (const size of AD_SIZES) {
-    const result = insert.run(project_id, model, prompt, size.label, size.width, size.height);
+  for (const size of sizesToGenerate) {
+    const result = insert.run(project_id || null, model, prompt, size.label, size.width, size.height);
     generationIds.push(result.lastInsertRowid);
   }
 
   // Fire-and-forget: process each generation in background
   const useBrand = use_brand_prompt !== false; // default true
-  for (let i = 0; i < AD_SIZES.length; i++) {
-    processGeneration(generationIds[i], model, prompt, referenceImages, AD_SIZES[i], useBrand);
+  for (let i = 0; i < sizesToGenerate.length; i++) {
+    processGeneration(generationIds[i], model, prompt, referenceImages, sizesToGenerate[i], useBrand);
   }
 
-  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_generation', null, `Started ${model} generation for project #${project_id}`, req.ip);
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_generation', null, `Started ${model} generation${size_label ? ` (${size_label})` : ' (all sizes)'}`, req.ip);
 
   res.json({ generation_ids: generationIds, message: 'Generation started' });
 });
@@ -246,11 +272,12 @@ router.post('/regenerate/:id', authenticateToken, (req, res) => {
   const gen = db.prepare('SELECT * FROM ad_generations WHERE id = ?').get(req.params.id);
   if (!gen) return res.status(404).json({ error: 'Generation not found' });
 
-  const project = db.prepare('SELECT * FROM ad_projects WHERE id = ?').get(gen.project_id);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
-
-  let referenceImages;
-  try { referenceImages = JSON.parse(project.reference_images || '[]'); } catch (e) { referenceImages = []; }
+  let referenceImages = [];
+  if (gen.project_id) {
+    const project = db.prepare('SELECT * FROM ad_projects WHERE id = ?').get(gen.project_id);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    try { referenceImages = JSON.parse(project.reference_images || '[]'); } catch (e) { referenceImages = []; }
+  }
 
   // Reset status
   db.prepare('UPDATE ad_generations SET status = ?, image_url = NULL, error_message = NULL, external_job_id = NULL, completed_at = NULL WHERE id = ?')

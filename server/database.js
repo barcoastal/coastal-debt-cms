@@ -1428,6 +1428,38 @@ db.exec(`
 // Add edited_image_url column to ad_generations (for design editor)
 try { db.exec(`ALTER TABLE ad_generations ADD COLUMN edited_image_url TEXT`); } catch (e) {}
 
+// Migration: make project_id nullable in ad_generations (for wizard flow without projects)
+try {
+  const colInfo = db.pragma('table_info(ad_generations)');
+  const projCol = colInfo.find(c => c.name === 'project_id');
+  if (projCol && projCol.notnull === 1) {
+    db.exec(`
+      CREATE TABLE ad_generations_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        model TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        size_label TEXT NOT NULL,
+        width INTEGER NOT NULL,
+        height INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        image_url TEXT,
+        external_job_id TEXT,
+        external_image_url TEXT,
+        error_message TEXT,
+        edited_image_url TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME
+      );
+      INSERT INTO ad_generations_new SELECT id, project_id, model, prompt, size_label, width, height, status, image_url, external_job_id, external_image_url, error_message, edited_image_url, created_at, completed_at FROM ad_generations;
+      DROP TABLE ad_generations;
+      ALTER TABLE ad_generations_new RENAME TO ad_generations;
+      CREATE INDEX IF NOT EXISTS idx_ad_gen_project ON ad_generations(project_id);
+      CREATE INDEX IF NOT EXISTS idx_ad_gen_status ON ad_generations(status);
+    `);
+  }
+} catch (e) { console.error('Migration ad_generations project_id nullable:', e.message); }
+
 // Add visitor_url column to calls (was buried in metadata JSON)
 try { db.exec(`ALTER TABLE calls ADD COLUMN visitor_url TEXT DEFAULT ''`); } catch (e) {}
 
