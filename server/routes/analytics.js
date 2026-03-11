@@ -989,8 +989,9 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     if (gData.results?.[0]) console.log('[Competition IS] sample row metrics:', JSON.stringify(gData.results[0].metrics));
 
     if (gData.error) {
-      console.error('Google Ads IS error:', JSON.stringify(gData.error));
-      return res.json({ connected: true, overview: null, campaigns: [], error: gData.error.message });
+      const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
+      console.error('Google Ads IS error:', JSON.stringify(gData.error).substring(0, 1000));
+      return res.json({ connected: true, overview: null, campaigns: [], error: (gData.error.message || '') + (errDetails ? ' — ' + errDetails : '') });
     }
 
     // Without segments.date in SELECT, results are already aggregated per campaign
@@ -1086,7 +1087,9 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
     if (qsData.results?.[0]) console.log('[Competition QS] sample:', JSON.stringify(qsData.results[0]));
 
     if (qsData.error) {
-      return res.json({ connected: true, distribution: {}, avg_quality_score: null, keywords: [], error: qsData.error.message });
+      const errDetails = qsData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
+      console.error('Google Ads QS error:', JSON.stringify(qsData.error).substring(0, 1000));
+      return res.json({ connected: true, distribution: {}, avg_quality_score: null, keywords: [], error: 'QS: ' + (qsData.error.message || '') + (errDetails ? ' — ' + errDetails : '') });
     }
 
     // Build metrics lookup: keyword+adgroup -> aggregated metrics
@@ -1172,8 +1175,9 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     console.log('[Competition ST] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
 
     if (gData.error) {
-      console.error('Google Ads search terms error:', JSON.stringify(gData.error));
-      return res.json({ connected: true, search_terms: [], error: gData.error.message });
+      const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
+      console.error('Google Ads ST error:', JSON.stringify(gData.error).substring(0, 1000));
+      return res.json({ connected: true, search_terms: [], error: 'ST: ' + (gData.error.message || '') + (errDetails ? ' — ' + errDetails : '') });
     }
 
     const search_terms = (gData.results || []).map(r => {
