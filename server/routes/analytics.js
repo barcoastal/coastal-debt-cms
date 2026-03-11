@@ -973,17 +973,12 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
-    // Date filter — use BETWEEN syntax, include segments.date in SELECT for proper segmentation
+    // Date filter — impression share metrics are NOT compatible with segments.date in SELECT
     let dateClause = '';
-    if (from && to) {
-      dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
-    } else if (from) {
-      dateClause = ` AND segments.date >= '${from}'`;
-    } else if (to) {
-      dateClause = ` AND segments.date <= '${to}'`;
-    }
+    if (from) dateClause += ` AND segments.date >= '${from}'`;
+    if (to) dateClause += ` AND segments.date <= '${to}'`;
 
-    const gaql = `SELECT campaign.name, campaign.id, segments.date, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
+    const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
 
     console.log('[Competition IS] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
@@ -998,43 +993,23 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
       return res.json({ connected: true, overview: null, campaigns: [], error: gData.error.message });
     }
 
-    // Aggregate per-day rows into per-campaign totals
-    const campMap = {};
-    for (const r of (gData.results || [])) {
+    // Without segments.date in SELECT, results are already aggregated per campaign
+    const campaigns = (gData.results || []).map(r => {
       const m = r.metrics || {};
-      const name = r.campaign?.name || 'Unknown';
-      const id = r.campaign?.id || '';
-      if (!campMap[id]) campMap[id] = { name, id, impressions: 0, clicks: 0, cost: 0, isWeighted: [], budgetWeighted: [], rankWeighted: [], topWeighted: [], absTopWeighted: [], exactWeighted: [] };
-      const c = campMap[id];
-      const impr = parseInt(m.impressions || '0', 10);
-      c.impressions += impr;
-      c.clicks += parseInt(m.clicks || '0', 10);
-      c.cost += parseInt(m.costMicros || '0', 10) / 1000000;
-      // Collect weighted values per day (weight by daily impressions)
-      if (m.searchImpressionShare != null) c.isWeighted.push({ val: m.searchImpressionShare, w: impr });
-      if (m.searchBudgetLostImpressionShare != null) c.budgetWeighted.push({ val: m.searchBudgetLostImpressionShare, w: impr });
-      if (m.searchRankLostImpressionShare != null) c.rankWeighted.push({ val: m.searchRankLostImpressionShare, w: impr });
-      if (m.searchTopImpressionPercentage != null) c.topWeighted.push({ val: m.searchTopImpressionPercentage, w: impr });
-      if (m.searchAbsoluteTopImpressionPercentage != null) c.absTopWeighted.push({ val: m.searchAbsoluteTopImpressionPercentage, w: impr });
-      if (m.searchExactMatchImpressionShare != null) c.exactWeighted.push({ val: m.searchExactMatchImpressionShare, w: impr });
-    }
-
-    function calcWeightedAvg(arr) {
-      if (!arr.length) return null;
-      const totalW = arr.reduce((s, x) => s + x.w, 0);
-      if (totalW === 0) return arr.length ? arr[0].val : null;
-      return arr.reduce((s, x) => s + x.val * x.w, 0) / totalW;
-    }
-
-    const campaigns = Object.values(campMap).map(c => ({
-      name: c.name, id: c.id, impressions: c.impressions, clicks: c.clicks, cost: c.cost,
-      search_impression_share: calcWeightedAvg(c.isWeighted),
-      budget_lost_is: calcWeightedAvg(c.budgetWeighted),
-      rank_lost_is: calcWeightedAvg(c.rankWeighted),
-      top_is: calcWeightedAvg(c.topWeighted),
-      abs_top_is: calcWeightedAvg(c.absTopWeighted),
-      exact_match_is: calcWeightedAvg(c.exactWeighted)
-    }));
+      return {
+        name: r.campaign?.name || 'Unknown',
+        id: r.campaign?.id || '',
+        impressions: parseInt(m.impressions || '0', 10),
+        clicks: parseInt(m.clicks || '0', 10),
+        cost: parseInt(m.costMicros || '0', 10) / 1000000,
+        search_impression_share: m.searchImpressionShare ?? null,
+        budget_lost_is: m.searchBudgetLostImpressionShare ?? null,
+        rank_lost_is: m.searchRankLostImpressionShare ?? null,
+        top_is: m.searchTopImpressionPercentage ?? null,
+        abs_top_is: m.searchAbsoluteTopImpressionPercentage ?? null,
+        exact_match_is: m.searchExactMatchImpressionShare ?? null
+      };
+    });
 
     // Overall weighted averages
     const totalImpr = campaigns.reduce((s, c) => s + c.impressions, 0);
@@ -1092,9 +1067,8 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
 
     // Query 2: keyword metrics with date filter (uses keyword_view)
     let dateClause = '';
-    if (from && to) dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
-    else if (from) dateClause = ` AND segments.date >= '${from}'`;
-    else if (to) dateClause = ` AND segments.date <= '${to}'`;
+    if (from) dateClause += ` AND segments.date >= '${from}'`;
+    if (to) dateClause += ` AND segments.date <= '${to}'`;
 
     const metricsGaql = `SELECT ad_group_criterion.keyword.text, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM keyword_view WHERE ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'${dateClause}`;
 
@@ -1185,9 +1159,8 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
     let dateClause = '';
-    if (from && to) dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
-    else if (from) dateClause = ` AND segments.date >= '${from}'`;
-    else if (to) dateClause = ` AND segments.date <= '${to}'`;
+    if (from) dateClause += ` AND segments.date >= '${from}'`;
+    if (to) dateClause += ` AND segments.date <= '${to}'`;
 
     const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 200`;
 
