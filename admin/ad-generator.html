@@ -1200,18 +1200,20 @@
       const targetW = target.width;
       const targetH = target.height;
 
-      // Scale factors from original canvas to target
-      const scaleX = targetW / canvasW;
-      const scaleY = targetH / canvasH;
+      // Uniform scale factor — use the smaller axis so objects stay proportional
+      const uniformScale = Math.min(targetW / canvasW, targetH / canvasH);
+
+      // Offsets to center the overlay content in the new dimensions
+      const offsetX = (targetW - canvasW * uniformScale) / 2;
+      const offsetY = (targetH - canvasH * uniformScale) / 2;
 
       // Deselect objects on the main canvas
       canvas.discardActiveObject();
       canvas.renderAll();
 
-      // Collect all objects from the main canvas
       const objects = canvas.getObjects();
 
-      // Create an offscreen canvas element
+      // Create offscreen canvas
       const offscreenEl = document.createElement('canvas');
       offscreenEl.width = targetW;
       offscreenEl.height = targetH;
@@ -1222,10 +1224,16 @@
         height: targetH
       });
 
-      // Load background image scaled to target size
+      // Background: "cover" crop — scale uniformly to fill, center, no stretch
       fabric.Image.fromURL(generatedImageUrl, function(bgImg) {
+        const coverScale = Math.max(targetW / bgImg.width, targetH / bgImg.height);
+        const bgW = bgImg.width * coverScale;
+        const bgH = bgImg.height * coverScale;
+        const bgLeft = (targetW - bgW) / 2;
+        const bgTop = (targetH - bgH) / 2;
+
         offscreen.setBackgroundImage(bgImg, function() {
-          // Clone and scale each object
+          // Clone and reposition each overlay object
           let pending = objects.length;
           if (pending === 0) {
             finishExport();
@@ -1234,22 +1242,24 @@
 
           objects.forEach(function(obj) {
             obj.clone(function(cloned) {
-              // Scale position and size proportionally
-              cloned.set({
-                left: obj.left * scaleX,
-                top: obj.top * scaleY,
-                scaleX: obj.scaleX * scaleX,
-                scaleY: obj.scaleY * scaleY
-              });
-
-              // Scale font size for text objects
               if (cloned.type === 'textbox' || cloned.type === 'i-text' || cloned.type === 'text') {
+                // Text: scale font size + width, keep scaleX/Y at original
                 cloned.set({
-                  fontSize: obj.fontSize * Math.min(scaleX, scaleY),
-                  width: obj.width * scaleX,
+                  left: obj.left * uniformScale + offsetX,
+                  top: obj.top * uniformScale + offsetY,
+                  fontSize: obj.fontSize * uniformScale,
+                  width: obj.width * uniformScale,
                   scaleX: obj.scaleX,
                   scaleY: obj.scaleY,
-                  padding: (obj.padding || 0) * Math.min(scaleX, scaleY)
+                  padding: (obj.padding || 0) * uniformScale
+                });
+              } else {
+                // Images (logos): scale uniformly
+                cloned.set({
+                  left: obj.left * uniformScale + offsetX,
+                  top: obj.top * uniformScale + offsetY,
+                  scaleX: obj.scaleX * uniformScale,
+                  scaleY: obj.scaleY * uniformScale
                 });
               }
 
@@ -1259,8 +1269,10 @@
             });
           });
         }, {
-          scaleX: targetW / bgImg.width,
-          scaleY: targetH / bgImg.height
+          scaleX: coverScale,
+          scaleY: coverScale,
+          left: bgLeft,
+          top: bgTop
         });
       }, { crossOrigin: 'anonymous' });
 
@@ -1268,7 +1280,6 @@
         offscreen.renderAll();
         const dataUrl = offscreen.toDataURL({ format: 'png', quality: 1 });
 
-        // Trigger download
         const link = document.createElement('a');
         link.download = `ad-${targetSizeLabel}-${Date.now()}.png`;
         link.href = dataUrl;
@@ -1276,7 +1287,6 @@
         link.click();
         document.body.removeChild(link);
 
-        // Cleanup
         offscreen.dispose();
         if (offscreenEl.parentElement) offscreenEl.parentElement.removeChild(offscreenEl);
       }
