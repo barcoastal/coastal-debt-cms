@@ -88,6 +88,27 @@ router.post('/', async (req, res) => {
     form = db.prepare('SELECT * FROM forms WHERE id = ?').get(formId);
   }
 
+  // Dedup check: reject if same phone or email submitted from same page within 5 minutes
+  const pageId = page ? page.id : null;
+  const articleId = article ? article.id : null;
+  if (phone || email) {
+    const dedup = db.prepare(`
+      SELECT id FROM leads
+      WHERE created_at > datetime('now', '-5 minutes')
+        AND (landing_page_id = ? OR article_id = ?)
+        AND (
+          (phone != '' AND phone = ?)
+          OR (email != '' AND email = ?)
+        )
+      LIMIT 1
+    `).get(pageId, articleId, phone || '', email || '');
+
+    if (dedup) {
+      console.log(`Duplicate lead blocked: phone=${phone}, email=${email}, existing lead #${dedup.id}`);
+      return res.json({ success: true, duplicate: true });
+    }
+  }
+
   // Insert lead
   const full_name = [first_name, last_name].filter(Boolean).join(' ');
   const result = db.prepare(`

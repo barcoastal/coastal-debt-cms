@@ -1098,9 +1098,13 @@
       }
     });
 
+    // Dedup flag to prevent double-submissions
+    var _formSubmitting = false;
+
     // Form submission
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       // Validate consent checkbox
       var consentBox = document.getElementById('consentCheckbox');
@@ -1126,6 +1130,7 @@
         }
       }
 
+      _formSubmitting = true;
       const btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1165,6 +1170,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = '{{formButton}}';
       }
@@ -1232,6 +1238,7 @@
     // Bottom form submission
     document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       var consentBox = document.getElementById('bottomConsentCheckbox');
       var consentErr = document.getElementById('bottomConsentError');
@@ -1259,6 +1266,7 @@
       // Refresh hidden fields before submit
       setBottomHiddenFields();
 
+      _formSubmitting = true;
       var btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1296,6 +1304,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = '{{ctaButton}}';
       }
