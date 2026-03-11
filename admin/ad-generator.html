@@ -211,6 +211,14 @@
     .download-size-btn .dl-size-dims { font-size: 11px; color: var(--gray-400); }
     .download-size-btn.current-size { border-color: #3052FF; background: #eef1ff; }
 
+    /* ============ SHAPES GRID ============ */
+    .shapes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .shape-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 8px 4px !important; font-size: 11px !important; line-height: 1;
+    }
+    .shape-btn svg { flex-shrink: 0; }
+
     /* ============ FONT SELECTOR ============ */
     #fontFamily { font-size: 13px; }
 
@@ -554,6 +562,51 @@
                   Auto-Compose (Headline + CTA)
                 </button>
                 <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">Claude AI generates a headline and CTA based on your prompt</p>
+              </div>
+
+              <!-- Shapes & Elements -->
+              <div class="controls-section">
+                <h4>Shapes</h4>
+                <div class="color-row" style="margin-bottom:8px;">
+                  <label style="font-size:12px;color:var(--gray-500);">Fill</label>
+                  <input type="color" id="shapeColor" value="#3052FF">
+                  <label style="font-size:12px;color:var(--gray-500);margin-left:6px;">Opacity</label>
+                  <input type="range" id="shapeOpacity" min="0.1" max="1" step="0.1" value="1" style="width:60px;">
+                </div>
+                <div class="shapes-grid">
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('rect')" title="Rectangle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                    Rect
+                  </button>
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('circle')" title="Circle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    Circle
+                  </button>
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('triangle')" title="Triangle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 22,22 2,22"/></svg>
+                    Triangle
+                  </button>
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('line')" title="Line">
+                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    Line
+                  </button>
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('bar')" title="Wide bar / banner strip">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="0" y="8" width="24" height="8" rx="1"/></svg>
+                    Bar
+                  </button>
+                  <button class="btn btn-secondary shape-btn" onclick="addShape('diagonal')" title="Diagonal block">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="0,0 24,0 24,24"/></svg>
+                    Diagonal
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload Element / Badge -->
+              <div class="controls-section">
+                <h4>Upload Element</h4>
+                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Add badges, icons, or any image to the canvas</p>
+                <input type="file" id="elementUpload" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="addUploadedElement(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('elementUpload').click()" style="width:100%;font-size:13px;">Choose Image...</button>
               </div>
             </div>
 
@@ -1037,6 +1090,98 @@
       canvas.add(textObj);
       canvas.setActiveObject(textObj);
       canvas.renderAll();
+    }
+
+    // ============ SHAPES & ELEMENTS ============
+
+    function addShape(type) {
+      if (!canvas) return;
+      const color = document.getElementById('shapeColor').value;
+      const opacity = parseFloat(document.getElementById('shapeOpacity').value) || 1;
+      let obj;
+
+      switch (type) {
+        case 'rect':
+          obj = new fabric.Rect({
+            left: canvasW * 0.15, top: canvasH * 0.3,
+            width: canvasW * 0.35, height: canvasH * 0.15,
+            fill: color, opacity: opacity, rx: 4, ry: 4
+          });
+          break;
+        case 'circle':
+          obj = new fabric.Circle({
+            left: canvasW * 0.3, top: canvasH * 0.3,
+            radius: canvasW * 0.1,
+            fill: color, opacity: opacity
+          });
+          break;
+        case 'triangle':
+          obj = new fabric.Triangle({
+            left: canvasW * 0.3, top: canvasH * 0.2,
+            width: canvasW * 0.25, height: canvasH * 0.25,
+            fill: color, opacity: opacity
+          });
+          break;
+        case 'line':
+          obj = new fabric.Line(
+            [0, 0, canvasW * 0.6, 0],
+            {
+              left: canvasW * 0.1, top: canvasH * 0.5,
+              stroke: color, strokeWidth: 4, opacity: opacity
+            }
+          );
+          break;
+        case 'bar':
+          obj = new fabric.Rect({
+            left: 0, top: canvasH * 0.45,
+            width: canvasW, height: canvasH * 0.08,
+            fill: color, opacity: opacity
+          });
+          break;
+        case 'diagonal':
+          obj = new fabric.Polygon(
+            [
+              { x: 0, y: 0 },
+              { x: canvasW * 0.5, y: 0 },
+              { x: 0, y: canvasH * 0.5 }
+            ],
+            {
+              left: 0, top: 0,
+              fill: color, opacity: opacity
+            }
+          );
+          break;
+      }
+
+      if (obj) {
+        canvas.add(obj);
+        canvas.setActiveObject(obj);
+        canvas.renderAll();
+      }
+    }
+
+    function addUploadedElement(input) {
+      if (!canvas || !input.files.length) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        fabric.Image.fromURL(e.target.result, function(img) {
+          // Scale to fit ~25% of canvas width, max
+          const maxW = canvasW * 0.25;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          img.set({
+            left: canvasW * 0.1,
+            top: canvasH * 0.7,
+            scaleX: scale,
+            scaleY: scale
+          });
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+        });
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
     }
 
     // ============ AUTO-COMPOSE ============
