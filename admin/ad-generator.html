@@ -211,6 +211,51 @@
     .download-size-btn .dl-size-dims { font-size: 11px; color: var(--gray-400); }
     .download-size-btn.current-size { border-color: #3052FF; background: #eef1ff; }
 
+    /* ============ GALLERY ============ */
+    .gallery-section {
+      margin-top: 32px; background: #fff; border: 1px solid var(--gray-200);
+      border-radius: 12px; overflow: hidden;
+    }
+    .gallery-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; cursor: pointer; user-select: none;
+    }
+    .gallery-header:hover { background: var(--gray-50); }
+    .gallery-count {
+      font-size: 12px; background: var(--gray-200); color: var(--gray-600);
+      padding: 2px 8px; border-radius: 10px; font-weight: 500;
+    }
+    .gallery-body { padding: 0 20px 20px; }
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .gallery-item {
+      border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden;
+      background: #f9fafb; cursor: pointer; transition: all 0.15s;
+    }
+    .gallery-item:hover { border-color: #3052FF; box-shadow: 0 2px 8px rgba(48,82,255,0.15); }
+    .gallery-item img {
+      width: 100%; height: 120px; object-fit: cover; display: block;
+    }
+    .gallery-item-info {
+      padding: 8px 10px; font-size: 11px; color: var(--gray-500);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .gallery-item-info .model-tag {
+      font-size: 10px; background: #eef1ff; color: #3052FF;
+      padding: 1px 6px; border-radius: 8px; font-weight: 600; text-transform: capitalize;
+    }
+    .gallery-item-actions {
+      display: flex; gap: 4px; padding: 0 10px 8px;
+    }
+    .gallery-item-actions .btn { font-size: 10px; padding: 4px 8px; flex: 1; }
+    .gallery-pagination {
+      display: flex; justify-content: center; gap: 6px; margin-top: 16px;
+    }
+    .gallery-pagination .btn { min-width: 36px; font-size: 12px; padding: 6px 10px; }
+    .gallery-pagination .btn.active-page { background: #3052FF; color: #fff; }
+
     /* ============ SHAPES GRID ============ */
     .shapes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
     .shape-btn {
@@ -691,6 +736,22 @@
 
             <button class="btn btn-secondary" onclick="startOver()" style="width:100%;color:var(--gray-500);margin-top:10px;">Start Over</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ============ GALLERY ============ -->
+      <div class="gallery-section" id="gallerySection">
+        <div class="gallery-header" onclick="toggleGallery()">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/></svg>
+            <span style="font-weight:600;font-size:14px;">Generated Images</span>
+            <span class="gallery-count" id="galleryCount"></span>
+          </div>
+          <svg id="galleryChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="gallery-body" id="galleryBody" style="display:none;">
+          <div class="gallery-grid" id="galleryGrid"></div>
+          <div class="gallery-pagination" id="galleryPagination"></div>
         </div>
       </div>
 
@@ -1563,9 +1624,103 @@
 
     // ============ UTILS ============
 
+    // ============ GALLERY ============
+
+    let galleryOpen = false;
+    let galleryPage = 1;
+
+    function toggleGallery() {
+      galleryOpen = !galleryOpen;
+      document.getElementById('galleryBody').style.display = galleryOpen ? 'block' : 'none';
+      document.getElementById('galleryChevron').style.transform = galleryOpen ? 'rotate(180deg)' : '';
+      if (galleryOpen) loadGallery(1);
+    }
+
+    async function loadGallery(page) {
+      galleryPage = page;
+      try {
+        const res = await fetch(`/api/ad-generator/generations?page=${page}&limit=12`);
+        const data = await res.json();
+
+        document.getElementById('galleryCount').textContent = data.total || '0';
+
+        const grid = document.getElementById('galleryGrid');
+        if (!data.generations.length) {
+          grid.innerHTML = '<p style="color:var(--gray-400);font-size:13px;padding:20px 0;text-align:center;">No generated images yet</p>';
+          document.getElementById('galleryPagination').innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = data.generations.map(g => {
+          const displayUrl = g.edited_image_url || g.image_url;
+          const date = new Date(g.created_at).toLocaleDateString();
+          const sizeName = (SIZE_META[g.size_label] || {}).name || g.size_label;
+          return `<div class="gallery-item">
+            <img src="${escapeHtml(displayUrl)}" alt="${escapeHtml(sizeName)}" loading="lazy">
+            <div class="gallery-item-info">
+              <span>${escapeHtml(sizeName)} &middot; ${date}</span>
+              <span class="model-tag">${escapeHtml(g.model)}</span>
+            </div>
+            <div class="gallery-item-actions">
+              <a class="btn btn-secondary" href="${escapeHtml(displayUrl)}" download style="text-decoration:none;text-align:center;">Save</a>
+              <button class="btn btn-primary" onclick="useGalleryImage('${escapeHtml(g.image_url)}', ${g.width || 1200}, ${g.height || 628}, '${escapeHtml(g.size_label)}', ${g.id})">Use</button>
+            </div>
+          </div>`;
+        }).join('');
+
+        // Pagination
+        const pagDiv = document.getElementById('galleryPagination');
+        if (data.pages <= 1) {
+          pagDiv.innerHTML = '';
+        } else {
+          let btns = '';
+          for (let p = 1; p <= data.pages; p++) {
+            btns += `<button class="btn btn-secondary${p === data.page ? ' active-page' : ''}" onclick="loadGallery(${p})">${p}</button>`;
+          }
+          pagDiv.innerHTML = btns;
+        }
+      } catch (err) {
+        console.error('Gallery load error:', err);
+      }
+    }
+
+    function useGalleryImage(imageUrl, width, height, sizeLabel, genId) {
+      // Load this image into the wizard as if it was just generated
+      generatedImageUrl = imageUrl;
+      generationId = genId;
+      canvasW = width;
+      canvasH = height;
+      selectedSize = sizeLabel;
+
+      // Update size card selection
+      document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
+      const sizeCard = document.querySelector(`.size-card[data-size="${sizeLabel}"]`);
+      if (sizeCard) sizeCard.classList.add('selected');
+
+      // Show in preview
+      const preview = document.getElementById('previewArea');
+      preview.classList.add('has-image');
+      preview.innerHTML = `<img src="${escapeHtml(generatedImageUrl)}" alt="Generated ad">`;
+      document.getElementById('step1Nav').style.display = 'flex';
+
+      // Reset canvas if it existed
+      if (canvas) { canvas.dispose(); canvas = null; }
+      if (resizeHandler) { window.removeEventListener('resize', resizeHandler); resizeHandler = null; }
+      maxStepReached = 1;
+
+      // Go to step 1 to show the preview, user can click Next
+      goToStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     // ============ INIT ============
     loadSettings();
     loadLogo();
+    // Pre-load gallery count
+    fetch('/api/ad-generator/generations?page=1&limit=1')
+      .then(r => r.json())
+      .then(d => { document.getElementById('galleryCount').textContent = d.total || '0'; })
+      .catch(() => {});
   </script>
 </body>
 </html>

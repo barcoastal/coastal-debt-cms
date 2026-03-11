@@ -253,6 +253,24 @@ router.post('/generate', authenticateToken, (req, res) => {
   res.json({ generation_ids: generationIds, message: 'Generation started' });
 });
 
+// List all completed generations (gallery)
+router.get('/generations', authenticateToken, (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(50, parseInt(req.query.limit) || 20);
+  const offset = (page - 1) * limit;
+
+  const total = db.prepare(`SELECT COUNT(*) as count FROM ad_generations WHERE status = 'completed' AND image_url IS NOT NULL`).get().count;
+  const generations = db.prepare(`
+    SELECT id, model, prompt, size_label, width, height, image_url, edited_image_url, created_at
+    FROM ad_generations
+    WHERE status = 'completed' AND image_url IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+
+  res.json({ generations, total, page, pages: Math.ceil(total / limit) });
+});
+
 // Batch status check
 router.get('/generations/batch-status', authenticateToken, (req, res) => {
   const ids = (req.query.ids || '').split(',').filter(Boolean).map(Number);
