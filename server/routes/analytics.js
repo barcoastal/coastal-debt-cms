@@ -956,6 +956,221 @@ router.get('/google-ads/leads', authenticateToken, (req, res) => {
   });
 });
 
+// Google Ads: Impression Share (Competition)
+router.get('/google-ads/impression-share', authenticateToken, async (req, res) => {
+  const { from, to } = req.query;
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.refresh_token_encrypted || !gConfig.customer_id) {
+      return res.json({ connected: false, overview: null, campaigns: [] });
+    }
+    const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
+    if (!devToken) return res.json({ connected: false, overview: null, campaigns: [] });
+
+    const accessToken = await getGoogleAccessToken(gConfig);
+    const customerId = gConfig.customer_id.replace(/-/g, '');
+    const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
+    const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
+    if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+
+    const dateParts = [];
+    if (from) dateParts.push(`segments.date >= '${from}'`);
+    if (to) dateParts.push(`segments.date <= '${to}'`);
+    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+
+    const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateFilter}`;
+
+    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 1000 })
+    });
+    const gData = await gRes.json();
+
+    if (gData.error) {
+      console.error('Google Ads IS error:', gData.error.message);
+      return res.json({ connected: true, overview: null, campaigns: [], error: gData.error.message });
+    }
+
+    const campaigns = (gData.results || []).map(r => {
+      const m = r.metrics || {};
+      const impr = parseInt(m.impressions || '0', 10);
+      return {
+        name: r.campaign?.name || 'Unknown',
+        id: r.campaign?.id || '',
+        impressions: impr,
+        clicks: parseInt(m.clicks || '0', 10),
+        cost: parseInt(m.costMicros || '0', 10) / 1000000,
+        search_impression_share: m.searchImpressionShare ?? null,
+        budget_lost_is: m.searchBudgetLostImpressionShare ?? null,
+        rank_lost_is: m.searchRankLostImpressionShare ?? null,
+        top_is: m.searchTopImpressionPercentage ?? null,
+        abs_top_is: m.searchAbsoluteTopImpressionPercentage ?? null,
+        exact_match_is: m.searchExactMatchImpressionShare ?? null
+      };
+    });
+
+    // Weighted averages across campaigns (weighted by impressions)
+    const totalImpr = campaigns.reduce((s, c) => s + c.impressions, 0);
+    function weightedAvg(field) {
+      if (totalImpr === 0) return null;
+      let sum = 0, validImpr = 0;
+      for (const c of campaigns) {
+        if (c[field] != null) { sum += c[field] * c.impressions; validImpr += c.impressions; }
+      }
+      return validImpr > 0 ? sum / validImpr : null;
+    }
+
+    res.json({
+      connected: true,
+      overview: {
+        search_impression_share: weightedAvg('search_impression_share'),
+        budget_lost_is: weightedAvg('budget_lost_is'),
+        rank_lost_is: weightedAvg('rank_lost_is'),
+        top_is: weightedAvg('top_is'),
+        abs_top_is: weightedAvg('abs_top_is'),
+        exact_match_is: weightedAvg('exact_match_is'),
+        total_impressions: totalImpr
+      },
+      campaigns
+    });
+  } catch (e) {
+    console.error('Impression share error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Google Ads: Quality Scores (Competition)
+router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => {
+  const { from, to } = req.query;
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.refresh_token_encrypted || !gConfig.customer_id) {
+      return res.json({ connected: false, distribution: {}, avg_quality_score: null, keywords: [] });
+    }
+    const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
+    if (!devToken) return res.json({ connected: false, distribution: {}, avg_quality_score: null, keywords: [] });
+
+    const accessToken = await getGoogleAccessToken(gConfig);
+    const customerId = gConfig.customer_id.replace(/-/g, '');
+    const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
+    const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
+    if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+
+    const dateParts = [];
+    if (from) dateParts.push(`segments.date >= '${from}'`);
+    if (to) dateParts.push(`segments.date <= '${to}'`);
+    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+
+    const gaql = `SELECT ad_group.name, ad_group_criterion.keyword.text, ad_group_criterion.quality_info.quality_score, ad_group_criterion.quality_info.creative_quality_score, ad_group_criterion.quality_info.post_click_quality_score, ad_group_criterion.quality_info.search_predicted_ctr, metrics.impressions, metrics.clicks, metrics.cost_micros FROM keyword_view WHERE ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'${dateFilter}`;
+
+    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 10000 })
+    });
+    const gData = await gRes.json();
+
+    if (gData.error) {
+      console.error('Google Ads QS error:', gData.error.message);
+      return res.json({ connected: true, distribution: {}, avg_quality_score: null, keywords: [], error: gData.error.message });
+    }
+
+    const distribution = {};
+    for (let i = 1; i <= 10; i++) distribution[i] = 0;
+    let qsSum = 0, qsCount = 0;
+
+    const keywords = (gData.results || []).map(r => {
+      const crit = r.adGroupCriterion || {};
+      const qi = crit.qualityInfo || {};
+      const m = r.metrics || {};
+      const qs = qi.qualityScore != null ? qi.qualityScore : null;
+      if (qs != null && qs >= 1 && qs <= 10) {
+        distribution[qs]++;
+        qsSum += qs;
+        qsCount++;
+      }
+      return {
+        keyword: crit.keyword?.text || '',
+        ad_group: r.adGroup?.name || '',
+        quality_score: qs,
+        creative_quality: qi.creativeQualityScore || null,
+        post_click_quality: qi.postClickQualityScore || null,
+        predicted_ctr: qi.searchPredictedCtr || null,
+        impressions: parseInt(m.impressions || '0', 10),
+        clicks: parseInt(m.clicks || '0', 10),
+        cost: parseInt(m.costMicros || '0', 10) / 1000000
+      };
+    });
+
+    res.json({
+      connected: true,
+      distribution,
+      avg_quality_score: qsCount > 0 ? Math.round((qsSum / qsCount) * 10) / 10 : null,
+      keywords
+    });
+  } catch (e) {
+    console.error('Quality scores error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Google Ads: Search Terms (Competition)
+router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
+  const { from, to } = req.query;
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.refresh_token_encrypted || !gConfig.customer_id) {
+      return res.json({ connected: false, search_terms: [] });
+    }
+    const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
+    if (!devToken) return res.json({ connected: false, search_terms: [] });
+
+    const accessToken = await getGoogleAccessToken(gConfig);
+    const customerId = gConfig.customer_id.replace(/-/g, '');
+    const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
+    const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
+    if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
+
+    const dateParts = [];
+    if (from) dateParts.push(`segments.date >= '${from}'`);
+    if (to) dateParts.push(`segments.date <= '${to}'`);
+    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+
+    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateFilter} ORDER BY metrics.impressions DESC LIMIT 200`;
+
+    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 200 })
+    });
+    const gData = await gRes.json();
+
+    if (gData.error) {
+      console.error('Google Ads search terms error:', gData.error.message);
+      return res.json({ connected: true, search_terms: [], error: gData.error.message });
+    }
+
+    const search_terms = (gData.results || []).map(r => {
+      const stv = r.searchTermView || {};
+      const m = r.metrics || {};
+      const impressions = parseInt(m.impressions || '0', 10);
+      const clicks = parseInt(m.clicks || '0', 10);
+      const costMicros = parseInt(m.costMicros || '0', 10);
+      const cost = costMicros / 1000000;
+      return {
+        search_term: stv.searchTerm || '',
+        status: stv.status || 'UNSPECIFIED',
+        impressions,
+        clicks,
+        ctr: impressions > 0 ? clicks / impressions : 0,
+        cpc: clicks > 0 ? cost / clicks : 0,
+        cost,
+        conversions: parseFloat(m.conversions || '0')
+      };
+    });
+
+    res.json({ connected: true, search_terms });
+  } catch (e) {
+    console.error('Search terms error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Bing Ads: Summary stats
 router.get('/bing-ads/summary', authenticateToken, (req, res) => {
   const { from, to } = req.query;

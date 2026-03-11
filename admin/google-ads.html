@@ -32,6 +32,39 @@
     .row-blocked { background: #fef2f2 !important; }
     .ip-cell { font-family: monospace; font-size: 11px; }
     .badge-red { background: #fee2e2; color: #991b1b; }
+
+    /* Tab system */
+    .tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--gray-200); margin-bottom: 24px; }
+    .tab-btn { padding: 10px 24px; font-size: 14px; font-weight: 600; color: var(--gray-500); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab-btn:hover { color: var(--gray-700); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Competition tab */
+    .comp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .comp-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
+    .comp-card .comp-label { font-size: 0.8rem; color: var(--gray-500); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .comp-card .comp-value { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); }
+    .comp-card .comp-bar { height: 6px; border-radius: 3px; background: var(--gray-200); margin-top: 10px; overflow: hidden; }
+    .comp-card .comp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+    .bar-green { background: #16a34a; }
+    .bar-yellow { background: #f59e0b; }
+    .bar-red { background: #dc2626; }
+    .qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    @media (max-width: 768px) { .qs-grid { grid-template-columns: 1fr; } }
+    .qs-avg { text-align: center; padding: 24px; }
+    .qs-avg .qs-number { font-size: 3rem; font-weight: 700; }
+    .qs-badge-good { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .qs-badge-avg { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .qs-badge-poor { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-added { background: #dcfce7; color: #166534; }
+    .status-excluded { background: #fee2e2; color: #991b1b; }
+    .status-none { background: var(--gray-100); color: var(--gray-600); }
+    .comp-loading { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+    .comp-not-connected { text-align: center; padding: 60px 20px; }
+    .comp-not-connected p { color: var(--gray-500); margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -46,6 +79,10 @@
         <a href="/admin/">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Dashboard
+        </a>
+        <a href="/admin/deep-analysis.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          Deep Analysis
         </a>
         <a href="/admin/leads.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -154,6 +191,12 @@
         <h1>Google Ads</h1>
       </div>
 
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('overview', this)">Overview</button>
+        <button class="tab-btn" onclick="showTab('competition', this)">Competition</button>
+      </div>
+
+      <div class="tab-content active" id="tab-overview">
       <!-- Time Range Filter -->
       <div class="card">
         <div class="filters">
@@ -226,6 +269,111 @@
         </div>
         <div id="pagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
       </div>
+      </div><!-- /tab-overview -->
+
+      <div class="tab-content" id="tab-competition">
+        <div id="compContent">
+          <div class="comp-loading">Loading competition data...</div>
+        </div>
+
+        <!-- Competition: Time Range -->
+        <div class="card" id="compFilters" style="display:none;">
+          <div class="filters">
+            <div class="time-range-btns" id="compTimeRange">
+              <button data-range="today" onclick="setCompRange('today', this)">Today</button>
+              <button data-range="yesterday" onclick="setCompRange('yesterday', this)">Yesterday</button>
+              <button data-range="last_week" onclick="setCompRange('last_week', this)">Last Week</button>
+              <button class="active" data-range="mtd" onclick="setCompRange('mtd', this)">MTD</button>
+              <button data-range="7d" onclick="setCompRange('7d', this)">Last 7 Days</button>
+              <button data-range="30d" onclick="setCompRange('30d', this)">Last 30 Days</button>
+              <button data-range="all" onclick="setCompRange('all', this)">All Time</button>
+              <button data-range="custom" onclick="setCompRange('custom', this)">Custom</button>
+            </div>
+            <input type="date" id="compFromDate" style="display:none;">
+            <input type="date" id="compToDate" style="display:none;">
+            <button class="btn btn-primary" onclick="loadCompetition()">Apply</button>
+          </div>
+        </div>
+
+        <!-- Impression Share Cards -->
+        <div class="comp-cards" id="isCards" style="display:none;"></div>
+
+        <!-- Campaign IS Table -->
+        <div class="card" id="campaignISCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Campaign Impression Share</h3></div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Campaign</th>
+                  <th>Impressions</th>
+                  <th>Search IS</th>
+                  <th>Lost to Budget</th>
+                  <th>Lost to Rank</th>
+                  <th>Top IS</th>
+                  <th>Abs Top IS</th>
+                </tr>
+              </thead>
+              <tbody id="campaignISTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quality Score -->
+        <div class="qs-grid" id="qsSection" style="display:none;">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">Quality Score Distribution</h3></div>
+            <div style="max-width:300px;margin:0 auto;">
+              <canvas id="qsChart"></canvas>
+            </div>
+            <div class="qs-avg" id="qsAvg"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">Keyword Quality Scores</h3></div>
+            <div class="table-container" style="max-height:450px;overflow-y:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Keyword</th>
+                    <th>Ad Group</th>
+                    <th>QS</th>
+                    <th>Ad Relevance</th>
+                    <th>Landing Page</th>
+                    <th>Expected CTR</th>
+                    <th>Impr</th>
+                    <th>Clicks</th>
+                    <th>Cost</th>
+                  </tr>
+                </thead>
+                <tbody id="qsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Terms -->
+        <div class="card" id="searchTermsCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Search Term Intelligence</h3></div>
+          <div class="table-container" style="max-height:500px;overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Search Term</th>
+                  <th>Status</th>
+                  <th>Impressions</th>
+                  <th>Clicks</th>
+                  <th>CTR</th>
+                  <th>CPC</th>
+                  <th>Cost</th>
+                  <th>Conversions</th>
+                </tr>
+              </thead>
+              <tbody id="searchTermsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /tab-competition -->
+
     </main>
   </div>
 
@@ -437,6 +585,207 @@
     }
 
     loadAll();
+
+    // --- Tab system ---
+    let competitionLoaded = false;
+    let compRange = 'mtd';
+    let qsChart = null;
+
+    function showTab(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+      if (tab === 'competition' && !competitionLoaded) {
+        competitionLoaded = true;
+        loadCompetition();
+      }
+    }
+
+    function getCompDateRange() {
+      if (compRange === 'custom') {
+        return { from: document.getElementById('compFromDate').value, to: document.getElementById('compToDate').value };
+      }
+      return getDateRangeFromPreset(compRange);
+    }
+
+    function setCompRange(range, btn) {
+      compRange = range;
+      document.querySelectorAll('#compTimeRange button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('compFromDate').style.display = show ? '' : 'none';
+      document.getElementById('compToDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadCompetition();
+    }
+
+    function buildCompQS() {
+      const { from, to } = getCompDateRange();
+      const p = new URLSearchParams();
+      if (from) p.set('from', from);
+      if (to) p.set('to', to);
+      return p.toString() ? '?' + p.toString() : '';
+    }
+
+    function isColor(val) {
+      if (val == null) return 'var(--gray-400)';
+      const pct = val * 100;
+      if (pct >= 70) return '#16a34a';
+      if (pct >= 30) return '#f59e0b';
+      return '#dc2626';
+    }
+
+    function isBarClass(val) {
+      if (val == null) return 'bar-red';
+      const pct = val * 100;
+      if (pct >= 70) return 'bar-green';
+      if (pct >= 30) return 'bar-yellow';
+      return 'bar-red';
+    }
+
+    function fmtPct(val) { return val != null ? (val * 100).toFixed(1) + '%' : 'N/A'; }
+    function fmtMoney(val) { return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    function qsSubBadge(val) {
+      if (!val || val === 'UNSPECIFIED') return '<span class="qs-badge-avg">N/A</span>';
+      if (val === 'ABOVE_AVERAGE') return '<span class="qs-badge-good">Above Avg</span>';
+      if (val === 'AVERAGE') return '<span class="qs-badge-avg">Average</span>';
+      return '<span class="qs-badge-poor">Below Avg</span>';
+    }
+
+    function statusBadge(status) {
+      if (status === 'ADDED' || status === 'ADDED_EXCLUDED') return '<span class="status-badge status-added">Added</span>';
+      if (status === 'EXCLUDED') return '<span class="status-badge status-excluded">Excluded</span>';
+      return '<span class="status-badge status-none">' + (status || 'None') + '</span>';
+    }
+
+    async function loadCompetition() {
+      const qs = buildCompQS();
+      const content = document.getElementById('compContent');
+      content.innerHTML = '<div class="comp-loading">Loading competition data...</div>';
+      document.getElementById('compFilters').style.display = 'none';
+      document.getElementById('isCards').style.display = 'none';
+      document.getElementById('campaignISCard').style.display = 'none';
+      document.getElementById('qsSection').style.display = 'none';
+      document.getElementById('searchTermsCard').style.display = 'none';
+
+      try {
+        const [isData, qsData, stData] = await Promise.all([
+          api('/api/analytics/google-ads/impression-share' + qs),
+          api('/api/analytics/google-ads/quality-scores' + qs),
+          api('/api/analytics/google-ads/search-terms' + qs)
+        ]);
+
+        if (!isData.connected) {
+          content.innerHTML = '<div class="comp-not-connected"><p>Google Ads is not connected.</p><a href="/admin/settings.html" class="btn btn-primary">Connect Google Ads</a></div>';
+          return;
+        }
+
+        content.innerHTML = '';
+        document.getElementById('compFilters').style.display = '';
+
+        // Impression Share Cards
+        const ov = isData.overview || {};
+        const cards = document.getElementById('isCards');
+        cards.style.display = '';
+        cards.innerHTML = [
+          { label: 'Search Impression Share', val: ov.search_impression_share },
+          { label: 'Lost to Budget', val: ov.budget_lost_is },
+          { label: 'Lost to Rank', val: ov.rank_lost_is },
+          { label: 'Top Impression Share', val: ov.top_is },
+          { label: 'Abs. Top IS', val: ov.abs_top_is }
+        ].map(c => {
+          const pct = c.val != null ? (c.val * 100) : 0;
+          const barColor = c.label.includes('Lost') ? (pct > 30 ? 'bar-red' : pct > 10 ? 'bar-yellow' : 'bar-green') : isBarClass(c.val);
+          return `<div class="comp-card">
+            <div class="comp-label">${c.label}</div>
+            <div class="comp-value" style="color:${c.label.includes('Lost') ? (pct > 30 ? '#dc2626' : pct > 10 ? '#f59e0b' : '#16a34a') : isColor(c.val)}">${fmtPct(c.val)}</div>
+            <div class="comp-bar"><div class="comp-bar-fill ${barColor}" style="width:${Math.min(pct, 100)}%"></div></div>
+          </div>`;
+        }).join('');
+
+        // Campaign IS Table
+        const cTable = document.getElementById('campaignISTable');
+        if (isData.campaigns && isData.campaigns.length) {
+          document.getElementById('campaignISCard').style.display = '';
+          cTable.innerHTML = isData.campaigns
+            .sort((a, b) => b.impressions - a.impressions)
+            .map(c => `<tr>
+              <td>${escapeHtml(c.name)}</td>
+              <td>${c.impressions.toLocaleString()}</td>
+              <td style="color:${isColor(c.search_impression_share)}">${fmtPct(c.search_impression_share)}</td>
+              <td>${fmtPct(c.budget_lost_is)}</td>
+              <td>${fmtPct(c.rank_lost_is)}</td>
+              <td>${fmtPct(c.top_is)}</td>
+              <td>${fmtPct(c.abs_top_is)}</td>
+            </tr>`).join('');
+        }
+
+        // Quality Score
+        if (qsData.connected) {
+          document.getElementById('qsSection').style.display = '';
+          const dist = qsData.distribution || {};
+          const labels = Object.keys(dist).sort((a,b) => a - b);
+          const values = labels.map(k => dist[k]);
+
+          const colors = labels.map(k => {
+            const n = parseInt(k);
+            if (n <= 3) return '#dc2626';
+            if (n <= 5) return '#f59e0b';
+            if (n <= 7) return '#3b82f6';
+            return '#16a34a';
+          });
+
+          if (qsChart) qsChart.destroy();
+          const ctx = document.getElementById('qsChart').getContext('2d');
+          qsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: labels.map(k => 'QS ' + k), datasets: [{ data: values, backgroundColor: colors, borderWidth: 1 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+          });
+
+          const avgEl = document.getElementById('qsAvg');
+          const avg = qsData.avg_quality_score;
+          const avgColor = avg == null ? 'var(--gray-400)' : avg >= 7 ? '#16a34a' : avg >= 5 ? '#f59e0b' : '#dc2626';
+          avgEl.innerHTML = `<div class="qs-number" style="color:${avgColor}">${avg != null ? avg : 'N/A'}</div><div style="color:var(--gray-500);font-size:0.85rem;">Average Quality Score</div>`;
+
+          // Keyword QS Table
+          const qsTbody = document.getElementById('qsTable');
+          const sortedKw = (qsData.keywords || []).sort((a, b) => b.impressions - a.impressions);
+          qsTbody.innerHTML = sortedKw.slice(0, 100).map(k => `<tr>
+            <td>${escapeHtml(k.keyword)}</td>
+            <td>${escapeHtml(k.ad_group)}</td>
+            <td style="font-weight:700;color:${k.quality_score != null ? (k.quality_score >= 7 ? '#16a34a' : k.quality_score >= 5 ? '#f59e0b' : '#dc2626') : 'var(--gray-400)'}">${k.quality_score != null ? k.quality_score : '-'}</td>
+            <td>${qsSubBadge(k.creative_quality)}</td>
+            <td>${qsSubBadge(k.post_click_quality)}</td>
+            <td>${qsSubBadge(k.predicted_ctr)}</td>
+            <td>${k.impressions.toLocaleString()}</td>
+            <td>${k.clicks.toLocaleString()}</td>
+            <td>${fmtMoney(k.cost)}</td>
+          </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
+        }
+
+        // Search Terms
+        if (stData.connected && stData.search_terms && stData.search_terms.length) {
+          document.getElementById('searchTermsCard').style.display = '';
+          const stTbody = document.getElementById('searchTermsTable');
+          stTbody.innerHTML = stData.search_terms.map(t => `<tr>
+            <td>${escapeHtml(t.search_term)}</td>
+            <td>${statusBadge(t.status)}</td>
+            <td>${t.impressions.toLocaleString()}</td>
+            <td>${t.clicks.toLocaleString()}</td>
+            <td>${(t.ctr * 100).toFixed(1)}%</td>
+            <td>${fmtMoney(t.cpc)}</td>
+            <td>${fmtMoney(t.cost)}</td>
+            <td>${t.conversions.toFixed(1)}</td>
+          </tr>`).join('');
+        }
+
+      } catch (err) {
+        console.error('Competition load error:', err);
+        content.innerHTML = '<div class="comp-loading" style="color:#dc2626;">Error loading competition data. Please try again.</div>';
+      }
+    }
   </script>
 <script>
 (function(){
