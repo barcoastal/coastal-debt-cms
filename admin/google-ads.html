@@ -681,7 +681,9 @@
           return;
         }
 
-        content.innerHTML = '';
+        // Show any API errors for debugging
+        const errors = [isData.error, qsData.error, stData.error].filter(Boolean);
+        content.innerHTML = errors.length ? '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#991b1b;font-size:13px;"><strong>API Errors:</strong> ' + errors.map(e => escapeHtml(e)).join(' | ') + '</div>' : '';
         document.getElementById('compFilters').style.display = '';
 
         // Impression Share Cards
@@ -690,10 +692,11 @@
         cards.style.display = '';
         cards.innerHTML = [
           { label: 'Search Impression Share', val: ov.search_impression_share },
+          { label: 'Abs. Top Impression Share', val: ov.abs_top_is },
+          { label: 'Top Impression Share', val: ov.top_is },
           { label: 'Lost to Budget', val: ov.budget_lost_is },
           { label: 'Lost to Rank', val: ov.rank_lost_is },
-          { label: 'Top Impression Share', val: ov.top_is },
-          { label: 'Abs. Top IS', val: ov.abs_top_is }
+          { label: 'Exact Match IS', val: ov.exact_match_is }
         ].map(c => {
           const pct = c.val != null ? (c.val * 100) : 0;
           const barColor = c.label.includes('Lost') ? (pct > 30 ? 'bar-red' : pct > 10 ? 'bar-yellow' : 'bar-green') : isBarClass(c.val);

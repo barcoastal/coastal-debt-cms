@@ -973,44 +973,72 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
-    const dateParts = [];
-    if (from) dateParts.push(`segments.date >= '${from}'`);
-    if (to) dateParts.push(`segments.date <= '${to}'`);
-    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+    // Date filter — use BETWEEN syntax, include segments.date in SELECT for proper segmentation
+    let dateClause = '';
+    if (from && to) {
+      dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
+    } else if (from) {
+      dateClause = ` AND segments.date >= '${from}'`;
+    } else if (to) {
+      dateClause = ` AND segments.date <= '${to}'`;
+    }
 
-    const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateFilter}`;
+    const gaql = `SELECT campaign.name, campaign.id, segments.date, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.search_top_impression_percentage, metrics.search_absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
 
+    console.log('[Competition IS] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 1000 })
+      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 10000 })
     });
     const gData = await gRes.json();
+    console.log('[Competition IS] results count:', gData.results?.length, 'error:', gData.error?.message || 'none');
+    if (gData.results?.[0]) console.log('[Competition IS] sample row metrics:', JSON.stringify(gData.results[0].metrics));
 
     if (gData.error) {
-      console.error('Google Ads IS error:', gData.error.message);
+      console.error('Google Ads IS error:', JSON.stringify(gData.error));
       return res.json({ connected: true, overview: null, campaigns: [], error: gData.error.message });
     }
 
-    const campaigns = (gData.results || []).map(r => {
+    // Aggregate per-day rows into per-campaign totals
+    const campMap = {};
+    for (const r of (gData.results || [])) {
       const m = r.metrics || {};
+      const name = r.campaign?.name || 'Unknown';
+      const id = r.campaign?.id || '';
+      if (!campMap[id]) campMap[id] = { name, id, impressions: 0, clicks: 0, cost: 0, isWeighted: [], budgetWeighted: [], rankWeighted: [], topWeighted: [], absTopWeighted: [], exactWeighted: [] };
+      const c = campMap[id];
       const impr = parseInt(m.impressions || '0', 10);
-      return {
-        name: r.campaign?.name || 'Unknown',
-        id: r.campaign?.id || '',
-        impressions: impr,
-        clicks: parseInt(m.clicks || '0', 10),
-        cost: parseInt(m.costMicros || '0', 10) / 1000000,
-        search_impression_share: m.searchImpressionShare ?? null,
-        budget_lost_is: m.searchBudgetLostImpressionShare ?? null,
-        rank_lost_is: m.searchRankLostImpressionShare ?? null,
-        top_is: m.searchTopImpressionPercentage ?? null,
-        abs_top_is: m.searchAbsoluteTopImpressionPercentage ?? null,
-        exact_match_is: m.searchExactMatchImpressionShare ?? null
-      };
-    });
+      c.impressions += impr;
+      c.clicks += parseInt(m.clicks || '0', 10);
+      c.cost += parseInt(m.costMicros || '0', 10) / 1000000;
+      // Collect weighted values per day (weight by daily impressions)
+      if (m.searchImpressionShare != null) c.isWeighted.push({ val: m.searchImpressionShare, w: impr });
+      if (m.searchBudgetLostImpressionShare != null) c.budgetWeighted.push({ val: m.searchBudgetLostImpressionShare, w: impr });
+      if (m.searchRankLostImpressionShare != null) c.rankWeighted.push({ val: m.searchRankLostImpressionShare, w: impr });
+      if (m.searchTopImpressionPercentage != null) c.topWeighted.push({ val: m.searchTopImpressionPercentage, w: impr });
+      if (m.searchAbsoluteTopImpressionPercentage != null) c.absTopWeighted.push({ val: m.searchAbsoluteTopImpressionPercentage, w: impr });
+      if (m.searchExactMatchImpressionShare != null) c.exactWeighted.push({ val: m.searchExactMatchImpressionShare, w: impr });
+    }
 
-    // Weighted averages across campaigns (weighted by impressions)
+    function calcWeightedAvg(arr) {
+      if (!arr.length) return null;
+      const totalW = arr.reduce((s, x) => s + x.w, 0);
+      if (totalW === 0) return arr.length ? arr[0].val : null;
+      return arr.reduce((s, x) => s + x.val * x.w, 0) / totalW;
+    }
+
+    const campaigns = Object.values(campMap).map(c => ({
+      name: c.name, id: c.id, impressions: c.impressions, clicks: c.clicks, cost: c.cost,
+      search_impression_share: calcWeightedAvg(c.isWeighted),
+      budget_lost_is: calcWeightedAvg(c.budgetWeighted),
+      rank_lost_is: calcWeightedAvg(c.rankWeighted),
+      top_is: calcWeightedAvg(c.topWeighted),
+      abs_top_is: calcWeightedAvg(c.absTopWeighted),
+      exact_match_is: calcWeightedAvg(c.exactWeighted)
+    }));
+
+    // Overall weighted averages
     const totalImpr = campaigns.reduce((s, c) => s + c.impressions, 0);
-    function weightedAvg(field) {
+    function overallAvg(field) {
       if (totalImpr === 0) return null;
       let sum = 0, validImpr = 0;
       for (const c of campaigns) {
@@ -1022,12 +1050,12 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     res.json({
       connected: true,
       overview: {
-        search_impression_share: weightedAvg('search_impression_share'),
-        budget_lost_is: weightedAvg('budget_lost_is'),
-        rank_lost_is: weightedAvg('rank_lost_is'),
-        top_is: weightedAvg('top_is'),
-        abs_top_is: weightedAvg('abs_top_is'),
-        exact_match_is: weightedAvg('exact_match_is'),
+        search_impression_share: overallAvg('search_impression_share'),
+        budget_lost_is: overallAvg('budget_lost_is'),
+        rank_lost_is: overallAvg('rank_lost_is'),
+        top_is: overallAvg('top_is'),
+        abs_top_is: overallAvg('abs_top_is'),
+        exact_match_is: overallAvg('exact_match_is'),
         total_impressions: totalImpr
       },
       campaigns
@@ -1039,6 +1067,8 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
 });
 
 // Google Ads: Quality Scores (Competition)
+// Quality score is a snapshot (current value) — queried without date filter.
+// Metrics (impressions, clicks, cost) use date filter via a separate aggregation approach.
 router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => {
   const { from, to } = req.query;
   try {
@@ -1055,47 +1085,73 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
-    const dateParts = [];
-    if (from) dateParts.push(`segments.date >= '${from}'`);
-    if (to) dateParts.push(`segments.date <= '${to}'`);
-    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+    const apiUrl = `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`;
 
-    const gaql = `SELECT ad_group.name, ad_group_criterion.keyword.text, ad_group_criterion.quality_info.quality_score, ad_group_criterion.quality_info.creative_quality_score, ad_group_criterion.quality_info.post_click_quality_score, ad_group_criterion.quality_info.search_predicted_ctr, metrics.impressions, metrics.clicks, metrics.cost_micros FROM keyword_view WHERE ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'${dateFilter}`;
+    // Query 1: QS snapshot (no date filter, uses ad_group_criterion resource directly)
+    const qsGaql = `SELECT ad_group.name, ad_group_criterion.keyword.text, ad_group_criterion.quality_info.quality_score, ad_group_criterion.quality_info.creative_quality_score, ad_group_criterion.quality_info.post_click_quality_score, ad_group_criterion.quality_info.search_predicted_ctr FROM ad_group_criterion WHERE ad_group_criterion.type = 'KEYWORD' AND ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
 
-    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 10000 })
-    });
-    const gData = await gRes.json();
+    // Query 2: keyword metrics with date filter (uses keyword_view)
+    let dateClause = '';
+    if (from && to) dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
+    else if (from) dateClause = ` AND segments.date >= '${from}'`;
+    else if (to) dateClause = ` AND segments.date <= '${to}'`;
 
-    if (gData.error) {
-      console.error('Google Ads QS error:', gData.error.message);
-      return res.json({ connected: true, distribution: {}, avg_quality_score: null, keywords: [], error: gData.error.message });
+    const metricsGaql = `SELECT ad_group_criterion.keyword.text, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM keyword_view WHERE ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'${dateClause}`;
+
+    console.log('[Competition QS] GAQL:', qsGaql);
+    console.log('[Competition QS metrics] GAQL:', metricsGaql);
+
+    const [qsRes, metricsRes] = await Promise.all([
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: qsGaql, pageSize: 10000 }) }),
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: metricsGaql, pageSize: 10000 }) })
+    ]);
+    const [qsData, metricsData] = await Promise.all([qsRes.json(), metricsRes.json()]);
+
+    console.log('[Competition QS] results:', qsData.results?.length, 'error:', qsData.error?.message || 'none');
+    console.log('[Competition QS metrics] results:', metricsData.results?.length, 'error:', metricsData.error?.message || 'none');
+    if (qsData.results?.[0]) console.log('[Competition QS] sample:', JSON.stringify(qsData.results[0]));
+
+    if (qsData.error) {
+      return res.json({ connected: true, distribution: {}, avg_quality_score: null, keywords: [], error: qsData.error.message });
+    }
+
+    // Build metrics lookup: keyword+adgroup -> aggregated metrics
+    const metricsMap = {};
+    for (const r of (metricsData.results || [])) {
+      const key = (r.adGroupCriterion?.keyword?.text || '') + '|||' + (r.adGroup?.name || '');
+      if (!metricsMap[key]) metricsMap[key] = { impressions: 0, clicks: 0, cost: 0 };
+      const m = r.metrics || {};
+      metricsMap[key].impressions += parseInt(m.impressions || '0', 10);
+      metricsMap[key].clicks += parseInt(m.clicks || '0', 10);
+      metricsMap[key].cost += parseInt(m.costMicros || '0', 10) / 1000000;
     }
 
     const distribution = {};
     for (let i = 1; i <= 10; i++) distribution[i] = 0;
     let qsSum = 0, qsCount = 0;
 
-    const keywords = (gData.results || []).map(r => {
+    const keywords = (qsData.results || []).map(r => {
       const crit = r.adGroupCriterion || {};
       const qi = crit.qualityInfo || {};
-      const m = r.metrics || {};
+      const kwText = crit.keyword?.text || '';
+      const agName = r.adGroup?.name || '';
       const qs = qi.qualityScore != null ? qi.qualityScore : null;
       if (qs != null && qs >= 1 && qs <= 10) {
         distribution[qs]++;
         qsSum += qs;
         qsCount++;
       }
+      const mLookup = metricsMap[kwText + '|||' + agName] || { impressions: 0, clicks: 0, cost: 0 };
       return {
-        keyword: crit.keyword?.text || '',
-        ad_group: r.adGroup?.name || '',
+        keyword: kwText,
+        ad_group: agName,
         quality_score: qs,
         creative_quality: qi.creativeQualityScore || null,
         post_click_quality: qi.postClickQualityScore || null,
         predicted_ctr: qi.searchPredictedCtr || null,
-        impressions: parseInt(m.impressions || '0', 10),
-        clicks: parseInt(m.clicks || '0', 10),
-        cost: parseInt(m.costMicros || '0', 10) / 1000000
+        impressions: mLookup.impressions,
+        clicks: mLookup.clicks,
+        cost: mLookup.cost
       };
     });
 
@@ -1128,20 +1184,22 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
-    const dateParts = [];
-    if (from) dateParts.push(`segments.date >= '${from}'`);
-    if (to) dateParts.push(`segments.date <= '${to}'`);
-    const dateFilter = dateParts.length ? ' AND ' + dateParts.join(' AND ') : '';
+    let dateClause = '';
+    if (from && to) dateClause = ` AND segments.date BETWEEN '${from}' AND '${to}'`;
+    else if (from) dateClause = ` AND segments.date >= '${from}'`;
+    else if (to) dateClause = ` AND segments.date <= '${to}'`;
 
-    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateFilter} ORDER BY metrics.impressions DESC LIMIT 200`;
+    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 200`;
 
+    console.log('[Competition ST] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
       method: 'POST', headers, body: JSON.stringify({ query: gaql, pageSize: 200 })
     });
     const gData = await gRes.json();
+    console.log('[Competition ST] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
 
     if (gData.error) {
-      console.error('Google Ads search terms error:', gData.error.message);
+      console.error('Google Ads search terms error:', JSON.stringify(gData.error));
       return res.json({ connected: true, search_terms: [], error: gData.error.message });
     }
 
