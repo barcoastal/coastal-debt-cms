@@ -52,7 +52,7 @@
     .bar-yellow { background: #f59e0b; }
     .bar-red { background: #dc2626; }
     .qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-    @media (max-width: 768px) { .qs-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .qs-grid { grid-template-columns: 1fr !important; } }
     .qs-avg { text-align: center; padding: 24px; }
     .qs-avg .qs-number { font-size: 3rem; font-weight: 700; }
     .qs-badge-good { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
@@ -297,6 +297,22 @@
 
         <!-- Impression Share Cards -->
         <div class="comp-cards" id="isCards" style="display:none;"></div>
+
+        <!-- Competitive Position -->
+        <div class="card" id="compPositionCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Competitive Position — You vs Competitors</h3></div>
+          <div class="qs-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div><canvas id="chartSearchIS"></canvas></div>
+            <div><canvas id="chartTopIS"></canvas></div>
+            <div><canvas id="chartAbsTopIS"></canvas></div>
+          </div>
+          <div style="display:flex;gap:24px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#3052FF;vertical-align:middle;margin-right:4px;"></span> Your Impressions</span>
+            <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#dc2626;vertical-align:middle;margin-right:4px;"></span> Competitors (Lost to Rank)</span>
+            <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#f59e0b;vertical-align:middle;margin-right:4px;"></span> Lost to Budget</span>
+            <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#e5e7eb;vertical-align:middle;margin-right:4px;"></span> Other / Unknown</span>
+          </div>
+        </div>
 
         <!-- Campaign IS Table -->
         <div class="card" id="campaignISCard" style="display:none;">
@@ -659,12 +675,59 @@
       return '<span class="status-badge status-none">' + (status || 'None') + '</span>';
     }
 
+    let chartSearchIS = null, chartTopIS = null, chartAbsTopIS = null;
+
+    function renderCompPositionCharts(ov) {
+      const card = document.getElementById('compPositionCard');
+      const searchIS = ov.search_impression_share;
+      const topIS = ov.top_is;
+      const absTopIS = ov.abs_top_is;
+      const budgetLost = ov.budget_lost_is;
+      const rankLost = ov.rank_lost_is;
+
+      // Only show if we have at least some data
+      if (searchIS == null && topIS == null && absTopIS == null) { card.style.display = 'none'; return; }
+      card.style.display = '';
+
+      function makeChart(ctx, label, yourShare, budget, rank) {
+        const you = yourShare != null ? Math.round(yourShare * 1000) / 10 : 0;
+        const bud = budget != null ? Math.round(budget * 1000) / 10 : 0;
+        const rnk = rank != null ? Math.round(rank * 1000) / 10 : 0;
+        const other = Math.max(0, Math.round((100 - you - bud - rnk) * 10) / 10);
+        return new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['You: ' + you + '%', 'Competitors: ' + rnk + '%', 'Budget Gap: ' + bud + '%', 'Other: ' + other + '%'],
+            datasets: [{ data: [you, rnk, bud, other], backgroundColor: ['#3052FF', '#dc2626', '#f59e0b', '#e5e7eb'], borderWidth: 2, borderColor: '#fff' }]
+          },
+          options: {
+            responsive: true,
+            cutout: '55%',
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: label, font: { size: 13, weight: '600' }, padding: { bottom: 8 } },
+              tooltip: { callbacks: { label: function(c) { return c.label; } } }
+            }
+          }
+        });
+      }
+
+      if (chartSearchIS) chartSearchIS.destroy();
+      if (chartTopIS) chartTopIS.destroy();
+      if (chartAbsTopIS) chartAbsTopIS.destroy();
+
+      chartSearchIS = makeChart(document.getElementById('chartSearchIS').getContext('2d'), 'Search Impression Share', searchIS, budgetLost, rankLost);
+      chartTopIS = makeChart(document.getElementById('chartTopIS').getContext('2d'), 'Top Impression Share', topIS, budgetLost, rankLost);
+      chartAbsTopIS = makeChart(document.getElementById('chartAbsTopIS').getContext('2d'), 'Absolute Top Impression Share', absTopIS, budgetLost, rankLost);
+    }
+
     async function loadCompetition() {
       const qs = buildCompQS();
       const content = document.getElementById('compContent');
       content.innerHTML = '<div class="comp-loading">Loading competition data...</div>';
       document.getElementById('compFilters').style.display = 'none';
       document.getElementById('isCards').style.display = 'none';
+      document.getElementById('compPositionCard').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
@@ -706,6 +769,9 @@
             <div class="comp-bar"><div class="comp-bar-fill ${barColor}" style="width:${Math.min(pct, 100)}%"></div></div>
           </div>`;
         }).join('');
+
+        // Competitive Position Charts
+        renderCompPositionCharts(ov);
 
         // Campaign IS Table
         const cTable = document.getElementById('campaignISTable');
