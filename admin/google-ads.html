@@ -68,6 +68,17 @@
     .comp-loading { text-align: center; padding: 60px 20px; color: var(--gray-400); }
     .comp-not-connected { text-align: center; padding: 60px 20px; }
     .comp-not-connected p { color: var(--gray-500); margin-bottom: 12px; }
+    .campaign-charts-grid { display: flex; flex-direction: column; gap: 0; }
+    .campaign-chart-row { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--gray-200); }
+    .campaign-chart-row:last-child { border-bottom: none; }
+    .campaign-chart-name { width: 200px; min-width: 200px; font-size: 13px; font-weight: 600; color: var(--gray-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .campaign-chart-donuts { display: flex; gap: 24px; flex: 1; justify-content: center; }
+    .campaign-chart-donuts > div { width: 140px; text-align: center; }
+    .campaign-chart-donuts canvas { max-height: 120px; }
+    @media (max-width: 900px) {
+      .campaign-chart-row { flex-direction: column; align-items: flex-start; }
+      .campaign-chart-name { width: 100%; min-width: 0; }
+    }
   </style>
 </head>
 <body>
@@ -324,6 +335,12 @@
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#f59e0b;vertical-align:middle;margin-right:4px;"></span> Lost to Budget</span>
             <span style="font-size:12px;color:var(--gray-500);"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#e5e7eb;vertical-align:middle;margin-right:4px;"></span> Other / Unknown</span>
           </div>
+        </div>
+
+        <!-- Per-Campaign Competitive Position Charts -->
+        <div class="card" id="campaignChartsCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Competitive Position by Campaign</h3></div>
+          <div id="campaignChartsGrid" class="campaign-charts-grid"></div>
         </div>
 
         <!-- Auction Insights — Link to Google Ads UI -->
@@ -719,6 +736,7 @@
     }
 
     let chartSearchIS = null, chartTopIS = null, chartAbsTopIS = null;
+    let campaignCharts = [];
 
     function renderCompPositionCharts(ov) {
       const card = document.getElementById('compPositionCard');
@@ -764,6 +782,84 @@
       chartAbsTopIS = makeChart(document.getElementById('chartAbsTopIS').getContext('2d'), 'Absolute Top Impression Share', absTopIS, budgetLost, rankLost);
     }
 
+    function renderCampaignCharts(campaigns) {
+      // Destroy previous instances
+      campaignCharts.forEach(c => c.destroy());
+      campaignCharts = [];
+
+      const card = document.getElementById('campaignChartsCard');
+      const grid = document.getElementById('campaignChartsGrid');
+      grid.innerHTML = '';
+
+      // Filter campaigns that have at least one IS metric
+      const valid = (campaigns || [])
+        .filter(c => c.search_impression_share != null || c.top_is != null || c.abs_top_is != null)
+        .sort((a, b) => b.impressions - a.impressions);
+
+      if (!valid.length) { card.style.display = 'none'; return; }
+      card.style.display = '';
+
+      function makeMiniChart(canvas, label, yourShare, budget, rank) {
+        const you = yourShare != null ? Math.round(yourShare * 1000) / 10 : 0;
+        const bud = budget != null ? Math.round(budget * 1000) / 10 : 0;
+        const rnk = rank != null ? Math.round(rank * 1000) / 10 : 0;
+        const other = Math.max(0, Math.round((100 - you - bud - rnk) * 10) / 10);
+        var chart = new Chart(canvas.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['You: ' + you + '%', 'Competitors: ' + rnk + '%', 'Budget Gap: ' + bud + '%', 'Other: ' + other + '%'],
+            datasets: [{ data: [you, rnk, bud, other], backgroundColor: ['#3052FF', '#dc2626', '#f59e0b', '#e5e7eb'], borderWidth: 1, borderColor: '#fff' }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '50%',
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: label, font: { size: 11, weight: '600' }, padding: { bottom: 4 } },
+              tooltip: { callbacks: { label: function(c) { return c.label; } } }
+            }
+          }
+        });
+        campaignCharts.push(chart);
+      }
+
+      valid.forEach(function(c) {
+        var row = document.createElement('div');
+        row.className = 'campaign-chart-row';
+
+        var nameEl = document.createElement('div');
+        nameEl.className = 'campaign-chart-name';
+        nameEl.title = c.name;
+        nameEl.textContent = c.name;
+        row.appendChild(nameEl);
+
+        var donuts = document.createElement('div');
+        donuts.className = 'campaign-chart-donuts';
+
+        var metrics = [
+          { label: 'Search IS', share: c.search_impression_share, budget: c.budget_lost_is, rank: c.rank_lost_is },
+          { label: 'Top IS', share: c.top_is, budget: c.budget_lost_is, rank: c.rank_lost_is },
+          { label: 'Abs Top IS', share: c.abs_top_is, budget: c.budget_lost_is, rank: c.rank_lost_is }
+        ];
+
+        metrics.forEach(function(m) {
+          var wrap = document.createElement('div');
+          var canvas = document.createElement('canvas');
+          wrap.appendChild(canvas);
+          donuts.appendChild(wrap);
+          if (m.share != null) {
+            makeMiniChart(canvas, m.label, m.share, m.budget, m.rank);
+          } else {
+            wrap.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--gray-500);margin-bottom:4px;">' + m.label + '</div><div style="color:var(--gray-400);font-size:12px;padding:20px 0;">N/A</div>';
+          }
+        });
+
+        row.appendChild(donuts);
+        grid.appendChild(row);
+      });
+    }
+
     async function loadCompetition() {
       const qs = buildCompQS();
       const content = document.getElementById('compContent');
@@ -771,6 +867,7 @@
       document.getElementById('compFilters').style.display = 'none';
       document.getElementById('isCards').style.display = 'none';
       document.getElementById('compPositionCard').style.display = 'none';
+      document.getElementById('campaignChartsCard').style.display = 'none';
       document.getElementById('auctionInsightsLink').style.display = 'none';
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
@@ -817,6 +914,9 @@
 
         // Competitive Position Charts
         renderCompPositionCharts(ov);
+
+        // Per-Campaign Competitive Position Charts
+        renderCampaignCharts(isData.campaigns);
 
         // Auction Insights link
         document.getElementById('auctionInsightsLink').style.display = '';
