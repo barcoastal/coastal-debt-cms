@@ -1065,7 +1065,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     if (from) dateClause += ` AND segments.date >= '${from}'`;
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
-    const gaql = `SELECT auction_insight.display_domain, metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`;
+    const gaql = `SELECT campaign_auction_insight.display_domain, metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign_auction_insight WHERE campaign.status = 'ENABLED'${dateClause}`;
 
     console.log('[Competition AI] GAQL:', gaql);
     const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
@@ -1084,7 +1084,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     // Aggregate per-domain (rows may repeat per campaign/date)
     const domainMap = {};
     for (const r of (gData.results || [])) {
-      const domain = r.auctionInsight?.displayDomain || 'Unknown';
+      const domain = r.campaignAuctionInsight?.displayDomain || r.auctionInsight?.displayDomain || 'Unknown';
       const m = r.metrics || {};
       if (!domainMap[domain]) {
         domainMap[domain] = { count: 0, is: 0, overlap: 0, posAbove: 0, topPct: 0, absTopPct: 0, outranking: 0 };
