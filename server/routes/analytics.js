@@ -1047,77 +1047,127 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
 // Google Ads: Auction Insights (Competition)
 // Returns competitor domain data if the account is allowlisted for auction insight fields.
 // Not all Google Ads accounts have access — gracefully returns available:false if not supported.
+// Auction Insights via Google Sheet workaround
+// User exports auction insights from Google Ads UI → Google Sheets, shares with service account
+// Supports multiple sheets (one per campaign). Use ?source=label to filter.
 router.get('/google-ads/auction-insights', authenticateToken, async (req, res) => {
-  const { from, to } = req.query;
   try {
     const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig || !gConfig.refresh_token_encrypted || !gConfig.customer_id) {
-      return res.json({ connected: false, available: false, domains: [] });
-    }
-    const devToken = GOOGLE_DEVELOPER_TOKEN || (gConfig.developer_token_encrypted ? decrypt(gConfig.developer_token_encrypted) : null);
-    if (!devToken) return res.json({ connected: false, available: false, domains: [] });
-
-    const accessToken = await getGoogleAccessToken(gConfig);
-    const customerId = gConfig.customer_id.replace(/-/g, '');
-    const lid = gConfig.login_customer_id || GOOGLE_LOGIN_CUSTOMER_ID;
-    const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
-    if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
-
-    let dateClause = '';
-    if (from) dateClause += ` AND segments.date >= '${from}'`;
-    if (to) dateClause += ` AND segments.date <= '${to}'`;
-
-    const gaql = `SELECT segments.auction_insight_domain, metrics.auction_insight_search_impression_share, metrics.auction_insight_search_overlap_rate, metrics.auction_insight_search_position_above_rate, metrics.auction_insight_search_top_impression_percentage, metrics.auction_insight_search_absolute_top_impression_percentage, metrics.auction_insight_search_outranking_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
-
-    console.log('[Competition Auction] GAQL:', gaql);
-    const apiUrl = `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`;
-    const gRes = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: gaql }) });
-    const gData = await gRes.json();
-    console.log('[Competition Auction] results count:', gData.results?.length, 'error:', gData.error?.message || 'none');
-
-    if (gData.error) {
-      const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
-      console.error('Google Ads Auction Insights error:', JSON.stringify(gData.error).substring(0, 1000));
-      return res.json({
-        connected: true,
-        available: false,
-        error: (gData.error.message || '') + (errDetails ? ' — ' + errDetails : ''),
-        domains: []
-      });
+    if (!gConfig || !gConfig.customer_id) {
+      return res.json({ connected: false, available: false, sources: [], domains: [] });
     }
 
-    // Group by domain — each result row has one domain + metrics from one campaign
+    let allSheets = [];
+    try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
+    if (!allSheets.length) {
+      return res.json({ connected: true, available: false, sources: [], domains: [] });
+    }
+
+    const { source } = req.query;
+    const targetSheets = source
+      ? allSheets.filter(s => s.label === source)
+      : allSheets;
+
+    if (!targetSheets.length) {
+      return res.json({ connected: true, available: false, sources: allSheets.map(s => s.label), domains: [] });
+    }
+
+    // Reuse the same service account auth from google-sheets route
+    const { google } = require('googleapis');
+    const fs = require('fs');
+    const keyPath = require('path').join(__dirname, '..', 'google-sheets-key.json');
+    if (!fs.existsSync(keyPath)) {
+      return res.json({ connected: true, available: false, error: 'Google Sheets service account key not found', sources: [], domains: [] });
+    }
+
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const client = await auth.getClient();
+    const sheetsApi = google.sheets({ version: 'v4', auth: client });
+
+    // Map Google Ads export headers to our keys
+    const HEADER_MAP = {
+      'display url domain': 'domain',
+      'impr. share': 'impression_share',
+      'impression share': 'impression_share',
+      'overlap rate': 'overlap_rate',
+      'position above rate': 'position_above_rate',
+      'top of page rate': 'top_of_page_rate',
+      'abs. top of page rate': 'abs_top_of_page_rate',
+      'outranking share': 'outranking_share'
+    };
+
+    // Parse percentage values: "45.23%" → 0.4523, "< 10%" → 0.10
+    function parsePct(val) {
+      if (!val || val === '--' || val === '-') return null;
+      const cleaned = val.replace(/[<%>]/g, '').trim();
+      const num = parseFloat(cleaned);
+      if (isNaN(num)) return null;
+      return num / 100;
+    }
+
+    // Fetch all target sheets in parallel
     const domainMap = {};
-    for (const r of (gData.results || [])) {
-      const domain = r.segments?.auctionInsightDomain || 'Unknown';
-      const m = r.metrics || {};
-      if (!domainMap[domain]) {
-        domainMap[domain] = { count: 0, impression_share: 0, overlap_rate: 0, position_above_rate: 0, top_of_page_rate: 0, abs_top_of_page_rate: 0, outranking_share: 0 };
+    const errors = [];
+    await Promise.all(targetSheets.map(async (sheetConf) => {
+      try {
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const rows = resp.data.values;
+        if (!rows || rows.length < 2) return;
+
+        const rawHeaders = rows[0].map(h => (h || '').trim().toLowerCase());
+        const headerIndices = {};
+        rawHeaders.forEach((h, i) => {
+          const key = HEADER_MAP[h];
+          if (key) headerIndices[key] = i;
+        });
+        if (headerIndices.domain == null) {
+          errors.push(`${sheetConf.label}: no "Display URL domain" column found`);
+          return;
+        }
+
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const domain = (row[headerIndices.domain] || '').trim();
+          if (!domain) continue;
+
+          if (!domainMap[domain]) {
+            domainMap[domain] = { count: 0, impression_share: 0, overlap_rate: 0, position_above_rate: 0, top_of_page_rate: 0, abs_top_of_page_rate: 0, outranking_share: 0 };
+          }
+          const d = domainMap[domain];
+          d.count++;
+          const metrics = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
+          for (const m of metrics) {
+            if (headerIndices[m] != null) {
+              const v = parsePct(row[headerIndices[m]]);
+              if (v != null) d[m] += v;
+            }
+          }
+        }
+      } catch (e) {
+        errors.push(`${sheetConf.label}: ${e.message}`);
       }
-      const d = domainMap[domain];
-      d.count++;
-      d.impression_share += parseFloat(m.auctionInsightSearchImpressionShare || 0);
-      d.overlap_rate += parseFloat(m.auctionInsightSearchOverlapRate || 0);
-      d.position_above_rate += parseFloat(m.auctionInsightSearchPositionAboveRate || 0);
-      d.top_of_page_rate += parseFloat(m.auctionInsightSearchTopImpressionPercentage || 0);
-      d.abs_top_of_page_rate += parseFloat(m.auctionInsightSearchAbsoluteTopImpressionPercentage || 0);
-      d.outranking_share += parseFloat(m.auctionInsightSearchOutrankingShare || 0);
-    }
+    }));
 
     const domains = Object.entries(domainMap).map(([domain, d]) => ({
       domain,
-      impression_share: d.impression_share / d.count,
-      overlap_rate: d.overlap_rate / d.count,
-      position_above_rate: d.position_above_rate / d.count,
-      top_of_page_rate: d.top_of_page_rate / d.count,
-      abs_top_of_page_rate: d.abs_top_of_page_rate / d.count,
-      outranking_share: d.outranking_share / d.count
+      impression_share: d.count ? d.impression_share / d.count : 0,
+      overlap_rate: d.count ? d.overlap_rate / d.count : 0,
+      position_above_rate: d.count ? d.position_above_rate / d.count : 0,
+      top_of_page_rate: d.count ? d.top_of_page_rate / d.count : 0,
+      abs_top_of_page_rate: d.count ? d.abs_top_of_page_rate / d.count : 0,
+      outranking_share: d.count ? d.outranking_share / d.count : 0
     })).sort((a, b) => b.impression_share - a.impression_share);
 
-    res.json({ connected: true, available: true, domains });
+    res.json({
+      connected: true,
+      available: domains.length > 0,
+      sources: allSheets.map(s => s.label),
+      error: errors.length ? errors.join('; ') : undefined,
+      domains
+    });
   } catch (e) {
-    console.error('Auction insights error:', e.message);
-    res.status(500).json({ error: e.message });
+    console.error('Auction insights (sheet) error:', e.message);
+    res.json({ connected: true, available: false, error: e.message, sources: [], domains: [] });
   }
 });
 

@@ -347,10 +347,15 @@
         <div class="card" id="auctionInsightsCard" style="display:none;">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
             <h3 class="card-title">Competitor Domains & Auction Insights</h3>
-            <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View in Google Ads
-            </a>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <select id="aiSourceFilter" onchange="filterAuctionInsights()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;display:none;">
+                <option value="">All Sources</option>
+              </select>
+              <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                View in Google Ads
+              </a>
+            </div>
           </div>
           <!-- Fallback when API doesn't support auction insights -->
           <div id="auctionInsightsFallback" style="display:none;padding:16px 20px;">
@@ -947,28 +952,18 @@
 
         // Auction Insights — table or fallback
         document.getElementById('auctionInsightsCard').style.display = '';
-        if (aiData.available && aiData.domains && aiData.domains.length) {
-          document.getElementById('auctionInsightsFallback').style.display = 'none';
-          document.getElementById('auctionInsightsTable').style.display = '';
-          const fmtAiPct = v => v != null ? (v * 100).toFixed(2) + '%' : '-';
-          document.getElementById('auctionInsightsTbody').innerHTML = aiData.domains.map(d => {
-            const isYou = d.domain.toLowerCase() === 'you';
-            const rowStyle = isYou ? ' style="font-weight:700;background:rgba(48,82,255,0.06);"' : '';
-            const domainStyle = isYou ? ' style="color:#3052FF;font-weight:700;"' : '';
-            return `<tr${rowStyle}>
-              <td${domainStyle}>${escapeHtml(d.domain)}</td>
-              <td>${fmtAiPct(d.impression_share)}</td>
-              <td>${fmtAiPct(d.overlap_rate)}</td>
-              <td>${fmtAiPct(d.position_above_rate)}</td>
-              <td>${fmtAiPct(d.top_of_page_rate)}</td>
-              <td>${fmtAiPct(d.abs_top_of_page_rate)}</td>
-              <td>${fmtAiPct(d.outranking_share)}</td>
-            </tr>`;
-          }).join('');
+        // Populate source filter dropdown
+        const aiFilter = document.getElementById('aiSourceFilter');
+        if (aiData.sources && aiData.sources.length > 1) {
+          aiFilter.style.display = '';
+          const currentVal = aiFilter.value;
+          aiFilter.innerHTML = '<option value="">All Sources</option>' +
+            aiData.sources.map(s => `<option value="${escapeHtml(s)}"${s === currentVal ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('');
         } else {
-          document.getElementById('auctionInsightsTable').style.display = 'none';
-          document.getElementById('auctionInsightsFallback').style.display = '';
+          aiFilter.style.display = 'none';
         }
+        window._lastAiData = aiData;
+        renderAuctionInsightsTable(aiData);
 
         // Campaign IS Table
         const cTable = document.getElementById('campaignISTable');
@@ -1054,6 +1049,44 @@
       } catch (err) {
         console.error('Competition load error:', err);
         content.innerHTML = '<div class="comp-loading" style="color:#dc2626;">Error loading competition data. Please try again.</div>';
+      }
+    }
+
+    function renderAuctionInsightsTable(aiData) {
+      if (aiData.available && aiData.domains && aiData.domains.length) {
+        document.getElementById('auctionInsightsFallback').style.display = 'none';
+        document.getElementById('auctionInsightsTable').style.display = '';
+        const fmtAiPct = v => v != null ? (v * 100).toFixed(2) + '%' : '-';
+        document.getElementById('auctionInsightsTbody').innerHTML = aiData.domains.map(d => {
+          const isYou = d.domain.toLowerCase() === 'you';
+          const rowStyle = isYou ? ' style="font-weight:700;background:rgba(48,82,255,0.06);"' : '';
+          const domainStyle = isYou ? ' style="color:#3052FF;font-weight:700;"' : '';
+          return `<tr${rowStyle}>
+            <td${domainStyle}>${escapeHtml(d.domain)}</td>
+            <td>${fmtAiPct(d.impression_share)}</td>
+            <td>${fmtAiPct(d.overlap_rate)}</td>
+            <td>${fmtAiPct(d.position_above_rate)}</td>
+            <td>${fmtAiPct(d.top_of_page_rate)}</td>
+            <td>${fmtAiPct(d.abs_top_of_page_rate)}</td>
+            <td>${fmtAiPct(d.outranking_share)}</td>
+          </tr>`;
+        }).join('');
+      } else {
+        document.getElementById('auctionInsightsTable').style.display = 'none';
+        document.getElementById('auctionInsightsFallback').style.display = '';
+      }
+    }
+
+    async function filterAuctionInsights() {
+      const source = document.getElementById('aiSourceFilter').value;
+      const qs = buildCompQS() + (source ? '&source=' + encodeURIComponent(source) : '');
+      try {
+        const aiData = await api('/api/analytics/google-ads/auction-insights' + qs);
+        window._lastAiData = aiData;
+        renderAuctionInsightsTable(aiData);
+        document.querySelectorAll('#tab-competition .resizable-table').forEach(initTableResize);
+      } catch (e) {
+        console.error('Filter auction insights error:', e);
       }
     }
   </script>

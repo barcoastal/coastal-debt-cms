@@ -322,6 +322,36 @@ router.post('/mcc', authenticateToken, (req, res) => {
   res.json({ message: 'MCC account ID saved', login_customer_id: cleanId });
 });
 
+// Get/set Auction Insights Sheets (multiple, with labels)
+router.get('/auction-insights-sheet', authenticateToken, (req, res) => {
+  const config = db.prepare('SELECT auction_insights_sheets FROM google_ads_config WHERE id = 1').get();
+  let sheets = [];
+  try { sheets = JSON.parse(config?.auction_insights_sheets || '[]'); } catch (e) {}
+  res.json({ sheets });
+});
+
+router.post('/auction-insights-sheet', authenticateToken, (req, res) => {
+  let { sheets } = req.body;
+  if (!Array.isArray(sheets)) sheets = [];
+
+  // Clean up: extract sheet IDs from URLs, trim labels
+  sheets = sheets.filter(s => s && s.sheet_id).map(s => {
+    let id = (s.sheet_id || '').trim();
+    const match = id.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) id = match[1];
+    return { label: (s.label || '').trim() || 'Untitled', sheet_id: id };
+  });
+
+  const json = JSON.stringify(sheets);
+  const existing = db.prepare('SELECT id FROM google_ads_config WHERE id = 1').get();
+  if (existing) {
+    db.prepare('UPDATE google_ads_config SET auction_insights_sheets = ? WHERE id = 1').run(json);
+  } else {
+    db.prepare('INSERT INTO google_ads_config (id, auction_insights_sheets) VALUES (1, ?)').run(json);
+  }
+  res.json({ message: 'Auction insights sheets saved', sheets });
+});
+
 // Disconnect
 router.post('/disconnect', authenticateToken, (req, res) => {
   db.prepare(`

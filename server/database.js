@@ -613,6 +613,26 @@ try {
   db.exec(`ALTER TABLE google_ads_config ADD COLUMN login_customer_id TEXT`);
 } catch (e) {}
 
+// Add auction_insights_sheet_id to google_ads_config (Google Sheet workaround for auction insights)
+try {
+  db.exec(`ALTER TABLE google_ads_config ADD COLUMN auction_insights_sheet_id TEXT`);
+} catch (e) {}
+
+// Upgrade: auction_insights_sheets JSON array (multiple sheets with labels)
+try {
+  db.exec(`ALTER TABLE google_ads_config ADD COLUMN auction_insights_sheets TEXT DEFAULT '[]'`);
+} catch (e) {}
+
+// Migrate single sheet_id → sheets array if needed
+try {
+  const gConf = db.prepare('SELECT auction_insights_sheet_id, auction_insights_sheets FROM google_ads_config WHERE id = 1').get();
+  if (gConf && gConf.auction_insights_sheet_id && (!gConf.auction_insights_sheets || gConf.auction_insights_sheets === '[]')) {
+    const sheets = JSON.stringify([{ label: 'All Campaigns', sheet_id: gConf.auction_insights_sheet_id }]);
+    db.prepare('UPDATE google_ads_config SET auction_insights_sheets = ?, auction_insights_sheet_id = NULL WHERE id = 1').run(sheets);
+    console.log('Migrated auction_insights_sheet_id → auction_insights_sheets');
+  }
+} catch (e) {}
+
 // Notification and alert tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS notification_config (

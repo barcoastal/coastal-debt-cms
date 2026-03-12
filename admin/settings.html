@@ -116,6 +116,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Dashboard
         </a>
+        <a href="/admin/deep-analysis.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          Deep Analysis
+        </a>
         <a href="/admin/leads.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           Leads
@@ -298,6 +302,21 @@
             <span id="fetchStatus" style="margin-left: 4px; color: #6b7280;"></span>
           </div>
           <div id="diagnoseResult" style="display:none; margin-top:12px; padding:16px; background:#f9fafb; border-radius:8px; font-size:13px; font-family:monospace; white-space:pre-wrap; border:1px solid #e5e7eb;"></div>
+        </div>
+
+        <!-- Auction Insights Sheets (multiple) -->
+        <div id="auctionInsightsSection" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <h4 style="margin-bottom: 8px;">Auction Insights (Competition Data)</h4>
+          <p style="color: #6b7280; font-size: 13px; margin-bottom: 12px;">
+            Export Auction Insights from Google Ads UI to Google Sheets (account-level + per campaign), share each sheet with your service account email, and add them below.
+          </p>
+          <div id="auctionSheetsList" style="max-width: 650px;"></div>
+          <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-secondary" onclick="addAuctionSheetRow()">+ Add Sheet</button>
+            <button class="btn btn-primary" onclick="saveAuctionSheets()">Save All</button>
+          </div>
+          <small style="color:#6b7280; display: block; margin-top: 8px;">Go to Google Ads → Campaigns → Auction Insights → Download → Schedule → Google Sheets. Add one sheet for "All Campaigns" and one per campaign.</small>
+          <div id="auctionSheetStatus" style="margin-top: 6px; font-size: 13px;"></div>
         </div>
 
         <!-- Setup Instructions -->
@@ -1512,8 +1531,10 @@
         setupSteps.style.display = 'none';
         accountSelection.style.display = 'none';
         document.getElementById('mccSection').style.display = 'block';
+        document.getElementById('auctionInsightsSection').style.display = 'block';
         loadCostStats();
         loadMcc();
+        loadAuctionSheet();
       } else if (status.connected) {
         // Connected but no account selected
         statusDiv.innerHTML = `
@@ -1614,6 +1635,70 @@
       });
       const data = await res.json();
       alert(id ? 'MCC Account ID saved: ' + data.login_customer_id : 'MCC Account ID cleared');
+    }
+
+    function renderAuctionSheetRows(sheets) {
+      const container = document.getElementById('auctionSheetsList');
+      container.innerHTML = '';
+      if (!sheets || !sheets.length) {
+        addAuctionSheetRow();
+        return;
+      }
+      sheets.forEach(s => addAuctionSheetRow(s.label, s.sheet_id));
+    }
+
+    function addAuctionSheetRow(label, sheetId) {
+      const container = document.getElementById('auctionSheetsList');
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+      row.innerHTML = `
+        <input type="text" class="ai-label" placeholder="Label (e.g. All Campaigns)" value="${label || ''}" style="width:180px;">
+        <input type="text" class="ai-sheet-id" placeholder="Sheet URL or ID" value="${sheetId || ''}" style="flex:1;">
+        <button class="btn btn-secondary" onclick="this.parentElement.remove()" style="padding:6px 10px;color:#dc2626;background:#fef2f2;border-color:#fecaca;" title="Remove">&times;</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function getAuctionSheetEntries() {
+      const rows = document.querySelectorAll('#auctionSheetsList > div');
+      const sheets = [];
+      rows.forEach(row => {
+        const label = row.querySelector('.ai-label').value.trim();
+        const sheetId = row.querySelector('.ai-sheet-id').value.trim();
+        if (sheetId) sheets.push({ label: label || 'Untitled', sheet_id: sheetId });
+      });
+      return sheets;
+    }
+
+    async function loadAuctionSheet() {
+      try {
+        const res = await fetch('/api/google-ads/auction-insights-sheet');
+        const data = await res.json();
+        renderAuctionSheetRows(data.sheets || []);
+      } catch (e) {
+        renderAuctionSheetRows([]);
+      }
+    }
+
+    async function saveAuctionSheets() {
+      const sheets = getAuctionSheetEntries();
+      const statusEl = document.getElementById('auctionSheetStatus');
+      statusEl.textContent = 'Saving...';
+      statusEl.style.color = '#6b7280';
+      try {
+        const res = await fetch('/api/google-ads/auction-insights-sheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheets })
+        });
+        const data = await res.json();
+        renderAuctionSheetRows(data.sheets || []);
+        statusEl.textContent = `Saved ${data.sheets.length} sheet(s).`;
+        statusEl.style.color = '#10b981';
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.style.color = '#ef4444';
+      }
     }
 
     async function loadCostStats() {
