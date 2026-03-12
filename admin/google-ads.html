@@ -65,6 +65,33 @@
     .resizable-table { table-layout: fixed; width: 100%; }
     .resizable-table th, .resizable-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .resizable-table td { padding: 8px 10px; }
+    /* Auction Insights redesign */
+    .ai-you-card { background: linear-gradient(135deg, #3052FF 0%, #1a3ae0 100%); border-radius: 12px; padding: 24px; color: #fff; margin-bottom: 20px; }
+    .ai-you-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-bottom: 12px; }
+    .ai-you-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .ai-you-metric .ai-you-val { font-size: 1.5rem; font-weight: 700; }
+    .ai-you-metric .ai-you-label { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    .ai-competitor-list { display: flex; flex-direction: column; gap: 0; }
+    .ai-competitor-row { display: grid; grid-template-columns: 200px 1fr; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--gray-100); align-items: center; }
+    .ai-competitor-row:last-child { border-bottom: none; }
+    .ai-competitor-row:hover { background: var(--gray-50); }
+    .ai-domain { font-size: 13px; font-weight: 600; color: var(--gray-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ai-domain .ai-rank { display: inline-block; width: 20px; height: 20px; border-radius: 50%; background: var(--gray-200); color: var(--gray-600); font-size: 10px; font-weight: 700; text-align: center; line-height: 20px; margin-right: 8px; }
+    .ai-bars { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .ai-bar-cell { display: flex; flex-direction: column; gap: 3px; }
+    .ai-bar-label { font-size: 10px; color: var(--gray-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-bar-track { height: 6px; border-radius: 3px; background: var(--gray-100); overflow: hidden; position: relative; }
+    .ai-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+    .ai-bar-fill.bar-blue { background: #3052FF; }
+    .ai-bar-fill.bar-competitor { background: #7FB2FF; }
+    .ai-bar-val { font-size: 11px; font-weight: 600; color: var(--gray-700); }
+    .ai-competitor-header { display: grid; grid-template-columns: 200px 1fr; gap: 16px; padding: 8px 20px; }
+    .ai-competitor-header .ai-bars { font-size: 10px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .ai-competitor-header .ai-bars > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 900px) {
+      .ai-competitor-row, .ai-competitor-header { grid-template-columns: 1fr; }
+      .ai-you-metrics { grid-template-columns: repeat(3, 1fr); }
+    }
     .comp-loading { text-align: center; padding: 60px 20px; color: var(--gray-400); }
     .comp-not-connected { text-align: center; padding: 60px 20px; }
     .comp-not-connected p { color: var(--gray-500); margin-bottom: 12px; }
@@ -357,11 +384,11 @@
               </a>
             </div>
           </div>
-          <!-- Fallback when API doesn't support auction insights -->
+          <!-- Fallback when no sheet configured -->
           <div id="auctionInsightsFallback" style="display:none;padding:16px 20px;">
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
               <div style="flex:1;min-width:200px;">
-                <p style="margin:0;font-size:13px;color:var(--gray-500);line-height:1.5;">Auction insight data is not available via the API for this account. You can view competitor domains, impression share, overlap rate, outranking share, and position above rate directly in the Google Ads interface.</p>
+                <p style="margin:0;font-size:13px;color:var(--gray-500);line-height:1.5;">No auction insights data available. Export from Google Ads UI to Google Sheets and configure the sheet in <a href="/admin/settings.html" style="color:var(--primary);">Settings</a>, or view directly in Google Ads.</p>
               </div>
               <a href="https://ads.google.com/aw/keywordauction" target="_blank" rel="noopener" class="btn btn-primary" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -369,23 +396,8 @@
               </a>
             </div>
           </div>
-          <!-- Data table when auction insights are available -->
-          <div id="auctionInsightsTable" style="display:none;">
-            <div class="table-container">
-              <table class="resizable-table">
-                <thead><tr>
-                  <th>Display URL Domain</th>
-                  <th>Impression Share</th>
-                  <th>Overlap Rate</th>
-                  <th>Position Above Rate</th>
-                  <th>Top of Page Rate</th>
-                  <th>Abs. Top of Page Rate</th>
-                  <th>Outranking Share</th>
-                </tr></thead>
-                <tbody id="auctionInsightsTbody"></tbody>
-              </table>
-            </div>
-          </div>
+          <!-- Visual auction insights display -->
+          <div id="auctionInsightsTable" style="display:none;"></div>
         </div>
 
         <!-- Campaign IS Table -->
@@ -1053,28 +1065,79 @@
     }
 
     function renderAuctionInsightsTable(aiData) {
-      if (aiData.available && aiData.domains && aiData.domains.length) {
-        document.getElementById('auctionInsightsFallback').style.display = 'none';
-        document.getElementById('auctionInsightsTable').style.display = '';
-        const fmtAiPct = v => v != null ? (v * 100).toFixed(2) + '%' : '-';
-        document.getElementById('auctionInsightsTbody').innerHTML = aiData.domains.map(d => {
-          const isYou = d.domain.toLowerCase() === 'you';
-          const rowStyle = isYou ? ' style="font-weight:700;background:rgba(48,82,255,0.06);"' : '';
-          const domainStyle = isYou ? ' style="color:#3052FF;font-weight:700;"' : '';
-          return `<tr${rowStyle}>
-            <td${domainStyle}>${escapeHtml(d.domain)}</td>
-            <td>${fmtAiPct(d.impression_share)}</td>
-            <td>${fmtAiPct(d.overlap_rate)}</td>
-            <td>${fmtAiPct(d.position_above_rate)}</td>
-            <td>${fmtAiPct(d.top_of_page_rate)}</td>
-            <td>${fmtAiPct(d.abs_top_of_page_rate)}</td>
-            <td>${fmtAiPct(d.outranking_share)}</td>
-          </tr>`;
-        }).join('');
-      } else {
-        document.getElementById('auctionInsightsTable').style.display = 'none';
+      const container = document.getElementById('auctionInsightsTable');
+      if (!aiData.available || !aiData.domains || !aiData.domains.length) {
+        container.style.display = 'none';
         document.getElementById('auctionInsightsFallback').style.display = '';
+        return;
       }
+      document.getElementById('auctionInsightsFallback').style.display = 'none';
+      container.style.display = '';
+
+      const fp = v => v != null ? (v * 100).toFixed(1) + '%' : '-';
+      const barW = v => Math.min((v || 0) * 100, 100);
+
+      // Separate "You" row from competitors
+      const youRow = aiData.domains.find(d => d.domain.toLowerCase() === 'you');
+      const competitors = aiData.domains.filter(d => d.domain.toLowerCase() !== 'you');
+
+      const metrics = [
+        { key: 'impression_share', label: 'Impr. Share' },
+        { key: 'overlap_rate', label: 'Overlap' },
+        { key: 'position_above_rate', label: 'Pos. Above' },
+        { key: 'top_of_page_rate', label: 'Top of Page' },
+        { key: 'abs_top_of_page_rate', label: 'Abs. Top' },
+        { key: 'outranking_share', label: 'Outranking' }
+      ];
+
+      let html = '';
+
+      // "You" summary card
+      if (youRow) {
+        html += `<div class="ai-you-card">
+          <div class="ai-you-title">Your Auction Position</div>
+          <div class="ai-you-metrics">
+            ${metrics.map(m => `<div class="ai-you-metric">
+              <div class="ai-you-val">${fp(youRow[m.key])}</div>
+              <div class="ai-you-label">${m.label}</div>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      // Column headers for competitors
+      html += `<div class="ai-competitor-header">
+        <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Competitor</div>
+        <div class="ai-bars">${metrics.map(m => `<div>${m.label}</div>`).join('')}</div>
+      </div>`;
+
+      // Competitor rows
+      html += '<div class="ai-competitor-list">';
+      competitors.forEach((d, i) => {
+        html += `<div class="ai-competitor-row">
+          <div class="ai-domain"><span class="ai-rank">${i + 1}</span>${escapeHtml(d.domain)}</div>
+          <div class="ai-bars">
+            ${metrics.map(m => {
+              const val = d[m.key];
+              const youVal = youRow ? youRow[m.key] : 0;
+              // Color: green if you're ahead, red if they're ahead (for relevant metrics)
+              let barClass = 'bar-competitor';
+              if (m.key === 'impression_share' && val > (youVal || 0)) barClass = 'bar-red';
+              if (m.key === 'outranking_share' && val > 0.5) barClass = 'bar-red';
+              if (m.key === 'position_above_rate' && val > 0.5) barClass = 'bar-red';
+              return `<div class="ai-bar-cell">
+                <div class="ai-bar-val">${fp(val)}</div>
+                <div class="ai-bar-track">
+                  <div class="ai-bar-fill ${barClass}" style="width:${barW(val)}%"></div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
     }
 
     async function filterAuctionInsights() {
