@@ -90,6 +90,7 @@
     .ai-competitor-header .ai-bars > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ai-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
     .ai-chart-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
+    .ai-chart-card.full-width { grid-column: 1 / -1; }
     .ai-chart-title { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 12px; }
     @media (max-width: 900px) {
       .ai-competitor-row, .ai-competitor-header { grid-template-columns: 1fr; }
@@ -1109,16 +1110,16 @@
         </div>`;
       }
 
-      // Bar charts: Impression Share + Abs. Top of Page
+      // Charts: Radar overview + Impression Share comparison
       const allDomains = aiData.domains;
       html += `<div class="ai-charts">
         <div class="ai-chart-card">
-          <div class="ai-chart-title">Impression Share</div>
-          <canvas id="aiChartIS" height="260"></canvas>
+          <div class="ai-chart-title">Competitive Radar — All Metrics</div>
+          <canvas id="aiChartRadar"></canvas>
         </div>
         <div class="ai-chart-card">
-          <div class="ai-chart-title">Abs. Top of Page Rate</div>
-          <canvas id="aiChartAbsTop" height="260"></canvas>
+          <div class="ai-chart-title">Impression Share vs Abs. Top of Page</div>
+          <canvas id="aiChartLines"></canvas>
         </div>
       </div>`;
 
@@ -1156,61 +1157,133 @@
 
       container.innerHTML = html;
 
-      // Render bar charts
-      renderAiBarChart('aiChartIS', allDomains, 'impression_share', 'Impression Share');
-      renderAiBarChart('aiChartAbsTop', allDomains, 'abs_top_of_page_rate', 'Abs. Top of Page');
+      // Render charts
+      renderAiRadar(allDomains);
+      renderAiLines(allDomains);
     }
 
+    const AI_COLORS = [
+      '#3052FF', // You — brand blue (always index 0)
+      '#FF9000', '#16a34a', '#dc2626', '#8b5cf6',
+      '#ec4899', '#0891b2', '#d97706', '#6366f1',
+      '#14b8a6', '#f43f5e', '#84cc16'
+    ];
+
     let aiChartInstances = {};
-    function renderAiBarChart(canvasId, domains, metricKey, label) {
-      const canvas = document.getElementById(canvasId);
+    function destroyAiChart(id) { if (aiChartInstances[id]) { aiChartInstances[id].destroy(); delete aiChartInstances[id]; } }
+
+    function renderAiRadar(domains) {
+      const canvas = document.getElementById('aiChartRadar');
       if (!canvas) return;
-      if (aiChartInstances[canvasId]) aiChartInstances[canvasId].destroy();
+      destroyAiChart('aiChartRadar');
 
-      // Sort descending by metric
-      const sorted = [...domains].sort((a, b) => (b[metricKey] || 0) - (a[metricKey] || 0));
+      const metricLabels = ['Impr. Share', 'Overlap Rate', 'Pos. Above', 'Top of Page', 'Abs. Top', 'Outranking'];
+      const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
+
+      // You first, then top 5 competitors by impression share
+      const youRow = domains.find(d => d.domain.toLowerCase() === 'you');
+      const others = domains.filter(d => d.domain.toLowerCase() !== 'you').slice(0, 5);
+      const show = youRow ? [youRow, ...others] : others;
+
+      const datasets = show.map((d, i) => {
+        const isYou = d.domain.toLowerCase() === 'you';
+        const color = isYou ? AI_COLORS[0] : AI_COLORS[(i < 1 ? i : i) % AI_COLORS.length];
+        return {
+          label: d.domain,
+          data: metricKeys.map(k => ((d[k] || 0) * 100)),
+          borderColor: color,
+          backgroundColor: isYou ? 'rgba(48,82,255,0.12)' : 'transparent',
+          borderWidth: isYou ? 3 : 2,
+          pointRadius: isYou ? 4 : 3,
+          pointBackgroundColor: color
+        };
+      });
+
+      aiChartInstances['aiChartRadar'] = new Chart(canvas.getContext('2d'), {
+        type: 'radar',
+        data: { labels: metricLabels, datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true, pointStyle: 'line' } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.r.toFixed(1) + '%' } }
+          },
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { stepSize: 20, font: { size: 10 }, backdropColor: 'transparent', callback: v => v + '%' },
+              pointLabels: { font: { size: 11, weight: '600' }, color: '#374151' },
+              grid: { color: 'rgba(0,0,0,0.06)' },
+              angleLines: { color: 'rgba(0,0,0,0.06)' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderAiLines(domains) {
+      const canvas = document.getElementById('aiChartLines');
+      if (!canvas) return;
+      destroyAiChart('aiChartLines');
+
+      // Sort all domains by impression share descending
+      const sorted = [...domains].sort((a, b) => (b.impression_share || 0) - (a.impression_share || 0));
       const labels = sorted.map(d => d.domain);
-      const values = sorted.map(d => ((d[metricKey] || 0) * 100));
-      const colors = sorted.map(d => d.domain.toLowerCase() === 'you' ? '#3052FF' : '#7FB2FF');
 
-      aiChartInstances[canvasId] = new Chart(canvas.getContext('2d'), {
+      const isValues = sorted.map(d => ((d.impression_share || 0) * 100));
+      const absTopValues = sorted.map(d => ((d.abs_top_of_page_rate || 0) * 100));
+      const bgColors = sorted.map(d => {
+        if (d.domain.toLowerCase() === 'you') return '#3052FF';
+        const idx = sorted.indexOf(d);
+        return AI_COLORS[idx % AI_COLORS.length] || '#7FB2FF';
+      });
+
+      aiChartInstances['aiChartLines'] = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels,
-          datasets: [{
-            data: values,
-            backgroundColor: colors,
-            borderRadius: 4,
-            barThickness: 18
-          }]
+          datasets: [
+            {
+              label: 'Impression Share',
+              data: isValues,
+              backgroundColor: bgColors.map(c => c + '99'),
+              borderColor: bgColors,
+              borderWidth: 2,
+              borderRadius: 4
+            },
+            {
+              label: 'Abs. Top of Page',
+              data: absTopValues,
+              backgroundColor: bgColors.map(c => c + '44'),
+              borderColor: bgColors.map(c => c + 'AA'),
+              borderWidth: 2,
+              borderRadius: 4
+            }
+          ]
         },
         options: {
-          indexAxis: 'y',
           responsive: true,
-          maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => ctx.parsed.x.toFixed(1) + '%'
-              }
-            }
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%' } }
           },
           scales: {
             x: {
+              ticks: {
+                font: ctx => ({
+                  size: 10,
+                  weight: labels[ctx.index] && labels[ctx.index].toLowerCase() === 'you' ? 'bold' : 'normal'
+                }),
+                color: ctx => labels[ctx.index] && labels[ctx.index].toLowerCase() === 'you' ? '#3052FF' : '#6b7280',
+                maxRotation: 45, minRotation: 25
+              },
+              grid: { display: false }
+            },
+            y: {
               max: 100,
               ticks: { callback: v => v + '%', font: { size: 11 } },
               grid: { color: 'rgba(0,0,0,0.04)' }
-            },
-            y: {
-              ticks: {
-                font: ctx => ({
-                  size: 11,
-                  weight: labels[ctx.index] && labels[ctx.index].toLowerCase() === 'you' ? 'bold' : 'normal'
-                }),
-                color: ctx => labels[ctx.index] && labels[ctx.index].toLowerCase() === 'you' ? '#3052FF' : '#6b7280'
-              },
-              grid: { display: false }
             }
           }
         }
