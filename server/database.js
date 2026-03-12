@@ -623,6 +623,26 @@ try {
   db.exec(`ALTER TABLE google_ads_config ADD COLUMN auction_insights_sheets TEXT DEFAULT '[]'`);
 } catch (e) {}
 
+// Auction insights daily history (stores each daily snapshot for trend charts)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS auction_insights_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_date TEXT NOT NULL,
+    source_label TEXT NOT NULL DEFAULT 'All Account',
+    domain TEXT NOT NULL,
+    impression_share REAL,
+    overlap_rate REAL,
+    position_above_rate REAL,
+    top_of_page_rate REAL,
+    abs_top_of_page_rate REAL,
+    outranking_share REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(report_date, source_label, domain)
+  );
+  CREATE INDEX IF NOT EXISTS idx_aih_date ON auction_insights_history(report_date);
+  CREATE INDEX IF NOT EXISTS idx_aih_domain ON auction_insights_history(domain);
+`);
+
 // Migrate single sheet_id → sheets array if needed
 try {
   const gConf = db.prepare('SELECT auction_insights_sheet_id, auction_insights_sheets FROM google_ads_config WHERE id = 1').get();

@@ -1123,6 +1123,20 @@
         </div>
       </div>`;
 
+      // Trend charts (populated from history endpoint)
+      html += `<div class="ai-charts">
+        <div class="ai-chart-card">
+          <div class="ai-chart-title">Impression Share — Trend Over Time</div>
+          <div id="aiTrendISWrap"><canvas id="aiTrendIS" height="250"></canvas></div>
+          <div id="aiTrendISEmpty" style="display:none;text-align:center;padding:30px;color:var(--gray-400);font-size:13px;">Trend data will appear as daily reports accumulate. Check back tomorrow.</div>
+        </div>
+        <div class="ai-chart-card">
+          <div class="ai-chart-title">Abs. Top of Page — Trend Over Time</div>
+          <div id="aiTrendAbsWrap"><canvas id="aiTrendAbs" height="250"></canvas></div>
+          <div id="aiTrendAbsEmpty" style="display:none;text-align:center;padding:30px;color:var(--gray-400);font-size:13px;">Trend data will appear as daily reports accumulate. Check back tomorrow.</div>
+        </div>
+      </div>`;
+
       // Column headers for competitors
       html += `<div class="ai-competitor-header">
         <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Competitor</div>
@@ -1160,6 +1174,7 @@
       // Render charts
       renderAiRadar(allDomains);
       renderAiLines(allDomains);
+      loadAiTrends(source ? '&source=' + encodeURIComponent(source) : '');
     }
 
     const AI_COLORS = [
@@ -1285,6 +1300,88 @@
               ticks: { callback: v => v + '%', font: { size: 11 } },
               grid: { color: 'rgba(0,0,0,0.04)' }
             }
+          }
+        }
+      });
+    }
+
+    async function loadAiTrends(sourceQs) {
+      try {
+        const data = await api('/api/analytics/google-ads/auction-insights/history?days=90' + (sourceQs || ''));
+        const { dates, domains } = data;
+        if (!dates || dates.length < 2) {
+          // Not enough data for trends yet
+          document.getElementById('aiTrendISWrap').style.display = 'none';
+          document.getElementById('aiTrendISEmpty').style.display = '';
+          document.getElementById('aiTrendAbsWrap').style.display = 'none';
+          document.getElementById('aiTrendAbsEmpty').style.display = '';
+          return;
+        }
+        document.getElementById('aiTrendISWrap').style.display = '';
+        document.getElementById('aiTrendISEmpty').style.display = 'none';
+        document.getElementById('aiTrendAbsWrap').style.display = '';
+        document.getElementById('aiTrendAbsEmpty').style.display = 'none';
+
+        // Get top domains by latest impression share
+        const domainNames = Object.keys(domains);
+        const latestDate = dates[dates.length - 1];
+        const ranked = domainNames
+          .map(d => ({ domain: d, is: domains[d][latestDate]?.impression_share || 0 }))
+          .sort((a, b) => b.is - a.is);
+        const topDomains = ranked.slice(0, 6);
+
+        renderAiTrendChart('aiTrendIS', dates, domains, topDomains, 'impression_share');
+        renderAiTrendChart('aiTrendAbs', dates, domains, topDomains, 'abs_top_of_page_rate');
+      } catch (e) {
+        console.error('Trend load error:', e);
+      }
+    }
+
+    function renderAiTrendChart(canvasId, dates, domains, topDomains, metricKey) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      destroyAiChart(canvasId);
+
+      const labels = dates.map(d => {
+        const parts = d.split('-');
+        return parts[1] + '/' + parts[2];
+      });
+
+      const datasets = topDomains.map((td, i) => {
+        const isYou = td.domain.toLowerCase() === 'you';
+        const color = isYou ? AI_COLORS[0] : AI_COLORS[(i + 1) % AI_COLORS.length];
+        const domainHist = domains[td.domain] || {};
+        return {
+          label: td.domain,
+          data: dates.map(d => {
+            const v = domainHist[d]?.[metricKey];
+            return v != null ? +(v * 100).toFixed(2) : null;
+          }),
+          borderColor: color,
+          backgroundColor: isYou ? 'rgba(48,82,255,0.08)' : 'transparent',
+          fill: isYou,
+          borderWidth: isYou ? 3 : 2,
+          pointRadius: isYou ? 4 : 2,
+          pointBackgroundColor: color,
+          tension: 0.3,
+          spanGaps: true
+        };
+      });
+
+      aiChartInstances[canvasId] = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true, pointStyle: 'line' } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : 'N/A') } }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxTicksLimit: 15 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+            y: { min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
           }
         }
       });

@@ -1105,14 +1105,33 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       return num / 100;
     }
 
+    // Parse date from Google Ads export metadata row (e.g. "March 11, 2026 - March 11, 2026")
+    function parseDateRow(rows) {
+      for (let r = 0; r < Math.min(rows.length, 5); r++) {
+        const cell = (rows[r][0] || '').trim();
+        const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
+        if (m) {
+          const d = new Date(m[1]);
+          if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+      }
+      return null;
+    }
+
     // Fetch all target sheets in parallel
     const domainMap = {};
     const errors = [];
+    const storeInsert = db.prepare(`INSERT OR REPLACE INTO auction_insights_history
+      (report_date, source_label, domain, impression_share, overlap_rate, position_above_rate, top_of_page_rate, abs_top_of_page_rate, outranking_share)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
     await Promise.all(targetSheets.map(async (sheetConf) => {
       try {
         const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) return;
+
+        const reportDate = parseDateRow(rows);
 
         // Auto-detect header row — Google Ads exports have metadata rows before actual headers
         let headerRowIdx = -1;
@@ -1137,17 +1156,28 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
           const domain = (row[headerIndices.domain] || '').trim();
           if (!domain) continue;
 
+          const parsed = {};
+          const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
+          for (const m of metricKeys) {
+            parsed[m] = headerIndices[m] != null ? parsePct(row[headerIndices[m]]) : null;
+          }
+
           if (!domainMap[domain]) {
             domainMap[domain] = { count: 0, impression_share: 0, overlap_rate: 0, position_above_rate: 0, top_of_page_rate: 0, abs_top_of_page_rate: 0, outranking_share: 0 };
           }
           const d = domainMap[domain];
           d.count++;
-          const metrics = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
-          for (const m of metrics) {
-            if (headerIndices[m] != null) {
-              const v = parsePct(row[headerIndices[m]]);
-              if (v != null) d[m] += v;
-            }
+          for (const m of metricKeys) {
+            if (parsed[m] != null) d[m] += parsed[m];
+          }
+
+          // Store daily snapshot
+          if (reportDate) {
+            try {
+              storeInsert.run(reportDate, sheetConf.label, domain,
+                parsed.impression_share, parsed.overlap_rate, parsed.position_above_rate,
+                parsed.top_of_page_rate, parsed.abs_top_of_page_rate, parsed.outranking_share);
+            } catch (e) {} // ignore duplicate key errors
           }
         }
       } catch (e) {
@@ -1175,6 +1205,44 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
   } catch (e) {
     console.error('Auction insights (sheet) error:', e.message);
     res.json({ connected: true, available: false, error: e.message, sources: [], domains: [] });
+  }
+});
+
+// Auction Insights: Historical trend data
+router.get('/google-ads/auction-insights/history', authenticateToken, (req, res) => {
+  try {
+    const { source, days } = req.query;
+    const numDays = parseInt(days) || 90;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - numDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    let rows;
+    if (source) {
+      rows = db.prepare(`SELECT report_date, domain, impression_share, overlap_rate, position_above_rate,
+        top_of_page_rate, abs_top_of_page_rate, outranking_share
+        FROM auction_insights_history WHERE source_label = ? AND report_date >= ? ORDER BY report_date`).all(source, cutoffStr);
+    } else {
+      // Aggregate across all sources per date+domain
+      rows = db.prepare(`SELECT report_date, domain,
+        AVG(impression_share) as impression_share, AVG(overlap_rate) as overlap_rate,
+        AVG(position_above_rate) as position_above_rate, AVG(top_of_page_rate) as top_of_page_rate,
+        AVG(abs_top_of_page_rate) as abs_top_of_page_rate, AVG(outranking_share) as outranking_share
+        FROM auction_insights_history WHERE report_date >= ? GROUP BY report_date, domain ORDER BY report_date`).all(cutoffStr);
+    }
+
+    // Group by domain for chart-friendly format
+    const dates = [...new Set(rows.map(r => r.report_date))].sort();
+    const domainData = {};
+    for (const r of rows) {
+      if (!domainData[r.domain]) domainData[r.domain] = {};
+      domainData[r.domain][r.report_date] = r;
+    }
+
+    res.json({ dates, domains: domainData });
+  } catch (e) {
+    console.error('Auction insights history error:', e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
