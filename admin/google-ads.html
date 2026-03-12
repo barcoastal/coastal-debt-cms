@@ -97,6 +97,27 @@
       .ai-you-metrics { grid-template-columns: repeat(3, 1fr); }
       .ai-charts { grid-template-columns: 1fr; }
     }
+    /* QS expandable tips */
+    .qs-row-clickable { cursor: pointer; transition: background 0.15s; }
+    .qs-row-clickable:hover { background: var(--gray-50); }
+    .qs-row-clickable.qs-expanded { background: #f0f4ff; }
+    .qs-tips-row td { padding: 0 !important; border-top: none !important; }
+    .qs-tips-panel { padding: 16px 20px 20px; background: #f8f9fc; border-bottom: 2px solid var(--gray-200); }
+    .qs-tips-header { font-size: 12px; font-weight: 700; color: var(--gray-700); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .qs-tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .qs-tip-card { background: #fff; border-radius: 8px; padding: 14px 16px; border: 1px solid var(--gray-200); }
+    .qs-tip-card.tip-poor { border-left: 3px solid #dc2626; }
+    .qs-tip-card.tip-avg { border-left: 3px solid #f59e0b; }
+    .qs-tip-card.tip-good { border-left: 3px solid #16a34a; }
+    .qs-tip-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .qs-tip-title .qs-tip-status { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; }
+    .qs-tip-title .status-poor { background: #fee2e2; color: #991b1b; }
+    .qs-tip-title .status-avg { background: #fef3c7; color: #92400e; }
+    .qs-tip-title .status-good { background: #dcfce7; color: #166534; }
+    .qs-tip-text { font-size: 12px; color: var(--gray-600); line-height: 1.5; }
+    .qs-tip-text ul { margin: 4px 0 0; padding-left: 16px; }
+    .qs-tip-text li { margin-bottom: 3px; }
+    .qs-overall-verdict { font-size: 12px; color: var(--gray-500); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gray-200); }
     .comp-loading { text-align: center; padding: 60px 20px; color: var(--gray-400); }
     .comp-not-connected { text-align: center; padding: 60px 20px; }
     .comp-not-connected p { color: var(--gray-500); margin-bottom: 12px; }
@@ -760,6 +781,124 @@
       return '<span class="qs-badge-poor">Below Avg</span>';
     }
 
+    function getQsTips(k) {
+      const tips = [];
+      const statusLabel = v => v === 'BELOW_AVERAGE' ? 'Below Average' : v === 'AVERAGE' ? 'Average' : v === 'ABOVE_AVERAGE' ? 'Above Average' : 'N/A';
+      const statusClass = v => v === 'BELOW_AVERAGE' ? 'poor' : v === 'AVERAGE' ? 'avg' : 'good';
+
+      // Ad Relevance (creative_quality)
+      const cr = k.creative_quality;
+      const crStatus = statusClass(cr);
+      let crTips = '';
+      if (cr === 'BELOW_AVERAGE') {
+        crTips = `<ul>
+          <li>Include the keyword in your ad headline and description</li>
+          <li>Create tighter ad groups with closely related keywords</li>
+          <li>Write ad copy that directly addresses the searcher's intent</li>
+          <li>Use keyword insertion (DKI) in headlines for exact match</li>
+          <li>Create separate ad groups for each theme instead of broad grouping</li>
+        </ul>`;
+      } else if (cr === 'AVERAGE') {
+        crTips = `<ul>
+          <li>Test more specific headlines that mirror the exact search query</li>
+          <li>Add a second responsive search ad with different messaging angles</li>
+          <li>Ensure your display path includes the keyword</li>
+        </ul>`;
+      } else {
+        crTips = 'Your ad copy is well-matched to this keyword. Keep monitoring and testing new variations.';
+      }
+      tips.push({ title: 'Ad Relevance', status: statusLabel(cr), statusClass: crStatus, text: crTips });
+
+      // Landing Page Experience (post_click_quality)
+      const lp = k.post_click_quality;
+      const lpStatus = statusClass(lp);
+      let lpTips = '';
+      if (lp === 'BELOW_AVERAGE') {
+        lpTips = `<ul>
+          <li>Ensure the landing page content matches the keyword and ad promise</li>
+          <li>Improve page load speed — aim for under 3 seconds</li>
+          <li>Make the page mobile-friendly with responsive design</li>
+          <li>Add clear, relevant content and a strong call-to-action</li>
+          <li>Reduce bounce rate by improving above-the-fold content</li>
+          <li>Consider creating dedicated landing pages per ad group</li>
+        </ul>`;
+      } else if (lp === 'AVERAGE') {
+        lpTips = `<ul>
+          <li>Test different landing page layouts with A/B testing</li>
+          <li>Add more relevant content that matches the searcher's intent</li>
+          <li>Optimize Core Web Vitals (LCP, FID, CLS)</li>
+        </ul>`;
+      } else {
+        lpTips = 'Your landing page provides a great experience for this keyword. Maintain page speed and relevance.';
+      }
+      tips.push({ title: 'Landing Page Experience', status: statusLabel(lp), statusClass: lpStatus, text: lpTips });
+
+      // Expected CTR (predicted_ctr)
+      const ctr = k.predicted_ctr;
+      const ctrStatus = statusClass(ctr);
+      let ctrTips = '';
+      if (ctr === 'BELOW_AVERAGE') {
+        ctrTips = `<ul>
+          <li>Write more compelling headlines with strong value propositions</li>
+          <li>Add numbers, urgency, or unique selling points to your ads</li>
+          <li>Use all available ad extensions (sitelinks, callouts, structured snippets)</li>
+          <li>Test emotional triggers and specific benefits in descriptions</li>
+          <li>Consider pausing this keyword if CTR doesn't improve — it may be too broad</li>
+          <li>Check if the keyword matches commercial intent (not informational)</li>
+        </ul>`;
+      } else if (ctr === 'AVERAGE') {
+        ctrTips = `<ul>
+          <li>Test more headline variations in responsive search ads</li>
+          <li>Add or improve ad extensions to increase ad real estate</li>
+          <li>Use action-oriented language ("Get", "Save", "Free")</li>
+        </ul>`;
+      } else {
+        ctrTips = 'Your ads are generating strong click-through rates for this keyword. Keep testing to maintain performance.';
+      }
+      tips.push({ title: 'Expected CTR', status: statusLabel(ctr), statusClass: ctrStatus, text: ctrTips });
+
+      return tips;
+    }
+
+    function renderQsTipsRow(k) {
+      const tips = getQsTips(k);
+      const belowCount = [k.creative_quality, k.post_click_quality, k.predicted_ctr].filter(v => v === 'BELOW_AVERAGE').length;
+      const avgCount = [k.creative_quality, k.post_click_quality, k.predicted_ctr].filter(v => v === 'AVERAGE').length;
+
+      let verdict = '';
+      if (k.quality_score != null && k.quality_score <= 4) {
+        verdict = 'This keyword has a low Quality Score. Focus on the red items above to see the biggest improvement in ad rank and lower CPC.';
+      } else if (k.quality_score != null && k.quality_score <= 6) {
+        verdict = 'This keyword has room for improvement. Addressing the yellow and red items above can boost your ad position and reduce costs.';
+      } else if (k.quality_score != null && k.quality_score >= 7) {
+        verdict = 'This keyword has a good Quality Score. Small optimizations to any Average components can help you reach a perfect 10.';
+      }
+
+      return `<tr class="qs-tips-row" style="display:none;"><td colspan="9"><div class="qs-tips-panel">
+        <div class="qs-tips-header">Optimization Tips for "${escapeHtml(k.keyword)}"</div>
+        <div class="qs-tips-grid">
+          ${tips.map(t => `<div class="qs-tip-card tip-${t.statusClass}">
+            <div class="qs-tip-title">${t.title} <span class="qs-tip-status status-${t.statusClass}">${t.status}</span></div>
+            <div class="qs-tip-text">${t.text}</div>
+          </div>`).join('')}
+        </div>
+        ${verdict ? `<div class="qs-overall-verdict">${verdict}</div>` : ''}
+      </div></td></tr>`;
+    }
+
+    function toggleQsTips(row) {
+      const tipsRow = row.nextElementSibling;
+      if (!tipsRow || !tipsRow.classList.contains('qs-tips-row')) return;
+      const isOpen = tipsRow.style.display !== 'none';
+      // Close all other open tips
+      document.querySelectorAll('.qs-tips-row').forEach(r => { r.style.display = 'none'; });
+      document.querySelectorAll('.qs-row-clickable').forEach(r => { r.classList.remove('qs-expanded'); });
+      if (!isOpen) {
+        tipsRow.style.display = '';
+        row.classList.add('qs-expanded');
+      }
+    }
+
     function statusBadge(status) {
       if (status === 'ADDED' || status === 'ADDED_EXCLUDED') return '<span class="status-badge status-added">Added</span>';
       if (status === 'EXCLUDED') return '<span class="status-badge status-excluded">Excluded</span>';
@@ -1031,7 +1170,7 @@
           // Keyword QS Table
           const qsTbody = document.getElementById('qsTable');
           const sortedKw = (qsData.keywords || []).sort((a, b) => b.impressions - a.impressions);
-          qsTbody.innerHTML = sortedKw.slice(0, 100).map(k => `<tr>
+          qsTbody.innerHTML = sortedKw.slice(0, 100).map(k => `<tr class="qs-row-clickable" onclick="toggleQsTips(this)">
             <td>${escapeHtml(k.keyword)}</td>
             <td>${escapeHtml(k.ad_group)}</td>
             <td style="font-weight:700;color:${k.quality_score != null ? (k.quality_score >= 7 ? '#16a34a' : k.quality_score >= 5 ? '#f59e0b' : '#dc2626') : 'var(--gray-400)'}">${k.quality_score != null ? k.quality_score : '-'}</td>
@@ -1041,7 +1180,7 @@
             <td>${k.impressions.toLocaleString()}</td>
             <td>${k.clicks.toLocaleString()}</td>
             <td>${fmtMoney(k.cost)}</td>
-          </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
+          </tr>${renderQsTipsRow(k)}`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
         }
 
         // Search Terms
