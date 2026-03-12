@@ -1114,18 +1114,25 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
         const rows = resp.data.values;
         if (!rows || rows.length < 2) return;
 
-        const rawHeaders = rows[0].map(h => (h || '').trim().toLowerCase());
+        // Auto-detect header row — Google Ads exports have metadata rows before actual headers
+        let headerRowIdx = -1;
+        for (let r = 0; r < Math.min(rows.length, 10); r++) {
+          const firstCell = (rows[r][0] || '').trim().toLowerCase();
+          if (firstCell === 'display url domain') { headerRowIdx = r; break; }
+        }
+        if (headerRowIdx === -1) {
+          errors.push(`${sheetConf.label}: no "Display URL domain" column found`);
+          return;
+        }
+
+        const rawHeaders = rows[headerRowIdx].map(h => (h || '').trim().toLowerCase());
         const headerIndices = {};
         rawHeaders.forEach((h, i) => {
           const key = HEADER_MAP[h];
           if (key) headerIndices[key] = i;
         });
-        if (headerIndices.domain == null) {
-          errors.push(`${sheetConf.label}: no "Display URL domain" column found`);
-          return;
-        }
 
-        for (let i = 1; i < rows.length; i++) {
+        for (let i = headerRowIdx + 1; i < rows.length; i++) {
           const row = rows[i];
           const domain = (row[headerIndices.domain] || '').trim();
           if (!domain) continue;
