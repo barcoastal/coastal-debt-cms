@@ -1120,6 +1120,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
 
     // Fetch all target sheets in parallel
     const domainMap = {};
+    const reportDates = [];
     const errors = [];
     const storeInsert = db.prepare(`INSERT OR REPLACE INTO auction_insights_history
       (report_date, source_label, domain, impression_share, overlap_rate, position_above_rate, top_of_page_rate, abs_top_of_page_rate, outranking_share)
@@ -1132,6 +1133,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
         if (!rows || rows.length < 2) return;
 
         const reportDate = parseDateRow(rows);
+        if (reportDate && !reportDates.includes(reportDate)) reportDates.push(reportDate);
 
         // Auto-detect header row — Google Ads exports have metadata rows before actual headers
         let headerRowIdx = -1;
@@ -1199,6 +1201,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       connected: true,
       available: domains.length > 0,
       sources: allSheets.map(s => s.label),
+      report_dates: reportDates.sort(),
       error: errors.length ? errors.join('; ') : undefined,
       domains
     });

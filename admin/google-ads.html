@@ -378,7 +378,7 @@
         <!-- Auction Insights — Data Table or Fallback Link -->
         <div class="card" id="auctionInsightsCard" style="display:none;">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <h3 class="card-title">Competitor Domains & Auction Insights</h3>
+            <h3 class="card-title">Competitor Domains & Auction Insights <span id="aiDateBadge" style="font-size:11px;font-weight:500;color:var(--gray-400);margin-left:8px;"></span></h3>
             <div style="display:flex;align-items:center;gap:12px;">
               <select id="aiSourceFilter" onchange="filterAuctionInsights()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;display:none;">
                 <option value="">All Sources</option>
@@ -1079,6 +1079,14 @@
       document.getElementById('auctionInsightsFallback').style.display = 'none';
       container.style.display = '';
 
+      // Show report date(s) in card header
+      const dateBadge = document.getElementById('aiDateBadge');
+      if (dateBadge && aiData.report_dates && aiData.report_dates.length) {
+        dateBadge.textContent = '(' + aiData.report_dates.join(', ') + ')';
+      } else if (dateBadge) {
+        dateBadge.textContent = '';
+      }
+
       const fp = v => v != null ? (v * 100).toFixed(1) + '%' : '-';
       const barW = v => Math.min((v || 0) * 100, 100);
 
@@ -1174,7 +1182,8 @@
       // Render charts
       renderAiRadar(allDomains);
       renderAiLines(allDomains);
-      loadAiTrends(source ? '&source=' + encodeURIComponent(source) : '');
+      const curSource = document.getElementById('aiSourceFilter').value;
+      loadAiTrends(curSource ? '&source=' + encodeURIComponent(curSource) : '');
     }
 
     const AI_COLORS = [
