@@ -785,97 +785,117 @@
       const tips = [];
       const statusLabel = v => v === 'BELOW_AVERAGE' ? 'Below Average' : v === 'AVERAGE' ? 'Average' : v === 'ABOVE_AVERAGE' ? 'Above Average' : 'N/A';
       const statusClass = v => v === 'BELOW_AVERAGE' ? 'poor' : v === 'AVERAGE' ? 'avg' : 'good';
+      const kw = (k.keyword || '').toLowerCase();
+      const kwWords = kw.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+      const ads = k.ads || {};
+      const headlines = ads.headlines || [];
+      const descriptions = ads.descriptions || [];
+      const finalUrls = ads.final_urls || [];
+      const headlineLower = headlines.map(h => h.toLowerCase());
+      const descLower = descriptions.map(d => d.toLowerCase());
+      const kwInHeadline = headlineLower.some(h => h.includes(kw) || kwWords.every(w => h.includes(w)));
+      const kwInDesc = descLower.some(d => d.includes(kw) || kwWords.every(w => d.includes(w)));
 
-      // Ad Relevance (creative_quality)
+      // ── Ad Relevance ──
       const cr = k.creative_quality;
       const crStatus = statusClass(cr);
-      let crTips = '';
-      if (cr === 'BELOW_AVERAGE') {
-        crTips = `<ul>
-          <li>Include the keyword in your ad headline and description</li>
-          <li>Create tighter ad groups with closely related keywords</li>
-          <li>Write ad copy that directly addresses the searcher's intent</li>
-          <li>Use keyword insertion (DKI) in headlines for exact match</li>
-          <li>Create separate ad groups for each theme instead of broad grouping</li>
-        </ul>`;
-      } else if (cr === 'AVERAGE') {
-        crTips = `<ul>
-          <li>Test more specific headlines that mirror the exact search query</li>
-          <li>Add a second responsive search ad with different messaging angles</li>
-          <li>Ensure your display path includes the keyword</li>
-        </ul>`;
+      let crHtml = '';
+      if (cr === 'ABOVE_AVERAGE') {
+        crHtml = 'Your ad copy is well-matched to this keyword. Keep testing new variations.';
+      } else if (headlines.length) {
+        const headlineList = headlines.slice(0, 8).map(h => {
+          const hLow = h.toLowerCase();
+          const hasKw = hLow.includes(kw) || kwWords.every(w => hLow.includes(w));
+          return `<li${hasKw ? ' style="color:#166534;"' : ''}>${escapeHtml(h)} ${hasKw ? '&#10003;' : ''}</li>`;
+        }).join('');
+        crHtml += `<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--gray-500);">Your Headlines:</div><ul style="margin:0 0 8px;">${headlineList}</ul>`;
+        if (!kwInHeadline) {
+          const titleCase = k.keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          crHtml += `<div style="color:#991b1b;font-weight:600;font-size:11px;margin-bottom:4px;">&#9888; None of your headlines contain "${escapeHtml(k.keyword)}"</div>`;
+          crHtml += `<ul><li>Add a headline like: "<strong>${escapeHtml(titleCase)} — Get Help Today</strong>"</li>`;
+          crHtml += `<li>Or use keyword insertion: {KeyWord:${escapeHtml(titleCase)}}</li></ul>`;
+        } else if (cr !== 'ABOVE_AVERAGE') {
+          crHtml += '<ul><li>Keyword found in headlines — try testing more specific angles or unique selling points</li></ul>';
+        }
+        if (!kwInDesc && descriptions.length) {
+          crHtml += `<div style="color:#92400e;font-size:11px;margin-top:4px;">Tip: Include "<strong>${escapeHtml(k.keyword)}</strong>" in at least one description for better relevance.</div>`;
+        }
       } else {
-        crTips = 'Your ad copy is well-matched to this keyword. Keep monitoring and testing new variations.';
+        crHtml = '<ul><li>No ad data found for this ad group — ensure you have an active responsive search ad</li></ul>';
       }
-      tips.push({ title: 'Ad Relevance', status: statusLabel(cr), statusClass: crStatus, text: crTips });
+      tips.push({ title: 'Ad Relevance', status: statusLabel(cr), statusClass: crStatus, text: crHtml });
 
-      // Landing Page Experience (post_click_quality)
+      // ── Landing Page Experience ──
       const lp = k.post_click_quality;
       const lpStatus = statusClass(lp);
-      let lpTips = '';
-      if (lp === 'BELOW_AVERAGE') {
-        lpTips = `<ul>
-          <li>Ensure the landing page content matches the keyword and ad promise</li>
-          <li>Improve page load speed — aim for under 3 seconds</li>
-          <li>Make the page mobile-friendly with responsive design</li>
-          <li>Add clear, relevant content and a strong call-to-action</li>
-          <li>Reduce bounce rate by improving above-the-fold content</li>
-          <li>Consider creating dedicated landing pages per ad group</li>
-        </ul>`;
-      } else if (lp === 'AVERAGE') {
-        lpTips = `<ul>
-          <li>Test different landing page layouts with A/B testing</li>
-          <li>Add more relevant content that matches the searcher's intent</li>
-          <li>Optimize Core Web Vitals (LCP, FID, CLS)</li>
-        </ul>`;
+      let lpHtml = '';
+      if (finalUrls.length) {
+        lpHtml += `<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--gray-500);">Landing Page:</div>`;
+        lpHtml += `<div style="font-size:12px;margin-bottom:8px;word-break:break-all;"><a href="${escapeHtml(finalUrls[0])}" target="_blank" style="color:#3052FF;">${escapeHtml(finalUrls[0])}</a></div>`;
+        const urlLow = finalUrls[0].toLowerCase();
+        const kwInUrl = kwWords.some(w => urlLow.includes(w));
+        if (lp === 'ABOVE_AVERAGE') {
+          lpHtml += 'Great landing page experience. Maintain page speed and relevance.';
+        } else if (!kwInUrl) {
+          lpHtml += `<div style="color:#991b1b;font-weight:600;font-size:11px;margin-bottom:4px;">&#9888; Your landing page URL doesn't seem related to "${escapeHtml(k.keyword)}"</div>`;
+          lpHtml += `<ul><li>Consider creating a dedicated page with "${escapeHtml(k.keyword)}" in the URL path and H1</li>
+            <li>Use the CMS Landing Page builder to create a targeted page for this keyword</li></ul>`;
+        } else if (lp === 'BELOW_AVERAGE') {
+          lpHtml += `<ul><li>URL matches the keyword but page experience is low — check page speed and mobile-friendliness</li>
+            <li>Ensure H1 and above-the-fold content directly address "${escapeHtml(k.keyword)}"</li>
+            <li>Reduce load time to under 3 seconds — compress images, minimize JS</li>
+            <li>Add clear call-to-action visible without scrolling</li></ul>`;
+        } else {
+          lpHtml += `<ul><li>Test A/B variations of your landing page layout</li>
+            <li>Optimize Core Web Vitals (LCP, CLS)</li>
+            <li>Add keyword-relevant content (FAQ, testimonials mentioning "${escapeHtml(k.keyword)}")</li></ul>`;
+        }
+      } else if (lp === 'ABOVE_AVERAGE') {
+        lpHtml = 'Your landing page provides a great experience for this keyword.';
       } else {
-        lpTips = 'Your landing page provides a great experience for this keyword. Maintain page speed and relevance.';
+        lpHtml = '<ul><li>No landing page URL found — ensure your ad has a final URL set</li></ul>';
       }
-      tips.push({ title: 'Landing Page Experience', status: statusLabel(lp), statusClass: lpStatus, text: lpTips });
+      tips.push({ title: 'Landing Page Experience', status: statusLabel(lp), statusClass: lpStatus, text: lpHtml });
 
-      // Expected CTR (predicted_ctr)
+      // ── Expected CTR ──
       const ctr = k.predicted_ctr;
       const ctrStatus = statusClass(ctr);
-      let ctrTips = '';
-      if (ctr === 'BELOW_AVERAGE') {
-        ctrTips = `<ul>
-          <li>Write more compelling headlines with strong value propositions</li>
-          <li>Add numbers, urgency, or unique selling points to your ads</li>
-          <li>Use all available ad extensions (sitelinks, callouts, structured snippets)</li>
-          <li>Test emotional triggers and specific benefits in descriptions</li>
-          <li>Consider pausing this keyword if CTR doesn't improve — it may be too broad</li>
-          <li>Check if the keyword matches commercial intent (not informational)</li>
-        </ul>`;
-      } else if (ctr === 'AVERAGE') {
-        ctrTips = `<ul>
-          <li>Test more headline variations in responsive search ads</li>
-          <li>Add or improve ad extensions to increase ad real estate</li>
-          <li>Use action-oriented language ("Get", "Save", "Free")</li>
-        </ul>`;
+      let ctrHtml = '';
+      if (ctr === 'ABOVE_AVERAGE') {
+        ctrHtml = 'Strong click-through rates for this keyword. Keep testing to maintain performance.';
+      } else if (ctr === 'BELOW_AVERAGE') {
+        ctrHtml = '<ul>';
+        if (headlines.length) {
+          ctrHtml += `<li>You have ${headlines.length} headline${headlines.length !== 1 ? 's' : ''} — ${headlines.length < 10 ? `add ${10 - headlines.length} more to give Google more options` : 'good count, focus on quality'}</li>`;
+        }
+        ctrHtml += `<li>Add power words to headlines: "Free Consultation", "No Obligation", "Guaranteed"</li>
+          <li>Include numbers or stats: "Save Up to 50%", "100+ Clients Helped"</li>
+          <li>Add all ad extensions (sitelinks, callouts, structured snippets) to increase ad real estate</li>
+          <li>If "${escapeHtml(k.keyword)}" is very broad, try a more specific match type or pause it</li></ul>`;
       } else {
-        ctrTips = 'Your ads are generating strong click-through rates for this keyword. Keep testing to maintain performance.';
+        ctrHtml = `<ul><li>Test more headline variations — ${headlines.length < 12 ? `you have ${headlines.length}, try adding up to 15` : 'good count'}</li>
+          <li>Try urgency triggers: "Don't Wait", "Limited Time", "Act Now"</li>
+          <li>Make sure all ad extensions are active and relevant</li></ul>`;
       }
-      tips.push({ title: 'Expected CTR', status: statusLabel(ctr), statusClass: ctrStatus, text: ctrTips });
+      tips.push({ title: 'Expected CTR', status: statusLabel(ctr), statusClass: ctrStatus, text: ctrHtml });
 
       return tips;
     }
 
     function renderQsTipsRow(k) {
       const tips = getQsTips(k);
-      const belowCount = [k.creative_quality, k.post_click_quality, k.predicted_ctr].filter(v => v === 'BELOW_AVERAGE').length;
-      const avgCount = [k.creative_quality, k.post_click_quality, k.predicted_ctr].filter(v => v === 'AVERAGE').length;
 
       let verdict = '';
       if (k.quality_score != null && k.quality_score <= 4) {
-        verdict = 'This keyword has a low Quality Score. Focus on the red items above to see the biggest improvement in ad rank and lower CPC.';
+        verdict = `<strong>QS ${k.quality_score}/10 is hurting your performance.</strong> You're paying more per click and getting lower ad positions. Focus on the red items above for the biggest impact.`;
       } else if (k.quality_score != null && k.quality_score <= 6) {
-        verdict = 'This keyword has room for improvement. Addressing the yellow and red items above can boost your ad position and reduce costs.';
+        verdict = `<strong>QS ${k.quality_score}/10 has room to grow.</strong> Improving the yellow/red components will lower your CPC and boost ad rank.`;
       } else if (k.quality_score != null && k.quality_score >= 7) {
-        verdict = 'This keyword has a good Quality Score. Small optimizations to any Average components can help you reach a perfect 10.';
+        verdict = `<strong>QS ${k.quality_score}/10 is solid.</strong> Fine-tune any Average components to push toward a perfect 10.`;
       }
 
       return `<tr class="qs-tips-row" style="display:none;"><td colspan="9"><div class="qs-tips-panel">
-        <div class="qs-tips-header">Optimization Tips for "${escapeHtml(k.keyword)}"</div>
+        <div class="qs-tips-header">Optimization Tips for "${escapeHtml(k.keyword)}" <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400);">in ${escapeHtml(k.ad_group)}${k.campaign ? ' / ' + escapeHtml(k.campaign) : ''}</span></div>
         <div class="qs-tips-grid">
           ${tips.map(t => `<div class="qs-tip-card tip-${t.statusClass}">
             <div class="qs-tip-title">${t.title} <span class="qs-tip-status status-${t.statusClass}">${t.status}</span></div>

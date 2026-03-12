@@ -1280,14 +1280,18 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
 
     const metricsGaql = `SELECT ad_group_criterion.keyword.text, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM keyword_view WHERE ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'${dateClause}`;
 
+    // Query 3: Ad copy per ad group (headlines, descriptions, final URLs)
+    const adCopyGaql = `SELECT ad_group.name, campaign.name, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions, ad_group_ad.ad.final_urls, ad_group_ad.ad.type FROM ad_group_ad WHERE ad_group_ad.status = 'ENABLED' AND campaign.status = 'ENABLED' AND ad_group_ad.ad.type = 'RESPONSIVE_SEARCH_AD'`;
+
     console.log('[Competition QS] GAQL:', qsGaql);
     console.log('[Competition QS metrics] GAQL:', metricsGaql);
 
-    const [qsRes, metricsRes] = await Promise.all([
+    const [qsRes, metricsRes, adCopyRes] = await Promise.all([
       fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: qsGaql }) }),
-      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: metricsGaql }) })
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: metricsGaql }) }),
+      fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: adCopyGaql }) })
     ]);
-    const [qsData, metricsData] = await Promise.all([qsRes.json(), metricsRes.json()]);
+    const [qsData, metricsData, adCopyData] = await Promise.all([qsRes.json(), metricsRes.json(), adCopyRes.json()]);
 
     console.log('[Competition QS] results:', qsData.results?.length, 'error:', qsData.error?.message || 'none');
     console.log('[Competition QS metrics] results:', metricsData.results?.length, 'error:', metricsData.error?.message || 'none');
@@ -1310,6 +1314,23 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
       metricsMap[key].cost += parseInt(m.costMicros || '0', 10) / 1000000;
     }
 
+    // Build ad copy lookup: ad_group_name -> { headlines, descriptions, final_urls }
+    const adCopyMap = {};
+    for (const r of (adCopyData.results || [])) {
+      const agName = r.adGroup?.name || '';
+      const rsa = r.adGroupAd?.ad?.responsiveSearchAd || {};
+      const headlines = (rsa.headlines || []).map(h => h.text).filter(Boolean);
+      const descriptions = (rsa.descriptions || []).map(d => d.text).filter(Boolean);
+      const finalUrls = r.adGroupAd?.ad?.finalUrls || [];
+      if (!adCopyMap[agName]) {
+        adCopyMap[agName] = { headlines: [], descriptions: [], final_urls: [], campaign: r.campaign?.name || '' };
+      }
+      // Merge unique headlines/descriptions across multiple ads in same ad group
+      for (const h of headlines) { if (!adCopyMap[agName].headlines.includes(h)) adCopyMap[agName].headlines.push(h); }
+      for (const d of descriptions) { if (!adCopyMap[agName].descriptions.includes(d)) adCopyMap[agName].descriptions.push(d); }
+      for (const u of finalUrls) { if (!adCopyMap[agName].final_urls.includes(u)) adCopyMap[agName].final_urls.push(u); }
+    }
+
     const distribution = {};
     for (let i = 1; i <= 10; i++) distribution[i] = 0;
     let qsSum = 0, qsCount = 0;
@@ -1326,16 +1347,23 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
         qsCount++;
       }
       const mLookup = metricsMap[kwText + '|||' + agName] || { impressions: 0, clicks: 0, cost: 0 };
+      const adCopy = adCopyMap[agName] || null;
       return {
         keyword: kwText,
         ad_group: agName,
+        campaign: adCopy?.campaign || '',
         quality_score: qs,
         creative_quality: qi.creativeQualityScore || null,
         post_click_quality: qi.postClickQualityScore || null,
         predicted_ctr: qi.searchPredictedCtr || null,
         impressions: mLookup.impressions,
         clicks: mLookup.clicks,
-        cost: mLookup.cost
+        cost: mLookup.cost,
+        ads: adCopy ? {
+          headlines: adCopy.headlines,
+          descriptions: adCopy.descriptions,
+          final_urls: adCopy.final_urls
+        } : null
       };
     });
 
