@@ -30,6 +30,7 @@ const salesforceRoutes = require('./routes/salesforce');
 const redditAdsRoutes = require('./routes/reddit-ads');
 const retreaverRoutes = require('./routes/retreaver');
 const adGeneratorRoutes = require('./routes/ad-generator');
+const deepAnalysisRoutes = require('./routes/deep-analysis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -138,6 +139,7 @@ app.use('/api/salesforce', salesforceRoutes);
 app.use('/api/reddit-ads', redditAdsRoutes);
 app.use('/api/retreaver', retreaverRoutes);
 app.use('/api/ad-generator', adGeneratorRoutes);
+app.use('/api/deep-analysis', deepAnalysisRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)
@@ -219,6 +221,11 @@ setTimeout(fetchTikTokMissingCosts, 90 * 1000); // 90s after startup (staggered 
 const { fetchRedditMissingCosts } = require('./routes/reddit-ads');
 setInterval(fetchRedditMissingCosts, 15 * 60 * 1000);
 setTimeout(fetchRedditMissingCosts, 120 * 1000); // 120s after startup (staggered)
+
+// Background Auction Insights sync - every 6 hours
+const { syncAuctionInsights } = require('./routes/analytics');
+setInterval(syncAuctionInsights, 6 * 60 * 60 * 1000);
+setTimeout(syncAuctionInsights, 150 * 1000); // First run 150s after startup (staggered)
 
 // Start email worker (background queue processor + campaign scheduler)
 const { startWorker: startEmailWorker } = require('./email-worker');

@@ -1133,6 +1133,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
         if (!rows || rows.length < 2) return;
 
         const reportDate = parseDateRow(rows);
+        console.log(`[Auction Insights] Sheet "${sheetConf.label}": ${rows.length} rows, date=${reportDate}, row1="${(rows[0] || [])[0]}", row2="${(rows[1] || [])[0]}"`);
         if (reportDate && !reportDates.includes(reportDate)) reportDates.push(reportDate);
 
         // Auto-detect header row — Google Ads exports have metadata rows before actual headers
@@ -1208,6 +1209,82 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
   } catch (e) {
     console.error('Auction insights (sheet) error:', e.message);
     res.json({ connected: true, available: false, error: e.message, sources: [], domains: [] });
+  }
+});
+
+// Auction Insights: Debug — shows per-sheet status
+router.get('/google-ads/auction-insights/debug', authenticateToken, async (req, res) => {
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.customer_id) {
+      return res.json({ error: 'Google Ads not configured' });
+    }
+
+    let allSheets = [];
+    try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
+    if (!allSheets.length) {
+      return res.json({ error: 'No sheets configured' });
+    }
+
+    const { google } = require('googleapis');
+    const fs = require('fs');
+    const keyPath = require('path').join(__dirname, '..', 'google-sheets-key.json');
+    if (!fs.existsSync(keyPath)) {
+      return res.json({ error: 'Google Sheets service account key not found' });
+    }
+
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const client = await auth.getClient();
+    const sheetsApi = google.sheets({ version: 'v4', auth: client });
+
+    const results = [];
+    for (const sheetConf of allSheets) {
+      const entry = { label: sheetConf.label, sheet_id: sheetConf.sheet_id, status: 'unknown', date: null, rows: 0, error: null };
+      try {
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const rows = resp.data.values;
+        if (!rows || rows.length < 2) {
+          entry.status = 'empty';
+          entry.rows = rows ? rows.length : 0;
+        } else {
+          entry.rows = rows.length;
+          // Check first 5 rows for date
+          for (let r = 0; r < Math.min(rows.length, 5); r++) {
+            const cell = (rows[r][0] || '').trim();
+            const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
+            if (m) {
+              const d = new Date(m[1]);
+              if (!isNaN(d.getTime())) { entry.date = d.toISOString().split('T')[0]; break; }
+            }
+          }
+          // Check header row
+          let hasHeader = false;
+          for (let r = 0; r < Math.min(rows.length, 10); r++) {
+            if ((rows[r][0] || '').trim().toLowerCase() === 'display url domain') { hasHeader = true; break; }
+          }
+          entry.status = hasHeader ? 'ok' : 'no_header';
+          entry.first_rows = rows.slice(0, 5).map(r => r.slice(0, 3));
+        }
+      } catch (e) {
+        entry.status = 'error';
+        entry.error = e.message;
+      }
+      results.push(entry);
+    }
+
+    res.json({ sheets: results });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+// Auction Insights: Manual sync trigger
+router.post('/google-ads/auction-insights/sync', authenticateToken, async (req, res) => {
+  try {
+    await syncAuctionInsights();
+    res.json({ message: 'Sync completed' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -2714,4 +2791,122 @@ router.get('/campaigns/performance', authenticateToken, (req, res) => {
   }
 });
 
+// ============ Background Auction Insights Sync ============
+// Pulls latest data from all configured Google Sheets and stores daily snapshots.
+// Called on a daily interval from index.js.
+
+async function syncAuctionInsights() {
+  try {
+    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!gConfig || !gConfig.customer_id) return;
+
+    let allSheets = [];
+    try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
+    if (!allSheets.length) return;
+
+    const { google } = require('googleapis');
+    const fs = require('fs');
+    const keyPath = require('path').join(__dirname, '..', 'google-sheets-key.json');
+    if (!fs.existsSync(keyPath)) {
+      console.warn('[Auction Insights Sync] Google Sheets service account key not found');
+      return;
+    }
+
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const client = await auth.getClient();
+    const sheetsApi = google.sheets({ version: 'v4', auth: client });
+
+    const HEADER_MAP = {
+      'display url domain': 'domain',
+      'impr. share': 'impression_share',
+      'impression share': 'impression_share',
+      'overlap rate': 'overlap_rate',
+      'position above rate': 'position_above_rate',
+      'top of page rate': 'top_of_page_rate',
+      'abs. top of page rate': 'abs_top_of_page_rate',
+      'outranking share': 'outranking_share'
+    };
+
+    function parsePct(val) {
+      if (!val || val === '--' || val === '-') return null;
+      const cleaned = val.replace(/[<%>]/g, '').trim();
+      const num = parseFloat(cleaned);
+      if (isNaN(num)) return null;
+      return num / 100;
+    }
+
+    function parseDateRow(rows) {
+      for (let r = 0; r < Math.min(rows.length, 5); r++) {
+        const cell = (rows[r][0] || '').trim();
+        const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
+        if (m) {
+          const d = new Date(m[1]);
+          if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+        }
+      }
+      return null;
+    }
+
+    const storeInsert = db.prepare(`INSERT OR REPLACE INTO auction_insights_history
+      (report_date, source_label, domain, impression_share, overlap_rate, position_above_rate, top_of_page_rate, abs_top_of_page_rate, outranking_share)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+    let totalStored = 0;
+    for (const sheetConf of allSheets) {
+      try {
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const rows = resp.data.values;
+        if (!rows || rows.length < 2) continue;
+
+        const reportDate = parseDateRow(rows);
+        if (!reportDate) continue;
+
+        let headerRowIdx = -1;
+        for (let r = 0; r < Math.min(rows.length, 10); r++) {
+          const firstCell = (rows[r][0] || '').trim().toLowerCase();
+          if (firstCell === 'display url domain') { headerRowIdx = r; break; }
+        }
+        if (headerRowIdx === -1) continue;
+
+        const rawHeaders = rows[headerRowIdx].map(h => (h || '').trim().toLowerCase());
+        const headerIndices = {};
+        rawHeaders.forEach((h, i) => {
+          const key = HEADER_MAP[h];
+          if (key) headerIndices[key] = i;
+        });
+
+        const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
+        for (let i = headerRowIdx + 1; i < rows.length; i++) {
+          const row = rows[i];
+          const domain = (row[headerIndices.domain] || '').trim();
+          if (!domain) continue;
+
+          const parsed = {};
+          for (const m of metricKeys) {
+            parsed[m] = headerIndices[m] != null ? parsePct(row[headerIndices[m]]) : null;
+          }
+
+          try {
+            storeInsert.run(reportDate, sheetConf.label, domain,
+              parsed.impression_share, parsed.overlap_rate, parsed.position_above_rate,
+              parsed.top_of_page_rate, parsed.abs_top_of_page_rate, parsed.outranking_share);
+            totalStored++;
+          } catch (e) {} // ignore duplicate key errors
+        }
+
+        console.log(`[Auction Insights Sync] ${sheetConf.label}: stored ${reportDate}`);
+      } catch (e) {
+        console.error(`[Auction Insights Sync] ${sheetConf.label} error:`, e.message);
+      }
+    }
+
+    if (totalStored > 0) {
+      console.log(`[Auction Insights Sync] Done — ${totalStored} rows stored`);
+    }
+  } catch (e) {
+    console.error('[Auction Insights Sync] Error:', e.message);
+  }
+}
+
 module.exports = router;
+module.exports.syncAuctionInsights = syncAuctionInsights;
