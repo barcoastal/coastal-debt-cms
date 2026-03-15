@@ -1111,7 +1111,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
         const cell = (rows[r][0] || '').trim();
         const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
         if (m) {
-          const d = new Date(m[1]);
+          const d = new Date(m[1] + ' 12:00:00'); // noon to avoid timezone shift
           if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; // YYYY-MM-DD
         }
       }
@@ -2840,7 +2840,7 @@ async function syncAuctionInsights() {
         const cell = (rows[r][0] || '').trim();
         const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
         if (m) {
-          const d = new Date(m[1]);
+          const d = new Date(m[1] + ' 12:00:00'); // noon to avoid timezone shift
           if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
         }
       }
