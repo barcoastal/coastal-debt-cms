@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep Analysis | Coastal Debt CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Scorecard table */
+    .scorecard-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .scorecard-table th { text-align: left; padding: 10px 12px; background: var(--gray-50); color: var(--gray-600); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-200); }
+    .scorecard-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); }
+    .scorecard-table tr:hover { background: var(--gray-50); }
+    .scorecard-table .best { background: rgba(16, 185, 129, 0.08); }
+    .scorecard-table .worst { background: rgba(239, 68, 68, 0.08); }
+    .roi-positive { color: #10b981; font-weight: 600; }
+    .roi-negative { color: #ef4444; font-weight: 600; }
+
+    /* Platform badge */
+    .platform-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: capitalize; }
+    .platform-badge.google { background: #e8f0fe; color: #1967d2; }
+    .platform-badge.meta { background: #e7f0fd; color: #1877f2; }
+    .platform-badge.tiktok { background: #f0f0f0; color: #010101; }
+    .platform-badge.bing { background: #f0f6e8; color: #008373; }
+    .platform-badge.reddit { background: #fff0e6; color: #ff4500; }
+    .platform-badge.outbrain { background: #fff4e6; color: #e8590c; }
+    .platform-badge.other { background: var(--gray-100); color: var(--gray-600); }
+    .platform-badge.linkedin { background: #e8f4f8; color: #0077b5; }
+
+    /* Section cards */
+    .section-title { font-size: 1rem; font-weight: 600; color: var(--gray-800); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px; }
+    .section-title svg { width: 18px; height: 18px; }
+
+    /* Funnel */
+    .funnel-stages { display: flex; gap: 8px; align-items: stretch; margin-bottom: 16px; }
+    .funnel-stage { flex: 1; text-align: center; background: var(--gray-50); border-radius: 8px; padding: 16px 8px; position: relative; }
+    .funnel-stage .stage-count { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); }
+    .funnel-stage .stage-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 4px; }
+    .funnel-stage .stage-rate { font-size: 0.7rem; color: var(--primary); font-weight: 600; margin-top: 4px; }
+    .funnel-arrow { display: flex; align-items: center; color: var(--gray-300); font-size: 1.2rem; flex-shrink: 0; }
+
+    /* Heatmap */
+    .heatmap-grid { display: grid; grid-template-columns: 60px repeat(24, 1fr); gap: 2px; font-size: 10px; }
+    .heatmap-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 3px; color: var(--gray-700); font-weight: 500; cursor: default; }
+    .heatmap-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-weight: 600; color: var(--gray-500); font-size: 11px; }
+    .heatmap-hour { display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gray-400); font-size: 10px; }
+
+    /* Charts grid */
+    .charts-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .charts-2col { grid-template-columns: 1fr; } }
+
+    /* Campaign table */
+    .campaign-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .campaign-table th { text-align: left; padding: 8px 10px; background: var(--gray-50); color: var(--gray-600); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-200); white-space: nowrap; position: sticky; top: 0; }
+    .campaign-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); white-space: nowrap; }
+    .campaign-table tr:hover { background: var(--gray-50); }
+    .campaign-table .top-row { background: rgba(16, 185, 129, 0.06); }
+    .campaign-table .bottom-row { background: rgba(239, 68, 68, 0.06); }
+    .table-scroll { max-height: 500px; overflow: auto; border: 1px solid var(--gray-200); border-radius: 8px; }
+    .sort-btn { cursor: pointer; user-select: none; }
+    .sort-btn:hover { color: var(--primary); }
+
+    /* Toggle buttons */
+    .toggle-group { display: inline-flex; border: 1px solid var(--gray-200); border-radius: 6px; overflow: hidden; font-size: 12px; }
+    .toggle-group button { padding: 4px 12px; border: none; background: #fff; color: var(--gray-600); cursor: pointer; border-right: 1px solid var(--gray-200); }
+    .toggle-group button:last-child { border-right: none; }
+    .toggle-group button.active { background: var(--primary); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="nautilus-brand">NAUTILUS</span>
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/deep-analysis.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          Deep Analysis
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/calls.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Calls
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/tiktok.html">TikTok</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/reddit.html">Reddit</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+          <a href="/admin/fb-deep-events.html">FB Deep Events</a>
+          <a href="/admin/tiktok-debug.html">TikTok Debug</a>
+        </div>
+        <a href="/admin/redtrack.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          RedTrack
+        </a>
+        <a href="/admin/google-sheet.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Google Sheet
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/ad-generator.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
+          Ad Generator
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Deep Analysis</h1>
+      </div>
+
+      <!-- Filters -->
+      <div class="card">
+        <div class="filters" style="flex-wrap: wrap; margin-bottom: 12px;">
+          <div class="time-range-btns">
+            <button data-range="today" onclick="setRange('today', this)">Today</button>
+            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
+            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
+            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
+            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
+            <button class="active" data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
+            <button data-range="all" onclick="setRange('all', this)">All Time</button>
+            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
+          </div>
+          <input type="date" id="fromDate" class="tr-from" style="display:none;">
+          <input type="date" id="toDate" class="tr-to" style="display:none;">
+        </div>
+        <div class="filters">
+          <select id="platformFilter">
+            <option value="">All Platforms</option>
+            <option value="google">Google</option>
+            <option value="meta">Meta</option>
+            <option value="tiktok">TikTok</option>
+            <option value="bing">Bing</option>
+            <option value="reddit">Reddit</option>
+            <option value="outbrain">Outbrain</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadAll()">Apply</button>
+        </div>
+      </div>
+
+      <!-- Section 1: Cross-Platform Scorecard -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+          Cross-Platform Scorecard
+        </h2>
+        <div style="overflow-x:auto;">
+          <table class="scorecard-table" id="scorecardTable">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Spend</th>
+                <th>Leads</th>
+                <th>CPL</th>
+                <th>Revenue</th>
+                <th>ROI</th>
+                <th>Conv Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 2: Funnel Analysis -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Funnel Analysis
+        </h2>
+        <div id="funnelStages" class="funnel-stages">
+          <div class="funnel-stage"><div class="stage-count">-</div><div class="stage-label">Loading...</div></div>
+        </div>
+        <div style="max-width:800px;margin:0 auto;"><canvas id="funnelChart" height="200"></canvas></div>
+      </div>
+
+      <!-- Section 3: Cost Efficiency Scatter -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="7.5" r="3.5"/><circle cx="18" cy="15" r="2"/><circle cx="11" cy="16" r="4"/></svg>
+          Cost Efficiency — Campaign Bubble Chart
+        </h2>
+        <p style="font-size:12px;color:var(--gray-500);margin:0 0 12px 0;">X = CPL, Y = Lead-to-Conversion Rate, Bubble Size = Spend. Bottom-right = best (low CPL + high conv).</p>
+        <div style="max-height:500px;"><canvas id="scatterChart" height="400"></canvas></div>
+      </div>
+
+      <!-- Section 4: Top & Bottom Campaigns -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaign Performance
+        </h2>
+        <div class="table-scroll" id="campaignsTableWrap">
+          <table class="campaign-table" id="campaignsTable">
+            <thead>
+              <tr>
+                <th class="sort-btn" data-sort="utm_campaign">Campaign</th>
+                <th class="sort-btn" data-sort="platform">Platform</th>
+                <th class="sort-btn" data-sort="visitors">Visitors</th>
+                <th class="sort-btn" data-sort="leads">Leads</th>
+                <th class="sort-btn" data-sort="conv_rate">V&rarr;L %</th>
+                <th class="sort-btn" data-sort="spend">Spend</th>
+                <th class="sort-btn" data-sort="cpl">CPL</th>
+                <th class="sort-btn" data-sort="revenue">Revenue</th>
+                <th class="sort-btn" data-sort="roi">ROI</th>
+                <th class="sort-btn" data-sort="calls">Calls</th>
+                <th class="sort-btn" data-sort="avg_call_score">Avg Score</th>
+                <th class="sort-btn" data-sort="transfer_rate">Transfer %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 5: Landing Page Performance -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Page Performance
+        </h2>
+        <div class="table-scroll" id="pagesTableWrap">
+          <table class="campaign-table" id="pagesTable">
+            <thead>
+              <tr>
+                <th class="sort-btn" data-sort="page_name">Page</th>
+                <th class="sort-btn" data-sort="platform">Platform</th>
+                <th class="sort-btn" data-sort="visitors">Visitors</th>
+                <th class="sort-btn" data-sort="leads">Leads</th>
+                <th class="sort-btn" data-sort="conv_rate">Conv %</th>
+                <th class="sort-btn" data-sort="avg_debt">Avg Debt</th>
+                <th class="sort-btn" data-sort="mca_pct">MCA %</th>
+                <th class="sort-btn" data-sort="calls">Calls</th>
+                <th class="sort-btn" data-sort="transfer_rate">Transfer %</th>
+                <th class="sort-btn" data-sort="spend">Spend</th>
+                <th class="sort-btn" data-sort="revenue">Revenue</th>
+                <th class="sort-btn" data-sort="roi">ROI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 6: Call Quality -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Call Quality Analysis
+        </h2>
+        <div class="charts-2col">
+          <div><canvas id="callScoreChart" height="260"></canvas></div>
+          <div><canvas id="callTransferChart" height="260"></canvas></div>
+        </div>
+        <div class="charts-2col" style="margin-top:20px;">
+          <div><canvas id="callDurationChart" height="260"></canvas></div>
+          <div><canvas id="dispositionChart" height="260"></canvas></div>
+        </div>
+        <div class="card" style="margin-top:16px;padding:16px;background:var(--gray-50);">
+          <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;" id="callScoreSummary"></div>
+        </div>
+      </div>
+
+      <!-- Section 7: Heatmap -->
+      <div class="card">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+          Lead Activity Heatmap
+        </h2>
+        <p style="font-size:12px;color:var(--gray-500);margin:0 0 12px;">Lead volume by day-of-week and hour. Darker = more leads.</p>
+        <div id="heatmapContainer" class="heatmap-grid"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="assets/js/common.js?v=6"></script>
+  <script>
+    let currentRange = '30d';
+    let campaignsData = [];
+    let campaignSortCol = 'roi';
+    let campaignSortAsc = false;
+    let pagesData = [];
+    let pageSortCol = 'roi';
+    let pageSortAsc = false;
+    let funnelChart, scatterChart, callScoreChart, callTransferChart, callDurationChart, dispositionChart;
+
+    const PLATFORM_COLORS = {
+      google: '#4285F4', meta: '#1877F2', tiktok: '#010101', bing: '#008373',
+      reddit: '#FF4500', outbrain: '#E8590C', linkedin: '#0077B5', other: '#6b7280'
+    };
+
+    const fmtMoney = (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPct = (v) => (v || 0).toFixed(1) + '%';
+    const fmtNum = (v) => (v || 0).toLocaleString();
+
+    function setRange(range, btn) {
+      currentRange = range;
+      document.querySelectorAll('.time-range-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = range === 'custom';
+      document.getElementById('fromDate').style.display = show ? '' : 'none';
+      document.getElementById('toDate').style.display = show ? '' : 'none';
+      if (range !== 'custom') loadAll();
+    }
+
+    function getQueryString() {
+      const platform = document.getElementById('platformFilter').value;
+      const dateRange = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : getDateRangeFromPreset(currentRange);
+      const params = new URLSearchParams();
+      if (platform) params.set('platform', platform);
+      if (dateRange.from) params.set('from', dateRange.from);
+      if (dateRange.to) params.set('to', dateRange.to);
+      return params.toString() ? '?' + params.toString() : '';
+    }
+
+    async function loadAll() {
+      const qs = getQueryString();
+      loadScorecard(qs);
+      loadFunnel(qs);
+      loadCampaigns(qs);
+      loadLandingPages(qs);
+      loadCallQuality(qs);
+      loadHeatmap(qs);
+    }
+
+    // --- Section 1: Scorecard ---
+    async function loadScorecard(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/scorecard' + qs);
+        const data = await res.json();
+        const tbody = document.querySelector('#scorecardTable tbody');
+
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:32px;">No data for selected range</td></tr>';
+          return;
+        }
+
+        // Find best/worst for highlighting
+        const bestROI = Math.max(...data.map(d => d.roi));
+        const worstROI = Math.min(...data.map(d => d.roi));
+        const bestCPL = Math.min(...data.filter(d => d.cpl > 0).map(d => d.cpl));
+        const worstCPL = Math.max(...data.map(d => d.cpl));
+
+        // Totals row
+        const totals = data.reduce((acc, d) => {
+          acc.spend += d.spend; acc.leads += d.leads; acc.revenue += d.revenue;
+          return acc;
+        }, { spend: 0, leads: 0, revenue: 0 });
+        totals.cpl = totals.leads > 0 ? totals.spend / totals.leads : 0;
+        totals.roi = totals.spend > 0 ? ((totals.revenue - totals.spend) / totals.spend) * 100 : 0;
+
+        let html = '';
+        for (const d of data) {
+          const roiClass = d.roi > 0 ? 'roi-positive' : d.roi < 0 ? 'roi-negative' : '';
+          html += '<tr>' +
+            '<td><span class="platform-badge ' + escapeHtml(d.platform) + '">' + escapeHtml(d.platform) + '</span></td>' +
+            '<td>' + fmtMoney(d.spend) + '</td>' +
+            '<td>' + fmtNum(d.leads) + '</td>' +
+            '<td>' + fmtMoney(d.cpl) + '</td>' +
+            '<td>' + fmtMoney(d.revenue) + '</td>' +
+            '<td class="' + roiClass + '">' + fmtPct(d.roi) + '</td>' +
+            '<td>' + fmtPct(d.conv_rate) + '</td>' +
+            '</tr>';
+        }
+        // Total row
+        const totRoiClass = totals.roi > 0 ? 'roi-positive' : totals.roi < 0 ? 'roi-negative' : '';
+        html += '<tr style="font-weight:700;border-top:2px solid var(--gray-300);background:var(--gray-50);">' +
+          '<td>TOTAL</td>' +
+          '<td>' + fmtMoney(totals.spend) + '</td>' +
+          '<td>' + fmtNum(totals.leads) + '</td>' +
+          '<td>' + fmtMoney(totals.cpl) + '</td>' +
+          '<td>' + fmtMoney(totals.revenue) + '</td>' +
+          '<td class="' + totRoiClass + '">' + fmtPct(totals.roi) + '</td>' +
+          '<td>-</td>' +
+          '</tr>';
+
+        tbody.innerHTML = html;
+      } catch (err) {
+        console.error('Scorecard error:', err);
+      }
+    }
+
+    // --- Section 2: Funnel ---
+    async function loadFunnel(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/funnel' + qs);
+        const d = await res.json();
+
+        const stages = [
+          { label: 'Visitors', count: d.visitors },
+          { label: 'Leads', count: d.leads },
+          { label: 'Qualified', count: d.qualified },
+          { label: 'Calls', count: d.calls },
+          { label: 'Transferred', count: d.transferred },
+          { label: 'Signed', count: d.signed }
+        ];
+
+        // Render stage cards with arrows
+        let html = '';
+        for (let i = 0; i < stages.length; i++) {
+          if (i > 0) html += '<div class="funnel-arrow">&rarr;</div>';
+          const rate = i > 0 && stages[i - 1].count > 0
+            ? ((stages[i].count / stages[i - 1].count) * 100).toFixed(1) + '%'
+            : '';
+          html += '<div class="funnel-stage">' +
+            '<div class="stage-count">' + fmtNum(stages[i].count) + '</div>' +
+            '<div class="stage-label">' + stages[i].label + '</div>' +
+            (rate ? '<div class="stage-rate">' + rate + '</div>' : '') +
+            '</div>';
+        }
+        document.getElementById('funnelStages').innerHTML = html;
+
+        // Horizontal bar chart
+        if (funnelChart) funnelChart.destroy();
+        funnelChart = new Chart(document.getElementById('funnelChart'), {
+          type: 'bar',
+          data: {
+            labels: stages.map(s => s.label),
+            datasets: [{
+              data: stages.map(s => s.count),
+              backgroundColor: ['#3052FF', '#5b7bff', '#7FB2FF', '#FF9000', '#f59e0b', '#10b981'],
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { display: false } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Funnel error:', err);
+      }
+    }
+
+    // --- Section 3: Scatter Plot ---
+    function renderScatter(campaigns) {
+      if (scatterChart) scatterChart.destroy();
+
+      const bubbles = campaigns
+        .filter(c => c.leads > 0 && c.cpl > 0)
+        .map(c => ({
+          x: c.cpl,
+          y: c.lead_to_conv,
+          r: Math.max(4, Math.min(30, Math.sqrt(c.spend) * 2)),
+          label: c.utm_campaign,
+          platform: c.platform
+        }));
+
+      // Group by platform
+      const grouped = {};
+      for (const b of bubbles) {
+        if (!grouped[b.platform]) grouped[b.platform] = [];
+        grouped[b.platform].push(b);
+      }
+
+      const datasets = Object.entries(grouped).map(([platform, points]) => ({
+        label: platform,
+        data: points,
+        backgroundColor: (PLATFORM_COLORS[platform] || '#6b7280') + '80',
+        borderColor: PLATFORM_COLORS[platform] || '#6b7280',
+        borderWidth: 1
+      }));
+
+      scatterChart = new Chart(document.getElementById('scatterChart'), {
+        type: 'bubble',
+        data: { datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const p = ctx.raw;
+                  return p.label + ' — CPL: ' + fmtMoney(p.x) + ', Conv: ' + fmtPct(p.y);
+                }
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Cost Per Lead ($)' }, grid: { color: '#f3f4f6' } },
+            y: { title: { display: true, text: 'Lead-to-Conversion Rate (%)' }, grid: { color: '#f3f4f6' } }
+          }
+        }
+      });
+    }
+
+    // --- Section 4: Campaigns Table ---
+    async function loadCampaigns(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/campaigns' + qs);
+        campaignsData = await res.json();
+        renderCampaignsTable();
+        renderScatter(campaignsData);
+      } catch (err) {
+        console.error('Campaigns error:', err);
+      }
+    }
+
+    function renderCampaignsTable() {
+      const data = [...campaignsData].sort((a, b) => {
+        const av = a[campaignSortCol], bv = b[campaignSortCol];
+        if (typeof av === 'string') return campaignSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+        return campaignSortAsc ? av - bv : bv - av;
+      });
+
+      const tbody = document.querySelector('#campaignsTable tbody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:32px;">No campaign data</td></tr>';
+        return;
+      }
+
+      let html = '';
+      for (let i = 0; i < data.length; i++) {
+        const c = data[i];
+        const rowClass = i < 5 ? 'top-row' : (i >= data.length - 5 ? 'bottom-row' : '');
+        const roiClass = c.roi > 0 ? 'roi-positive' : c.roi < 0 ? 'roi-negative' : '';
+        html += '<tr class="' + rowClass + '">' +
+          '<td title="' + escapeHtml(c.utm_source + ' / ' + c.utm_medium) + '">' + escapeHtml(c.utm_campaign || '(none)') + '</td>' +
+          '<td><span class="platform-badge ' + escapeHtml(c.platform) + '">' + escapeHtml(c.platform) + '</span></td>' +
+          '<td>' + fmtNum(c.visitors) + '</td>' +
+          '<td>' + fmtNum(c.leads) + '</td>' +
+          '<td>' + fmtPct(c.conv_rate) + '</td>' +
+          '<td>' + fmtMoney(c.spend) + '</td>' +
+          '<td>' + fmtMoney(c.cpl) + '</td>' +
+          '<td>' + fmtMoney(c.revenue) + '</td>' +
+          '<td class="' + roiClass + '">' + fmtPct(c.roi) + '</td>' +
+          '<td>' + fmtNum(c.calls) + '</td>' +
+          '<td>' + c.avg_call_score + '</td>' +
+          '<td>' + fmtPct(c.transfer_rate) + '</td>' +
+          '</tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    // Sort handler for campaigns
+    document.querySelectorAll('#campaignsTable th.sort-btn').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (campaignSortCol === col) campaignSortAsc = !campaignSortAsc;
+        else { campaignSortCol = col; campaignSortAsc = false; }
+        renderCampaignsTable();
+      });
+    });
+
+    // --- Section 5: Landing Pages ---
+    async function loadLandingPages(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/landing-pages' + qs);
+        pagesData = await res.json();
+        renderPagesTable();
+      } catch (err) {
+        console.error('Landing pages error:', err);
+      }
+    }
+
+    function renderPagesTable() {
+      const data = [...pagesData].sort((a, b) => {
+        const av = a[pageSortCol], bv = b[pageSortCol];
+        if (typeof av === 'string') return pageSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+        return pageSortAsc ? av - bv : bv - av;
+      });
+
+      const tbody = document.querySelector('#pagesTable tbody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--gray-400);padding:32px;">No landing page data</td></tr>';
+        return;
+      }
+
+      let html = '';
+      for (const p of data) {
+        const roiClass = p.roi > 0 ? 'roi-positive' : p.roi < 0 ? 'roi-negative' : '';
+        html += '<tr>' +
+          '<td>' + escapeHtml(p.page_name || p.slug) + '</td>' +
+          '<td><span class="platform-badge ' + escapeHtml(p.platform) + '">' + escapeHtml(p.platform) + '</span></td>' +
+          '<td>' + fmtNum(p.visitors) + '</td>' +
+          '<td>' + fmtNum(p.leads) + '</td>' +
+          '<td>' + fmtPct(p.conv_rate) + '</td>' +
+          '<td>' + fmtMoney(p.avg_debt) + '</td>' +
+          '<td>' + fmtPct(p.mca_pct) + '</td>' +
+          '<td>' + fmtNum(p.calls) + '</td>' +
+          '<td>' + fmtPct(p.transfer_rate) + '</td>' +
+          '<td>' + fmtMoney(p.spend) + '</td>' +
+          '<td>' + fmtMoney(p.revenue) + '</td>' +
+          '<td class="' + roiClass + '">' + fmtPct(p.roi) + '</td>' +
+          '</tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    // Sort handler for pages
+    document.querySelectorAll('#pagesTable th.sort-btn').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (pageSortCol === col) pageSortAsc = !pageSortAsc;
+        else { pageSortCol = col; pageSortAsc = false; }
+        renderPagesTable();
+      });
+    });
+
+    // --- Section 6: Call Quality ---
+    async function loadCallQuality(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/call-quality' + qs);
+        const data = await res.json();
+        const platforms = data.platforms || [];
+        const dispositions = data.dispositions || [];
+
+        const labels = platforms.map(p => p.platform);
+        const colors = labels.map(l => PLATFORM_COLORS[l] || '#6b7280');
+
+        // Avg Score by platform
+        if (callScoreChart) callScoreChart.destroy();
+        callScoreChart = new Chart(document.getElementById('callScoreChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Avg Call Score',
+              data: platforms.map(p => p.avg_score),
+              backgroundColor: colors.map(c => c + 'cc'),
+              borderColor: colors,
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Avg Call Score by Platform' } },
+            scales: { y: { beginAtZero: true, max: 10 } }
+          }
+        });
+
+        // Transfer rate by platform
+        if (callTransferChart) callTransferChart.destroy();
+        callTransferChart = new Chart(document.getElementById('callTransferChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Transfer Rate %',
+              data: platforms.map(p => p.transfer_rate),
+              backgroundColor: colors.map(c => c + 'cc'),
+              borderColor: colors,
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Transfer Rate by Platform' } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+
+        // Avg Duration by platform
+        if (callDurationChart) callDurationChart.destroy();
+        callDurationChart = new Chart(document.getElementById('callDurationChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Avg Duration (sec)',
+              data: platforms.map(p => p.avg_duration),
+              backgroundColor: colors.map(c => c + '99'),
+              borderColor: colors,
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Avg Call Duration by Platform (sec)' } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+
+        // Dispositions doughnut
+        if (dispositionChart) dispositionChart.destroy();
+        const dispoColors = ['#3052FF', '#7FB2FF', '#FF9000', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
+        dispositionChart = new Chart(document.getElementById('dispositionChart'), {
+          type: 'doughnut',
+          data: {
+            labels: dispositions.map(d => d.name),
+            datasets: [{
+              data: dispositions.map(d => d.count),
+              backgroundColor: dispositions.map((_, i) => dispoColors[i % dispoColors.length]),
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Top Dispositions' },
+              legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+            }
+          }
+        });
+
+        // Score summary
+        const totalHigh = platforms.reduce((s, p) => s + p.high_score, 0);
+        const totalLow = platforms.reduce((s, p) => s + p.low_score, 0);
+        const totalCalls = platforms.reduce((s, p) => s + p.total_calls, 0);
+        document.getElementById('callScoreSummary').innerHTML =
+          '<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:#10b981;">' + totalHigh + '</div><div style="font-size:0.8rem;color:var(--gray-500);">Score &ge; 7</div></div>' +
+          '<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:#ef4444;">' + totalLow + '</div><div style="font-size:0.8rem;color:var(--gray-500);">Score &lt; 7</div></div>' +
+          '<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:var(--gray-700);">' + totalCalls + '</div><div style="font-size:0.8rem;color:var(--gray-500);">Total Calls</div></div>' +
+          '<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:var(--primary);">' + (totalCalls > 0 ? ((totalHigh / totalCalls) * 100).toFixed(1) : '0') + '%</div><div style="font-size:0.8rem;color:var(--gray-500);">Quality Rate</div></div>';
+      } catch (err) {
+        console.error('Call quality error:', err);
+      }
+    }
+
+    // --- Section 7: Heatmap ---
+    async function loadHeatmap(qs) {
+      try {
+        const res = await fetch('/api/deep-analysis/heatmap' + qs);
+        const data = await res.json();
+        const grid = data.grid; // 7 rows (Sun=0..Sat=6) x 24 cols
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Find max for color scaling
+        let maxVal = 0;
+        for (let d = 0; d < 7; d++) {
+          for (let h = 0; h < 24; h++) {
+            if (grid[d][h] > maxVal) maxVal = grid[d][h];
+          }
+        }
+
+        let html = '<div class="heatmap-label"></div>';
+        for (let h = 0; h < 24; h++) {
+          html += '<div class="heatmap-hour">' + (h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p') + '</div>';
+        }
+
+        // Reorder: Mon(1) .. Sun(0)
+        const order = [1, 2, 3, 4, 5, 6, 0];
+        for (const d of order) {
+          html += '<div class="heatmap-label">' + dayNames[d] + '</div>';
+          for (let h = 0; h < 24; h++) {
+            const val = grid[d][h];
+            const intensity = maxVal > 0 ? val / maxVal : 0;
+            const r = Math.round(48 + (242 - 48) * (1 - intensity));
+            const g = Math.round(82 + (244 - 82) * (1 - intensity));
+            const b = Math.round(255 + (249 - 255) * (1 - intensity));
+            const bg = intensity > 0 ? 'rgba(48,82,255,' + (0.08 + intensity * 0.82) + ')' : '#f9fafb';
+            const textColor = intensity > 0.5 ? '#fff' : 'var(--gray-600)';
+            html += '<div class="heatmap-cell" style="background:' + bg + ';color:' + textColor + ';" title="' + dayNames[d] + ' ' + h + ':00 — ' + val + ' leads">' + (val || '') + '</div>';
+          }
+        }
+
+        document.getElementById('heatmapContainer').innerHTML = html;
+      } catch (err) {
+        console.error('Heatmap error:', err);
+      }
+    }
+
+    // Initial load
+    loadAll();
+  </script>
+</body>
+</html>
