@@ -397,7 +397,7 @@
         const res = await fetch('/api/email/templates/' + id + '/send-test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email })
+          body: JSON.stringify({ to_email: email })
         });
         if (!res.ok) throw new Error('API returned ' + res.status);
         alert('Test email sent to ' + email);
