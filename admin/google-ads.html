@@ -483,12 +483,23 @@
           </div>
         </div>
 
+        <!-- QS History Trend -->
+        <div class="card" id="qsHistoryCard" style="display:none;">
+          <div class="card-header"><h3 class="card-title">Quality Score Trend</h3></div>
+          <div id="qsHistoryContent" style="padding:16px;">
+            <div id="qsHistoryChartWrap"><canvas id="qsHistoryChart" height="280"></canvas></div>
+            <div id="qsHistoryEmpty" style="display:none;text-align:center;padding:30px;color:#9ca3af;font-size:13px;">
+              Quality Score history will appear as daily snapshots accumulate. Check back tomorrow.
+            </div>
+          </div>
+        </div>
+
         <!-- Search Terms -->
         <div class="card" id="searchTermsCard" style="display:none;">
           <div class="card-header"><h3 class="card-title">Search Term Intelligence</h3></div>
           <div class="table-container" style="max-height:500px;overflow-y:auto;">
-            <table class="resizable-table">
-              <thead>
+            <table class="resizable-table" id="searchTermsTableEl">
+              <thead id="searchTermsHead">
                 <tr>
                   <th style="min-width:180px;">Search Term<span class="col-resize"></span></th>
                   <th>Status<span class="col-resize"></span></th>
@@ -497,7 +508,7 @@
                   <th>CTR<span class="col-resize"></span></th>
                   <th>CPC<span class="col-resize"></span></th>
                   <th>Cost<span class="col-resize"></span></th>
-                  <th>Conversions</th>
+                  <th>Conv<span class="col-resize"></span></th>
                 </tr>
               </thead>
               <tbody id="searchTermsTable"></tbody>
@@ -1083,6 +1094,7 @@
       document.getElementById('campaignISCard').style.display = 'none';
       document.getElementById('qsSection').style.display = 'none';
       document.getElementById('qsTableCard').style.display = 'none';
+      document.getElementById('qsHistoryCard').style.display = 'none';
       document.getElementById('searchTermsCard').style.display = 'none';
 
       try {
@@ -1207,20 +1219,90 @@
           </tr>${renderQsTipsRow(k)}`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
         }
 
+        // QS History Chart
+        try {
+          const qsHistoryData = await api('/api/analytics/google-ads/quality-scores/history?days=90');
+          const histCard = document.getElementById('qsHistoryCard');
+          histCard.style.display = '';
+
+          if (qsHistoryData.history && qsHistoryData.history.length > 1) {
+            document.getElementById('qsHistoryEmpty').style.display = 'none';
+            document.getElementById('qsHistoryChartWrap').style.display = '';
+
+            const labels = qsHistoryData.history.map(h => h.snapshot_date);
+            const avgData = qsHistoryData.history.map(h => h.avg_qs);
+            const goodData = qsHistoryData.history.map(h => h.good_count);
+            const okData = qsHistoryData.history.map(h => h.ok_count);
+            const poorData = qsHistoryData.history.map(h => h.poor_count);
+
+            if (window._qsHistoryChart) window._qsHistoryChart.destroy();
+            window._qsHistoryChart = new Chart(document.getElementById('qsHistoryChart').getContext('2d'), {
+              type: 'line',
+              data: {
+                labels,
+                datasets: [
+                  { label: 'Avg QS', data: avgData, borderColor: '#3052FF', backgroundColor: 'rgba(48,82,255,0.1)', fill: true, tension: 0.3, yAxisID: 'y' },
+                  { label: 'Good (7-10)', data: goodData, borderColor: '#16a34a', borderDash: [4,4], tension: 0.3, pointRadius: 2, yAxisID: 'y1' },
+                  { label: 'OK (4-6)', data: okData, borderColor: '#f59e0b', borderDash: [4,4], tension: 0.3, pointRadius: 2, yAxisID: 'y1' },
+                  { label: 'Poor (1-3)', data: poorData, borderColor: '#dc2626', borderDash: [4,4], tension: 0.3, pointRadius: 2, yAxisID: 'y1' }
+                ]
+              },
+              options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                  y: { position: 'left', min: 0, max: 10, title: { display: true, text: 'Avg Quality Score' } },
+                  y1: { position: 'right', min: 0, title: { display: true, text: 'Keyword Count' }, grid: { drawOnChartArea: false } },
+                  x: { ticks: { maxTicksAuto: true, maxRotation: 45 } }
+                },
+                plugins: { legend: { position: 'bottom' } }
+              }
+            });
+          } else {
+            document.getElementById('qsHistoryChartWrap').style.display = 'none';
+            document.getElementById('qsHistoryEmpty').style.display = '';
+          }
+        } catch (e) {
+          console.error('QS history chart error:', e);
+        }
+
         // Search Terms
         if (stData.connected && stData.search_terms && stData.search_terms.length) {
           document.getElementById('searchTermsCard').style.display = '';
           const stTbody = document.getElementById('searchTermsTable');
-          stTbody.innerHTML = stData.search_terms.map(t => `<tr>
-            <td>${escapeHtml(t.search_term)}</td>
-            <td>${statusBadge(t.status)}</td>
-            <td>${t.impressions.toLocaleString()}</td>
-            <td>${t.clicks.toLocaleString()}</td>
-            <td>${(t.ctr * 100).toFixed(1)}%</td>
-            <td>${fmtMoney(t.cpc)}</td>
-            <td>${fmtMoney(t.cost)}</td>
-            <td>${t.conversions.toFixed(1)}</td>
-          </tr>`).join('');
+          const stHead = document.getElementById('searchTermsHead');
+          const convActions = stData.conversion_action_names || [];
+
+          // Build dynamic header with conversion action columns
+          stHead.innerHTML = '<tr>' +
+            '<th style="min-width:180px;">Search Term<span class="col-resize"></span></th>' +
+            '<th>Status<span class="col-resize"></span></th>' +
+            '<th>Impressions<span class="col-resize"></span></th>' +
+            '<th>Clicks<span class="col-resize"></span></th>' +
+            '<th>CTR<span class="col-resize"></span></th>' +
+            '<th>CPC<span class="col-resize"></span></th>' +
+            '<th>Cost<span class="col-resize"></span></th>' +
+            '<th>Conv<span class="col-resize"></span></th>' +
+            convActions.map(a => '<th style="font-size:11px;white-space:nowrap;">' + escapeHtml(a) + '</th>').join('') +
+            '</tr>';
+
+          stTbody.innerHTML = stData.search_terms.map(t => {
+            const actionCells = convActions.map(a => {
+              const count = (t.conversion_actions && t.conversion_actions[a]) || 0;
+              return '<td style="text-align:center;font-size:12px;' + (count > 0 ? 'color:#16a34a;font-weight:600;' : 'color:#d1d5db;') + '">' + (count > 0 ? count.toFixed(1) : '-') + '</td>';
+            }).join('');
+            return '<tr>' +
+              '<td>' + escapeHtml(t.search_term) + '</td>' +
+              '<td>' + statusBadge(t.status) + '</td>' +
+              '<td>' + t.impressions.toLocaleString() + '</td>' +
+              '<td>' + t.clicks.toLocaleString() + '</td>' +
+              '<td>' + (t.ctr * 100).toFixed(1) + '%</td>' +
+              '<td>' + fmtMoney(t.cpc) + '</td>' +
+              '<td>' + fmtMoney(t.cost) + '</td>' +
+              '<td>' + t.conversions.toFixed(1) + '</td>' +
+              actionCells +
+              '</tr>';
+          }).join('');
         }
 
         // Init column resize on all competition tables

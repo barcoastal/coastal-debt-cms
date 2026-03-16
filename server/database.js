@@ -643,6 +643,27 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_aih_domain ON auction_insights_history(domain);
 `);
 
+// Quality Score history table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quality_score_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    snapshot_date TEXT NOT NULL,
+    keyword TEXT NOT NULL,
+    ad_group TEXT,
+    quality_score INTEGER,
+    creative_quality TEXT,
+    post_click_quality TEXT,
+    predicted_ctr TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(snapshot_date, keyword, ad_group)
+  );
+  CREATE INDEX IF NOT EXISTS idx_qsh_date ON quality_score_history(snapshot_date);
+  CREATE INDEX IF NOT EXISTS idx_qsh_keyword ON quality_score_history(keyword);
+`);
+
 // Migrate single sheet_id → sheets array if needed
 try {
   const gConf = db.prepare('SELECT auction_insights_sheet_id, auction_insights_sheets FROM google_ads_config WHERE id = 1').get();

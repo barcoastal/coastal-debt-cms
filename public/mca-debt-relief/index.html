@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bankruptcy Alternative for Business | Settle Debt for 50-80% Less</title>
-  <meta name="description" content="Don't file bankruptcy. Resolve business debt for a fraction of what you owe. No court, no public record, keep your business. Free consultation.">
+  <title>MCA Debt Relief | Settle Merchant Cash Advance Debt for 50-80% Less</title>
+  <meta name="description" content="Struggling with MCA debt? Settle your Merchant Cash Advance debt for a fraction of what you owe. Stop daily ACH withdrawals. Free consultation.">
   
   <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
   <script>
@@ -41,6 +41,9 @@
       --red-600:#dc2626;
       --green-100:#dcfce7;
       --green-600:#16a34a;
+      --cta-btn:#3052FF;
+      --cta-btn-hover:#2442d4;
+      --headline-hl:#3052FF;
     }
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
     .container{max-width:1200px;margin:0 auto;padding:0 20px}
@@ -60,7 +63,7 @@
     .hero-content{color:var(--gray-800);padding-top:10px}
     .hero-badge{display:inline-block;background:rgba(48,82,255,0.1);color:var(--blue);padding:8px 16px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:20px}
     .hero h1{font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:20px;color:#000}
-    .hero h1 span{color:var(--blue)}
+    .hero h1 span{color:var(--headline-hl)}
     .hero-sub{font-size:1.15rem;color:#7984a9;margin-bottom:30px;line-height:1.6}
     .hero-points{list-style:none;display:flex;flex-direction:column;gap:14px}
     .hero-points li{display:flex;align-items:center;gap:12px;color:var(--gray-800);font-size:1rem}
@@ -112,8 +115,8 @@
     .comparison-table .col-bankruptcy{background:var(--red-100);color:var(--red-600)}
     .comparison-table .col-settlement{background:var(--green-100);color:var(--green-600);font-weight:600}
     .comparison-cta{text-align:center;margin-top:40px}
-    .comparison-cta a{display:inline-block;background:var(--blue);color:var(--white);padding:18px 40px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
-    .comparison-cta a:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
+    .comparison-cta a{display:inline-block;background:var(--cta-btn);color:var(--white);padding:18px 40px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .comparison-cta a:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
 
     /* How It Works */
     .section{padding:70px 0}
@@ -149,8 +152,8 @@
     .empathy-content p{font-size:1.1rem;line-height:1.8;color:rgba(255,255,255,0.85);margin-bottom:20px}
     .empathy-content p:last-child{margin-bottom:0;font-size:1.2rem;color:var(--white);font-weight:500}
     .empathy-content strong{color:var(--blue-pale)}
-    .empathy-cta{display:inline-block;margin-top:30px;padding:18px 50px;background:var(--blue);color:var(--white);border-radius:50px;font-size:1.1rem;font-weight:600;text-decoration:none;transition:all 0.2s}
-    .empathy-cta:hover{background:var(--blue-light);transform:translateY(-2px);box-shadow:0 8px 25px rgba(48,82,255,0.4)}
+    .empathy-cta{display:inline-block;margin-top:30px;padding:18px 50px;background:var(--cta-btn);color:var(--white);border-radius:50px;font-size:1.1rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    .empathy-cta:hover{background:var(--cta-btn-hover);transform:translateY(-2px);box-shadow:0 8px 25px rgba(48,82,255,0.4)}
 
     /* Testimonials */
     .testimonials{background:var(--gray-100)}
@@ -198,8 +201,8 @@
     .cta-form-card .consent-label input{margin-top:3px;flex-shrink:0}
     .cta-form-card .consent-label a{color:var(--blue)}
     .cta-form-card .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
-    .cta-form-card .submit-btn{width:100%;padding:16px;background:var(--blue);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s}
-    .cta-form-card .submit-btn:hover{background:var(--blue-light);transform:translateY(-1px)}
+    .cta-form-card .submit-btn{width:100%;padding:16px;background:var(--cta-btn);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s}
+    .cta-form-card .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
     .cta-form-card .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
     .bottom-form-success{text-align:center;padding:24px}
     .bottom-form-success h3{font-size:1.4rem;color:#16a34a;margin-bottom:8px}
@@ -213,7 +216,7 @@
 
     /* Sticky Mobile CTA */
     .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:12px 20px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
-    .mobile-cta a{display:block;text-align:center;background:var(--blue);color:var(--white);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
+    .mobile-cta a{display:block;text-align:center;background:var(--cta-btn);color:var(--white);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
 
     /* Responsive */
     @media(max-width:992px){
@@ -303,7 +306,7 @@
     <div class="container hero-grid">
       <div class="hero-content">
         <div class="hero-badge">Bankruptcy Alternative</div>
-        <h1>Don't File Bankruptcy.<br>Settle Your Business Debt for <span>Up to 80% Less.</span></h1>
+        <h1>Don't File Bankruptcy.<br>Settle Your MCA Debt for <span>Up to 80% Less.</span></h1>
         <p class="hero-sub">Thousands of business owners avoided bankruptcy by settling their debt through us. No court. No public record. Keep your business running.</p>
         <ul class="hero-points" id="bulletPoints"></ul>
       </div>
@@ -429,21 +432,21 @@
   <section class="comparison-section">
     <div class="container">
       <h2 class="section-title">Why Business Owners Choose Debt Settlement Over Bankruptcy</h2>
-      <p class="section-sub">See why thousands of business owners chose us instead of filing bankruptcy</p>
+      <p class="section-sub">See why thousands of business owners chose settlement over continuing MCA payments</p>
       <div class="comparison-table-wrapper">
         <table class="comparison-table">
           <thead>
             <tr>
               <th></th>
-              <th>Filing Bankruptcy</th>
-              <th>Debt Settlement</th>
+              <th>Keeping MCA Debt</th>
+              <th>MCA Debt Settlement</th>
             </tr>
           </thead>
           <tbody id="comparisonBody"></tbody>
         </table>
       </div>
       <div class="comparison-cta">
-        <a href="#leadForm" onclick="var fc = document.querySelector('.form-card'); if (fc) fc.scrollIntoView({behavior:'smooth',block:'center'});">See How Much You Could Save Without Bankruptcy</a>
+        <a href="#leadForm" onclick="var fc = document.querySelector('.form-card'); if (fc) fc.scrollIntoView({behavior:'smooth',block:'center'});">See How Much You Could Save on Your MCA Debt</a>
       </div>
     </div>
   </section>
@@ -526,8 +529,8 @@
   <!-- FAQ Section -->
   <section class="faq-section">
     <div class="container">
-      <h2 class="section-title">Bankruptcy Questions? We Have Answers.</h2>
-      <p class="section-sub">Get the facts before making a decision</p>
+      <h2 class="section-title">MCA Debt Questions? We Have Answers.</h2>
+      <p class="section-sub">Get the facts about MCA debt settlement</p>
       <div class="faq-grid" id="faqGrid"></div>
     </div>
   </section>
@@ -689,7 +692,8 @@
             utm_medium: params.get('utm_medium') || '',
             utm_campaign: params.get('utm_campaign') || '',
             utm_term: params.get('utm_term') || '',
-            utm_content: params.get('utm_content') || ''
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
           })
         }).catch(function(){});
 
@@ -900,7 +904,7 @@
     }).join('');
     document.getElementById('empathyText').innerHTML = empathyHtml;
 
-    const comparisonRows = [{"label":"Public Record","bad":"Yes - searchable forever","good":"No - private negotiation"},{"label":"Credit Impact","bad":"7-10 years","good":"Recovers in 12-24 months"},{"label":"Your Business","bad":"May be forced to close","good":"Keep operating"},{"label":"Your Assets","bad":"Can be seized","good":"Protected"},{"label":"Time to Resolve","bad":"6-18 months in court","good":"3-6 months average"},{"label":"Cost","bad":"$10K-50K+ legal fees","good":"No upfront fees"},{"label":"Future Financing","bad":"Nearly impossible for years","good":"Possible within months"}];
+    const comparisonRows = [{"label":"Daily Payments","bad":"Continue daily/weekly ACH drains","good":"Payments stop during negotiation"},{"label":"Total Cost","bad":"Pay back 1.3x-1.5x the advance","good":"Settle for 50-80% less"},{"label":"Cash Flow","bad":"Strangled by daily withdrawals","good":"Cash flow recovers immediately"},{"label":"Stacked Advances","bad":"Cycle of borrowing to repay","good":"Resolve all MCAs at once"},{"label":"Time to Resolve","bad":"Trapped for 6-18 months","good":"3-6 months average"},{"label":"Your Business","bad":"Risk of closure from cash drain","good":"Keep operating and growing"},{"label":"Future Financing","bad":"Stuck in MCA cycle","good":"Access better financing options"}];
     const comparisonHtml = comparisonRows.map(row => `
       <tr>
         <td>${row.label}</td>
@@ -910,7 +914,7 @@
     `).join('');
     document.getElementById('comparisonBody').innerHTML = comparisonHtml;
 
-    const faqItems = [{"question":"Is debt settlement really better than filing bankruptcy?","answer":"For most business owners, yes. Bankruptcy stays on your record for 7-10 years, can force you to close your business, and makes future financing nearly impossible. Debt settlement is private, faster, and lets you keep operating."},{"question":"Will this affect my credit like bankruptcy would?","answer":"Settlement does impact credit temporarily, but most clients see their scores recover within 12-24 months. Bankruptcy damage lasts 7-10 years."},{"question":"What types of debt can you settle?","answer":"We specialize in Merchant Cash Advances (MCAs), business lines of credit, and unsecured business loans. If you're being sued or facing daily/weekly ACH withdrawals, we can help."},{"question":"How long does the process take?","answer":"Most cases settle in 3-6 months. Bankruptcy proceedings can drag on for 6-18 months or longer."},{"question":"Do I need a lawyer to file bankruptcy? What about settlement?","answer":"Bankruptcy requires legal representation and court appearances. Debt settlement doesn't — we handle all negotiations directly with your creditors."},{"question":"What if I've already talked to a bankruptcy lawyer?","answer":"Get a second opinion. Many business owners come to us after consulting bankruptcy attorneys and discover settlement saves them more money with less damage to their business."}];
+    const faqItems = [{"question":"Can MCA debt really be settled for less?","answer":"Yes. MCA companies often accept 20-50 cents on the dollar through negotiated settlements. We've helped thousands of businesses reduce their MCA debt by 50-80%."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once we begin negotiating on your behalf, we work to stop the daily or weekly ACH withdrawals from your bank account so your cash flow can recover."},{"question":"I have multiple stacked MCAs — can you help?","answer":"Absolutely. Stacked MCAs are our specialty. We negotiate with all of your MCA lenders simultaneously to resolve all your advances at once."},{"question":"How long does MCA debt settlement take?","answer":"Most MCA settlements are completed in 3-6 months, depending on the number of advances and the lenders involved."},{"question":"Will this affect my credit score?","answer":"MCA debt is typically not reported to credit bureaus, so settlement usually has no impact on your personal credit score."},{"question":"What if an MCA company is threatening legal action?","answer":"Don't panic. Many MCA companies threaten lawsuits as a collection tactic. We deal with MCA lenders every day and know how to negotiate even in aggressive situations. Contact us immediately so we can help."}];
     const faqHtml = faqItems.map(item => `
       <div class="faq-item">
         <div class="faq-question">${item.question}</div>
@@ -1094,9 +1098,13 @@
       }
     });
 
+    // Dedup flag to prevent double-submissions
+    var _formSubmitting = false;
+
     // Form submission
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       // Validate consent checkbox
       var consentBox = document.getElementById('consentCheckbox');
@@ -1122,6 +1130,7 @@
         }
       }
 
+      _formSubmitting = true;
       const btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1129,6 +1138,7 @@
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       // Always re-check rt_clickid at submit time from all sources
       if (!data.rt_clickid) {
@@ -1160,6 +1170,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = 'Get My Free Debt Analysis';
       }
@@ -1227,6 +1238,7 @@
     // Bottom form submission
     document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       var consentBox = document.getElementById('bottomConsentCheckbox');
       var consentErr = document.getElementById('bottomConsentError');
@@ -1254,6 +1266,7 @@
       // Refresh hidden fields before submit
       setBottomHiddenFields();
 
+      _formSubmitting = true;
       var btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1266,6 +1279,7 @@
         data[cleanKey] = val;
       });
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       if (!data.rt_clickid) data.rt_clickid = getRtClickId();
 
@@ -1290,6 +1304,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = 'Get My Free Debt Analysis';
       }

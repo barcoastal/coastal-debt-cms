@@ -41,6 +41,9 @@
       --red-600:#dc2626;
       --green-100:#dcfce7;
       --green-600:#16a34a;
+      --cta-btn:#3052FF;
+      --cta-btn-hover:#2442d4;
+      --headline-hl:#3052FF;
     }
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
     .container{max-width:1200px;margin:0 auto;padding:0 20px}
@@ -60,7 +63,7 @@
     .hero-content{color:var(--gray-800);padding-top:10px}
     .hero-badge{display:inline-block;background:rgba(48,82,255,0.1);color:var(--blue);padding:8px 16px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:20px}
     .hero h1{font-size:3rem;font-weight:800;line-height:1.15;margin-bottom:20px;color:#000}
-    .hero h1 span{color:var(--blue)}
+    .hero h1 span{color:var(--headline-hl)}
     .hero-sub{font-size:1.15rem;color:#7984a9;margin-bottom:30px;line-height:1.6}
     .hero-points{list-style:none;display:flex;flex-direction:column;gap:14px}
     .hero-points li{display:flex;align-items:center;gap:12px;color:var(--gray-800);font-size:1rem}
@@ -112,8 +115,8 @@
     .comparison-table .col-bankruptcy{background:var(--red-100);color:var(--red-600)}
     .comparison-table .col-settlement{background:var(--green-100);color:var(--green-600);font-weight:600}
     .comparison-cta{text-align:center;margin-top:40px}
-    .comparison-cta a{display:inline-block;background:var(--blue);color:var(--white);padding:18px 40px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
-    .comparison-cta a:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
+    .comparison-cta a{display:inline-block;background:var(--cta-btn);color:var(--white);padding:18px 40px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .comparison-cta a:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
 
     /* How It Works */
     .section{padding:70px 0}
@@ -149,8 +152,8 @@
     .empathy-content p{font-size:1.1rem;line-height:1.8;color:rgba(255,255,255,0.85);margin-bottom:20px}
     .empathy-content p:last-child{margin-bottom:0;font-size:1.2rem;color:var(--white);font-weight:500}
     .empathy-content strong{color:var(--blue-pale)}
-    .empathy-cta{display:inline-block;margin-top:30px;padding:18px 50px;background:var(--blue);color:var(--white);border-radius:50px;font-size:1.1rem;font-weight:600;text-decoration:none;transition:all 0.2s}
-    .empathy-cta:hover{background:var(--blue-light);transform:translateY(-2px);box-shadow:0 8px 25px rgba(48,82,255,0.4)}
+    .empathy-cta{display:inline-block;margin-top:30px;padding:18px 50px;background:var(--cta-btn);color:var(--white);border-radius:50px;font-size:1.1rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    .empathy-cta:hover{background:var(--cta-btn-hover);transform:translateY(-2px);box-shadow:0 8px 25px rgba(48,82,255,0.4)}
 
     /* Testimonials */
     .testimonials{background:var(--gray-100)}
@@ -198,8 +201,8 @@
     .cta-form-card .consent-label input{margin-top:3px;flex-shrink:0}
     .cta-form-card .consent-label a{color:var(--blue)}
     .cta-form-card .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
-    .cta-form-card .submit-btn{width:100%;padding:16px;background:var(--blue);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s}
-    .cta-form-card .submit-btn:hover{background:var(--blue-light);transform:translateY(-1px)}
+    .cta-form-card .submit-btn{width:100%;padding:16px;background:var(--cta-btn);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s}
+    .cta-form-card .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
     .cta-form-card .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
     .bottom-form-success{text-align:center;padding:24px}
     .bottom-form-success h3{font-size:1.4rem;color:#16a34a;margin-bottom:8px}
@@ -213,7 +216,7 @@
 
     /* Sticky Mobile CTA */
     .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:12px 20px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
-    .mobile-cta a{display:block;text-align:center;background:var(--blue);color:var(--white);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
+    .mobile-cta a{display:block;text-align:center;background:var(--cta-btn);color:var(--white);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
 
     /* Responsive */
     @media(max-width:992px){
@@ -689,7 +692,8 @@
             utm_medium: params.get('utm_medium') || '',
             utm_campaign: params.get('utm_campaign') || '',
             utm_term: params.get('utm_term') || '',
-            utm_content: params.get('utm_content') || ''
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
           })
         }).catch(function(){});
 
@@ -1094,9 +1098,13 @@
       }
     });
 
+    // Dedup flag to prevent double-submissions
+    var _formSubmitting = false;
+
     // Form submission
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       // Validate consent checkbox
       var consentBox = document.getElementById('consentCheckbox');
@@ -1122,6 +1130,7 @@
         }
       }
 
+      _formSubmitting = true;
       const btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1129,6 +1138,7 @@
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       // Always re-check rt_clickid at submit time from all sources
       if (!data.rt_clickid) {
@@ -1160,6 +1170,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = 'Get My Free Consultation';
       }
@@ -1227,6 +1238,7 @@
     // Bottom form submission
     document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_formSubmitting) return;
 
       var consentBox = document.getElementById('bottomConsentCheckbox');
       var consentErr = document.getElementById('bottomConsentError');
@@ -1254,6 +1266,7 @@
       // Refresh hidden fields before submit
       setBottomHiddenFields();
 
+      _formSubmitting = true;
       var btn = this.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = 'Submitting...';
@@ -1266,6 +1279,7 @@
         data[cleanKey] = val;
       });
       data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
 
       if (!data.rt_clickid) data.rt_clickid = getRtClickId();
 
@@ -1290,6 +1304,7 @@
         }
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
         btn.disabled = false;
         btn.textContent = 'Get Started';
       }

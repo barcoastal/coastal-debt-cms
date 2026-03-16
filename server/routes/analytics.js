@@ -1044,6 +1044,38 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
   }
 });
 
+// Shared helper: search Google Drive for the latest spreadsheet matching a name.
+// Falls back to the configured sheet_id if Drive search fails or finds nothing.
+async function findLatestSheetByName(driveApi, name) {
+  try {
+    const res = await driveApi.files.list({
+      q: `name = '${name.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+      orderBy: 'createdTime desc',
+      pageSize: 1,
+      fields: 'files(id, name, createdTime)'
+    });
+    return res.data.files && res.data.files.length > 0 ? res.data.files[0] : null;
+  } catch (e) {
+    console.warn(`[Drive Search] Failed to search for "${name}": ${e.message}`);
+    return null;
+  }
+}
+
+// Shared helper: resolve the best spreadsheet ID for a sheet config.
+// Tries Drive API lookup by label name first, falls back to configured sheet_id.
+async function resolveSheetId(driveApi, sheetConf) {
+  if (driveApi && sheetConf.label) {
+    const found = await findLatestSheetByName(driveApi, sheetConf.label);
+    if (found) {
+      if (found.id !== sheetConf.sheet_id) {
+        console.log(`[Auction Insights] Drive found newer sheet for "${sheetConf.label}": ${found.id} (created ${found.createdTime})`);
+      }
+      return found.id;
+    }
+  }
+  return sheetConf.sheet_id;
+}
+
 // Google Ads: Auction Insights (Competition)
 // Returns competitor domain data if the account is allowlisted for auction insight fields.
 // Not all Google Ads accounts have access — gracefully returns available:false if not supported.
@@ -1080,9 +1112,10 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       return res.json({ connected: true, available: false, error: 'Google Sheets service account key not found', sources: [], domains: [] });
     }
 
-    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly'] });
     const client = await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth: client });
+    const driveApi = google.drive({ version: 'v3', auth: client });
 
     // Map Google Ads export headers to our keys
     const HEADER_MAP = {
@@ -1128,7 +1161,8 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
 
     await Promise.all(targetSheets.map(async (sheetConf) => {
       try {
-        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const sheetId = await resolveSheetId(driveApi, sheetConf);
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) return;
 
@@ -1233,15 +1267,17 @@ router.get('/google-ads/auction-insights/debug', authenticateToken, async (req, 
       return res.json({ error: 'Google Sheets service account key not found' });
     }
 
-    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly'] });
     const client = await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth: client });
+    const driveApi = google.drive({ version: 'v3', auth: client });
 
     const results = [];
     for (const sheetConf of allSheets) {
-      const entry = { label: sheetConf.label, sheet_id: sheetConf.sheet_id, status: 'unknown', date: null, rows: 0, error: null };
+      const resolvedId = await resolveSheetId(driveApi, sheetConf);
+      const entry = { label: sheetConf.label, sheet_id: sheetConf.sheet_id, resolved_sheet_id: resolvedId, used_drive_lookup: resolvedId !== sheetConf.sheet_id, status: 'unknown', date: null, rows: 0, error: null };
       try {
-        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: resolvedId, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) {
           entry.status = 'empty';
@@ -1444,6 +1480,21 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
       };
     });
 
+    // Store daily QS snapshot
+    const today = new Date().toISOString().split('T')[0];
+    const existingSnapshot = db.prepare('SELECT id FROM quality_score_history WHERE snapshot_date = ? LIMIT 1').get(today);
+    if (!existingSnapshot) {
+      const insertQsHistory = db.prepare(`INSERT OR IGNORE INTO quality_score_history
+        (snapshot_date, keyword, ad_group, quality_score, creative_quality, post_click_quality, predicted_ctr, impressions, clicks, cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+      for (const kw of keywords) {
+        try {
+          insertQsHistory.run(today, kw.keyword, kw.ad_group, kw.quality_score, kw.creative_quality, kw.post_click_quality, kw.predicted_ctr, kw.impressions, kw.clicks, kw.cost);
+        } catch (e) {}
+      }
+      console.log('[QS History] Stored snapshot for', today, '-', keywords.length, 'keywords');
+    }
+
     res.json({
       connected: true,
       distribution,
@@ -1452,6 +1503,47 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
     });
   } catch (e) {
     console.error('Quality scores error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Google Ads: Quality Score History
+router.get('/google-ads/quality-scores/history', authenticateToken, (req, res) => {
+  try {
+    const { days, keyword } = req.query;
+    const numDays = parseInt(days) || 90;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - numDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    if (keyword) {
+      // Single keyword trend
+      const rows = db.prepare(`
+        SELECT snapshot_date, quality_score, creative_quality, post_click_quality, predicted_ctr, impressions, clicks, cost
+        FROM quality_score_history
+        WHERE keyword = ? AND snapshot_date >= ?
+        ORDER BY snapshot_date ASC
+      `).all(keyword, cutoffStr);
+      return res.json({ keyword, history: rows });
+    }
+
+    // Average QS per day
+    const rows = db.prepare(`
+      SELECT snapshot_date,
+        ROUND(AVG(CASE WHEN quality_score IS NOT NULL AND quality_score >= 1 THEN quality_score END), 1) as avg_qs,
+        COUNT(CASE WHEN quality_score IS NOT NULL AND quality_score >= 1 THEN 1 END) as keyword_count,
+        COUNT(CASE WHEN quality_score >= 7 THEN 1 END) as good_count,
+        COUNT(CASE WHEN quality_score >= 4 AND quality_score < 7 THEN 1 END) as ok_count,
+        COUNT(CASE WHEN quality_score >= 1 AND quality_score < 4 THEN 1 END) as poor_count
+      FROM quality_score_history
+      WHERE snapshot_date >= ?
+      GROUP BY snapshot_date
+      ORDER BY snapshot_date ASC
+    `).all(cutoffStr);
+
+    res.json({ history: rows });
+  } catch (e) {
+    console.error('QS history error:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
@@ -1477,19 +1569,43 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     if (from) dateClause += ` AND segments.date >= '${from}'`;
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
+    // Query 1: Main search term metrics
     const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 200`;
 
+    // Query 2: Conversions broken down by conversion action per search term
+    const convGaql = `SELECT search_term_view.search_term, segments.conversion_action_name, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED' AND metrics.conversions > 0${dateClause}`;
+
     console.log('[Competition ST] GAQL:', gaql);
-    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
-      method: 'POST', headers, body: JSON.stringify({ query: gaql })
-    });
-    const gData = await gRes.json();
+    console.log('[Competition ST conv] GAQL:', convGaql);
+
+    const [gRes, convRes] = await Promise.all([
+      fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+        method: 'POST', headers, body: JSON.stringify({ query: gaql })
+      }),
+      fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+        method: 'POST', headers, body: JSON.stringify({ query: convGaql })
+      })
+    ]);
+    const [gData, convData] = await Promise.all([gRes.json(), convRes.json()]);
     console.log('[Competition ST] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
+    console.log('[Competition ST conv] results:', convData.results?.length, 'error:', convData.error?.message || 'none');
 
     if (gData.error) {
       const errDetails = gData.error.details?.[0]?.errors?.map(e => `${e.errorCode ? JSON.stringify(e.errorCode) : ''}: ${e.message}`).join('; ') || '';
       console.error('Google Ads ST error:', JSON.stringify(gData.error).substring(0, 1000));
       return res.json({ connected: true, search_terms: [], error: 'ST: ' + (gData.error.message || '') + (errDetails ? ' — ' + errDetails : '') });
+    }
+
+    // Build conversion action breakdown per search term
+    const convMap = {};
+    const allConvActions = new Set();
+    for (const r of (convData.results || [])) {
+      const term = r.searchTermView?.searchTerm || '';
+      const action = r.segments?.conversionActionName || 'Unknown';
+      const count = parseFloat(r.metrics?.conversions || '0');
+      if (!convMap[term]) convMap[term] = {};
+      convMap[term][action] = (convMap[term][action] || 0) + count;
+      allConvActions.add(action);
     }
 
     const search_terms = (gData.results || []).map(r => {
@@ -1507,11 +1623,12 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
         ctr: impressions > 0 ? clicks / impressions : 0,
         cpc: clicks > 0 ? cost / clicks : 0,
         cost,
-        conversions: parseFloat(m.conversions || '0')
+        conversions: parseFloat(m.conversions || '0'),
+        conversion_actions: convMap[stv.searchTerm || ''] || {}
       };
     });
 
-    res.json({ connected: true, search_terms });
+    res.json({ connected: true, search_terms, conversion_action_names: Array.from(allConvActions).sort() });
   } catch (e) {
     console.error('Search terms error:', e.message);
     res.status(500).json({ error: e.message });
@@ -2812,9 +2929,10 @@ async function syncAuctionInsights() {
       return;
     }
 
-    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
+    const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly'] });
     const client = await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth: client });
+    const driveApi = google.drive({ version: 'v3', auth: client });
 
     const HEADER_MAP = {
       'display url domain': 'domain',
@@ -2854,7 +2972,8 @@ async function syncAuctionInsights() {
     let totalStored = 0;
     for (const sheetConf of allSheets) {
       try {
-        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetConf.sheet_id, range: 'A:AZ' });
+        const sheetId = await resolveSheetId(driveApi, sheetConf);
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) continue;
 
