@@ -4,9 +4,36 @@
 const fs = require('fs');
 const path = require('path');
 
-const MODEL = 'gemini-3.1-flash-image-preview';
+// Try models in order — first available one wins
+const MODELS = [
+  'gemini-2.0-flash-preview-image-generation',
+  'gemini-2.0-flash-exp',
+  'imagen-3.0-generate-002'
+];
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
+  // Try Gemini multimodal models first (support reference images)
+  for (const model of MODELS) {
+    try {
+      console.log(`[Gemini] Trying model: ${model}`);
+      const result = await tryGenerate(apiKey, model, prompt, referenceImageUrls, size);
+      if (result) return result;
+    } catch (e) {
+      console.warn(`[Gemini] Model ${model} failed: ${e.message}`);
+      // If rate limited, don't try more models on same key
+      if (e.message.includes('429') || e.message.includes('quota')) throw e;
+      continue;
+    }
+  }
+  throw new Error('All Gemini models failed to generate an image');
+}
+
+async function tryGenerate(apiKey, model, prompt, referenceImageUrls, size) {
+  // Imagen 3 uses a different API format
+  if (model.startsWith('imagen')) {
+    return tryImagen(apiKey, model, prompt, size);
+  }
+
   const parts = [];
 
   // Add reference images as inline base64 parts
@@ -33,7 +60,7 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
     text: `${prompt}\n\nGenerate this as a ${size.width}x${size.height} image with ${size.geminiAspect} aspect ratio.`
   });
 
-  console.log(`[Gemini] Generating with model ${MODEL}, ${parts.length} parts, size ${size.width}x${size.height}`);
+  console.log(`[Gemini] Generating with model ${model}, ${parts.length} parts, size ${size.width}x${size.height}`);
 
   const requestBody = {
     contents: [{ parts }],
@@ -43,7 +70,7 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
   };
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
       method: 'POST',
       headers: {
@@ -56,8 +83,8 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error(`[Gemini] API error (${res.status}):`, errText);
-    throw new Error(`Gemini API error (${res.status}): ${errText}`);
+    console.error(`[Gemini] API error (${res.status}) on ${model}:`, errText.substring(0, 300));
+    throw new Error(`Gemini API error (${res.status}): ${errText.substring(0, 200)}`);
   }
 
   const data = await res.json();
@@ -72,7 +99,7 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
     const responseParts = data.candidates[0].content.parts || [];
     for (const part of responseParts) {
       if (part.inline_data && part.inline_data.data) {
-        console.log(`[Gemini] Got image, mime: ${part.inline_data.mime_type}, size: ${part.inline_data.data.length} chars`);
+        console.log(`[Gemini] Got image from ${model}, mime: ${part.inline_data.mime_type}, size: ${part.inline_data.data.length} chars`);
         return {
           jobId: null,
           status: 'completed',
@@ -80,8 +107,7 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
         };
       }
     }
-    // Log what we got if no image
-    console.error('[Gemini] Response parts had no image:', JSON.stringify(responseParts.map(p => Object.keys(p))));
+    console.warn(`[Gemini] ${model} returned text only:`, JSON.stringify(responseParts.map(p => Object.keys(p))));
   }
 
   // Check finish reason
@@ -92,8 +118,45 @@ async function generate(apiKey, prompt, referenceImageUrls, size) {
     }
   }
 
-  console.error('[Gemini] Full response:', JSON.stringify(data).substring(0, 500));
-  throw new Error('Gemini returned no image data');
+  console.warn(`[Gemini] ${model} returned no image, trying next model...`);
+  return null;
+}
+
+async function tryImagen(apiKey, model, prompt, size) {
+  const aspectMap = { '16:9': '16:9', '1:1': '1:1', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
+  const aspect = aspectMap[size.geminiAspect] || '16:9';
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: { sampleCount: 1, aspectRatio: aspect }
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Imagen API error (${res.status}): ${errText.substring(0, 200)}`);
+  }
+
+  const data = await res.json();
+  if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
+    console.log(`[Gemini] Got image from Imagen 3`);
+    return {
+      jobId: null,
+      status: 'completed',
+      imageBase64: data.predictions[0].bytesBase64Encoded
+    };
+  }
+
+  return null;
 }
 
 async function checkStatus() {
