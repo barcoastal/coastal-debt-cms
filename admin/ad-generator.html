@@ -1619,106 +1619,48 @@
         const isSquare = selectedSize === 'square' || selectedSize === 'carousel_square';
 
         // ---- LAYOUT SYSTEM ----
-        // Adapts to ad size: landscape, square, vertical
+        // Clean gradient overlay + tight text layout (matches brand reference)
+        var pad = canvasW * 0.06;
 
-        // 1. DARK OVERLAY BAR (bottom area for text readability)
-        var overlayHeight = isVertical ? canvasH * 0.45 : (isSquare ? canvasH * 0.48 : canvasH * 0.52);
-        var overlayTop = canvasH - overlayHeight;
-
-        var overlay = new fabric.Rect({
-          left: 0, top: overlayTop,
-          width: canvasW, height: overlayHeight,
-          fill: 'rgba(15, 28, 46, 0.82)',
-          selectable: false, evented: false
-        });
-        canvas.add(overlay);
-
-        // 2. ACCENT LINE (brand blue bar)
-        var accentBar = new fabric.Rect({
-          left: 0, top: overlayTop,
-          width: canvasW, height: 4,
-          fill: '#3052FF',
-          selectable: false, evented: false
-        });
-        canvas.add(accentBar);
-
-        // 3. BADGE (small label at top of overlay)
-        if (copy.badge) {
-          var badgeFontSize = Math.round(canvasW * 0.022);
-          var badgeObj = new fabric.Textbox(copy.badge.toUpperCase(), {
-            left: canvasW * 0.06,
-            top: overlayTop + (isVertical ? 20 : 16),
-            width: canvasW * 0.88,
-            fontSize: Math.max(badgeFontSize, 14),
-            fontWeight: 'bold',
-            fontFamily: "'Inter', sans-serif",
-            fill: '#FF9000',
-            textAlign: 'left',
-            letterSpacing: 200,
-            editable: true,
-            splitByGrapheme: false
-          });
-          canvas.add(badgeObj);
+        // 1. GRADIENT OVERLAY (smooth fade from bottom, no hard box)
+        var gradSteps = 12;
+        var gradTotalH = isVertical ? canvasH * 0.65 : (isSquare ? canvasH * 0.6 : canvasH * 0.55);
+        var gradStepH = gradTotalH / gradSteps;
+        for (var g = 0; g < gradSteps; g++) {
+          var opacity = (g / gradSteps) * 0.75;
+          canvas.add(new fabric.Rect({
+            left: 0, top: canvasH - gradTotalH + g * gradStepH,
+            width: canvasW, height: gradStepH + 1,
+            fill: 'rgba(10, 20, 40, ' + opacity.toFixed(3) + ')',
+            selectable: false, evented: false
+          }));
         }
+        // Solid dark strip at bottom for CTA
+        canvas.add(new fabric.Rect({
+          left: 0, top: canvasH - (isVertical ? canvasH * 0.12 : (isSquare ? canvasH * 0.1 : canvasH * 0.14)),
+          width: canvasW, height: isVertical ? canvasH * 0.12 : (isSquare ? canvasH * 0.1 : canvasH * 0.14),
+          fill: 'rgba(10, 20, 40, 0.85)', selectable: false, evented: false
+        }));
 
-        // 4. HEADLINE (large, bold)
-        var headlineFontSize = isVertical ? Math.round(canvasW * 0.065) : (isSquare ? Math.round(canvasW * 0.058) : Math.round(canvasW * 0.052));
-        var headlineTop = overlayTop + (isVertical ? 60 : (isSquare ? 52 : 44));
+        // --- Position from bottom up ---
 
-        var headlineObj = new fabric.Textbox(copy.headline, {
-          left: canvasW * 0.06,
-          top: headlineTop,
-          width: canvasW * 0.88,
-          fontSize: Math.max(headlineFontSize, 28),
-          fontWeight: 'bold',
-          fontFamily: "'Inter', sans-serif",
-          fill: '#FFFFFF',
-          textAlign: 'left',
-          lineHeight: 1.15,
-          editable: true,
-          splitByGrapheme: false
-        });
-        canvas.add(headlineObj);
-
-        // Calculate headline height for positioning subheadline below it
-        var headlineHeight = headlineObj.calcTextHeight ? headlineObj.calcTextHeight() : headlineFontSize * 1.4;
-
-        // 5. SUBHEADLINE
-        if (copy.subheadline) {
-          var subFontSize = isVertical ? Math.round(canvasW * 0.038) : (isSquare ? Math.round(canvasW * 0.032) : Math.round(canvasW * 0.028));
-          var subTop = headlineTop + headlineHeight + (isVertical ? 20 : 14);
-
-          var subObj = new fabric.Textbox(copy.subheadline, {
-            left: canvasW * 0.06,
-            top: subTop,
-            width: canvasW * 0.88,
-            fontSize: Math.max(subFontSize, 16),
-            fontWeight: 'normal',
-            fontFamily: "'Inter', sans-serif",
-            fill: '#cbd5e1',
-            textAlign: 'left',
-            lineHeight: 1.3,
-            editable: true,
-            splitByGrapheme: false
-          });
-          canvas.add(subObj);
-        }
-
-        // 6. CTA BUTTON (rounded rectangle + text)
-        var ctaFontSize = isVertical ? Math.round(canvasW * 0.04) : (isSquare ? Math.round(canvasW * 0.032) : Math.round(canvasW * 0.028));
-        var ctaBottom = canvasH - (isVertical ? 80 : (isSquare ? 50 : 30));
-        var ctaPadH = Math.round(canvasW * 0.06);
-        var ctaPadV = Math.round(canvasH * 0.018);
-
-        // Measure CTA text width approximately
-        var ctaTextWidth = copy.cta.length * ctaFontSize * 0.55;
-        var ctaBtnWidth = ctaTextWidth + ctaPadH * 2;
+        // 6. CTA BUTTON (at bottom)
+        var ctaFontSize = isVertical ? Math.round(canvasW * 0.04) : (isSquare ? Math.round(canvasW * 0.03) : Math.round(canvasW * 0.026));
+        ctaFontSize = Math.max(ctaFontSize, 16);
+        var ctaPadH = Math.round(canvasW * 0.04);
+        var ctaPadV = Math.round(ctaFontSize * 0.5);
         var ctaBtnHeight = ctaFontSize + ctaPadV * 2;
-        var ctaLeft = canvasW * 0.06;
+        var ctaBottom = canvasH - pad;
+        var ctaRowY = ctaBottom - ctaBtnHeight;
 
+        var ctaTextWidth = copy.cta.length * ctaFontSize * 0.56;
+        var ctaBtnWidth = ctaTextWidth + ctaPadH * 2;
+        var ctaLeft = pad;
+
+        // CTA button
         var ctaRect = new fabric.Rect({
           left: ctaLeft,
-          top: ctaBottom - ctaBtnHeight,
+          top: ctaRowY,
           width: ctaBtnWidth,
           height: ctaBtnHeight,
           fill: '#3052FF',
@@ -1729,8 +1671,8 @@
 
         var ctaText = new fabric.Text(copy.cta, {
           left: ctaLeft + ctaPadH,
-          top: ctaBottom - ctaBtnHeight + ctaPadV,
-          fontSize: Math.max(ctaFontSize, 18),
+          top: ctaRowY + ctaPadV,
+          fontSize: Math.max(ctaFontSize, 16),
           fontWeight: 'bold',
           fontFamily: "'Inter', sans-serif",
           fill: '#FFFFFF',
@@ -1738,30 +1680,69 @@
         });
         canvas.add(ctaText);
 
-        // 7. PHONE NUMBER (right side of CTA row)
+        // Phone number (right of CTA)
         if (copy.phone) {
-          var phoneFontSize = Math.max(Math.round(canvasW * 0.022), 14);
+          var phoneFontSize = Math.max(Math.round(canvasW * 0.02), 13);
           var phoneObj = new fabric.Text(copy.phone, {
             left: ctaLeft + ctaBtnWidth + 20,
-            top: ctaBottom - ctaBtnHeight + (ctaBtnHeight - phoneFontSize) / 2,
+            top: ctaRowY + (ctaBtnHeight - phoneFontSize) / 2,
             fontSize: phoneFontSize,
             fontWeight: 'normal',
             fontFamily: "'Inter', sans-serif",
-            fill: '#94a3b8',
+            fill: 'rgba(255,255,255,0.7)',
             selectable: true, evented: true
           });
           canvas.add(phoneObj);
         }
 
-        // 8. ADD LOGO - use white version for dark overlay, or selected brand logo
+        // Badge + Headline + Subheadline (positioned above CTA)
+        var textAreaTop = isVertical ? canvasH * 0.4 : (isSquare ? canvasH * 0.42 : canvasH * 0.35);
+        var cursor = textAreaTop;
+
+        if (copy.badge) {
+          var badgeFontSize = Math.max(Math.round(canvasW * 0.02), 13);
+          canvas.add(new fabric.Textbox(copy.badge.toUpperCase(), {
+            left: pad, top: cursor, width: canvasW - pad * 2,
+            fontSize: badgeFontSize, fontWeight: 'bold',
+            fontFamily: "'Inter', sans-serif", fill: '#FF9000',
+            editable: true, splitByGrapheme: false
+          }));
+          cursor += badgeFontSize + 10;
+        }
+
+        var headlineFontSize = isVertical ? Math.round(canvasW * 0.06) : (isSquare ? Math.round(canvasW * 0.055) : Math.round(canvasW * 0.046));
+        headlineFontSize = Math.max(headlineFontSize, 22);
+        var headlineObj = new fabric.Textbox(copy.headline, {
+          left: pad, top: cursor, width: canvasW - pad * 2,
+          fontSize: headlineFontSize, fontWeight: 'bold',
+          fontFamily: "'Inter', sans-serif", fill: '#FFFFFF',
+          lineHeight: 1.15, editable: true, splitByGrapheme: false
+        });
+        canvas.add(headlineObj);
+
+        var headlineHeight = headlineObj.calcTextHeight ? headlineObj.calcTextHeight() : headlineFontSize * 1.4;
+        cursor += headlineHeight + 10;
+
+        if (copy.subheadline) {
+          var subFontSize = isVertical ? Math.round(canvasW * 0.032) : (isSquare ? Math.round(canvasW * 0.026) : Math.round(canvasW * 0.022));
+          subFontSize = Math.max(subFontSize, 13);
+          canvas.add(new fabric.Textbox(copy.subheadline, {
+            left: pad, top: cursor, width: canvasW - pad * 2,
+            fontSize: subFontSize, fontFamily: "'Inter', sans-serif",
+            fill: 'rgba(255,255,255,0.75)', lineHeight: 1.3,
+            editable: true, splitByGrapheme: false
+          }));
+        }
+
+        // Logo (bottom-right on CTA row)
         var autoDesignLogoUrl = getBestBrandLogoForDarkBg();
         fabric.Image.fromURL(autoDesignLogoUrl, function(img) {
           if (img && img.width > 0) {
-            var maxLogoH = isVertical ? 40 : 32;
+            var maxLogoH = isVertical ? 36 : 28;
             var scale = maxLogoH / img.height;
             img.set({
-              left: canvasW - (img.width * scale) - canvasW * 0.06,
-              top: overlayTop + (isVertical ? 22 : 16),
+              left: canvasW - (img.width * scale) - pad,
+              top: ctaRowY + (ctaBtnHeight - maxLogoH) / 2,
               scaleX: scale,
               scaleY: scale
             });
@@ -2020,6 +2001,7 @@
       return new Promise(function(resolve, reject) {
         var isVertical = sizeLabel === 'story_reel';
         var isSquare = sizeLabel === 'square' || sizeLabel === 'carousel_square';
+        var pad = w * 0.06;
 
         // Create offscreen canvas
         var offEl = document.createElement('canvas');
@@ -2041,103 +2023,114 @@
           });
           offCanvas.add(bgImg);
 
-          // Dark overlay
-          var overlayHeight = isVertical ? h * 0.45 : (isSquare ? h * 0.48 : h * 0.52);
-          var overlayTop = h - overlayHeight;
-
-          offCanvas.add(new fabric.Rect({
-            left: 0, top: overlayTop, width: w, height: overlayHeight,
-            fill: 'rgba(15, 28, 46, 0.82)', selectable: false
-          }));
-
-          // Accent line
-          offCanvas.add(new fabric.Rect({
-            left: 0, top: overlayTop, width: w, height: 4,
-            fill: '#3052FF', selectable: false
-          }));
-
-          // Badge
-          if (copy.badge) {
-            var badgeFs = Math.max(Math.round(w * 0.022), 14);
-            offCanvas.add(new fabric.Text(copy.badge.toUpperCase(), {
-              left: w * 0.06, top: overlayTop + (isVertical ? 20 : 16),
-              fontSize: badgeFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-              fill: '#FF9000', selectable: false
+          // Subtle gradient overlay from bottom (not a hard box)
+          // Use multiple gradient strips for smooth fade
+          var gradSteps = 12;
+          var gradTotalH = isVertical ? h * 0.65 : (isSquare ? h * 0.6 : h * 0.55);
+          var gradStepH = gradTotalH / gradSteps;
+          for (var g = 0; g < gradSteps; g++) {
+            var opacity = (g / gradSteps) * 0.75;
+            offCanvas.add(new fabric.Rect({
+              left: 0, top: h - gradTotalH + g * gradStepH,
+              width: w, height: gradStepH + 1,
+              fill: 'rgba(10, 20, 40, ' + opacity.toFixed(3) + ')',
+              selectable: false
             }));
           }
+          // Solid dark at very bottom for CTA readability
+          offCanvas.add(new fabric.Rect({
+            left: 0, top: h - (isVertical ? h * 0.12 : (isSquare ? h * 0.1 : h * 0.14)),
+            width: w, height: isVertical ? h * 0.12 : (isSquare ? h * 0.1 : h * 0.14),
+            fill: 'rgba(10, 20, 40, 0.85)', selectable: false
+          }));
 
-          // Headline
-          var headFs = isVertical ? Math.round(w * 0.065) : (isSquare ? Math.round(w * 0.058) : Math.round(w * 0.048));
-          headFs = Math.max(headFs, 24);
-          var headTop = overlayTop + (isVertical ? 60 : (isSquare ? 52 : 44));
-          var headlineText = copy.headline || '';
-          var headTextboxW = w * 0.88;
+          // --- LAYOUT: position from bottom up ---
 
-          var headObj = new fabric.Textbox(headlineText, {
-            left: w * 0.06, top: headTop, width: headTextboxW,
-            fontSize: headFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-            fill: '#FFFFFF', lineHeight: 1.15, selectable: false
-          });
-          offCanvas.add(headObj);
-
-          // Estimate headline height: measure chars per line, count lines
-          var charsPerLine = Math.floor(headTextboxW / (headFs * 0.58));
-          var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
-          var headHeight = headLines * headFs * 1.18 + 4;
-
-          // Subheadline
-          if (copy.subheadline) {
-            var subFs = isVertical ? Math.round(w * 0.035) : (isSquare ? Math.round(w * 0.028) : Math.round(w * 0.024));
-            subFs = Math.max(subFs, 14);
-            offCanvas.add(new fabric.Textbox(copy.subheadline, {
-              left: w * 0.06, top: headTop + headHeight + 8, width: w * 0.88,
-              fontSize: subFs, fontFamily: 'Arial, sans-serif',
-              fill: '#cbd5e1', lineHeight: 1.3, selectable: false
-            }));
-          }
+          // CTA row height
+          var ctaFs = isVertical ? Math.round(w * 0.04) : (isSquare ? Math.round(w * 0.03) : Math.round(w * 0.026));
+          ctaFs = Math.max(ctaFs, 16);
+          var ctaPadH = Math.round(w * 0.04);
+          var ctaPadV = Math.round(ctaFs * 0.5);
+          var ctaBtnH = ctaFs + ctaPadV * 2;
+          var ctaRowY = h - pad - ctaBtnH;
 
           // CTA button
-          var ctaFs = isVertical ? Math.round(w * 0.04) : (isSquare ? Math.round(w * 0.032) : Math.round(w * 0.028));
-          ctaFs = Math.max(ctaFs, 18);
-          var ctaBottom = h - (isVertical ? 80 : (isSquare ? 50 : 30));
-          var ctaPadH = Math.round(w * 0.05);
-          var ctaPadV = Math.round(h * 0.015);
-          var ctaTextW = (copy.cta || '').length * ctaFs * 0.55;
+          var ctaTextW = (copy.cta || '').length * ctaFs * 0.56;
           var ctaBtnW = ctaTextW + ctaPadH * 2;
-          var ctaBtnH = ctaFs + ctaPadV * 2;
-          var ctaL = w * 0.06;
 
           offCanvas.add(new fabric.Rect({
-            left: ctaL, top: ctaBottom - ctaBtnH,
+            left: pad, top: ctaRowY,
             width: ctaBtnW, height: ctaBtnH,
             fill: '#3052FF', rx: 6, ry: 6, selectable: false
           }));
           offCanvas.add(new fabric.Text(copy.cta || '', {
-            left: ctaL + ctaPadH, top: ctaBottom - ctaBtnH + ctaPadV,
+            left: pad + ctaPadH, top: ctaRowY + ctaPadV,
             fontSize: ctaFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
             fill: '#FFFFFF', selectable: false
           }));
 
-          // Phone
+          // Phone number (right of CTA)
           if (copy.phone) {
-            var phoneFs = Math.max(Math.round(w * 0.022), 14);
+            var phoneFs = Math.max(Math.round(w * 0.02), 13);
             offCanvas.add(new fabric.Text(copy.phone, {
-              left: ctaL + ctaBtnW + 20,
-              top: ctaBottom - ctaBtnH + (ctaBtnH - phoneFs) / 2,
+              left: pad + ctaBtnW + 20,
+              top: ctaRowY + (ctaBtnH - phoneFs) / 2,
               fontSize: phoneFs, fontFamily: 'Arial, sans-serif',
-              fill: '#94a3b8', selectable: false
+              fill: 'rgba(255,255,255,0.7)', selectable: false
             }));
           }
 
-          // Add brand logo (white version for dark overlay)
+          // Badge (top of text area)
+          var textAreaTop = isVertical ? h * 0.4 : (isSquare ? h * 0.42 : h * 0.35);
+          var cursor = textAreaTop;
+
+          if (copy.badge) {
+            var badgeFs = Math.max(Math.round(w * 0.02), 13);
+            offCanvas.add(new fabric.Text(copy.badge.toUpperCase(), {
+              left: pad, top: cursor,
+              fontSize: badgeFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
+              fill: '#FF9000', selectable: false
+            }));
+            cursor += badgeFs + 10;
+          }
+
+          // Headline
+          var headFs = isVertical ? Math.round(w * 0.06) : (isSquare ? Math.round(w * 0.055) : Math.round(w * 0.046));
+          headFs = Math.max(headFs, 22);
+          var headlineText = copy.headline || '';
+          var headTextboxW = w - pad * 2;
+
+          offCanvas.add(new fabric.Textbox(headlineText, {
+            left: pad, top: cursor, width: headTextboxW,
+            fontSize: headFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
+            fill: '#FFFFFF', lineHeight: 1.15, selectable: false
+          }));
+
+          // Estimate headline height
+          var charsPerLine = Math.floor(headTextboxW / (headFs * 0.58));
+          var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
+          cursor += headLines * headFs * 1.18 + 10;
+
+          // Subheadline
+          if (copy.subheadline) {
+            var subFs = isVertical ? Math.round(w * 0.032) : (isSquare ? Math.round(w * 0.026) : Math.round(w * 0.022));
+            subFs = Math.max(subFs, 13);
+            offCanvas.add(new fabric.Textbox(copy.subheadline, {
+              left: pad, top: cursor, width: headTextboxW,
+              fontSize: subFs, fontFamily: 'Arial, sans-serif',
+              fill: 'rgba(255,255,255,0.75)', lineHeight: 1.3, selectable: false
+            }));
+          }
+
+          // Brand logo (bottom-right, on CTA row)
           var brandLogoUrl = getBestBrandLogoForDarkBg();
           fabric.Image.fromURL(brandLogoUrl, function(logoImg) {
             if (logoImg && logoImg.width > 0) {
-              var maxLogoH = isVertical ? 40 : 32;
+              var maxLogoH = isVertical ? 36 : 28;
               var logoScale = maxLogoH / logoImg.height;
               logoImg.set({
-                left: w - (logoImg.width * logoScale) - w * 0.06,
-                top: ctaBottom - ctaBtnH + (ctaBtnH - maxLogoH) / 2,
+                left: w - (logoImg.width * logoScale) - pad,
+                top: ctaRowY + (ctaBtnH - maxLogoH) / 2,
                 scaleX: logoScale, scaleY: logoScale,
                 selectable: false
               });
