@@ -516,10 +516,10 @@ router.post('/generations/:id/save-edit', authenticateToken, async (req, res) =>
 // ============ GENERATE AD COPY (AI) ============
 
 router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
-  const { prompt, size_label } = req.body;
+  const { prompt, size_label, full_design } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
-  const fallback = { headline: 'Settle Your Business Debt', cta: 'Get a Free Consultation' };
+  const fallback = { headline: 'Settle Your Business Debt', subheadline: 'Reduce what you owe by up to 80%', cta: 'Get a Free Consultation', badge: 'Debt Relief', phone: '(888) 979-9511' };
 
   try {
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
@@ -530,12 +530,53 @@ router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
 
     const sizeHint = size_label ? ` The ad size is "${size_label}".` : '';
 
+    if (full_design) {
+      // Full design mode: generate complete ad copy with layout guidance
+      const message = await client.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `You are an expert direct-response ad copywriter and designer for Coastal Debt Resolve, a business debt settlement company. Create compelling ad copy for a paid ad.${sizeHint}
+
+Ad concept: "${prompt}"
+
+Generate copy that is punchy, emotional, and drives clicks. Use power words. The headline should stop the scroll.
+
+Respond with ONLY valid JSON:
+{
+  "badge": "short badge/label text, 2-3 words (e.g. 'Debt Relief', 'Free Consultation', 'Limited Time')",
+  "headline": "powerful main headline, max 6 words, all caps friendly",
+  "subheadline": "supporting line, max 12 words, adds urgency or specifics",
+  "cta": "call to action button text, max 5 words",
+  "phone": "(888) 979-9511",
+  "style": "dark_overlay or light_overlay or gradient_bar or minimal"
+}`
+        }]
+      });
+
+      const text = message.content[0].text.trim();
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) return res.json(fallback);
+
+      const parsed = JSON.parse(match[0]);
+      return res.json({
+        badge: (parsed.badge || fallback.badge).slice(0, 30),
+        headline: (parsed.headline || fallback.headline).slice(0, 80),
+        subheadline: (parsed.subheadline || fallback.subheadline).slice(0, 100),
+        cta: (parsed.cta || fallback.cta).slice(0, 40),
+        phone: parsed.phone || fallback.phone,
+        style: parsed.style || 'dark_overlay'
+      });
+    }
+
+    // Simple mode (legacy)
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 200,
       messages: [{
         role: 'user',
-        content: `You write ad copy for Coastal Debt Resolve, an MCA debt settlement company. Given the ad prompt below, produce a short headline (max 8 words) and a CTA (max 5 words).${sizeHint}
+        content: `You write ad copy for Coastal Debt Resolve, a business debt settlement company. Given the ad prompt below, produce a short headline (max 8 words) and a CTA (max 5 words).${sizeHint}
 
 Ad prompt: "${prompt}"
 

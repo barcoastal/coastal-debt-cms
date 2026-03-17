@@ -617,13 +617,17 @@
                 </div>
               </div>
 
-              <!-- Auto-Compose -->
+              <!-- AI Auto-Design -->
               <div class="controls-section">
-                <h4>AI Auto-Compose</h4>
-                <button class="btn btn-primary" onclick="autoCompose()" style="width:100%;background:#7FB2FF;">
-                  Auto-Compose (Headline + CTA)
+                <h4>AI Auto-Design</h4>
+                <button class="btn btn-primary" onclick="aiAutoDesign()" style="width:100%;background:linear-gradient(135deg,#3052FF,#7FB2FF);font-size:14px;padding:12px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  AI Auto-Design Full Ad
                 </button>
-                <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">Claude AI generates a headline and CTA based on your prompt</p>
+                <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">AI copywriter + designer: generates headline, subheadline, CTA, and lays out the full ad professionally</p>
+                <button class="btn btn-secondary btn-small" onclick="autoCompose()" style="width:100%;margin-top:6px;font-size:11px;">
+                  Simple: Headline + CTA only
+                </button>
               </div>
 
               <!-- Shapes & Elements -->
@@ -1328,6 +1332,190 @@
     }
 
     // ============ AUTO-COMPOSE ============
+
+    async function aiAutoDesign() {
+      if (!canvas) return;
+
+      // Clear existing objects to start fresh
+      canvas.getObjects().slice().forEach(function(obj) { canvas.remove(obj); });
+      canvas.renderAll();
+
+      const wrapper = document.getElementById('canvasWrapper');
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'compose-loading';
+      loadingEl.innerHTML = '<div class="spinner-ring"></div><div>AI is designing your ad...</div>';
+      wrapper.appendChild(loadingEl);
+
+      try {
+        const res = await fetch('/api/ad-generator/generate-ad-copy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText || 'Business debt settlement ad', size_label: selectedSize, full_design: true })
+        });
+        const copy = await res.json();
+
+        const isVertical = selectedSize === 'story_reel';
+        const isSquare = selectedSize === 'square' || selectedSize === 'carousel_square';
+
+        // ---- LAYOUT SYSTEM ----
+        // Adapts to ad size: landscape, square, vertical
+
+        // 1. DARK OVERLAY BAR (bottom area for text readability)
+        var overlayHeight = isVertical ? canvasH * 0.45 : (isSquare ? canvasH * 0.48 : canvasH * 0.52);
+        var overlayTop = canvasH - overlayHeight;
+
+        var overlay = new fabric.Rect({
+          left: 0, top: overlayTop,
+          width: canvasW, height: overlayHeight,
+          fill: 'rgba(15, 28, 46, 0.82)',
+          selectable: false, evented: false
+        });
+        canvas.add(overlay);
+
+        // 2. ACCENT LINE (brand blue bar)
+        var accentBar = new fabric.Rect({
+          left: 0, top: overlayTop,
+          width: canvasW, height: 4,
+          fill: '#3052FF',
+          selectable: false, evented: false
+        });
+        canvas.add(accentBar);
+
+        // 3. BADGE (small label at top of overlay)
+        if (copy.badge) {
+          var badgeFontSize = Math.round(canvasW * 0.022);
+          var badgeObj = new fabric.Textbox(copy.badge.toUpperCase(), {
+            left: canvasW * 0.06,
+            top: overlayTop + (isVertical ? 20 : 16),
+            width: canvasW * 0.88,
+            fontSize: Math.max(badgeFontSize, 14),
+            fontWeight: 'bold',
+            fontFamily: "'Inter', sans-serif",
+            fill: '#FF9000',
+            textAlign: 'left',
+            letterSpacing: 200,
+            editable: true,
+            splitByGrapheme: false
+          });
+          canvas.add(badgeObj);
+        }
+
+        // 4. HEADLINE (large, bold)
+        var headlineFontSize = isVertical ? Math.round(canvasW * 0.065) : (isSquare ? Math.round(canvasW * 0.058) : Math.round(canvasW * 0.052));
+        var headlineTop = overlayTop + (isVertical ? 60 : (isSquare ? 52 : 44));
+
+        var headlineObj = new fabric.Textbox(copy.headline, {
+          left: canvasW * 0.06,
+          top: headlineTop,
+          width: canvasW * 0.88,
+          fontSize: Math.max(headlineFontSize, 28),
+          fontWeight: 'bold',
+          fontFamily: "'Inter', sans-serif",
+          fill: '#FFFFFF',
+          textAlign: 'left',
+          lineHeight: 1.15,
+          editable: true,
+          splitByGrapheme: false
+        });
+        canvas.add(headlineObj);
+
+        // Calculate headline height for positioning subheadline below it
+        var headlineHeight = headlineObj.calcTextHeight ? headlineObj.calcTextHeight() : headlineFontSize * 1.4;
+
+        // 5. SUBHEADLINE
+        if (copy.subheadline) {
+          var subFontSize = isVertical ? Math.round(canvasW * 0.038) : (isSquare ? Math.round(canvasW * 0.032) : Math.round(canvasW * 0.028));
+          var subTop = headlineTop + headlineHeight + (isVertical ? 20 : 14);
+
+          var subObj = new fabric.Textbox(copy.subheadline, {
+            left: canvasW * 0.06,
+            top: subTop,
+            width: canvasW * 0.88,
+            fontSize: Math.max(subFontSize, 16),
+            fontWeight: 'normal',
+            fontFamily: "'Inter', sans-serif",
+            fill: '#cbd5e1',
+            textAlign: 'left',
+            lineHeight: 1.3,
+            editable: true,
+            splitByGrapheme: false
+          });
+          canvas.add(subObj);
+        }
+
+        // 6. CTA BUTTON (rounded rectangle + text)
+        var ctaFontSize = isVertical ? Math.round(canvasW * 0.04) : (isSquare ? Math.round(canvasW * 0.032) : Math.round(canvasW * 0.028));
+        var ctaBottom = canvasH - (isVertical ? 80 : (isSquare ? 50 : 30));
+        var ctaPadH = Math.round(canvasW * 0.06);
+        var ctaPadV = Math.round(canvasH * 0.018);
+
+        // Measure CTA text width approximately
+        var ctaTextWidth = copy.cta.length * ctaFontSize * 0.55;
+        var ctaBtnWidth = ctaTextWidth + ctaPadH * 2;
+        var ctaBtnHeight = ctaFontSize + ctaPadV * 2;
+        var ctaLeft = canvasW * 0.06;
+
+        var ctaRect = new fabric.Rect({
+          left: ctaLeft,
+          top: ctaBottom - ctaBtnHeight,
+          width: ctaBtnWidth,
+          height: ctaBtnHeight,
+          fill: '#3052FF',
+          rx: 6, ry: 6,
+          selectable: true, evented: true
+        });
+        canvas.add(ctaRect);
+
+        var ctaText = new fabric.Text(copy.cta, {
+          left: ctaLeft + ctaPadH,
+          top: ctaBottom - ctaBtnHeight + ctaPadV,
+          fontSize: Math.max(ctaFontSize, 18),
+          fontWeight: 'bold',
+          fontFamily: "'Inter', sans-serif",
+          fill: '#FFFFFF',
+          selectable: true, evented: true
+        });
+        canvas.add(ctaText);
+
+        // 7. PHONE NUMBER (right side of CTA row)
+        if (copy.phone) {
+          var phoneFontSize = Math.max(Math.round(canvasW * 0.022), 14);
+          var phoneObj = new fabric.Text(copy.phone, {
+            left: ctaLeft + ctaBtnWidth + 20,
+            top: ctaBottom - ctaBtnHeight + (ctaBtnHeight - phoneFontSize) / 2,
+            fontSize: phoneFontSize,
+            fontWeight: 'normal',
+            fontFamily: "'Inter', sans-serif",
+            fill: '#94a3b8',
+            selectable: true, evented: true
+          });
+          canvas.add(phoneObj);
+        }
+
+        // 8. ADD LOGO if available
+        if (logoUrl) {
+          fabric.Image.fromURL(logoUrl, function(img) {
+            var maxLogoH = isVertical ? 40 : 32;
+            var scale = maxLogoH / img.height;
+            img.set({
+              left: canvasW - (img.width * scale) - canvasW * 0.06,
+              top: overlayTop + (isVertical ? 22 : 16),
+              scaleX: scale,
+              scaleY: scale
+            });
+            canvas.add(img);
+            canvas.renderAll();
+          }, { crossOrigin: 'anonymous' });
+        }
+
+        canvas.renderAll();
+      } catch (err) {
+        console.error('AI Auto-Design error:', err);
+        alert('Auto-design failed: ' + (err.message || 'Unknown error'));
+      } finally {
+        loadingEl.remove();
+      }
+    }
 
     async function autoCompose() {
       if (!canvas) return;
