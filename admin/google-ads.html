@@ -462,7 +462,7 @@
 
         <!-- Keyword Quality Scores -->
         <div class="card" id="qsTableCard" style="display:none;">
-          <div class="card-header"><h3 class="card-title">Keyword Quality Scores</h3></div>
+          <div class="card-header"><h3 class="card-title">Keyword Quality Scores <span id="qsHistDateBadge" style="font-weight:400;font-size:12px;color:var(--gray-400);"></span></h3></div>
           <div class="table-container" style="max-height:500px;overflow-y:auto;">
             <table class="resizable-table">
               <thead>
@@ -473,6 +473,10 @@
                   <th>Ad Relevance<span class="col-resize"></span></th>
                   <th>Landing Page<span class="col-resize"></span></th>
                   <th>Expected CTR<span class="col-resize"></span></th>
+                  <th style="font-size:11px;background:#f0f4ff;">Hist QS<span class="col-resize"></span></th>
+                  <th style="font-size:11px;background:#f0f4ff;">Hist Ad Rel<span class="col-resize"></span></th>
+                  <th style="font-size:11px;background:#f0f4ff;">Hist LP<span class="col-resize"></span></th>
+                  <th style="font-size:11px;background:#f0f4ff;">Hist eCTR<span class="col-resize"></span></th>
                   <th>Impr<span class="col-resize"></span></th>
                   <th>Clicks<span class="col-resize"></span></th>
                   <th>Cost</th>
@@ -925,7 +929,7 @@
         verdict = `<strong>QS ${k.quality_score}/10 is solid.</strong> Fine-tune any Average components to push toward a perfect 10.`;
       }
 
-      return `<tr class="qs-tips-row" style="display:none;"><td colspan="9"><div class="qs-tips-panel">
+      return `<tr class="qs-tips-row" style="display:none;"><td colspan="13"><div class="qs-tips-panel">
         <div class="qs-tips-header">Optimization Tips for "${escapeHtml(k.keyword)}" <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400);">in ${escapeHtml(k.ad_group)}${k.campaign ? ' / ' + escapeHtml(k.campaign) : ''}</span></div>
         <div class="qs-tips-grid">
           ${tips.map(t => `<div class="qs-tip-card tip-${t.statusClass}">
@@ -1222,6 +1226,31 @@
           // Keyword QS Table
           const qsTbody = document.getElementById('qsTable');
           const sortedKw = (qsData.keywords || []).sort((a, b) => b.impressions - a.impressions);
+
+          // Show hist date badge
+          const histBadge = document.getElementById('qsHistDateBadge');
+          if (qsData.hist_date) histBadge.textContent = '(Hist: ' + qsData.hist_date + ')';
+
+          function qsChangeIndicator(current, hist) {
+            if (current == null || hist == null) return '';
+            if (current > hist) return ' <span style="color:#16a34a;font-size:10px;">&#9650;</span>';
+            if (current < hist) return ' <span style="color:#dc2626;font-size:10px;">&#9660;</span>';
+            return '';
+          }
+          function histQsBadge(val, prev) {
+            if (val == null) return '<span style="color:var(--gray-300);">-</span>';
+            const color = val >= 7 ? '#16a34a' : val >= 5 ? '#f59e0b' : '#dc2626';
+            return '<span style="font-weight:600;color:' + color + ';">' + val + '</span>' + qsChangeIndicator(val, prev);
+          }
+          function histSubChange(current, hist) {
+            if (!current || !hist) return '';
+            const order = { BELOW_AVERAGE: 1, AVERAGE: 2, ABOVE_AVERAGE: 3 };
+            const c = order[current] || 0, h = order[hist] || 0;
+            if (c > h) return ' <span style="color:#16a34a;font-size:10px;">&#9650;</span>';
+            if (c < h) return ' <span style="color:#dc2626;font-size:10px;">&#9660;</span>';
+            return '';
+          }
+
           qsTbody.innerHTML = sortedKw.slice(0, 100).map(k => `<tr class="qs-row-clickable" onclick="toggleQsTips(this)">
             <td>${escapeHtml(k.keyword)}</td>
             <td>${escapeHtml(k.ad_group)}</td>
@@ -1229,10 +1258,14 @@
             <td>${qsSubBadge(k.creative_quality)}</td>
             <td>${qsSubBadge(k.post_click_quality)}</td>
             <td>${qsSubBadge(k.predicted_ctr)}</td>
+            <td style="background:#f8faff;">${histQsBadge(k.hist_quality_score, k.quality_score)}</td>
+            <td style="background:#f8faff;">${k.hist_creative_quality ? qsSubBadge(k.hist_creative_quality) + histSubChange(k.creative_quality, k.hist_creative_quality) : '<span style="color:var(--gray-300);">-</span>'}</td>
+            <td style="background:#f8faff;">${k.hist_post_click_quality ? qsSubBadge(k.hist_post_click_quality) + histSubChange(k.post_click_quality, k.hist_post_click_quality) : '<span style="color:var(--gray-300);">-</span>'}</td>
+            <td style="background:#f8faff;">${k.hist_predicted_ctr ? qsSubBadge(k.hist_predicted_ctr) + histSubChange(k.predicted_ctr, k.hist_predicted_ctr) : '<span style="color:var(--gray-300);">-</span>'}</td>
             <td>${k.impressions.toLocaleString()}</td>
             <td>${k.clicks.toLocaleString()}</td>
             <td>${fmtMoney(k.cost)}</td>
-          </tr>${renderQsTipsRow(k)}`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
+          </tr>${renderQsTipsRow(k)}`).join('') || '<tr><td colspan="13" style="text-align:center;color:var(--gray-400);padding:24px;">No keyword data</td></tr>';
         }
 
         // QS History Chart

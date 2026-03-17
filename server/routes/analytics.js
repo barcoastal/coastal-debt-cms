@@ -1495,11 +1495,39 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
       console.log('[QS History] Stored snapshot for', today, '-', keywords.length, 'keywords');
     }
 
+    // Fetch previous snapshot (most recent before today) for historical comparison
+    const prevSnapshot = db.prepare(`
+      SELECT keyword, ad_group, quality_score, creative_quality, post_click_quality, predicted_ctr, snapshot_date
+      FROM quality_score_history
+      WHERE snapshot_date < ?
+      AND snapshot_date = (SELECT MAX(snapshot_date) FROM quality_score_history WHERE snapshot_date < ?)
+    `).all(today, today);
+
+    const prevMap = {};
+    for (const p of prevSnapshot) {
+      prevMap[p.keyword + '|||' + p.ad_group] = p;
+    }
+
+    // Attach historical data to each keyword
+    for (const kw of keywords) {
+      const prev = prevMap[kw.keyword + '|||' + kw.ad_group];
+      if (prev) {
+        kw.hist_quality_score = prev.quality_score;
+        kw.hist_creative_quality = prev.creative_quality;
+        kw.hist_post_click_quality = prev.post_click_quality;
+        kw.hist_predicted_ctr = prev.predicted_ctr;
+        kw.hist_date = prev.snapshot_date;
+      }
+    }
+
+    const histDate = prevSnapshot.length ? prevSnapshot[0].snapshot_date : null;
+
     res.json({
       connected: true,
       distribution,
       avg_quality_score: qsCount > 0 ? Math.round((qsSum / qsCount) * 10) / 10 : null,
-      keywords
+      keywords,
+      hist_date: histDate
     });
   } catch (e) {
     console.error('Quality scores error:', e.message);
