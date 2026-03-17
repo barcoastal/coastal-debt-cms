@@ -199,11 +199,119 @@ router.get('/brand-preprompt', authenticateToken, (req, res) => {
   res.json({ preprompt: BRAND_PREPROMPT });
 });
 
+// Analyze reference images and generate a prompt
+router.post('/analyze-references', authenticateToken, async (req, res) => {
+  try {
+    const { reference_image_urls } = req.body;
+    if (!reference_image_urls || !reference_image_urls.length) {
+      return res.status(400).json({ error: 'Reference images are required' });
+    }
+
+    // Try Gemini first (vision capable), fall back to Anthropic
+    const geminiKey = getApiKey('gemini');
+    const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+
+    if (!geminiKey && !anthropicKey) {
+      return res.status(500).json({ error: 'No AI API key configured (need Gemini or Anthropic)' });
+    }
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+
+    if (geminiKey) {
+      // Use Gemini with vision
+      const { GoogleGenAI } = require('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+      // Build parts with images
+      const parts = [{ text: `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation (like Midjourney/Flux/Imagen).
+
+Focus on:
+- Visual style and aesthetic (photographic, illustrated, gradient, etc.)
+- Color palette and lighting
+- Composition and layout (where subjects are placed, negative space)
+- Subject matter and scene description
+- Mood and tone
+- Any distinctive design elements
+
+Return ONLY the prompt text, no explanation or preamble. The prompt should be 2-4 sentences, specific and descriptive.` }];
+
+      for (const url of reference_image_urls) {
+        const absUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+        const localPath = url.startsWith('/lp/uploads/')
+          ? path.join(uploadsDir, url.replace('/lp/uploads/', ''))
+          : null;
+
+        if (localPath && fs.existsSync(localPath)) {
+          const imgBuffer = fs.readFileSync(localPath);
+          const ext = path.extname(localPath).toLowerCase();
+          const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+          parts.push({
+            inlineData: {
+              mimeType: mimeTypes[ext] || 'image/jpeg',
+              data: imgBuffer.toString('base64')
+            }
+          });
+        }
+      }
+
+      const result = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [{ parts }]
+      });
+
+      const prompt = result.text || '';
+      return res.json({ prompt: prompt.trim() });
+    }
+
+    // Fallback: Anthropic Claude with vision
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: anthropicKey });
+
+    const content = [{ type: 'text', text: `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation.
+
+Focus on: visual style, color palette, lighting, composition, subject matter, mood, distinctive design elements.
+
+Return ONLY the prompt text, no explanation. 2-4 sentences, specific and descriptive.` }];
+
+    for (const url of reference_image_urls) {
+      const localPath = url.startsWith('/lp/uploads/')
+        ? path.join(uploadsDir, url.replace('/lp/uploads/', ''))
+        : null;
+
+      if (localPath && fs.existsSync(localPath)) {
+        const imgBuffer = fs.readFileSync(localPath);
+        const ext = path.extname(localPath).toLowerCase();
+        const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+        content.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mimeTypes[ext] || 'image/jpeg',
+            data: imgBuffer.toString('base64')
+          }
+        });
+      }
+    }
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 500,
+      messages: [{ role: 'user', content }]
+    });
+
+    const prompt = message.content[0]?.text || '';
+    res.json({ prompt: prompt.trim() });
+  } catch (err) {
+    console.error('Analyze references error:', err);
+    res.status(500).json({ error: err.message || 'Failed to analyze reference images' });
+  }
+});
+
 // ============ GENERATION ============
 
 // Start generation — supports single size (size_label) or all 4 sizes; project_id is optional
 router.post('/generate', authenticateToken, (req, res) => {
-  const { project_id, model, prompt, use_brand_prompt, size_label, reference_image_urls } = req.body;
+  const { project_id, model, prompt, use_brand_prompt, custom_brand_prompt, size_label, reference_image_urls } = req.body;
 
   if (!model || !prompt) {
     return res.status(400).json({ error: 'model and prompt are required' });
@@ -244,8 +352,9 @@ router.post('/generate', authenticateToken, (req, res) => {
 
   // Fire-and-forget: process each generation in background
   const useBrand = use_brand_prompt !== false; // default true
+  const brandPrompt = custom_brand_prompt || BRAND_PREPROMPT;
   for (let i = 0; i < sizesToGenerate.length; i++) {
-    processGeneration(generationIds[i], model, prompt, referenceImages, sizesToGenerate[i], useBrand);
+    processGeneration(generationIds[i], model, prompt, referenceImages, sizesToGenerate[i], useBrand, brandPrompt);
   }
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_generation', null, `Started ${model} generation${size_label ? ` (${size_label})` : ' (all sizes)'}`, req.ip);
@@ -475,7 +584,7 @@ Respond with ONLY valid JSON: {"headline":"...","cta":"..."}`
 
 // ============ BACKGROUND PROCESSING ============
 
-async function processGeneration(genId, model, prompt, referenceImageUrls, size, useBrand = true) {
+async function processGeneration(genId, model, prompt, referenceImageUrls, size, useBrand = true, brandPrompt = null) {
   try {
     db.prepare('UPDATE ad_generations SET status = ? WHERE id = ?').run('processing', genId);
 
@@ -492,8 +601,9 @@ async function processGeneration(genId, model, prompt, referenceImageUrls, size,
     }
 
     // Build full prompt with optional brand pre-prompt
+    const effectiveBrand = brandPrompt || BRAND_PREPROMPT;
     const fullPrompt = useBrand
-      ? `${BRAND_PREPROMPT}\n\nUSER REQUEST:\n${prompt}`
+      ? `${effectiveBrand}\n\nUSER REQUEST:\n${prompt}`
       : prompt;
 
     // Make absolute URLs from relative paths for external APIs

@@ -479,18 +479,31 @@
               </div>
 
               <!-- Brand Pre-prompt -->
-              <div class="brand-toggle-bar">
+              <div class="brand-toggle-bar" style="flex-wrap:wrap;">
                 <label class="switch">
                   <input type="checkbox" id="brandToggle" checked>
                   <span class="slider"></span>
                 </label>
                 <span style="font-weight:600;font-size:13px;color:var(--gray-800);">Brand Pre-prompt</span>
-                <span style="font-size:11px;color:var(--gray-500);">(Coastal Debt guidelines)</span>
+                <span style="font-size:11px;color:var(--gray-500);cursor:pointer;text-decoration:underline;" onclick="toggleBrandText()">(view/edit)</span>
+              </div>
+              <div id="brandPrePromptText" style="display:none;margin-bottom:12px;">
+                <textarea id="brandPrePromptArea" class="prompt-area" style="min-height:180px;font-size:12px;line-height:1.5;background:#f8f9ff;color:var(--gray-700);"></textarea>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  <button class="btn btn-secondary btn-small" onclick="resetBrandPrompt()">Reset to Default</button>
+                  <span style="font-size:11px;color:var(--gray-400);align-self:center;">Edits apply to this session only</span>
+                </div>
               </div>
 
               <!-- Prompt -->
               <div class="form-group">
-                <label style="font-weight:600;">Prompt</label>
+                <label style="font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                  Prompt
+                  <button class="btn btn-secondary btn-small" id="generatePromptBtn" onclick="generatePromptFromRefs()" style="font-size:11px;padding:4px 10px;display:none;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    Generate Prompt from References
+                  </button>
+                </label>
                 <textarea id="promptInput" class="prompt-area" placeholder="Describe the ad creative you want to generate..."></textarea>
               </div>
 
@@ -916,8 +929,72 @@
         thumbsEl.innerHTML = referenceImageUrls.map(u =>
           `<img src="${escapeHtml(u)}" class="ref-thumb" alt="ref">`
         ).join('');
+        document.getElementById('generatePromptBtn').style.display = referenceImageUrls.length ? '' : 'none';
       } catch (err) {
         alert('Upload failed: ' + err.message);
+      }
+    }
+
+    // ============ BRAND PRE-PROMPT ============
+
+    let defaultBrandPrompt = '';
+    let customBrandPrompt = '';
+
+    async function loadBrandPrompt() {
+      try {
+        const data = await api('/api/ad-generator/brand-preprompt');
+        defaultBrandPrompt = data.preprompt || '';
+        customBrandPrompt = defaultBrandPrompt;
+        document.getElementById('brandPrePromptArea').value = customBrandPrompt;
+      } catch (err) {
+        console.error('Error loading brand prompt:', err);
+      }
+    }
+
+    function toggleBrandText() {
+      var el = document.getElementById('brandPrePromptText');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function resetBrandPrompt() {
+      customBrandPrompt = defaultBrandPrompt;
+      document.getElementById('brandPrePromptArea').value = defaultBrandPrompt;
+    }
+
+    function getBrandPrompt() {
+      return document.getElementById('brandPrePromptArea').value.trim() || defaultBrandPrompt;
+    }
+
+    loadBrandPrompt();
+
+    // ============ GENERATE PROMPT FROM REFERENCES ============
+
+    async function generatePromptFromRefs() {
+      if (!referenceImageUrls.length) {
+        alert('Please upload reference images first');
+        return;
+      }
+
+      var btn = document.getElementById('generatePromptBtn');
+      var origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:4px;"></span> Analyzing...';
+
+      try {
+        var res = await fetch('/api/ad-generator/analyze-references', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reference_image_urls: referenceImageUrls })
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        document.getElementById('promptInput').value = data.prompt;
+      } catch (err) {
+        alert('Failed to analyze references: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
       }
     }
 
@@ -948,6 +1025,7 @@
             prompt,
             size_label: selectedSize,
             use_brand_prompt: document.getElementById('brandToggle').checked,
+            custom_brand_prompt: document.getElementById('brandToggle').checked ? getBrandPrompt() : null,
             reference_image_urls: referenceImageUrls
           })
         });
