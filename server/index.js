@@ -66,6 +66,12 @@ app.use('/admin', (req, res, next) => {
   etag: false
 }));
 
+// Serve public assets (logos, trust-logos, etc.)
+app.use('/assets', express.static(path.join(__dirname, '..', 'public', 'assets'), {
+  maxAge: '7d',
+  etag: true
+}));
+
 // Serve uploaded files from persistent volume (survives Railway deploys)
 const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
   ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')

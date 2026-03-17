@@ -168,6 +168,30 @@
     .pos-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
     .pos-btns .btn { font-size: 12px; padding: 6px 8px; }
 
+    /* ============ BRAND LOGOS ============ */
+    .brand-logos-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+    }
+    .brand-logo-card {
+      border: 2px solid var(--gray-200); border-radius: 8px; padding: 10px 8px;
+      cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column;
+      align-items: center; gap: 6px; text-align: center;
+    }
+    .brand-logo-card:hover { border-color: #3052FF; background: #f0f3ff; }
+    .brand-logo-card.selected { border-color: #3052FF; background: #eef1ff; box-shadow: 0 0 0 2px rgba(48,82,255,0.2); }
+    .brand-logo-card img {
+      max-width: 100%; max-height: 36px; object-fit: contain;
+    }
+    .brand-logo-card .logo-label {
+      font-size: 10px; font-weight: 600; color: var(--gray-500); line-height: 1.2;
+    }
+    .brand-logo-card.dark-bg {
+      background: #0f1c2e; border-color: #1e293b;
+    }
+    .brand-logo-card.dark-bg:hover { border-color: #3052FF; background: #0f1c2e; }
+    .brand-logo-card.dark-bg.selected { border-color: #3052FF; background: #0f1c2e; }
+    .brand-logo-card.dark-bg .logo-label { color: #94a3b8; }
+
     /* ============ SETTINGS MODAL ============ */
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } }
@@ -427,11 +451,11 @@
       <!-- Step Indicator -->
       <div class="wizard-steps">
         <div class="wizard-step active" data-step="1" onclick="goToStep(1)">
-          <span class="wizard-step-num">1</span> Generate Image
+          <span class="wizard-step-num">1</span> Create Ads
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="2" onclick="goToStep(2)">
-          <span class="wizard-step-num">2</span> Add Text
+          <span class="wizard-step-num">2</span> Edit Ad
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="3" onclick="goToStep(3)">
@@ -439,67 +463,94 @@
         </div>
       </div>
 
-      <!-- ============ STEP 1: GENERATE IMAGE ============ -->
+      <!-- ============ STEP 1: ONE-STEP AD CREATION ============ -->
       <div class="step-panel active" id="step1">
-        <div class="step-split">
-          <!-- Left: Controls -->
-          <div>
-            <div class="card" style="padding:20px;">
-              <!-- Ad Size -->
-              <div class="form-group">
-                <label style="font-weight:600;">Ad Size</label>
-                <div class="size-cards">
-                  <div class="size-card selected" data-size="feed_landscape" onclick="selectSize('feed_landscape')">
-                    <div class="size-name">Feed / Landscape</div>
-                    <div class="size-dims">1200 x 628</div>
-                  </div>
-                  <div class="size-card" data-size="square" onclick="selectSize('square')">
-                    <div class="size-name">Square</div>
-                    <div class="size-dims">1080 x 1080</div>
-                  </div>
-                  <div class="size-card" data-size="story_reel" onclick="selectSize('story_reel')">
-                    <div class="size-name">Story / Reel</div>
-                    <div class="size-dims">1080 x 1920</div>
-                  </div>
-                  <div class="size-card" data-size="carousel_square" onclick="selectSize('carousel_square')">
-                    <div class="size-name">Carousel Square</div>
-                    <div class="size-dims">1200 x 1200</div>
-                  </div>
-                </div>
-              </div>
 
-              <!-- AI Model -->
-              <div class="form-group">
-                <label style="font-weight:600;">AI Model</label>
-                <div class="model-cards">
-                  <div class="model-card" data-model="midjourney" onclick="selectModel('midjourney')">
-                    <div class="model-icon">&#127912;</div>
-                    <div class="model-name">Midjourney</div>
-                    <div class="model-desc">Via UseAPI.net</div>
-                  </div>
-                  <div class="model-card" data-model="flux" onclick="selectModel('flux')">
-                    <div class="model-icon">&#9889;</div>
-                    <div class="model-name">Flux Pro</div>
-                    <div class="model-desc">Via Replicate</div>
-                  </div>
-                  <div class="model-card selected" data-model="gemini" onclick="selectModel('gemini')">
-                    <div class="model-icon">&#10024;</div>
-                    <div class="model-name">Gemini Imagen 3</div>
-                    <div class="model-desc">Google AI</div>
-                  </div>
-                </div>
-              </div>
+        <!-- AUTO-PILOT: Main creation UI -->
+        <div class="card" style="padding:28px;max-width:900px;margin:0 auto;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#3052FF,#7FB2FF);color:#fff;padding:10px 24px;border-radius:50px;font-weight:700;font-size:15px;margin-bottom:12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              AI Auto-Pilot
+            </div>
+            <p style="color:var(--gray-500);font-size:14px;margin:0;">Upload reference images and AI creates finished ads automatically</p>
+          </div>
 
-              <!-- Reference Images -->
-              <div class="form-group">
-                <label style="font-weight:600;">Reference Images <span style="font-weight:400;color:var(--gray-400);font-size:12px;">(optional, up to 3)</span></label>
-                <div class="ref-upload-area">
-                  <input type="file" id="refImagesInput" accept=".png,.jpg,.jpeg,.webp" multiple style="display:none;" onchange="handleRefUpload(this)">
-                  <button class="btn btn-secondary btn-small" onclick="document.getElementById('refImagesInput').click()">Choose Files</button>
-                  <div id="refThumbs"></div>
-                </div>
+          <!-- Reference Images Upload (prominent) -->
+          <div style="margin-bottom:20px;">
+            <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Reference Images
+            </label>
+            <div id="autopilotRefArea" style="border:2px dashed var(--gray-300);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all 0.15s;background:#fafbff;" onclick="document.getElementById('refImagesInput').click()" onmouseenter="this.style.borderColor='#3052FF';this.style.background='#f0f3ff'" onmouseleave="this.style.borderColor='var(--gray-300)';this.style.background='#fafbff'">
+              <input type="file" id="refImagesInput" accept=".png,.jpg,.jpeg,.webp" multiple style="display:none;" onchange="handleRefUpload(this)">
+              <div id="refUploadContent">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom:8px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div style="font-weight:600;color:var(--gray-600);font-size:14px;">Click to upload reference images</div>
+                <div style="color:var(--gray-400);font-size:12px;margin-top:4px;">Up to 3 images (.png, .jpg, .webp)</div>
               </div>
+              <div id="refThumbs" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"></div>
+            </div>
+          </div>
 
+          <!-- Settings Row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">How many ads</label>
+              <select id="bulkCount" class="form-input" style="font-size:14px;">
+                <option value="2">2 ads</option>
+                <option value="4" selected>4 ads</option>
+                <option value="6">6 ads</option>
+                <option value="8">8 ads</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Sizes</label>
+              <select id="bulkSizes" class="form-input" style="font-size:14px;">
+                <option value="all" selected>All 4 sizes</option>
+                <option value="current">Current size only</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">AI Model</label>
+              <select id="modelSelect" class="form-input" style="font-size:14px;" onchange="selectModel(this.value)">
+                <option value="gemini" selected>Gemini Imagen 3</option>
+                <option value="midjourney">Midjourney</option>
+                <option value="flux">Flux Pro</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Optional: Ad Size (for "current" mode) -->
+          <div style="margin-bottom:20px;">
+            <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Primary Size</label>
+            <div class="size-cards">
+              <div class="size-card selected" data-size="feed_landscape" onclick="selectSize('feed_landscape')">
+                <div class="size-name">Feed / Landscape</div>
+                <div class="size-dims">1200 x 628</div>
+              </div>
+              <div class="size-card" data-size="square" onclick="selectSize('square')">
+                <div class="size-name">Square</div>
+                <div class="size-dims">1080 x 1080</div>
+              </div>
+              <div class="size-card" data-size="story_reel" onclick="selectSize('story_reel')">
+                <div class="size-name">Story / Reel</div>
+                <div class="size-dims">1080 x 1920</div>
+              </div>
+              <div class="size-card" data-size="carousel_square" onclick="selectSize('carousel_square')">
+                <div class="size-name">Carousel</div>
+                <div class="size-dims">1200 x 1200</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Optional prompt override (collapsed) -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="document.getElementById('advancedOptions').style.display = document.getElementById('advancedOptions').style.display === 'none' ? 'block' : 'none'">
+              <svg id="advArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span style="font-size:13px;font-weight:600;color:var(--gray-500);">Advanced Options</span>
+            </div>
+            <div id="advancedOptions" style="display:none;margin-top:12px;">
               <!-- Brand Pre-prompt -->
               <div class="brand-toggle-bar" style="flex-wrap:wrap;">
                 <label class="switch">
@@ -516,85 +567,55 @@
                   <span style="font-size:11px;color:var(--gray-400);align-self:center;">Edits apply to this session only</span>
                 </div>
               </div>
-
-              <!-- Prompt -->
-              <div class="form-group">
-                <label style="font-weight:600;display:flex;justify-content:space-between;align-items:center;">
-                  Prompt
-                  <button class="btn btn-secondary btn-small" id="generatePromptBtn" onclick="generatePromptFromRefs()" style="font-size:11px;padding:4px 10px;display:none;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                    Generate Prompt from References
-                  </button>
-                </label>
-                <textarea id="promptInput" class="prompt-area" placeholder="Describe the ad creative you want to generate..."></textarea>
+              <!-- Custom Prompt -->
+              <div class="form-group" style="margin-top:10px;">
+                <label style="font-weight:600;font-size:13px;">Custom Prompt <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(optional — AI generates from references if empty)</span></label>
+                <textarea id="promptInput" class="prompt-area" placeholder="Leave empty for AI to generate from references, or describe what you want..."></textarea>
               </div>
-
-              <!-- Generate Buttons -->
-              <div style="display:flex;gap:10px;">
-                <button class="btn btn-primary" id="generateBtn" onclick="startGeneration()" style="flex:1;padding:12px;">
-                  Generate Image
-                </button>
-              </div>
-
-              <!-- Bulk Create -->
-              <div style="margin-top:12px;padding:16px;background:#f8f9ff;border:1px solid #e0e7ff;border-radius:10px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                  <span style="font-weight:700;font-size:14px;color:var(--gray-800);">Bulk Auto-Create</span>
-                </div>
-                <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">AI generates multiple finished ads end-to-end: background image + copy + text layout — all automatic.</p>
-                <div style="display:flex;gap:8px;margin-bottom:10px;">
-                  <div style="flex:1;">
-                    <label style="font-size:11px;color:var(--gray-500);">Variations</label>
-                    <select id="bulkCount" class="form-input" style="font-size:13px;">
-                      <option value="2">2 ads</option>
-                      <option value="4" selected>4 ads</option>
-                      <option value="6">6 ads</option>
-                      <option value="8">8 ads</option>
-                    </select>
-                  </div>
-                  <div style="flex:1;">
-                    <label style="font-size:11px;color:var(--gray-500);">Sizes</label>
-                    <select id="bulkSizes" class="form-input" style="font-size:13px;">
-                      <option value="current">Current size only</option>
-                      <option value="all">All 4 sizes</option>
-                    </select>
-                  </div>
-                </div>
-                <button class="btn btn-primary" id="bulkCreateBtn" onclick="bulkAutoCreate()" style="width:100%;padding:12px;background:linear-gradient(135deg,#3052FF,#7FB2FF);font-size:14px;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  Bulk Auto-Create Ads
-                </button>
-              </div>
-              <div id="genError"></div>
             </div>
           </div>
 
-          <!-- Right: Preview -->
-          <div>
-            <div class="preview-area" id="previewArea">
-              <div class="preview-placeholder" id="previewPlaceholder">
-                <div class="dims" id="previewDims">1200 x 628</div>
-                <div class="label">Select a size and generate an image</div>
-              </div>
-            </div>
-            <div class="step-nav" id="step1Nav" style="display:none;">
-              <div></div>
-              <button class="btn btn-primary" onclick="goToStep(2)">Next: Add Text &rarr;</button>
-            </div>
+          <!-- THE BIG BUTTON -->
+          <button class="btn btn-primary" id="autoPilotBtn" onclick="autoPilotCreate()" style="width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#3052FF 0%,#7FB2FF 100%);border-radius:12px;letter-spacing:0.02em;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Create Ads
+          </button>
 
-            <!-- Bulk Results -->
-            <div id="bulkResultsPanel" style="display:none;margin-top:16px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--gray-800);">Auto-Created Ads</h3>
-                <div style="display:flex;gap:8px;">
-                  <span id="bulkProgress" style="font-size:12px;color:var(--gray-500);"></span>
-                  <button class="btn btn-secondary btn-small" onclick="downloadAllBulk()">Download All</button>
-                </div>
-              </div>
-              <div id="bulkResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
+          <!-- Progress Status -->
+          <div id="autoPilotStatus" style="display:none;margin-top:16px;padding:16px;background:#f8f9ff;border:1px solid #e0e7ff;border-radius:10px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <div class="spinner-ring" style="width:18px;height:18px;border-width:2px;"></div>
+              <span id="autoPilotStatusText" style="font-weight:600;font-size:13px;color:var(--gray-700);">Starting...</span>
+            </div>
+            <div style="background:var(--gray-200);border-radius:6px;height:6px;overflow:hidden;">
+              <div id="autoPilotProgressBar" style="height:100%;background:linear-gradient(90deg,#3052FF,#7FB2FF);border-radius:6px;transition:width 0.3s;width:0%;"></div>
+            </div>
+            <div id="autoPilotStepDetail" style="font-size:11px;color:var(--gray-400);margin-top:6px;"></div>
+          </div>
+
+          <div id="genError"></div>
+
+          <!-- Hidden elements for backward compatibility -->
+          <div id="previewArea" style="display:none;">
+            <div id="previewPlaceholder"><div class="dims" id="previewDims">1200 x 628</div></div>
+          </div>
+          <div id="step1Nav" style="display:none;"></div>
+          <div id="generatePromptBtn" style="display:none;"></div>
+        </div>
+
+        <!-- Bulk Results -->
+        <div id="bulkResultsPanel" style="display:none;margin-top:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--gray-800);">Your Ads</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="bulkProgress" style="font-size:12px;color:var(--gray-500);"></span>
+              <button class="btn btn-secondary btn-small" onclick="downloadAllBulk()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download All
+              </button>
             </div>
           </div>
+          <div id="bulkResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
         </div>
       </div>
 
@@ -772,11 +793,37 @@
               </div>
 
               <div class="controls-section">
-                <h4>Logo</h4>
+                <h4>Brand Logos</h4>
+                <div class="brand-logos-grid">
+                  <div class="brand-logo-card" onclick="selectBrandLogo('dark-text')" id="brandLogo-dark-text">
+                    <img src="/assets/logos/logo-dark-text.svg" alt="Full Logo (Dark)">
+                    <span class="logo-label">Full Logo<br>(Light BG)</span>
+                  </div>
+                  <div class="brand-logo-card dark-bg" onclick="selectBrandLogo('white-text')" id="brandLogo-white-text">
+                    <img src="/assets/logos/logo-white-text.svg" alt="Full Logo (White)">
+                    <span class="logo-label">Full Logo<br>(Dark BG)</span>
+                  </div>
+                  <div class="brand-logo-card" onclick="selectBrandLogo('chevron-blue')" id="brandLogo-chevron-blue">
+                    <img src="/assets/logos/chevron-only.svg" alt="Chevron Blue" style="max-height:28px;">
+                    <span class="logo-label">Chevron<br>(Blue)</span>
+                  </div>
+                  <div class="brand-logo-card dark-bg" onclick="selectBrandLogo('chevron-white')" id="brandLogo-chevron-white">
+                    <img src="/assets/logos/chevron-white.svg" alt="Chevron White" style="max-height:28px;">
+                    <span class="logo-label">Chevron<br>(White)</span>
+                  </div>
+                  <div class="brand-logo-card" onclick="selectBrandLogo('chevron-jpeg')" id="brandLogo-chevron-jpeg">
+                    <img src="/assets/logos/chevron-blue.jpeg" alt="Chevron Icon" style="max-height:28px;border-radius:4px;">
+                    <span class="logo-label">Icon<br>(Original)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="controls-section">
+                <h4>Custom Logo</h4>
                 <img id="logoPreview" class="logo-preview-img" src="" alt="No logo" style="display:none;">
                 <div id="logoUploadArea">
                   <input type="file" id="logoFileInput" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadLogo(this)">
-                  <button class="btn btn-secondary" onclick="document.getElementById('logoFileInput').click()" style="width:100%;font-size:13px;">Upload Logo</button>
+                  <button class="btn btn-secondary" onclick="document.getElementById('logoFileInput').click()" style="width:100%;font-size:13px;">Upload Custom Logo</button>
                 </div>
                 <button class="btn btn-primary" id="addLogoBtn" onclick="addLogoToCanvas()" style="width:100%;margin-top:8px;display:none;">Add to Canvas</button>
                 <div class="pos-btns" id="logoPosButtons" style="display:none;">
@@ -977,8 +1024,13 @@
 
     function selectModel(model) {
       selectedModel = model;
+      // Update model cards if they exist (legacy)
       document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
-      document.querySelector(`.model-card[data-model="${model}"]`).classList.add('selected');
+      var modelCard = document.querySelector('.model-card[data-model="' + model + '"]');
+      if (modelCard) modelCard.classList.add('selected');
+      // Update dropdown if it exists
+      var modelSelect = document.getElementById('modelSelect');
+      if (modelSelect) modelSelect.value = model;
     }
 
     // ============ REFERENCE IMAGE UPLOAD ============
@@ -990,18 +1042,27 @@
       const form = new FormData();
       files.forEach(f => form.append('reference_images', f));
 
+      // Show uploading state
+      const uploadContent = document.getElementById('refUploadContent');
+      if (uploadContent) uploadContent.style.display = 'none';
+      const thumbsEl = document.getElementById('refThumbs');
+      thumbsEl.innerHTML = '<div style="color:var(--gray-500);font-size:13px;"><span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Uploading...</div>';
+
       try {
         const res = await fetch('/api/ad-generator/upload-references', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         referenceImageUrls = data.urls;
 
-        const thumbsEl = document.getElementById('refThumbs');
         thumbsEl.innerHTML = referenceImageUrls.map(u =>
-          `<img src="${escapeHtml(u)}" class="ref-thumb" alt="ref">`
-        ).join('');
-        document.getElementById('generatePromptBtn').style.display = referenceImageUrls.length ? '' : 'none';
+          `<img src="${escapeHtml(u)}" class="ref-thumb" alt="ref" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:2px solid var(--gray-200);">`
+        ).join('') + '<div style="font-size:11px;color:var(--gray-400);align-self:center;cursor:pointer;" onclick="event.stopPropagation();document.getElementById(\'refImagesInput\').click();">+ Add more</div>';
+
+        var genPromptBtn = document.getElementById('generatePromptBtn');
+        if (genPromptBtn) genPromptBtn.style.display = referenceImageUrls.length ? '' : 'none';
       } catch (err) {
+        if (uploadContent) uploadContent.style.display = '';
+        thumbsEl.innerHTML = '';
         alert('Upload failed: ' + err.message);
       }
     }
@@ -1071,21 +1132,152 @@
 
     // ============ GENERATION ============
 
+    // ============ AUTO-PILOT: ONE-STEP AD CREATION ============
+
+    async function autoPilotCreate() {
+      var count = parseInt(document.getElementById('bulkCount').value) || 4;
+      var sizesMode = document.getElementById('bulkSizes').value;
+      var useBrand = document.getElementById('brandToggle').checked;
+      var brandPrompt = useBrand ? getBrandPrompt() : null;
+      var customPrompt = document.getElementById('promptInput').value.trim();
+
+      var sizes = sizesMode === 'all'
+        ? ['feed_landscape', 'square', 'story_reel', 'carousel_square']
+        : [selectedSize];
+
+      var totalJobs = count * sizes.length;
+
+      // Validate: need references OR a prompt
+      if (!referenceImageUrls.length && !customPrompt) {
+        alert('Please upload reference images or enter a custom prompt');
+        return;
+      }
+
+      var btn = document.getElementById('autoPilotBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Creating ' + totalJobs + ' ads...';
+
+      var statusEl = document.getElementById('autoPilotStatus');
+      var statusText = document.getElementById('autoPilotStatusText');
+      var progressBar = document.getElementById('autoPilotProgressBar');
+      var stepDetail = document.getElementById('autoPilotStepDetail');
+      statusEl.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      var prompt = customPrompt;
+
+      try {
+        // Step 1: If we have references and no custom prompt, analyze them
+        if (referenceImageUrls.length && !customPrompt) {
+          statusText.textContent = 'Analyzing reference images...';
+          stepDetail.textContent = 'Claude is studying your references to understand the visual style';
+          progressBar.style.width = '5%';
+
+          var analyzeRes = await fetch('/api/ad-generator/analyze-references', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference_image_urls: referenceImageUrls })
+          });
+          var analyzeData = await analyzeRes.json();
+          if (!analyzeRes.ok) throw new Error(analyzeData.error || 'Reference analysis failed');
+          prompt = analyzeData.prompt;
+          stepDetail.textContent = 'Prompt generated: "' + prompt.substring(0, 80) + '..."';
+        } else if (referenceImageUrls.length && customPrompt) {
+          // Have both - use custom prompt but refs will be sent along
+          prompt = customPrompt;
+        }
+
+        progressBar.style.width = '10%';
+        statusText.textContent = 'Generating ' + totalJobs + ' ads...';
+        stepDetail.textContent = 'Creating images, writing copy, and designing layouts';
+
+        // Step 2: Bulk create all ads
+        bulkResults = [];
+        var panel = document.getElementById('bulkResultsPanel');
+        var grid = document.getElementById('bulkResultsGrid');
+        panel.style.display = 'block';
+        grid.innerHTML = '';
+
+        // Create placeholder cards
+        for (var i = 0; i < totalJobs; i++) {
+          var card = document.createElement('div');
+          card.className = 'bulk-card';
+          card.id = 'bulk-card-' + i;
+          card.innerHTML = '<div class="bulk-card-loading"><div class="spinner-ring"></div><div>Queued...</div></div>';
+          grid.appendChild(card);
+        }
+
+        var completed = 0;
+        updateBulkProgress(completed, totalJobs);
+
+        var jobIndex = 0;
+        var promises = [];
+
+        for (var v = 0; v < count; v++) {
+          for (var s = 0; s < sizes.length; s++) {
+            (function(idx, sizeLabel, variation) {
+              var p = processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt)
+                .then(function() {
+                  completed++;
+                  updateBulkProgress(completed, totalJobs);
+                  var pct = 10 + Math.round((completed / totalJobs) * 90);
+                  progressBar.style.width = pct + '%';
+                  statusText.textContent = completed + '/' + totalJobs + ' ads complete';
+                })
+                .catch(function(err) {
+                  console.error('Job ' + idx + ' failed:', err);
+                  var cardEl = document.getElementById('bulk-card-' + idx);
+                  if (cardEl) cardEl.innerHTML = '<div class="bulk-card-loading" style="color:#dc2626;"><div>Failed</div><div style="font-size:11px;">' + escapeHtml(err.message || 'Error') + '</div></div>';
+                  completed++;
+                  updateBulkProgress(completed, totalJobs);
+                  progressBar.style.width = (10 + Math.round((completed / totalJobs) * 90)) + '%';
+                });
+              promises.push(p);
+            })(jobIndex, sizes[s], v);
+            jobIndex++;
+          }
+        }
+
+        await Promise.allSettled(promises);
+
+        // Done
+        statusText.textContent = 'All done!';
+        stepDetail.textContent = completed + ' ads created successfully';
+        progressBar.style.width = '100%';
+
+        // Scroll to results
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (err) {
+        console.error('Auto-pilot error:', err);
+        statusText.textContent = 'Error';
+        stepDetail.textContent = err.message || 'Something went wrong';
+        statusEl.style.background = '#fef2f2';
+        statusEl.style.borderColor = '#fecaca';
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Create Ads';
+    }
+
+    // ============ GENERATION (manual / legacy) ============
+
     async function startGeneration() {
       const prompt = document.getElementById('promptInput').value.trim();
       if (!prompt) { alert('Please enter a prompt'); return; }
       promptText = prompt;
 
-      const btn = document.getElementById('generateBtn');
-      btn.disabled = true;
-      btn.textContent = 'Generating...';
+      const btn = document.getElementById('generateBtn') || document.getElementById('autoPilotBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
       document.getElementById('genError').innerHTML = '';
 
       // Show spinner in preview
       const preview = document.getElementById('previewArea');
       const meta = SIZE_META[selectedSize];
-      preview.classList.remove('has-image');
-      preview.innerHTML = `<div class="preview-spinner"><div class="spinner-ring"></div><div>Generating ${meta.name}...</div></div>`;
+      if (preview) {
+        preview.classList.remove('has-image');
+        preview.innerHTML = '<div class="preview-spinner"><div class="spinner-ring"></div><div>Generating ' + meta.name + '...</div></div>';
+      }
 
       try {
         const res = await fetch('/api/ad-generator/generate', {
@@ -1106,10 +1298,9 @@
         generationId = data.generation_ids[0];
         startPolling();
       } catch (err) {
-        preview.innerHTML = `<div class="preview-placeholder"><div class="dims">${meta.width} x ${meta.height}</div><div class="label">Generation failed</div></div>`;
-        document.getElementById('genError').innerHTML = `<div class="error-banner">${escapeHtml(err.message)}</div>`;
-        btn.disabled = false;
-        btn.textContent = 'Generate Image';
+        if (preview) preview.innerHTML = '<div class="preview-placeholder"><div class="dims">' + meta.width + ' x ' + meta.height + '</div><div class="label">Generation failed</div></div>';
+        document.getElementById('genError').innerHTML = '<div class="error-banner">' + escapeHtml(err.message) + '</div>';
+        if (btn) { btn.disabled = false; btn.textContent = 'Generate Image'; }
       }
     }
 
@@ -1140,20 +1331,23 @@
           canvasW = gen.width || meta.width;
           canvasH = gen.height || meta.height;
 
-          preview.classList.add('has-image');
-          preview.innerHTML = `<img src="${escapeHtml(generatedImageUrl)}" alt="Generated ad">`;
-          document.getElementById('step1Nav').style.display = 'flex';
-          document.getElementById('generateBtn').disabled = false;
-          document.getElementById('generateBtn').textContent = 'Generate Image';
+          if (preview) {
+            preview.classList.add('has-image');
+            preview.innerHTML = '<img src="' + escapeHtml(generatedImageUrl) + '" alt="Generated ad">';
+          }
+          var nav1 = document.getElementById('step1Nav');
+          if (nav1) nav1.style.display = 'flex';
+          var genBtn = document.getElementById('generateBtn');
+          if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Generate Image'; }
 
           // Canvas will be initialized when user goes to step 2
           maxStepReached = 1;
         } else if (gen.status === 'failed') {
           stopPolling();
-          preview.innerHTML = `<div class="preview-placeholder"><div class="dims">${meta.width} x ${meta.height}</div><div class="label">Generation failed</div></div>`;
-          document.getElementById('genError').innerHTML = `<div class="error-banner">${escapeHtml(gen.error_message || 'Unknown error')}</div>`;
-          document.getElementById('generateBtn').disabled = false;
-          document.getElementById('generateBtn').textContent = 'Generate Image';
+          if (preview) preview.innerHTML = '<div class="preview-placeholder"><div class="dims">' + meta.width + ' x ' + meta.height + '</div><div class="label">Generation failed</div></div>';
+          document.getElementById('genError').innerHTML = '<div class="error-banner">' + escapeHtml(gen.error_message || 'Unknown error') + '</div>';
+          var genBtn2 = document.getElementById('generateBtn');
+          if (genBtn2) { genBtn2.disabled = false; genBtn2.textContent = 'Generate Image'; }
         } else {
           // Still processing — update status text
           const spinner = preview.querySelector('.preview-spinner div:last-child');
@@ -1559,9 +1753,10 @@
           canvas.add(phoneObj);
         }
 
-        // 8. ADD LOGO if available
-        if (logoUrl) {
-          fabric.Image.fromURL(logoUrl, function(img) {
+        // 8. ADD LOGO - use white version for dark overlay, or selected brand logo
+        var autoDesignLogoUrl = getBestBrandLogoForDarkBg();
+        fabric.Image.fromURL(autoDesignLogoUrl, function(img) {
+          if (img && img.width > 0) {
             var maxLogoH = isVertical ? 40 : 32;
             var scale = maxLogoH / img.height;
             img.set({
@@ -1572,8 +1767,8 @@
             });
             canvas.add(img);
             canvas.renderAll();
-          }, { crossOrigin: 'anonymous' });
-        }
+          }
+        }, { crossOrigin: 'anonymous' });
 
         canvas.renderAll();
       } catch (err) {
@@ -1676,9 +1871,11 @@
       panel.style.display = 'block';
       grid.innerHTML = '';
 
-      var btn = document.getElementById('bulkCreateBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating ' + totalJobs + ' ads...';
+      var btn = document.getElementById('bulkCreateBtn') || document.getElementById('autoPilotBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating ' + totalJobs + ' ads...';
+      }
 
       // Create placeholder cards
       for (var i = 0; i < totalJobs; i++) {
@@ -1720,8 +1917,10 @@
       // Wait for all to complete (run 2 at a time to avoid overwhelming the API)
       await runWithConcurrency(promises, 2);
 
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Bulk Auto-Create Ads';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Bulk Auto-Create Ads';
+      }
     }
 
     function updateBulkProgress(done, total) {
@@ -1923,13 +2122,29 @@
             }));
           }
 
-          offCanvas.renderAll();
+          // Add brand logo (white version for dark overlay)
+          var brandLogoUrl = getBestBrandLogoForDarkBg();
+          fabric.Image.fromURL(brandLogoUrl, function(logoImg) {
+            if (logoImg && logoImg.width > 0) {
+              var maxLogoH = isVertical ? 40 : 32;
+              var logoScale = maxLogoH / logoImg.height;
+              logoImg.set({
+                left: w - (logoImg.width * logoScale) - w * 0.06,
+                top: ctaBottom - ctaBtnH + (ctaBtnH - maxLogoH) / 2,
+                scaleX: logoScale, scaleY: logoScale,
+                selectable: false
+              });
+              offCanvas.add(logoImg);
+            }
 
-          // Export
-          var dataUrl = offCanvas.toDataURL({ format: 'png', quality: 1 });
-          offCanvas.dispose();
-          document.body.removeChild(offEl);
-          resolve(dataUrl);
+            offCanvas.renderAll();
+
+            // Export
+            var dataUrl = offCanvas.toDataURL({ format: 'png', quality: 1 });
+            offCanvas.dispose();
+            document.body.removeChild(offEl);
+            resolve(dataUrl);
+          }, { crossOrigin: 'anonymous' });
         }, { crossOrigin: 'anonymous' });
       });
     }
@@ -1969,6 +2184,36 @@
     }
 
     // ============ LOGO ============
+
+    const BRAND_LOGOS = {
+      'dark-text': '/assets/logos/logo-dark-text.svg',
+      'white-text': '/assets/logos/logo-white-text.svg',
+      'chevron-blue': '/assets/logos/chevron-only.svg',
+      'chevron-white': '/assets/logos/chevron-white.svg',
+      'chevron-jpeg': '/assets/logos/chevron-blue.jpeg'
+    };
+    let selectedBrandLogo = null;
+
+    function selectBrandLogo(key) {
+      // Deselect all
+      document.querySelectorAll('.brand-logo-card').forEach(c => c.classList.remove('selected'));
+      // Select this one
+      const card = document.getElementById('brandLogo-' + key);
+      if (card) card.classList.add('selected');
+      selectedBrandLogo = key;
+      logoUrl = BRAND_LOGOS[key];
+      // Update preview
+      const preview = document.getElementById('logoPreview');
+      preview.src = logoUrl;
+      preview.style.display = 'block';
+      document.getElementById('addLogoBtn').style.display = 'block';
+      document.getElementById('logoPosButtons').style.display = 'grid';
+    }
+
+    // Auto-select appropriate brand logo for dark backgrounds (used by bulk auto-create)
+    function getBestBrandLogoForDarkBg() {
+      return BRAND_LOGOS['white-text'];
+    }
 
     async function loadLogo() {
       try {
@@ -2371,6 +2616,8 @@
     // ============ INIT ============
     loadSettings();
     loadLogo();
+    // Auto-select white full logo as default brand logo (best for dark ad overlays)
+    selectBrandLogo('white-text');
     // Pre-load gallery count
     fetch('/api/ad-generator/generations?page=1&limit=1')
       .then(r => r.json())
