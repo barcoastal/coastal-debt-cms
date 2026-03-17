@@ -271,6 +271,28 @@
       width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.2);
       border-top-color: #3052FF; border-radius: 50%; animation: spin 0.8s linear infinite;
     }
+
+    /* ============ BULK RESULTS ============ */
+    .bulk-card {
+      border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden;
+      background: #fff; transition: all 0.15s;
+    }
+    .bulk-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .bulk-card img { width: 100%; display: block; cursor: pointer; }
+    .bulk-card-info { padding: 10px 12px; }
+    .bulk-card-info .bulk-headline { font-size: 12px; font-weight: 600; color: var(--gray-800); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bulk-card-info .bulk-meta { font-size: 11px; color: var(--gray-400); }
+    .bulk-card-actions { display: flex; gap: 6px; padding: 0 12px 10px; }
+    .bulk-card-actions .btn { flex: 1; font-size: 11px; padding: 5px 8px; }
+    .bulk-card-loading {
+      min-height: 180px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; background: var(--gray-50);
+      color: var(--gray-400); font-size: 12px;
+    }
+    .bulk-card-loading .spinner-ring {
+      width: 24px; height: 24px; border: 3px solid var(--gray-200);
+      border-top-color: #3052FF; border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.4.0/dist/fabric.min.js"></script>
 </head>
@@ -507,10 +529,43 @@
                 <textarea id="promptInput" class="prompt-area" placeholder="Describe the ad creative you want to generate..."></textarea>
               </div>
 
-              <!-- Generate Button -->
-              <button class="btn btn-primary" id="generateBtn" onclick="startGeneration()" style="width:100%;padding:12px;">
-                Generate Image
-              </button>
+              <!-- Generate Buttons -->
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-primary" id="generateBtn" onclick="startGeneration()" style="flex:1;padding:12px;">
+                  Generate Image
+                </button>
+              </div>
+
+              <!-- Bulk Create -->
+              <div style="margin-top:12px;padding:16px;background:#f8f9ff;border:1px solid #e0e7ff;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  <span style="font-weight:700;font-size:14px;color:var(--gray-800);">Bulk Auto-Create</span>
+                </div>
+                <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">AI generates multiple finished ads end-to-end: background image + copy + text layout — all automatic.</p>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                  <div style="flex:1;">
+                    <label style="font-size:11px;color:var(--gray-500);">Variations</label>
+                    <select id="bulkCount" class="form-input" style="font-size:13px;">
+                      <option value="2">2 ads</option>
+                      <option value="4" selected>4 ads</option>
+                      <option value="6">6 ads</option>
+                      <option value="8">8 ads</option>
+                    </select>
+                  </div>
+                  <div style="flex:1;">
+                    <label style="font-size:11px;color:var(--gray-500);">Sizes</label>
+                    <select id="bulkSizes" class="form-input" style="font-size:13px;">
+                      <option value="current">Current size only</option>
+                      <option value="all">All 4 sizes</option>
+                    </select>
+                  </div>
+                </div>
+                <button class="btn btn-primary" id="bulkCreateBtn" onclick="bulkAutoCreate()" style="width:100%;padding:12px;background:linear-gradient(135deg,#3052FF,#7FB2FF);font-size:14px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  Bulk Auto-Create Ads
+                </button>
+              </div>
               <div id="genError"></div>
             </div>
           </div>
@@ -526,6 +581,18 @@
             <div class="step-nav" id="step1Nav" style="display:none;">
               <div></div>
               <button class="btn btn-primary" onclick="goToStep(2)">Next: Add Text &rarr;</button>
+            </div>
+
+            <!-- Bulk Results -->
+            <div id="bulkResultsPanel" style="display:none;margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--gray-800);">Auto-Created Ads</h3>
+                <div style="display:flex;gap:8px;">
+                  <span id="bulkProgress" style="font-size:12px;color:var(--gray-500);"></span>
+                  <button class="btn btn-secondary btn-small" onclick="downloadAllBulk()">Download All</button>
+                </div>
+              </div>
+              <div id="bulkResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
             </div>
           </div>
         </div>
@@ -1581,6 +1648,324 @@
       } finally {
         loadingEl.remove();
       }
+    }
+
+    // ============ BULK AUTO-CREATE ============
+
+    var bulkResults = [];
+
+    async function bulkAutoCreate() {
+      var prompt = document.getElementById('promptInput').value.trim();
+      if (!prompt) { alert('Please enter a prompt first'); return; }
+
+      var count = parseInt(document.getElementById('bulkCount').value) || 4;
+      var sizesMode = document.getElementById('bulkSizes').value;
+      var useBrand = document.getElementById('brandToggle').checked;
+      var brandPrompt = useBrand ? getBrandPrompt() : null;
+
+      var sizes = sizesMode === 'all'
+        ? ['feed_landscape', 'square', 'story_reel', 'carousel_square']
+        : [selectedSize];
+
+      var totalJobs = count * sizes.length;
+      bulkResults = [];
+
+      // Show results panel
+      var panel = document.getElementById('bulkResultsPanel');
+      var grid = document.getElementById('bulkResultsGrid');
+      panel.style.display = 'block';
+      grid.innerHTML = '';
+
+      var btn = document.getElementById('bulkCreateBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Creating ' + totalJobs + ' ads...';
+
+      // Create placeholder cards
+      for (var i = 0; i < totalJobs; i++) {
+        var card = document.createElement('div');
+        card.className = 'bulk-card';
+        card.id = 'bulk-card-' + i;
+        card.innerHTML = '<div class="bulk-card-loading"><div class="spinner-ring"></div><div>Generating...</div></div>';
+        grid.appendChild(card);
+      }
+
+      var completed = 0;
+      updateBulkProgress(completed, totalJobs);
+
+      // Process each variation + size combination
+      var jobIndex = 0;
+      var promises = [];
+
+      for (var v = 0; v < count; v++) {
+        for (var s = 0; s < sizes.length; s++) {
+          (function(idx, sizeLabel, variation) {
+            var p = processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt)
+              .then(function() {
+                completed++;
+                updateBulkProgress(completed, totalJobs);
+              })
+              .catch(function(err) {
+                console.error('Bulk job ' + idx + ' failed:', err);
+                var card = document.getElementById('bulk-card-' + idx);
+                if (card) card.innerHTML = '<div class="bulk-card-loading" style="color:#dc2626;"><div>Failed</div><div style="font-size:11px;">' + escapeHtml(err.message || 'Error') + '</div></div>';
+                completed++;
+                updateBulkProgress(completed, totalJobs);
+              });
+            promises.push(p);
+          })(jobIndex, sizes[s], v);
+          jobIndex++;
+        }
+      }
+
+      // Wait for all to complete (run 2 at a time to avoid overwhelming the API)
+      await runWithConcurrency(promises, 2);
+
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Bulk Auto-Create Ads';
+    }
+
+    function updateBulkProgress(done, total) {
+      document.getElementById('bulkProgress').textContent = done + '/' + total + ' complete';
+    }
+
+    async function runWithConcurrency(taskFns, limit) {
+      // taskFns are already started promises, just await all
+      await Promise.allSettled(taskFns);
+    }
+
+    async function processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt) {
+      var meta = SIZE_META[sizeLabel];
+      var cardEl = document.getElementById('bulk-card-' + idx);
+
+      // Step 1: Generate background image
+      cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Generating image...';
+
+      var genRes = await fetch('/api/ad-generator/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: selectedModel,
+          prompt: prompt,
+          size_label: sizeLabel,
+          use_brand_prompt: useBrand,
+          custom_brand_prompt: brandPrompt,
+          reference_image_urls: referenceImageUrls
+        })
+      });
+      var genData = await genRes.json();
+      if (!genRes.ok) throw new Error(genData.error || 'Generation failed');
+      var genId = genData.generation_ids[0];
+
+      // Poll for completion
+      var imageUrl = await pollForImage(genId, cardEl);
+
+      // Step 2: Generate ad copy
+      cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Writing copy...';
+
+      var copyRes = await fetch('/api/ad-generator/generate-ad-copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt + ' (variation ' + (variation + 1) + ', be creative and different from other variations)', size_label: sizeLabel, full_design: true })
+      });
+      var copy = await copyRes.json();
+
+      // Step 3: Composite using offscreen fabric.js canvas
+      cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Designing layout...';
+
+      var finalDataUrl = await compositeAd(imageUrl, copy, meta.width, meta.height, sizeLabel);
+
+      // Step 4: Save to server
+      cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Saving...';
+
+      var saveRes = await fetch('/api/ad-generator/generations/' + genId + '/save-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: finalDataUrl })
+      });
+      var saveData = await saveRes.json();
+
+      // Step 5: Show result
+      var savedUrl = saveData.edited_image_url || finalDataUrl;
+      bulkResults.push({ url: savedUrl, dataUrl: finalDataUrl, headline: copy.headline, size: sizeLabel, genId: genId });
+
+      cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" onclick="window.open(this.src)">' +
+        '<div class="bulk-card-info">' +
+          '<div class="bulk-headline">' + escapeHtml(copy.headline || '') + '</div>' +
+          '<div class="bulk-meta">' + escapeHtml(meta.name) + ' &middot; ' + meta.width + 'x' + meta.height + '</div>' +
+        '</div>' +
+        '<div class="bulk-card-actions">' +
+          '<button class="btn btn-secondary" onclick="downloadBulkAd(' + (bulkResults.length - 1) + ')">Download</button>' +
+          '<button class="btn btn-primary" onclick="editBulkAd(' + genId + ',\'' + escapeHtml(imageUrl) + '\',\'' + sizeLabel + '\')">Edit</button>' +
+        '</div>';
+    }
+
+    async function pollForImage(genId, cardEl) {
+      var maxAttempts = 120;
+      for (var i = 0; i < maxAttempts; i++) {
+        await new Promise(function(r) { setTimeout(r, 3000); });
+        var res = await fetch('/api/ad-generator/generations/batch-status?ids=' + genId);
+        var statuses = await res.json();
+        if (!statuses.length) continue;
+        var gen = statuses[0];
+        if (gen.status === 'completed' && gen.image_url) return gen.image_url;
+        if (gen.status === 'failed') throw new Error(gen.error_message || 'Image generation failed');
+        if (cardEl) {
+          var loadingText = cardEl.querySelector('.bulk-card-loading div:last-child');
+          if (loadingText) loadingText.textContent = gen.status === 'processing' ? 'Generating image...' : 'Queued...';
+        }
+      }
+      throw new Error('Timed out waiting for image');
+    }
+
+    function compositeAd(bgImageUrl, copy, w, h, sizeLabel) {
+      return new Promise(function(resolve, reject) {
+        var isVertical = sizeLabel === 'story_reel';
+        var isSquare = sizeLabel === 'square' || sizeLabel === 'carousel_square';
+
+        // Create offscreen canvas
+        var offEl = document.createElement('canvas');
+        offEl.width = w;
+        offEl.height = h;
+        offEl.style.display = 'none';
+        document.body.appendChild(offEl);
+
+        var offCanvas = new fabric.StaticCanvas(offEl, { width: w, height: h });
+
+        fabric.Image.fromURL(bgImageUrl, function(bgImg) {
+          // Cover-crop background
+          var coverScale = Math.max(w / bgImg.width, h / bgImg.height);
+          bgImg.set({
+            left: (w - bgImg.width * coverScale) / 2,
+            top: (h - bgImg.height * coverScale) / 2,
+            scaleX: coverScale, scaleY: coverScale,
+            selectable: false
+          });
+          offCanvas.add(bgImg);
+
+          // Dark overlay
+          var overlayHeight = isVertical ? h * 0.45 : (isSquare ? h * 0.48 : h * 0.52);
+          var overlayTop = h - overlayHeight;
+
+          offCanvas.add(new fabric.Rect({
+            left: 0, top: overlayTop, width: w, height: overlayHeight,
+            fill: 'rgba(15, 28, 46, 0.82)', selectable: false
+          }));
+
+          // Accent line
+          offCanvas.add(new fabric.Rect({
+            left: 0, top: overlayTop, width: w, height: 4,
+            fill: '#3052FF', selectable: false
+          }));
+
+          // Badge
+          if (copy.badge) {
+            var badgeFs = Math.max(Math.round(w * 0.022), 14);
+            offCanvas.add(new fabric.Text(copy.badge.toUpperCase(), {
+              left: w * 0.06, top: overlayTop + (isVertical ? 20 : 16),
+              fontSize: badgeFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
+              fill: '#FF9000', selectable: false
+            }));
+          }
+
+          // Headline
+          var headFs = isVertical ? Math.round(w * 0.065) : (isSquare ? Math.round(w * 0.058) : Math.round(w * 0.052));
+          headFs = Math.max(headFs, 28);
+          var headTop = overlayTop + (isVertical ? 60 : (isSquare ? 52 : 44));
+
+          offCanvas.add(new fabric.Textbox(copy.headline || '', {
+            left: w * 0.06, top: headTop, width: w * 0.88,
+            fontSize: headFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
+            fill: '#FFFFFF', lineHeight: 1.15, selectable: false
+          }));
+
+          // Subheadline
+          var headHeight = headFs * 1.5;
+          if (copy.subheadline) {
+            var subFs = isVertical ? Math.round(w * 0.038) : (isSquare ? Math.round(w * 0.032) : Math.round(w * 0.028));
+            subFs = Math.max(subFs, 16);
+            offCanvas.add(new fabric.Textbox(copy.subheadline, {
+              left: w * 0.06, top: headTop + headHeight + 10, width: w * 0.88,
+              fontSize: subFs, fontFamily: 'Arial, sans-serif',
+              fill: '#cbd5e1', lineHeight: 1.3, selectable: false
+            }));
+          }
+
+          // CTA button
+          var ctaFs = isVertical ? Math.round(w * 0.04) : (isSquare ? Math.round(w * 0.032) : Math.round(w * 0.028));
+          ctaFs = Math.max(ctaFs, 18);
+          var ctaBottom = h - (isVertical ? 80 : (isSquare ? 50 : 30));
+          var ctaPadH = Math.round(w * 0.05);
+          var ctaPadV = Math.round(h * 0.015);
+          var ctaTextW = (copy.cta || '').length * ctaFs * 0.55;
+          var ctaBtnW = ctaTextW + ctaPadH * 2;
+          var ctaBtnH = ctaFs + ctaPadV * 2;
+          var ctaL = w * 0.06;
+
+          offCanvas.add(new fabric.Rect({
+            left: ctaL, top: ctaBottom - ctaBtnH,
+            width: ctaBtnW, height: ctaBtnH,
+            fill: '#3052FF', rx: 6, ry: 6, selectable: false
+          }));
+          offCanvas.add(new fabric.Text(copy.cta || '', {
+            left: ctaL + ctaPadH, top: ctaBottom - ctaBtnH + ctaPadV,
+            fontSize: ctaFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
+            fill: '#FFFFFF', selectable: false
+          }));
+
+          // Phone
+          if (copy.phone) {
+            var phoneFs = Math.max(Math.round(w * 0.022), 14);
+            offCanvas.add(new fabric.Text(copy.phone, {
+              left: ctaL + ctaBtnW + 20,
+              top: ctaBottom - ctaBtnH + (ctaBtnH - phoneFs) / 2,
+              fontSize: phoneFs, fontFamily: 'Arial, sans-serif',
+              fill: '#94a3b8', selectable: false
+            }));
+          }
+
+          offCanvas.renderAll();
+
+          // Export
+          var dataUrl = offCanvas.toDataURL({ format: 'png', quality: 1 });
+          offCanvas.dispose();
+          document.body.removeChild(offEl);
+          resolve(dataUrl);
+        }, { crossOrigin: 'anonymous' });
+      });
+    }
+
+    function downloadBulkAd(index) {
+      var result = bulkResults[index];
+      if (!result) return;
+      var link = document.createElement('a');
+      link.download = 'ad-' + result.size + '-' + Date.now() + '.png';
+      link.href = result.dataUrl || result.url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function downloadAllBulk() {
+      bulkResults.forEach(function(result, i) {
+        setTimeout(function() { downloadBulkAd(i); }, i * 300);
+      });
+    }
+
+    function editBulkAd(genId, imageUrl, sizeLabel) {
+      // Load this ad into the editor (step 2)
+      generationId = genId;
+      generatedImageUrl = imageUrl;
+      var meta = SIZE_META[sizeLabel];
+      canvasW = meta.width;
+      canvasH = meta.height;
+      selectedSize = sizeLabel;
+
+      // Reset canvas so it reinitializes with new dimensions
+      if (canvas) { canvas.dispose(); canvas = null; }
+
+      maxStepReached = 1;
+      document.getElementById('step1Nav').style.display = 'flex';
+      goToStep(2);
     }
 
     // ============ LOGO ============
