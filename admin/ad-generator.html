@@ -1165,12 +1165,22 @@
       progressBar.style.width = '0%';
 
       var prompt = customPrompt;
+      // Design blueprint from reference analysis (drives layout decisions)
+      var blueprint = {
+        text_position: 'middle',
+        overlay_style: 'subtle_gradient',
+        bg_is_dark: true,
+        bg_dominant_color: '#3052FF',
+        text_color: '#FFFFFF',
+        cta_style: 'bottom_bar',
+        open_space_for_text: 'top'
+      };
 
       try {
-        // Step 1: If we have references and no custom prompt, analyze them
+        // Step 1: Deep analysis of references
         if (referenceImageUrls.length && !customPrompt) {
-          statusText.textContent = 'Analyzing reference images...';
-          stepDetail.textContent = 'Claude is studying your references to understand the visual style';
+          statusText.textContent = 'Deep analysis of reference images...';
+          stepDetail.textContent = 'AI is studying layout, colors, composition, text placement...';
           progressBar.style.width = '5%';
 
           var analyzeRes = await fetch('/api/ad-generator/analyze-references', {
@@ -1181,9 +1191,17 @@
           var analyzeData = await analyzeRes.json();
           if (!analyzeRes.ok) throw new Error(analyzeData.error || 'Reference analysis failed');
           prompt = analyzeData.prompt;
-          stepDetail.textContent = 'Prompt generated: "' + prompt.substring(0, 80) + '..."';
+          // Capture the full design blueprint
+          if (analyzeData.text_position) blueprint.text_position = analyzeData.text_position;
+          if (analyzeData.overlay_style) blueprint.overlay_style = analyzeData.overlay_style;
+          if (analyzeData.bg_is_dark !== undefined) blueprint.bg_is_dark = analyzeData.bg_is_dark;
+          if (analyzeData.bg_dominant_color) blueprint.bg_dominant_color = analyzeData.bg_dominant_color;
+          if (analyzeData.text_color) blueprint.text_color = analyzeData.text_color;
+          if (analyzeData.cta_style) blueprint.cta_style = analyzeData.cta_style;
+          if (analyzeData.open_space_for_text) blueprint.open_space_for_text = analyzeData.open_space_for_text;
+          console.log('Design blueprint:', JSON.stringify(blueprint));
+          stepDetail.textContent = 'Layout: text ' + blueprint.text_position + ', overlay: ' + blueprint.overlay_style + ' — "' + prompt.substring(0, 60) + '..."';
         } else if (referenceImageUrls.length && customPrompt) {
-          // Have both - use custom prompt but refs will be sent along
           prompt = customPrompt;
         }
 
@@ -1216,7 +1234,7 @@
         for (var v = 0; v < count; v++) {
           for (var s = 0; s < sizes.length; s++) {
             (function(idx, sizeLabel, variation) {
-              var p = processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt)
+              var p = processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt, blueprint)
                 .then(function() {
                   completed++;
                   updateBulkProgress(completed, totalJobs);
@@ -1913,7 +1931,7 @@
       await Promise.allSettled(taskFns);
     }
 
-    async function processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt) {
+    async function processBulkJob(idx, prompt, sizeLabel, variation, useBrand, brandPrompt, blueprint) {
       var meta = SIZE_META[sizeLabel];
       var cardEl = document.getElementById('bulk-card-' + idx);
 
@@ -1952,7 +1970,7 @@
       // Step 3: Composite using offscreen fabric.js canvas
       cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Designing layout...';
 
-      var finalDataUrl = await compositeAd(imageUrl, copy, meta.width, meta.height, sizeLabel);
+      var finalDataUrl = await compositeAd(imageUrl, copy, meta.width, meta.height, sizeLabel, blueprint);
 
       // Step 4: Save to server
       cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Saving...';
@@ -1997,19 +2015,25 @@
       throw new Error('Timed out waiting for image');
     }
 
-    function compositeAd(bgImageUrl, copy, w, h, sizeLabel) {
+    function compositeAd(bgImageUrl, copy, w, h, sizeLabel, blueprint) {
+      // Default blueprint if none provided
+      var bp = blueprint || {
+        text_position: 'middle', overlay_style: 'subtle_gradient',
+        bg_is_dark: true, text_color: '#FFFFFF', cta_style: 'bottom_bar'
+      };
+
       return new Promise(function(resolve, reject) {
         var isVertical = sizeLabel === 'story_reel';
         var isSquare = sizeLabel === 'square' || sizeLabel === 'carousel_square';
         var pad = w * 0.06;
+        var textColor = bp.text_color || '#FFFFFF';
+        var subColor = bp.bg_is_dark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.6)';
 
         // Create offscreen canvas
         var offEl = document.createElement('canvas');
-        offEl.width = w;
-        offEl.height = h;
+        offEl.width = w; offEl.height = h;
         offEl.style.display = 'none';
         document.body.appendChild(offEl);
-
         var offCanvas = new fabric.StaticCanvas(offEl, { width: w, height: h });
 
         fabric.Image.fromURL(bgImageUrl, function(bgImg) {
@@ -2018,49 +2042,56 @@
           bgImg.set({
             left: (w - bgImg.width * coverScale) / 2,
             top: (h - bgImg.height * coverScale) / 2,
-            scaleX: coverScale, scaleY: coverScale,
-            selectable: false
+            scaleX: coverScale, scaleY: coverScale, selectable: false
           });
           offCanvas.add(bgImg);
 
-          // Subtle gradient overlay from bottom (not a hard box)
-          // Use multiple gradient strips for smooth fade
-          var gradSteps = 12;
-          var gradTotalH = isVertical ? h * 0.65 : (isSquare ? h * 0.6 : h * 0.55);
-          var gradStepH = gradTotalH / gradSteps;
-          for (var g = 0; g < gradSteps; g++) {
-            var opacity = (g / gradSteps) * 0.75;
+          // --- OVERLAY (driven by blueprint) ---
+          if (bp.overlay_style === 'subtle_gradient') {
+            // Gradient where text will be
+            var gradFrom = bp.text_position === 'top' ? 0 : (bp.text_position === 'bottom' ? h * 0.4 : h * 0.3);
+            var gradTo = bp.text_position === 'top' ? h * 0.6 : h;
+            var gradH = gradTo - gradFrom;
+            var steps = 10;
+            for (var g = 0; g < steps; g++) {
+              var t = g / steps;
+              var op = bp.text_position === 'top' ? (1 - t) * 0.6 : t * 0.6;
+              offCanvas.add(new fabric.Rect({
+                left: 0, top: gradFrom + g * (gradH / steps),
+                width: w, height: gradH / steps + 1,
+                fill: 'rgba(10,20,40,' + op.toFixed(3) + ')', selectable: false
+              }));
+            }
+          } else if (bp.overlay_style === 'dark_band') {
+            var bandTop = bp.text_position === 'top' ? 0 : h * 0.55;
+            var bandH = bp.text_position === 'top' ? h * 0.45 : h * 0.45;
             offCanvas.add(new fabric.Rect({
-              left: 0, top: h - gradTotalH + g * gradStepH,
-              width: w, height: gradStepH + 1,
-              fill: 'rgba(10, 20, 40, ' + opacity.toFixed(3) + ')',
-              selectable: false
+              left: 0, top: bandTop, width: w, height: bandH,
+              fill: 'rgba(15,28,46,0.8)', selectable: false
             }));
           }
-          // Solid dark at very bottom for CTA readability
-          offCanvas.add(new fabric.Rect({
-            left: 0, top: h - (isVertical ? h * 0.12 : (isSquare ? h * 0.1 : h * 0.14)),
-            width: w, height: isVertical ? h * 0.12 : (isSquare ? h * 0.1 : h * 0.14),
-            fill: 'rgba(10, 20, 40, 0.85)', selectable: false
-          }));
+          // overlay_style === 'none' → no overlay at all (text directly on bg)
 
-          // --- LAYOUT: position from bottom up ---
-
-          // CTA row height
-          var ctaFs = isVertical ? Math.round(w * 0.04) : (isSquare ? Math.round(w * 0.03) : Math.round(w * 0.026));
-          ctaFs = Math.max(ctaFs, 16);
-          var ctaPadH = Math.round(w * 0.04);
+          // --- CTA ROW (always at bottom) ---
+          var ctaFs = isVertical ? Math.round(w * 0.038) : (isSquare ? Math.round(w * 0.03) : Math.round(w * 0.024));
+          ctaFs = Math.max(ctaFs, 15);
+          var ctaPadH = Math.round(w * 0.035);
           var ctaPadV = Math.round(ctaFs * 0.5);
           var ctaBtnH = ctaFs + ctaPadV * 2;
           var ctaRowY = h - pad - ctaBtnH;
-
-          // CTA button
           var ctaTextW = (copy.cta || '').length * ctaFs * 0.56;
           var ctaBtnW = ctaTextW + ctaPadH * 2;
 
+          // Subtle dark strip behind CTA for readability (only if bg is not dark enough)
+          if (bp.overlay_style === 'none' && !bp.bg_is_dark) {
+            offCanvas.add(new fabric.Rect({
+              left: 0, top: ctaRowY - 10, width: w, height: ctaBtnH + 20,
+              fill: 'rgba(0,0,0,0.3)', selectable: false
+            }));
+          }
+
           offCanvas.add(new fabric.Rect({
-            left: pad, top: ctaRowY,
-            width: ctaBtnW, height: ctaBtnH,
+            left: pad, top: ctaRowY, width: ctaBtnW, height: ctaBtnH,
             fill: '#3052FF', rx: 6, ry: 6, selectable: false
           }));
           offCanvas.add(new fabric.Text(copy.cta || '', {
@@ -2069,77 +2100,87 @@
             fill: '#FFFFFF', selectable: false
           }));
 
-          // Phone number (right of CTA)
           if (copy.phone) {
-            var phoneFs = Math.max(Math.round(w * 0.02), 13);
+            var phoneFs = Math.max(Math.round(w * 0.019), 12);
             offCanvas.add(new fabric.Text(copy.phone, {
-              left: pad + ctaBtnW + 20,
+              left: pad + ctaBtnW + 16,
               top: ctaRowY + (ctaBtnH - phoneFs) / 2,
               fontSize: phoneFs, fontFamily: 'Arial, sans-serif',
-              fill: 'rgba(255,255,255,0.7)', selectable: false
+              fill: bp.bg_is_dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)', selectable: false
             }));
           }
 
-          // Badge (top of text area)
-          var textAreaTop = isVertical ? h * 0.4 : (isSquare ? h * 0.42 : h * 0.35);
-          var cursor = textAreaTop;
+          // --- TEXT (position driven by blueprint) ---
+          var textW = w - pad * 2;
+          var cursor;
 
+          if (bp.text_position === 'top') {
+            cursor = pad;
+          } else if (bp.text_position === 'bottom') {
+            cursor = isVertical ? h * 0.5 : (isSquare ? h * 0.5 : h * 0.4);
+          } else {
+            // middle
+            cursor = isVertical ? h * 0.35 : (isSquare ? h * 0.35 : h * 0.28);
+          }
+
+          // Text uses left side or full width based on where visuals are
+          var textLeft = pad;
+          if (bp.open_space_for_text === 'top-left' || bp.open_space_for_text === 'left') {
+            textW = w * 0.55;
+          } else if (bp.open_space_for_text === 'top-right') {
+            textLeft = w * 0.4;
+            textW = w * 0.55;
+          }
+
+          // Badge
           if (copy.badge) {
-            var badgeFs = Math.max(Math.round(w * 0.02), 13);
+            var badgeFs = Math.max(Math.round(w * 0.02), 12);
             offCanvas.add(new fabric.Text(copy.badge.toUpperCase(), {
-              left: pad, top: cursor,
+              left: textLeft, top: cursor,
               fontSize: badgeFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
               fill: '#FF9000', selectable: false
             }));
-            cursor += badgeFs + 10;
+            cursor += badgeFs + 8;
           }
 
           // Headline
-          var headFs = isVertical ? Math.round(w * 0.06) : (isSquare ? Math.round(w * 0.055) : Math.round(w * 0.046));
-          headFs = Math.max(headFs, 22);
+          var headFs = isVertical ? Math.round(w * 0.06) : (isSquare ? Math.round(w * 0.055) : Math.round(w * 0.044));
+          headFs = Math.max(headFs, 20);
           var headlineText = copy.headline || '';
-          var headTextboxW = w - pad * 2;
-
           offCanvas.add(new fabric.Textbox(headlineText, {
-            left: pad, top: cursor, width: headTextboxW,
+            left: textLeft, top: cursor, width: textW,
             fontSize: headFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-            fill: '#FFFFFF', lineHeight: 1.15, selectable: false
+            fill: textColor, lineHeight: 1.15, selectable: false
           }));
-
-          // Estimate headline height
-          var charsPerLine = Math.floor(headTextboxW / (headFs * 0.58));
+          var charsPerLine = Math.floor(textW / (headFs * 0.58));
           var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
-          cursor += headLines * headFs * 1.18 + 10;
+          cursor += headLines * headFs * 1.18 + 8;
 
           // Subheadline
           if (copy.subheadline) {
-            var subFs = isVertical ? Math.round(w * 0.032) : (isSquare ? Math.round(w * 0.026) : Math.round(w * 0.022));
-            subFs = Math.max(subFs, 13);
+            var subFs = isVertical ? Math.round(w * 0.03) : (isSquare ? Math.round(w * 0.024) : Math.round(w * 0.02));
+            subFs = Math.max(subFs, 12);
             offCanvas.add(new fabric.Textbox(copy.subheadline, {
-              left: pad, top: cursor, width: headTextboxW,
+              left: textLeft, top: cursor, width: textW,
               fontSize: subFs, fontFamily: 'Arial, sans-serif',
-              fill: 'rgba(255,255,255,0.75)', lineHeight: 1.3, selectable: false
+              fill: subColor, lineHeight: 1.3, selectable: false
             }));
           }
 
-          // Brand logo (bottom-right, on CTA row)
-          var brandLogoUrl = getBestBrandLogoForDarkBg();
-          fabric.Image.fromURL(brandLogoUrl, function(logoImg) {
+          // Brand logo (bottom-right on CTA row)
+          var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
+          fabric.Image.fromURL(logoUrl, function(logoImg) {
             if (logoImg && logoImg.width > 0) {
-              var maxLogoH = isVertical ? 36 : 28;
+              var maxLogoH = isVertical ? 32 : 26;
               var logoScale = maxLogoH / logoImg.height;
               logoImg.set({
                 left: w - (logoImg.width * logoScale) - pad,
                 top: ctaRowY + (ctaBtnH - maxLogoH) / 2,
-                scaleX: logoScale, scaleY: logoScale,
-                selectable: false
+                scaleX: logoScale, scaleY: logoScale, selectable: false
               });
               offCanvas.add(logoImg);
             }
-
             offCanvas.renderAll();
-
-            // Export
             var dataUrl = offCanvas.toDataURL({ format: 'png', quality: 1 });
             offCanvas.dispose();
             document.body.removeChild(offEl);

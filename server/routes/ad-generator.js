@@ -242,6 +242,47 @@ router.get('/brand-preprompt', authenticateToken, (req, res) => {
 });
 
 // Analyze reference images and generate a prompt
+// Parse AI response into a structured design blueprint
+function parseDesignBlueprint(rawText) {
+  const defaults = {
+    prompt: '',
+    text_position: 'top',
+    text_color: '#FFFFFF',
+    overlay_style: 'none',
+    bg_is_dark: true,
+    bg_dominant_color: '#3052FF',
+    visual_elements_position: 'center',
+    open_space_for_text: 'top',
+    cta_style: 'bottom_bar',
+    layout_notes: ''
+  };
+
+  try {
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      // Fallback: treat entire text as a prompt
+      return { ...defaults, prompt: rawText.trim() };
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      prompt: (parsed.image_prompt || parsed.prompt || rawText).trim(),
+      text_position: parsed.text_position || defaults.text_position,
+      text_color: parsed.text_color || defaults.text_color,
+      overlay_style: parsed.overlay_style || defaults.overlay_style,
+      bg_is_dark: parsed.bg_is_dark !== undefined ? parsed.bg_is_dark : defaults.bg_is_dark,
+      bg_dominant_color: parsed.bg_dominant_color || defaults.bg_dominant_color,
+      visual_elements_position: parsed.visual_elements_position || defaults.visual_elements_position,
+      open_space_for_text: parsed.open_space_for_text || defaults.open_space_for_text,
+      cta_style: parsed.cta_style || defaults.cta_style,
+      layout_notes: parsed.layout_notes || defaults.layout_notes
+    };
+  } catch (e) {
+    console.error('Failed to parse design blueprint JSON:', e.message);
+    return { ...defaults, prompt: rawText.trim() };
+  }
+}
+
 router.post('/analyze-references', authenticateToken, async (req, res) => {
   try {
     const { reference_image_urls } = req.body;
@@ -257,27 +298,44 @@ router.post('/analyze-references', authenticateToken, async (req, res) => {
     }
 
     const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-    const analysisPrompt = `You are an expert art director analyzing reference ads. Your job is to write a prompt for an AI image generator (Gemini Imagen) to create a BACKGROUND IMAGE for a similar ad.
+    const analysisPrompt = `You are an expert art director and ad designer. Study these reference ad images DEEPLY. Your job is to produce a complete design blueprint so we can recreate similar ads.
 
-IMPORTANT: The AI image generator will create ONLY the background visual — text, logos, buttons, and CTAs are added later in a design editor. So your prompt must describe the VISUAL SCENE / BACKGROUND only.
+Think step by step about every visual detail:
 
-Analyze these reference ads and extract:
-1. **Subject matter**: What is the main visual element? (e.g. "a hand holding fanned-out cash bills", "a small business owner smiling at their desk", "a confident entrepreneur in a modern office")
-2. **Color palette**: What are the dominant colors? Be specific with color descriptions (e.g. "vibrant royal blue gradient background", "warm golden lighting")
-3. **Composition**: Where is the subject placed? What's the background? Is there negative/open space for text? (e.g. "subject on the right side with clean open space on the left for text overlay")
-4. **Style**: Photo-realistic? Graphic design? Clean and modern? (e.g. "high-quality stock photo style", "clean graphic design with flat color blocks")
-5. **Mood**: Professional, hopeful, urgent, empowering?
+## STEP 1: DEEP ANALYSIS
+Look at each reference image carefully and identify:
+- What is the EXACT visual scene? Describe every object, person, prop you see (ignore text/logos)
+- What is the background? Is it a solid color, gradient, photo, or mixed?
+- What is the dominant color? Is it a bright blue, dark navy, white, etc.?
+- Where are the visual elements placed? Left, right, center, top, bottom?
+- Where does the text sit in the reference? Top area? Middle? Bottom? Over the image or on empty colored space?
+- Is there a dark overlay/gradient over the image, or does text sit directly on the background color?
+- Is there a CTA button? Where? What style?
+- What percentage of the image is the visual scene vs. text area vs. empty space?
 
-Write a single, highly specific image generation prompt. Be CONCRETE and VISUAL — describe exactly what should appear in the image as if directing a photographer or illustrator.
+## STEP 2: DESIGN BLUEPRINT (return as JSON)
+Based on your analysis, return ONLY valid JSON with these fields:
 
-RULES:
-- NO text, words, letters, logos, or UI elements in the prompt
-- Include "no text, no words, no letters, no logos, no watermarks" at the end
-- Focus on creating a visually striking background that leaves room for text overlays
-- Use the brand colors: blue (#3052FF), light blue (#7FB2FF), orange (#FF9000) accents where the reference uses similar colors
-- Keep it to 2-4 sentences, very specific and visual
+{
+  "image_prompt": "A highly specific prompt for an AI image generator. Describe the EXACT visual scene to generate — objects, people, props, colors, composition, lighting. Be concrete like directing a photographer. Example: 'A hand in a business suit holding a fan of hundred dollar bills against a vibrant royal blue background, with a pile of crumpled cash bills on a blue rectangular platform to the left. Clean studio lighting, bright blue (#3052FF) solid background.' MUST end with: no text, no words, no letters, no logos, no watermarks",
+  "text_position": "top" | "middle" | "bottom",
+  "text_color": "#FFFFFF" or another color that contrasts with the background,
+  "overlay_style": "none" | "subtle_gradient" | "dark_band",
+  "bg_is_dark": true | false,
+  "bg_dominant_color": "#hex color of the main background",
+  "visual_elements_position": "center" | "right" | "left" | "bottom" | "spread",
+  "open_space_for_text": "top" | "top-left" | "top-right" | "left" | "bottom",
+  "cta_style": "bottom_bar" | "inline_button" | "none",
+  "layout_notes": "Brief description of how text, visuals, and CTA are arranged in the reference"
+}
 
-Return ONLY the prompt text, nothing else.`;
+IMPORTANT:
+- The image_prompt is for generating ONLY the background visual (no text/logos — those are added in post)
+- Be extremely specific in image_prompt — describe exact objects, exact colors, exact placement
+- If the background is a solid color with objects on it, say that explicitly
+- Match the reference's actual color palette, not generic "blue tones"
+
+Return ONLY the JSON, no explanation.`;
 
     // Read image files from disk
     const imageData = [];
@@ -311,11 +369,12 @@ Return ONLY the prompt text, nothing else.`;
 
       const message = await client.messages.create({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 500,
+        max_tokens: 1200,
         messages: [{ role: 'user', content }]
       });
 
-      return res.json({ prompt: (message.content[0]?.text || '').trim() });
+      const rawText = (message.content[0]?.text || '').trim();
+      return res.json(parseDesignBlueprint(rawText));
     }
 
     // Fallback: Gemini REST API (no SDK needed)
@@ -325,7 +384,7 @@ Return ONLY the prompt text, nothing else.`;
     }
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,7 +393,7 @@ Return ONLY the prompt text, nothing else.`;
     );
     const geminiData = await geminiRes.json();
     const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    res.json({ prompt: text.trim() });
+    res.json(parseDesignBlueprint(text));
   } catch (err) {
     console.error('Analyze references error:', err);
     res.status(500).json({ error: err.message || 'Failed to analyze reference images' });
