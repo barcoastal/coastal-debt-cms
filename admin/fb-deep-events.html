@@ -187,6 +187,9 @@
           </div>
           <input type="date" id="fromDate" style="display:none;">
           <input type="date" id="toDate" style="display:none;">
+          <select id="campaignFilter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--gray-300);font-size:13px;min-width:180px;">
+            <option value="">All Campaigns</option>
+          </select>
           <button class="btn btn-primary" onclick="loadAll()">Apply</button>
         </div>
       </div>
@@ -379,7 +382,19 @@
       const p = new URLSearchParams();
       if (from) p.set('from', from);
       if (to) p.set('to', to);
+      const campaign = document.getElementById('campaignFilter').value;
+      if (campaign) p.set('campaign', campaign);
       return p.toString() ? '?' + p.toString() : '';
+    }
+
+    async function loadCampaigns() {
+      try {
+        const campaigns = await api('/api/analytics/fb-deep-events/campaigns');
+        const select = document.getElementById('campaignFilter');
+        const current = select.value;
+        select.innerHTML = '<option value="">All Campaigns</option>' +
+          campaigns.map(c => '<option value="' + escapeHtml(c) + '"' + (c === current ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('');
+      } catch (err) { console.error('Error loading campaigns:', err); }
     }
 
     async function loadSummary() {
@@ -499,6 +514,7 @@
       loadLeads(1);
     }
 
+    loadCampaigns();
     loadAll();
   </script>
 <script>

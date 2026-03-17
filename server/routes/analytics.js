@@ -2460,9 +2460,30 @@ async function fetchRedTrackConversionsForClickIds(clickIdSet) {
   return matched;
 }
 
+// FB Deep Events: Get campaigns list for filter dropdown
+router.get('/fb-deep-events/campaigns', authenticateToken, (req, res) => {
+  // Get campaigns from utm_campaign on visitors linked to FB deep event leads
+  const campaigns = db.prepare(`
+    SELECT DISTINCT COALESCE(
+      NULLIF(json_extract(l.hidden_fields, '$.fb_campaign_name'), ''),
+      NULLIF(v.utm_campaign, '')
+    ) as campaign
+    FROM leads l
+    JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
+    WHERE ${FB_DEEP_BASE_FILTER}
+    AND COALESCE(
+      NULLIF(json_extract(l.hidden_fields, '$.fb_campaign_name'), ''),
+      NULLIF(v.utm_campaign, '')
+    ) IS NOT NULL
+    ORDER BY campaign
+  `).all();
+  res.json(campaigns.map(r => r.campaign));
+});
+
 // FB Deep Events: Summary stats
 router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
-  const { from, to } = req.query;
+  const { from, to, campaign } = req.query;
   const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
@@ -2476,12 +2497,19 @@ router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
     dateParams.push(localDateToUtcRange(to, tz).end);
   }
 
+  const campaignJoin = campaign ? `LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''` : '';
+  if (campaign) {
+    dateConds.push(`COALESCE(NULLIF(json_extract(l.hidden_fields, '$.fb_campaign_name'), ''), NULLIF(v.utm_campaign, '')) = ?`);
+    dateParams.push(campaign);
+  }
+
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
 
   const totalLeads = db.prepare(`
     SELECT COUNT(*) as count
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
+    ${campaignJoin}
     WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
   `).get(...dateParams).count;
 
@@ -2490,6 +2518,7 @@ router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
     SELECT DISTINCT l.rt_clickid
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
+    ${campaignJoin}
     WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
   `).all(...dateParams).map(r => r.rt_clickid);
 
@@ -2520,13 +2549,19 @@ router.get('/fb-deep-events/summary', authenticateToken, async (req, res) => {
 
 // FB Deep Events: Conversion events breakdown by type
 router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, res) => {
-  const { from, to } = req.query;
+  const { from, to, campaign } = req.query;
   const tz = getConfiguredTimezone();
   const dateConds = [];
   const dateParams = [];
 
   if (from) { dateConds.push(`l.created_at >= ?`); dateParams.push(localDateToUtcRange(from, tz).start); }
   if (to) { dateConds.push(`l.created_at <= ?`); dateParams.push(localDateToUtcRange(to, tz).end); }
+
+  const campaignJoin = campaign ? `LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''` : '';
+  if (campaign) {
+    dateConds.push(`COALESCE(NULLIF(json_extract(l.hidden_fields, '$.fb_campaign_name'), ''), NULLIF(v.utm_campaign, '')) = ?`);
+    dateParams.push(campaign);
+  }
 
   const dateWhere = dateConds.length ? ' AND ' + dateConds.join(' AND ') : '';
 
@@ -2535,6 +2570,7 @@ router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, re
     SELECT DISTINCT l.rt_clickid
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
+    ${campaignJoin}
     WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
   `).all(...dateParams).map(r => r.rt_clickid);
 
@@ -2558,7 +2594,7 @@ router.get('/fb-deep-events/events-breakdown', authenticateToken, async (req, re
 
 // FB Deep Events: Leads with RedTrack conversion events
 router.get('/fb-deep-events/leads', authenticateToken, async (req, res) => {
-  const { from, to, page = 1, limit = 25 } = req.query;
+  const { from, to, campaign, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   const tz = getConfiguredTimezone();
   const conds = [];
@@ -2567,12 +2603,18 @@ router.get('/fb-deep-events/leads', authenticateToken, async (req, res) => {
   if (from) { conds.push(`l.created_at >= ?`); params.push(localDateToUtcRange(from, tz).start); }
   if (to) { conds.push(`l.created_at <= ?`); params.push(localDateToUtcRange(to, tz).end); }
 
+  if (campaign) {
+    conds.push(`COALESCE(NULLIF(json_extract(l.hidden_fields, '$.fb_campaign_name'), ''), NULLIF(v.utm_campaign, '')) = ?`);
+    params.push(campaign);
+  }
+
   const dateWhere = conds.length ? ' AND ' + conds.join(' AND ') : '';
 
   const total = db.prepare(`
     SELECT COUNT(*) as count
     FROM leads l
     JOIN landing_pages lp ON l.landing_page_id = lp.id
+    LEFT JOIN visitors v ON l.eli_clickid = v.eli_clickid AND l.eli_clickid != ''
     WHERE ${FB_DEEP_BASE_FILTER} ${dateWhere}
   `).get(...params).count;
 
