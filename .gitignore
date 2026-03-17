@@ -24,3 +24,4 @@ server/google-sheets-key.json
 # Logs
 *.log
 npm-debug.log*
+.cms-sync.json
