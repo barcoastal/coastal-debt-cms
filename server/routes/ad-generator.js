@@ -78,17 +78,59 @@ const upload = multer({
 
 // ============ BRAND PRE-PROMPT ============
 
-const BRAND_PREPROMPT = `You are generating a background image for a Facebook ad for Coastal Debt Resolve, an MCA (Merchant Cash Advance) debt settlement company. Text, logos, and CTAs will be added separately in a design editor — do NOT include any text, words, letters, logos, watermarks, or UI elements in the image.
+const BRAND_PREPROMPT = `You are generating a background image for a paid ad for Coastal Debt Resolve, a business debt settlement company (specializing in MCA — Merchant Cash Advance debt). Text, logos, and CTAs will be added separately in a design editor — do NOT include any text, words, letters, logos, watermarks, or UI elements in the image.
 
-BRAND GUIDELINES — follow these strictly:
-- Color palette: Primary blue #3052FF ("Future Blue"), light background #F2F4F9 ("Cyan Blue"), accent orange #FF9000, secondary blue #7FB2FF
-- Tone: Professional, empathetic, trustworthy. Warm but authoritative.
-- Photography style: Diverse business owners ages 21-54, positive expressions, neutral color palette with blue/cool accents. Settings include small businesses, offices, handshakes.
-- Design style: Clean, modern layout. Use white or light (#F2F4F9) backgrounds with blue accents. Minimal clutter. Leave open space for text overlays.
-- Icons: Line/stroke style only (no solid fills), 3pt stroke weight.
-- Composition: Leave clear areas (especially top and bottom) where text can be placed later. Do not fill the entire image with busy detail.
+COASTAL DEBT RESOLVE — FULL BRAND GUIDELINES:
 
-CRITICAL: Generate ONLY a background image — NO text, NO words, NO letters, NO logos, NO buttons, NO call-to-action overlays. The image should be a clean visual that works as a backdrop for text added in post-production.`;
+BRAND IDENTITY:
+- Full Name: Coastal Debt Resolve (tagline: "RESOLVE")
+- Mission: Help small business owners resolve MCA debt through ethical, transparent solutions
+- Personality: Professional, empathetic, trustworthy, knowledgeable, empowering
+- Tone: Warm but authoritative. Never condescending. No fear tactics.
+- Emotional Journey: Acknowledge fear/shame → Build trust → Empower action → Celebrate freedom
+
+COLOR PALETTE (use these colors strictly):
+- Primary Blue "Future Blue": #3052FF (buttons, headers, accents)
+- Light Background "Cyan Blue": #F2F4F9 (backgrounds)
+- Accent Orange: #FF9000 (highlights, urgency, CTAs)
+- Secondary Light Blue: #7FB2FF (secondary accents)
+- Full Black: #000000 (text on light backgrounds)
+- Full White: #FFFFFF (text on dark/blue backgrounds)
+
+TYPOGRAPHY:
+- Primary Font: Aeonik (Medium for headings/buttons, Regular for body)
+- Min text size: 10pt. Three levels: Heading, Lead, Body.
+
+PHOTOGRAPHY STYLE:
+- People: Diverse men and women, ages 21-54, business owners and entrepreneurs
+- Positive expressions and attitudes — NOT stressed or defeated
+- Neutral color palette with blue or cool accents
+- Settings: Interior/exterior of small businesses (bakeries, cafes, construction), offices, handshakes, business deals
+- Close-ups: laptops, pens, desks, negotiations
+- Neutral colors with blue or cool accents
+
+DESIGN STYLE:
+- Clean, modern layouts. Minimal clutter.
+- Use white or light (#F2F4F9) backgrounds with blue accents
+- Leave open space for text overlays
+- Social media patterns: chevron shapes as design elements, curved edge text boxes
+- Blue triangle shapes framing corners for stories
+
+ICONS (if applicable):
+- Line/stroke style ONLY (no solid fills)
+- 3pt stroke weight, scales proportionally
+- Blue stroke on white bg, OR white stroke on blue bg
+- Business/finance subjects: shield, wallet, store, clock, handshake, chart
+
+CONTRAST & BALANCE:
+- All elements must contrast with background
+- Use flat colors or contrasting photos for readability
+- Don't overload with detail — leave breathing room
+- Don't overlay text on people's faces
+- Logo placement: top-left or top-right corner
+- Website URL at bottom
+
+CRITICAL: Generate ONLY a background image — NO text, NO words, NO letters, NO numbers, NO logos, NO buttons, NO call-to-action overlays. The image must be a clean visual that works as a backdrop for text and branding added in post-production.`;
 
 // Size definitions
 const AD_SIZES = [
