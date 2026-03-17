@@ -21,6 +21,7 @@ router.post('/track', async (req, res) => {
     fbclid,
     fbc,
     fbp,
+    rdt_cid,
     user_agent,
     browser,
     browser_version,
@@ -70,6 +71,7 @@ router.post('/track', async (req, res) => {
         fbclid = COALESCE(NULLIF(?, ''), fbclid),
         fbc = COALESCE(NULLIF(?, ''), fbc),
         fbp = COALESCE(NULLIF(?, ''), fbp),
+        rdt_cid = COALESCE(NULLIF(?, ''), rdt_cid),
         landing_page = COALESCE(NULLIF(?, ''), landing_page),
         utm_source = COALESCE(NULLIF(?, ''), utm_source),
         utm_medium = COALESCE(NULLIF(?, ''), utm_medium),
@@ -78,19 +80,19 @@ router.post('/track', async (req, res) => {
         utm_content = COALESCE(NULLIF(?, ''), utm_content),
         ab_variant = COALESCE(NULLIF(?, ''), ab_variant)
       WHERE eli_clickid = ?
-    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', landing_page || '', utm_source || '', utm_medium || '', utm_campaign || '', utm_term || '', utm_content || '', ab_variant || '', eli_clickid);
+    `).run(gclid || '', msclkid || '', rt_clickid || '', fbclid || '', fbc || '', fbp || '', rdt_cid || '', landing_page || '', utm_source || '', utm_medium || '', utm_campaign || '', utm_term || '', utm_content || '', ab_variant || '', eli_clickid);
 
     res.json({ success: true, visitor_id: existing.id, returning: true });
   } else {
     // Create new visitor
     const result = db.prepare(`
       INSERT INTO visitors (
-        eli_clickid, gclid, msclkid, rt_clickid, fbclid, fbc, fbp, ip_address,
+        eli_clickid, gclid, msclkid, rt_clickid, fbclid, fbc, fbp, rdt_cid, ip_address,
         user_agent, browser, browser_version, os, os_version, device_type,
         screen_width, screen_height, language, timezone,
         referrer_url, landing_page,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content, ab_variant
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eli_clickid,
       gclid || '',
@@ -99,6 +101,7 @@ router.post('/track', async (req, res) => {
       fbclid || '',
       fbc || '',
       fbp || '',
+      rdt_cid || '',
       ip_address,
       user_agent || '',
       browser || '',

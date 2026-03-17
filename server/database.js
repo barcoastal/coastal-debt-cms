@@ -362,6 +362,10 @@ try { db.exec(`ALTER TABLE landing_pages ADD COLUMN ab_config TEXT DEFAULT '{}'`
 try { db.exec(`ALTER TABLE visitors ADD COLUMN ab_variant TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN ab_variant TEXT`); } catch (e) {}
 
+// Reddit click ID tracking
+try { db.exec(`ALTER TABLE leads ADD COLUMN rdt_cid TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE visitors ADD COLUMN rdt_cid TEXT`); } catch (e) {}
+
 // CRM + Email Marketing columns on leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN email_unsubscribed INTEGER DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN assigned_to INTEGER`); } catch (e) {}

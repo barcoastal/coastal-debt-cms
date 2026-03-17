@@ -233,6 +233,7 @@
   <input type="hidden" id="msclkid" value="">
   <input type="hidden" id="fbclid" value="">
   <input type="hidden" id="rt_clickid" value="">
+  <input type="hidden" id="rdt_cid" value="">
   <input type="hidden" id="eli_clickid" value="">
   <input type="hidden" id="keyword" value="">
   <input type="hidden" id="fb_campaign_id" value="">
@@ -520,6 +521,7 @@
             fbc: getCookieVal('_fbc') || '',
             fbp: getCookieVal('_fbp') || '',
             rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
+            rdt_cid: params.get('rdt_cid') || '',
             user_agent: ua,
             browser: browser,
             browser_version: browserVer,
@@ -635,6 +637,10 @@
           if (delayed) { setStored('_rt_clickid', delayed); document.getElementById('rt_clickid').value = delayed; }
         }
       }, 2000);
+
+      // RDT_CID (Reddit): URL param → localStorage
+      var rdtCid = _lpParams.get('rdt_cid') || getStored('_rdt_cid') || '';
+      if (rdtCid) { setStored('_rdt_cid', rdtCid); document.getElementById('rdt_cid').value = rdtCid; }
 
       document.getElementById('page_url').value = window.location.href;
       document.getElementById('referrer_url').value = document.referrer || '';
