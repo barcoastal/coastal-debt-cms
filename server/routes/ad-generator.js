@@ -207,100 +207,76 @@ router.post('/analyze-references', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Reference images are required' });
     }
 
-    // Try Gemini first (vision capable), fall back to Anthropic
-    const geminiKey = getApiKey('gemini');
     const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    const geminiKey = getApiKey('gemini');
 
-    if (!geminiKey && !anthropicKey) {
-      return res.status(500).json({ error: 'No AI API key configured (need Gemini or Anthropic)' });
+    if (!anthropicKey && !geminiKey) {
+      return res.status(500).json({ error: 'No AI API key configured (need Anthropic or Gemini)' });
     }
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+    const analysisPrompt = `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation (like Midjourney/Flux/Imagen).
 
-    if (geminiKey) {
-      // Use Gemini with vision
-      const { GoogleGenAI } = require('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
+Focus on: visual style and aesthetic, color palette and lighting, composition and layout, subject matter and scene, mood and tone, distinctive design elements.
 
-      // Build parts with images
-      const parts = [{ text: `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation (like Midjourney/Flux/Imagen).
+Return ONLY the prompt text, no explanation or preamble. 2-4 sentences, specific and descriptive.`;
 
-Focus on:
-- Visual style and aesthetic (photographic, illustrated, gradient, etc.)
-- Color palette and lighting
-- Composition and layout (where subjects are placed, negative space)
-- Subject matter and scene description
-- Mood and tone
-- Any distinctive design elements
-
-Return ONLY the prompt text, no explanation or preamble. The prompt should be 2-4 sentences, specific and descriptive.` }];
-
-      for (const url of reference_image_urls) {
-        const absUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
-        const localPath = url.startsWith('/lp/uploads/')
-          ? path.join(uploadsDir, url.replace('/lp/uploads/', ''))
-          : null;
-
-        if (localPath && fs.existsSync(localPath)) {
-          const imgBuffer = fs.readFileSync(localPath);
-          const ext = path.extname(localPath).toLowerCase();
-          const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-          parts.push({
-            inlineData: {
-              mimeType: mimeTypes[ext] || 'image/jpeg',
-              data: imgBuffer.toString('base64')
-            }
-          });
-        }
-      }
-
-      const result = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: [{ parts }]
-      });
-
-      const prompt = result.text || '';
-      return res.json({ prompt: prompt.trim() });
-    }
-
-    // Fallback: Anthropic Claude with vision
-    const Anthropic = require('@anthropic-ai/sdk');
-    const client = new Anthropic({ apiKey: anthropicKey });
-
-    const content = [{ type: 'text', text: `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation.
-
-Focus on: visual style, color palette, lighting, composition, subject matter, mood, distinctive design elements.
-
-Return ONLY the prompt text, no explanation. 2-4 sentences, specific and descriptive.` }];
-
+    // Read image files from disk
+    const imageData = [];
     for (const url of reference_image_urls) {
       const localPath = url.startsWith('/lp/uploads/')
         ? path.join(uploadsDir, url.replace('/lp/uploads/', ''))
         : null;
-
       if (localPath && fs.existsSync(localPath)) {
-        const imgBuffer = fs.readFileSync(localPath);
+        const buffer = fs.readFileSync(localPath);
         const ext = path.extname(localPath).toLowerCase();
-        const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-        content.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mimeTypes[ext] || 'image/jpeg',
-            data: imgBuffer.toString('base64')
-          }
-        });
+        imageData.push({ base64: buffer.toString('base64'), mimeType: mimeTypes[ext] || 'image/jpeg' });
       }
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 500,
-      messages: [{ role: 'user', content }]
-    });
+    if (!imageData.length) {
+      return res.status(400).json({ error: 'Could not read any reference images from disk' });
+    }
 
-    const prompt = message.content[0]?.text || '';
-    res.json({ prompt: prompt.trim() });
+    if (anthropicKey) {
+      // Use Anthropic Claude with vision
+      const Anthropic = require('@anthropic-ai/sdk');
+      const client = new Anthropic({ apiKey: anthropicKey });
+
+      const content = [{ type: 'text', text: analysisPrompt }];
+      for (const img of imageData) {
+        content.push({
+          type: 'image',
+          source: { type: 'base64', media_type: img.mimeType, data: img.base64 }
+        });
+      }
+
+      const message = await client.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 500,
+        messages: [{ role: 'user', content }]
+      });
+
+      return res.json({ prompt: (message.content[0]?.text || '').trim() });
+    }
+
+    // Fallback: Gemini REST API (no SDK needed)
+    const parts = [{ text: analysisPrompt }];
+    for (const img of imageData) {
+      parts.push({ inline_data: { mime_type: img.mimeType, data: img.base64 } });
+    }
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts }] })
+      }
+    );
+    const geminiData = await geminiRes.json();
+    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    res.json({ prompt: text.trim() });
   } catch (err) {
     console.error('Analyze references error:', err);
     res.status(500).json({ error: err.message || 'Failed to analyze reference images' });
