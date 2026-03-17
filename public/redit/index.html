@@ -581,7 +581,7 @@
   <!-- Footer -->
   <footer>
     <div class="container">
-      <p>&copy; 2025 Coastal Debt Resolve. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+      <p>&copy; 2026 Coastal Debt Resolve. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
     </div>
   </footer>
 
@@ -847,7 +847,10 @@
 
     // RDT_CID (Reddit): URL param → localStorage
     var rdtCid = _lpParams.get('rdt_cid') || getStored('_rdt_cid') || '';
-    if (rdtCid) { setStored('_rdt_cid', rdtCid); document.getElementById('rdt_cid').value = rdtCid; }
+    if (rdtCid) {
+      setStored('_rdt_cid', rdtCid);
+      document.getElementById('rdt_cid').value = rdtCid;
+    }
 
     // Capture page URL and referrer
     document.getElementById('page_url').value = window.location.href;

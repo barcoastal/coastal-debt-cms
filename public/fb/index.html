@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{pageTitle}}</title>
-  <meta name="description" content="{{metaDescription}}">
-  {{HEAD_SCRIPTS}}
+  <title>MCA Debt Relief | Settle Merchant Cash Advance Debt for 50-80% Less</title>
+  <meta name="description" content="Struggling with MCA debt? Settle your Merchant Cash Advance debt for a fraction of what you owe. Stop daily ACH withdrawals. Free consultation.">
+  
   <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
   <script>
     !function(f,b,e,v,n,t,s)
@@ -16,20 +16,20 @@
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    var _fbPixelId = '';
     if (_fbPixelId) {
       fbq('init', _fbPixelId);
       fbq('track', 'PageView');
     }
   </script>
-  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=&ev=PageView&noscript=1"/></noscript>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
       --navy:#1a2e4a;
       --navy-dark:#0f1c2e;
-      --blue:{{colors.primary}};
-      --blue-light:{{colors.primaryLight}};
+      --blue:#3052FF;
+      --blue-light:#4a6aff;
       --blue-pale:#B7CFF3;
       --gold:#f59e0b;
       --white:#ffffff;
@@ -41,9 +41,9 @@
       --red-600:#dc2626;
       --green-100:#dcfce7;
       --green-600:#16a34a;
-      --cta-btn:{{colors.ctaButton}};
-      --cta-btn-hover:{{colors.ctaButtonHover}};
-      --headline-hl:{{colors.headlineHighlight}};
+      --cta-btn:#3052FF;
+      --cta-btn-hover:#2442d4;
+      --headline-hl:#3052FF;
     }
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
     .container{max-width:1200px;margin:0 auto;padding:0 20px}
@@ -397,16 +397,16 @@
   </style>
 </head>
 <body>
-  {{BODY_SCRIPTS}}
+  
   <!-- Header -->
   <header>
     <div class="container header-inner">
       <span class="logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="40"></span>
-      <a href="tel:{{phone}}" class="header-phone phone-element">
+      <a href="tel:(888) 979-9511" class="header-phone phone-element">
         <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
         </svg>
-        <span>{{phone}}</span>
+        <span>(888) 979-9511</span>
       </a>
     </div>
   </header>
@@ -558,9 +558,9 @@
         <div class="win-shield" id="winShield">&#x1F6E1;</div>
         <h2 id="winHeadline">You saved John <span class="win-amount"><span id="winAmount">$0</span><span class="win-glow"></span></span>/week!</h2>
         <p class="win-sub" id="winSub">We can do the same for YOUR business.</p>
-        <a href="tel:{{phone}}" class="win-phone-cta phone-element" id="winCta">
+        <a href="tel:(888) 979-9511" class="win-phone-cta phone-element" id="winCta">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-          Call Now: {{phone}}
+          Call Now: (888) 979-9511
         </a>
         <p class="win-scroll-hint" id="winScrollHint">&#x2193; Or fill out the form below for a free consultation</p>
       </div>
@@ -571,7 +571,7 @@
   <!-- Trust Bar -->
   <section class="trust-bar">
     <div class="container">
-      <p class="trust-label">{{trustLabel}}</p>
+      <p class="trust-label">As Seen In & Trusted By</p>
       <div class="trust-logos" id="trustLogos"></div>
     </div>
   </section>
@@ -579,22 +579,22 @@
   <!-- Comparison Section -->
   <section class="comparison-section">
     <div class="container">
-      <h2 class="section-title">{{comparisonTitle}}</h2>
-      <p class="section-sub">{{comparisonSubtitle}}</p>
+      <h2 class="section-title">Why Business Owners Choose MCA Debt Settlement</h2>
+      <p class="section-sub">See why thousands of business owners chose settlement over continuing MCA payments</p>
       <div class="comparison-table-wrapper">
         <table class="comparison-table">
           <thead>
             <tr>
               <th></th>
-              <th>{{comparisonColBad}}</th>
-              <th>{{comparisonColGood}}</th>
+              <th>Keeping MCA Debt</th>
+              <th>MCA Debt Settlement</th>
             </tr>
           </thead>
           <tbody id="comparisonBody"></tbody>
         </table>
       </div>
       <div class="comparison-cta">
-        <a href="#bottomFormCard" onclick="document.getElementById('bottomFormCard').scrollIntoView({behavior:'smooth',block:'center'});">{{comparisonCtaText}}</a>
+        <a href="#bottomFormCard" onclick="document.getElementById('bottomFormCard').scrollIntoView({behavior:'smooth',block:'center'});">See How Much You Could Save on Your MCA Debt</a>
       </div>
     </div>
   </section>
@@ -602,8 +602,8 @@
   <!-- How It Works -->
   <section class="section" style="background:var(--gray-100)">
     <div class="container">
-      <h2 class="section-title">{{howItWorksTitle}}</h2>
-      <p class="section-sub">{{howItWorksSubtitle}}</p>
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-sub">Our proven 3-step process has helped over 1,500 businesses resolve MCA debt</p>
       <div class="steps-grid" id="stepsGrid"></div>
     </div>
   </section>
@@ -611,8 +611,8 @@
   <!-- Case Studies -->
   <section class="cases-section">
     <div class="container">
-      <h2 class="section-title">{{caseStudiesTitle}}</h2>
-      <p class="section-sub">{{caseStudiesSubtitle}}</p>
+      <h2 class="section-title">Real MCA Settlements. Real Savings.</h2>
+      <p class="section-sub">These are actual MCA settlement agreements we negotiated for our clients</p>
       <div class="cases-grid">
         <div class="case-card">
           <div class="case-industry">Home Interiors</div>
@@ -658,7 +658,7 @@
   <section class="empathy-section">
     <div class="container">
       <div class="empathy-content">
-        <h2>{{empathyTitle}}</h2>
+        <h2>We Know MCA Debt Is Crushing. You're Not Alone.</h2>
         <div id="empathyText"></div>
         <a href="#bottomFormCard" class="empathy-cta" onclick="document.getElementById('bottomFormCard').scrollIntoView({behavior:'smooth',block:'center'});">Get Your Free Consultation</a>
       </div>
@@ -668,8 +668,8 @@
   <!-- Testimonials -->
   <section class="section testimonials">
     <div class="container">
-      <h2 class="section-title">{{testimonialsTitle}}</h2>
-      <p class="section-sub">{{testimonialsSubtitle}}</p>
+      <h2 class="section-title">Real People. Real Results.</h2>
+      <p class="section-sub">Hear from business owners who found MCA debt relief with Coastal Debt</p>
       <div class="testimonials-grid" id="testimonialsGrid"></div>
     </div>
   </section>
@@ -677,8 +677,8 @@
   <!-- FAQ Section -->
   <section class="faq-section">
     <div class="container">
-      <h2 class="section-title">{{faqTitle}}</h2>
-      <p class="section-sub">{{faqSubtitle}}</p>
+      <h2 class="section-title">MCA Debt Questions? We Have Answers.</h2>
+      <p class="section-sub">Get the facts about MCA debt settlement</p>
       <div class="faq-grid" id="faqGrid"></div>
     </div>
   </section>
@@ -686,11 +686,11 @@
   <!-- CTA Footer with Form -->
   <section class="cta-footer" id="ctaFooter">
     <div class="container">
-      <h2>{{ctaTitle}}</h2>
-      <p>{{ctaSubtitle}}</p>
+      <h2>Stop the Daily MCA Withdrawals Today</h2>
+      <p>Free consultation. See how much of your MCA debt we can settle.</p>
       <div class="cta-form-card" id="bottomFormCard">
         <form id="bottomLeadForm" class="bottom-form">
-          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="landing_page_slug" value="fb">
           <input type="hidden" name="debt_amount" value="">
           <input type="hidden" name="has_mca" value="">
           <input type="hidden" name="gclid" id="gclid" value="">
@@ -710,7 +710,7 @@
           <input type="hidden" name="visitor_ip" id="visitor_ip" value="">
           <input type="hidden" name="page_url" id="page_url" value="">
           <input type="hidden" name="referrer_url" id="referrer_url" value="">
-          {{HIDDEN_FIELDS}}
+          
           <div id="bottomFormFields"></div>
           <div class="consent-group">
             <label class="consent-label">
@@ -719,14 +719,14 @@
             </label>
             <div class="consent-error" id="bottomConsentError">You must agree to continue</div>
           </div>
-          <button type="submit" class="submit-btn">{{ctaButton}}</button>
+          <button type="submit" class="submit-btn">Get My Free MCA Analysis</button>
         </form>
         <div class="bottom-form-success" id="bottomFormSuccess" style="display:none;">
           <h3>Thank You!</h3>
-          <p>{{formSuccessMsg}}</p>
+          <p>Thank you! One of our debt relief specialists will contact you within 24 hours.</p>
         </div>
       </div>
-      <p class="cta-phone phone-element">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
+      <p class="cta-phone phone-element">Or call now: <a href="tel:(888) 979-9511">(888) 979-9511</a></p>
     </div>
   </section>
 
@@ -739,21 +739,21 @@
 
   <!-- Mobile Sticky CTA -->
   <div class="mobile-cta phone-element">
-    <a href="tel:{{phone}}">Call Now: {{phone}}</a>
+    <a href="tel:(888) 979-9511">Call Now: (888) 979-9511</a>
   </div>
 
   <!-- Game Logic + Form JS -->
   <script>
     // Hide phone elements if no phone number is set
     (function() {
-      var phone = '{{phone}}';
+      var phone = '(888) 979-9511';
       if (!phone || phone === '{{' + 'phone}}') {
         document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
       }
     })();
 
     // Page configuration from CMS
-    var PAGE_SLUG = '{{SLUG}}';
+    var PAGE_SLUG = 'fb';
     var API_BASE = '/api';
 
     // ========== GAME LOGIC ==========
@@ -1224,29 +1224,29 @@
     var referrerEl = document.getElementById('referrer_url'); if (referrerEl) referrerEl.value = document.referrer || '';
 
     // Populate dynamic content
-    var bulletPoints = {{bulletPointsJson}};
+    var bulletPoints = ["Stop daily/weekly ACH withdrawals","Reduce your total MCA balance by 50-80%","Keep your business & revenue","No upfront fees — we get paid when you save"];
     // (no bullet points element in game template — skip)
 
-    var steps = {{stepsJson}};
+    var steps = [{"title":"Free MCA Debt Analysis","description":"Tell us about your MCA debt. We'll review your advances and show you exactly how much you could save through settlement."},{"title":"We Negotiate With Your MCA Lenders","description":"Our team contacts your MCA companies directly. We negotiate to reduce your total debt by 50-80% and stop the daily withdrawals."},{"title":"Debt Resolved, Business Saved","description":"Pay a fraction of what you owed. Your daily ACH payments stop. Your cash flow recovers and your business keeps running."}];
     var stepsHtml = steps.map(function(step, i) {
       return '<div class="step-card"><div class="step-num">' + (i + 1) + '</div><h3>' + step.title + '</h3><p>' + step.description + '</p></div>';
     }).join('');
     document.getElementById('stepsGrid').innerHTML = stepsHtml;
 
-    var empathyText = {{empathyTextJson}};
+    var empathyText = ["When MCA companies are draining your bank account every single day, it feels like there's no way out. The stacked advances, the confusing factor rates, the aggressive collections — we understand what you're going through.","But here's what we want you to know: MCA debt can be settled for a fraction of what you owe. Every day, we help business owners just like you break free from the MCA debt cycle.","You don't have to face this alone. Let us fight for you."];
     var empathyHtml = empathyText.map(function(text, i) {
       if (i === empathyText.length - 1) return '<p>' + text + '</p>';
       return '<p>' + text + '</p>';
     }).join('');
     document.getElementById('empathyText').innerHTML = empathyHtml;
 
-    var comparisonRows = {{comparisonRowsJson}};
+    var comparisonRows = [{"label":"Daily Payments","bad":"Continue daily/weekly ACH drains","good":"Payments stop during negotiation"},{"label":"Total Cost","bad":"Pay back 1.3x-1.5x the advance","good":"Settle for 50-80% less"},{"label":"Cash Flow","bad":"Strangled by daily withdrawals","good":"Cash flow recovers immediately"},{"label":"Stacked Advances","bad":"Cycle of borrowing to repay","good":"Resolve all MCAs at once"},{"label":"Time to Resolve","bad":"Trapped for 6-18 months","good":"3-6 months average"},{"label":"Your Business","bad":"Risk of closure from cash drain","good":"Keep operating and growing"},{"label":"Future Financing","bad":"Stuck in MCA cycle","good":"Access better financing options"}];
     var comparisonHtml = comparisonRows.map(function(row) {
       return '<tr><td>' + row.label + '</td><td class="col-bankruptcy">' + row.bad + '</td><td class="col-settlement">' + row.good + '</td></tr>';
     }).join('');
     document.getElementById('comparisonBody').innerHTML = comparisonHtml;
 
-    var faqItems = {{faqItemsJson}};
+    var faqItems = [{"question":"Can MCA debt really be settled for less?","answer":"Yes. MCA companies often accept 20-50 cents on the dollar through negotiated settlements. We've helped thousands of businesses reduce their MCA debt by 50-80%."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once we begin negotiating on your behalf, we work to stop the daily or weekly ACH withdrawals from your bank account so your cash flow can recover."},{"question":"I have multiple stacked MCAs — can you help?","answer":"Absolutely. Stacked MCAs are our specialty. We negotiate with all of your MCA lenders simultaneously to resolve all your advances at once."},{"question":"How long does MCA debt settlement take?","answer":"Most MCA settlements are completed in 3-6 months, depending on the number of advances and the lenders involved."},{"question":"Will this affect my credit score?","answer":"MCA debt is typically not reported to credit bureaus, so settlement usually has no impact on your personal credit score."},{"question":"What if an MCA company is threatening legal action?","answer":"Don't panic. Many MCA companies threaten lawsuits as a collection tactic. We deal with MCA lenders every day and know how to negotiate even in aggressive situations. Contact us immediately so we can help."}];
     var faqHtml = faqItems.map(function(item) {
       return '<div class="faq-item"><div class="faq-question">' + item.question + '</div><div class="faq-answer">' + item.answer + '</div></div>';
     }).join('');
@@ -1285,7 +1285,7 @@
     }
 
     // Render bottom form fields (skip has_mca — not needed for game template)
-    var formFields = {{formFieldsJson}};
+    var formFields = [{"name":"first_name","label":"First Name","type":"text","placeholder":"John","options":"","required":true},{"name":"last_name","label":"Last Name","type":"text","placeholder":"Smith","options":"","required":true},{"name":"company_name","label":"Business Name","type":"text","placeholder":"Your Company Name","options":"","required":true},{"name":"email","label":"Email Address","type":"email","placeholder":"john@company.com","options":"","required":true},{"name":"phone","label":"Phone Number","type":"tel","placeholder":"(555) 123-4567","options":"","required":true},{"name":"has_mca","label":"Do you have a Merchant Cash Advance (MCA)?","type":"radio","placeholder":"","options":"Yes,No","required":true},{"name":"gclid","label":"Google Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"rt_clickid","label":"RT Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"eli_clickid","label":"Eli Click ID","type":"hidden","placeholder":"","options":"","required":false},{"name":"keyword","label":"Keyword","type":"hidden","placeholder":"","options":"","required":false},{"name":"visitor_ip","label":"Visitor IP","type":"hidden","placeholder":"","options":"","required":false},{"name":"page_url","label":"Page URL","type":"hidden","placeholder":"","options":"","required":false},{"name":"referrer_url","label":"Referrer URL","type":"hidden","placeholder":"","options":"","required":false}];
     var bottomFieldsHtml = formFields.filter(function(field) { return field.name !== 'has_mca'; }).map(function(field) {
       if (field.type === 'radio') {
         var options = (field.options || 'Yes,No').split(',').map(function(opt) { return opt.trim(); });
@@ -1382,7 +1382,7 @@
       } catch (error) {
         alert('Something went wrong. Please try again or call us directly.');
         btn.disabled = false;
-        btn.textContent = '{{ctaButton}}';
+        btn.textContent = 'Get My Free MCA Analysis';
       }
     });
 
