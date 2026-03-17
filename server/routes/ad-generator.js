@@ -257,11 +257,27 @@ router.post('/analyze-references', authenticateToken, async (req, res) => {
     }
 
     const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-    const analysisPrompt = `Analyze these reference ad images and generate a detailed image generation prompt that captures their visual style, composition, color palette, mood, and subject matter. The prompt should be suitable for AI image generation (like Midjourney/Flux/Imagen).
+    const analysisPrompt = `You are an expert art director analyzing reference ads. Your job is to write a prompt for an AI image generator (Gemini Imagen) to create a BACKGROUND IMAGE for a similar ad.
 
-Focus on: visual style and aesthetic, color palette and lighting, composition and layout, subject matter and scene, mood and tone, distinctive design elements.
+IMPORTANT: The AI image generator will create ONLY the background visual — text, logos, buttons, and CTAs are added later in a design editor. So your prompt must describe the VISUAL SCENE / BACKGROUND only.
 
-Return ONLY the prompt text, no explanation or preamble. 2-4 sentences, specific and descriptive.`;
+Analyze these reference ads and extract:
+1. **Subject matter**: What is the main visual element? (e.g. "a hand holding fanned-out cash bills", "a small business owner smiling at their desk", "a confident entrepreneur in a modern office")
+2. **Color palette**: What are the dominant colors? Be specific with color descriptions (e.g. "vibrant royal blue gradient background", "warm golden lighting")
+3. **Composition**: Where is the subject placed? What's the background? Is there negative/open space for text? (e.g. "subject on the right side with clean open space on the left for text overlay")
+4. **Style**: Photo-realistic? Graphic design? Clean and modern? (e.g. "high-quality stock photo style", "clean graphic design with flat color blocks")
+5. **Mood**: Professional, hopeful, urgent, empowering?
+
+Write a single, highly specific image generation prompt. Be CONCRETE and VISUAL — describe exactly what should appear in the image as if directing a photographer or illustrator.
+
+RULES:
+- NO text, words, letters, logos, or UI elements in the prompt
+- Include "no text, no words, no letters, no logos, no watermarks" at the end
+- Focus on creating a visually striking background that leaves room for text overlays
+- Use the brand colors: blue (#3052FF), light blue (#7FB2FF), orange (#FF9000) accents where the reference uses similar colors
+- Keep it to 2-4 sentences, very specific and visual
+
+Return ONLY the prompt text, nothing else.`;
 
     // Read image files from disk
     const imageData = [];
