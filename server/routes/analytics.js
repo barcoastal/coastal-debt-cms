@@ -1569,24 +1569,40 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     if (from) dateClause += ` AND segments.date >= '${from}'`;
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
+    // Campaign filter
+    const { campaign } = req.query;
+    let campaignClause = '';
+    if (campaign) campaignClause = ` AND campaign.name = '${campaign.replace(/'/g, "\\'")}'`;
+
     // Query 1: Main search term metrics
-    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 10000`;
+    const gaql = `SELECT search_term_view.search_term, search_term_view.status, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause}${campaignClause} ORDER BY metrics.impressions DESC LIMIT 10000`;
 
     // Query 2: Conversions broken down by conversion action per search term
-    const convGaql = `SELECT search_term_view.search_term, segments.conversion_action_name, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED' AND metrics.conversions > 0${dateClause}`;
+    const convGaql = `SELECT search_term_view.search_term, segments.conversion_action_name, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED' AND metrics.conversions > 0${dateClause}${campaignClause}`;
+
+    // Query 3: Get all campaign names for the filter dropdown
+    const campaignGaql = `SELECT campaign.name FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} LIMIT 10000`;
 
     console.log('[Competition ST] GAQL:', gaql);
     console.log('[Competition ST conv] GAQL:', convGaql);
 
-    const [gRes, convRes] = await Promise.all([
+    const fetches = [
       fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
         method: 'POST', headers, body: JSON.stringify({ query: gaql })
       }),
       fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
         method: 'POST', headers, body: JSON.stringify({ query: convGaql })
       })
-    ]);
-    const [gData, convData] = await Promise.all([gRes.json(), convRes.json()]);
+    ];
+    // Only fetch campaign list if not already filtering by campaign
+    if (!campaign) {
+      fetches.push(fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+        method: 'POST', headers, body: JSON.stringify({ query: campaignGaql })
+      }));
+    }
+    const responses = await Promise.all(fetches);
+    const [gData, convData] = await Promise.all([responses[0].json(), responses[1].json()]);
+    const campData = responses[2] ? await responses[2].json() : null;
     console.log('[Competition ST] results:', gData.results?.length, 'error:', gData.error?.message || 'none');
     console.log('[Competition ST conv] results:', convData.results?.length, 'error:', convData.error?.message || 'none');
 
@@ -1618,6 +1634,7 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
       return {
         search_term: stv.searchTerm || '',
         status: stv.status || 'UNSPECIFIED',
+        campaign_name: r.campaign?.name || '',
         impressions,
         clicks,
         ctr: impressions > 0 ? clicks / impressions : 0,
@@ -1628,7 +1645,12 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
       };
     });
 
-    res.json({ connected: true, search_terms, conversion_action_names: Array.from(allConvActions).sort() });
+    // Extract unique campaign names
+    const campaignNames = campData && campData.results
+      ? [...new Set(campData.results.map(r => r.campaign?.name).filter(Boolean))].sort()
+      : [...new Set(search_terms.map(t => t.campaign_name).filter(Boolean))].sort();
+
+    res.json({ connected: true, search_terms, conversion_action_names: Array.from(allConvActions).sort(), campaign_names: campaignNames });
   } catch (e) {
     console.error('Search terms error:', e.message);
     res.status(500).json({ error: e.message });

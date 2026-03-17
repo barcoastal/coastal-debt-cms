@@ -163,4 +163,32 @@ Return ONLY valid JSON. No markdown fences, no extra text.`;
   }
 });
 
+// POST /api/ai/analyze — generic AI analysis endpoint
+router.post('/analyze', authenticateToken, async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) {
+      return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+    }
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const analysis = message.content[0]?.text || '';
+    res.json({ analysis });
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    res.status(500).json({ error: error.message || 'AI analysis failed' });
+  }
+});
+
 module.exports = router;

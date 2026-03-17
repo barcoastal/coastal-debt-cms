@@ -496,7 +496,23 @@
 
         <!-- Search Terms -->
         <div class="card" id="searchTermsCard" style="display:none;">
-          <div class="card-header"><h3 class="card-title">Search Term Intelligence</h3></div>
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <h3 class="card-title">Search Term Intelligence <span id="stCount" style="font-weight:400;font-size:13px;color:var(--gray-500);"></span></h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="stCampaignFilter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--gray-300);font-size:13px;min-width:160px;" onchange="filterSearchTerms()">
+                <option value="">All Campaigns</option>
+              </select>
+              <input type="text" id="stSearchInput" placeholder="Search keywords..." style="padding:6px 10px;border-radius:6px;border:1px solid var(--gray-300);font-size:13px;min-width:200px;" oninput="filterSearchTerms()">
+            </div>
+          </div>
+          <!-- AI Analysis -->
+          <div id="stAiAnalysis" style="display:none;margin-bottom:16px;background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #c3d4f7;border-radius:10px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <h4 style="margin:0;font-size:14px;color:#1e40af;">AI Recommendations</h4>
+              <button class="btn btn-small btn-secondary" onclick="runStAiAnalysis()" id="stAiBtn">Analyze</button>
+            </div>
+            <div id="stAiContent" style="font-size:13px;color:#374151;line-height:1.6;"></div>
+          </div>
           <div class="table-container" style="max-height:500px;overflow-y:auto;">
             <table class="resizable-table" id="searchTermsTableEl">
               <thead id="searchTermsHead">
@@ -1269,40 +1285,17 @@
         // Search Terms
         if (stData.connected && stData.search_terms && stData.search_terms.length) {
           document.getElementById('searchTermsCard').style.display = '';
-          const stTbody = document.getElementById('searchTermsTable');
-          const stHead = document.getElementById('searchTermsHead');
-          const convActions = stData.conversion_action_names || [];
+          document.getElementById('stAiAnalysis').style.display = '';
+          window._stAllTerms = stData.search_terms;
+          window._stConvActions = stData.conversion_action_names || [];
 
-          // Build dynamic header with conversion action columns
-          stHead.innerHTML = '<tr>' +
-            '<th style="min-width:180px;">Search Term<span class="col-resize"></span></th>' +
-            '<th>Status<span class="col-resize"></span></th>' +
-            '<th>Impressions<span class="col-resize"></span></th>' +
-            '<th>Clicks<span class="col-resize"></span></th>' +
-            '<th>CTR<span class="col-resize"></span></th>' +
-            '<th>CPC<span class="col-resize"></span></th>' +
-            '<th>Cost<span class="col-resize"></span></th>' +
-            '<th>Conv<span class="col-resize"></span></th>' +
-            convActions.map(a => '<th style="font-size:11px;white-space:nowrap;">' + escapeHtml(a) + '</th>').join('') +
-            '</tr>';
+          // Populate campaign filter
+          const campSelect = document.getElementById('stCampaignFilter');
+          const campNames = stData.campaign_names || [...new Set(stData.search_terms.map(t => t.campaign_name).filter(Boolean))].sort();
+          campSelect.innerHTML = '<option value="">All Campaigns</option>' +
+            campNames.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
 
-          stTbody.innerHTML = stData.search_terms.map(t => {
-            const actionCells = convActions.map(a => {
-              const count = (t.conversion_actions && t.conversion_actions[a]) || 0;
-              return '<td style="text-align:center;font-size:12px;' + (count > 0 ? 'color:#16a34a;font-weight:600;' : 'color:#d1d5db;') + '">' + (count > 0 ? count.toFixed(1) : '-') + '</td>';
-            }).join('');
-            return '<tr>' +
-              '<td>' + escapeHtml(t.search_term) + '</td>' +
-              '<td>' + statusBadge(t.status) + '</td>' +
-              '<td>' + t.impressions.toLocaleString() + '</td>' +
-              '<td>' + t.clicks.toLocaleString() + '</td>' +
-              '<td>' + (t.ctr * 100).toFixed(1) + '%</td>' +
-              '<td>' + fmtMoney(t.cpc) + '</td>' +
-              '<td>' + fmtMoney(t.cost) + '</td>' +
-              '<td>' + t.conversions.toFixed(1) + '</td>' +
-              actionCells +
-              '</tr>';
-          }).join('');
+          filterSearchTerms();
         }
 
         // Init column resize on all competition tables
@@ -1312,6 +1305,148 @@
         console.error('Competition load error:', err);
         content.innerHTML = '<div class="comp-loading" style="color:#dc2626;">Error loading competition data. Please try again.</div>';
       }
+    }
+
+    // Search Terms: filter, sort, render
+    window._stSortKey = 'impressions';
+    window._stSortDir = -1; // -1 = desc, 1 = asc
+
+    function filterSearchTerms() {
+      if (!window._stAllTerms) return;
+      const campaignVal = document.getElementById('stCampaignFilter').value;
+      const searchVal = (document.getElementById('stSearchInput').value || '').toLowerCase();
+
+      let filtered = window._stAllTerms;
+      if (campaignVal) filtered = filtered.filter(t => t.campaign_name === campaignVal);
+      if (searchVal) filtered = filtered.filter(t => t.search_term.toLowerCase().includes(searchVal));
+
+      // Sort
+      const key = window._stSortKey;
+      const dir = window._stSortDir;
+      filtered.sort((a, b) => {
+        let va = a[key], vb = b[key];
+        if (typeof va === 'string') return dir * va.localeCompare(vb);
+        return dir * ((va || 0) - (vb || 0));
+      });
+
+      renderSearchTermsTable(filtered);
+    }
+
+    function sortSearchTerms(key) {
+      if (window._stSortKey === key) {
+        window._stSortDir *= -1;
+      } else {
+        window._stSortKey = key;
+        window._stSortDir = (key === 'search_term' || key === 'status') ? 1 : -1;
+      }
+      filterSearchTerms();
+    }
+
+    function renderSearchTermsTable(terms) {
+      const convActions = window._stConvActions || [];
+      const stTbody = document.getElementById('searchTermsTable');
+      const stHead = document.getElementById('searchTermsHead');
+
+      const arrow = (key) => {
+        if (window._stSortKey !== key) return '';
+        return window._stSortDir === 1 ? ' &#9650;' : ' &#9660;';
+      };
+      const thStyle = 'cursor:pointer;user-select:none;white-space:nowrap;';
+
+      stHead.innerHTML = '<tr>' +
+        '<th style="min-width:180px;' + thStyle + '" onclick="sortSearchTerms(\'search_term\')">Search Term' + arrow('search_term') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'status\')">Status' + arrow('status') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'impressions\')">Impressions' + arrow('impressions') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'clicks\')">Clicks' + arrow('clicks') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'ctr\')">CTR' + arrow('ctr') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'cpc\')">CPC' + arrow('cpc') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'cost\')">Cost' + arrow('cost') + '</th>' +
+        '<th style="' + thStyle + '" onclick="sortSearchTerms(\'conversions\')">Conv' + arrow('conversions') + '</th>' +
+        convActions.map(a => '<th style="font-size:11px;white-space:nowrap;">' + escapeHtml(a) + '</th>').join('') +
+        '</tr>';
+
+      document.getElementById('stCount').textContent = '(' + terms.length + ' terms)';
+
+      stTbody.innerHTML = terms.map(t => {
+        const actionCells = convActions.map(a => {
+          const count = (t.conversion_actions && t.conversion_actions[a]) || 0;
+          return '<td style="text-align:center;font-size:12px;' + (count > 0 ? 'color:#16a34a;font-weight:600;' : 'color:#d1d5db;') + '">' + (count > 0 ? count.toFixed(1) : '-') + '</td>';
+        }).join('');
+        return '<tr>' +
+          '<td>' + escapeHtml(t.search_term) + '</td>' +
+          '<td>' + statusBadge(t.status) + '</td>' +
+          '<td>' + t.impressions.toLocaleString() + '</td>' +
+          '<td>' + t.clicks.toLocaleString() + '</td>' +
+          '<td>' + (t.ctr * 100).toFixed(1) + '%</td>' +
+          '<td>' + fmtMoney(t.cpc) + '</td>' +
+          '<td>' + fmtMoney(t.cost) + '</td>' +
+          '<td>' + t.conversions.toFixed(1) + '</td>' +
+          actionCells +
+          '</tr>';
+      }).join('');
+    }
+
+    async function runStAiAnalysis() {
+      const btn = document.getElementById('stAiBtn');
+      const content = document.getElementById('stAiContent');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+      content.innerHTML = '<p style="color:var(--gray-400);">Running AI analysis on search terms...</p>';
+
+      try {
+        const terms = window._stAllTerms || [];
+        const campaignVal = document.getElementById('stCampaignFilter').value;
+        const filtered = campaignVal ? terms.filter(t => t.campaign_name === campaignVal) : terms;
+
+        // Prepare summary for AI
+        const topByImpr = filtered.slice(0, 30).map(t => ({
+          term: t.search_term, impr: t.impressions, clicks: t.clicks,
+          ctr: (t.ctr * 100).toFixed(1) + '%', cpc: '$' + t.cpc.toFixed(2),
+          cost: '$' + t.cost.toFixed(2), conv: t.conversions
+        }));
+        const totalCost = filtered.reduce((s, t) => s + t.cost, 0);
+        const totalConv = filtered.reduce((s, t) => s + t.conversions, 0);
+        const totalClicks = filtered.reduce((s, t) => s + t.clicks, 0);
+        const totalImpr = filtered.reduce((s, t) => s + t.impressions, 0);
+        const avgCtr = totalImpr > 0 ? (totalClicks / totalImpr * 100).toFixed(1) : '0';
+        const avgCpc = totalClicks > 0 ? (totalCost / totalClicks).toFixed(2) : '0';
+        const costPerConv = totalConv > 0 ? (totalCost / totalConv).toFixed(2) : 'N/A';
+
+        const highCpcLowConv = filtered.filter(t => t.cost > 50 && t.conversions === 0).slice(0, 10).map(t => t.search_term + ' ($' + t.cost.toFixed(0) + ')');
+        const highConv = filtered.filter(t => t.conversions > 0).sort((a, b) => b.conversions - a.conversions).slice(0, 10).map(t => t.search_term + ' (' + t.conversions.toFixed(1) + ' conv, $' + t.cost.toFixed(0) + ')');
+
+        const prompt = `You are a Google Ads search term analyst for a business debt relief company (Coastal Debt). Analyze these search terms and give actionable recommendations.
+
+Summary: ${filtered.length} search terms, $${totalCost.toFixed(0)} total spend, ${totalConv.toFixed(1)} conversions, ${avgCtr}% avg CTR, $${avgCpc} avg CPC, $${costPerConv} cost/conv.
+
+Top terms by impressions: ${JSON.stringify(topByImpr)}
+
+High spend no conversions (waste): ${highCpcLowConv.join(', ') || 'None'}
+
+Top converting terms: ${highConv.join(', ') || 'None'}
+
+Give 5-7 bullet point recommendations. Focus on: negative keywords to add, terms to increase bids on, wasted spend to cut, new keyword opportunities, and match type suggestions. Be specific with the actual search terms. Keep it concise.`;
+
+        const res = await fetch('/api/ai/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          content.innerHTML = (data.analysis || data.text || data.response || 'No analysis returned.')
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/- /g, '&bull; ');
+        } else {
+          content.innerHTML = '<p style="color:#dc2626;">AI analysis not available. Add an AI endpoint at <code>/api/ai/analyze</code> or connect an AI provider in settings.</p>';
+        }
+      } catch (err) {
+        content.innerHTML = '<p style="color:#dc2626;">AI analysis error: ' + escapeHtml(err.message) + '</p>';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Analyze';
     }
 
     function renderAuctionInsightsTable(aiData) {
