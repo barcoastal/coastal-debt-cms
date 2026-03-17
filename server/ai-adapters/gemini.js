@@ -6,9 +6,9 @@ const path = require('path');
 
 // Try models in order — first available one wins
 const MODELS = [
-  'gemini-2.0-flash-preview-image-generation',
-  'gemini-2.0-flash-exp',
-  'imagen-3.0-generate-002'
+  'gemini-2.5-flash-image',
+  'gemini-2.0-flash',
+  'imagen-4.0-generate-001'
 ];
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
@@ -94,16 +94,18 @@ async function tryGenerate(apiKey, model, prompt, referenceImageUrls, size) {
     throw new Error(`Gemini blocked prompt: ${data.promptFeedback.blockReason}`);
   }
 
-  // Extract image from response parts
+  // Extract image from response parts (API may return camelCase or snake_case)
   if (data.candidates && data.candidates[0] && data.candidates[0].content) {
     const responseParts = data.candidates[0].content.parts || [];
     for (const part of responseParts) {
-      if (part.inline_data && part.inline_data.data) {
-        console.log(`[Gemini] Got image from ${model}, mime: ${part.inline_data.mime_type}, size: ${part.inline_data.data.length} chars`);
+      const imgData = part.inline_data || part.inlineData;
+      if (imgData && imgData.data) {
+        const mime = imgData.mime_type || imgData.mimeType || 'image/png';
+        console.log(`[Gemini] Got image from ${model}, mime: ${mime}, size: ${imgData.data.length} chars`);
         return {
           jobId: null,
           status: 'completed',
-          imageBase64: part.inline_data.data
+          imageBase64: imgData.data
         };
       }
     }
