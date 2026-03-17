@@ -1570,7 +1570,7 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     if (to) dateClause += ` AND segments.date <= '${to}'`;
 
     // Query 1: Main search term metrics
-    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 200`;
+    const gaql = `SELECT search_term_view.search_term, search_term_view.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED'${dateClause} ORDER BY metrics.impressions DESC LIMIT 10000`;
 
     // Query 2: Conversions broken down by conversion action per search term
     const convGaql = `SELECT search_term_view.search_term, segments.conversion_action_name, metrics.conversions FROM search_term_view WHERE campaign.status = 'ENABLED' AND metrics.conversions > 0${dateClause}`;
