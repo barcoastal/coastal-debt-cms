@@ -1251,7 +1251,7 @@
             return '';
           }
 
-          qsTbody.innerHTML = sortedKw.slice(0, 100).map(k => `<tr class="qs-row-clickable" onclick="toggleQsTips(this)">
+          qsTbody.innerHTML = sortedKw.map(k => `<tr class="qs-row-clickable" onclick="toggleQsTips(this)">
             <td>${escapeHtml(k.keyword)}</td>
             <td>${escapeHtml(k.ad_group)}</td>
             <td style="font-weight:700;color:${k.quality_score != null ? (k.quality_score >= 7 ? '#16a34a' : k.quality_score >= 5 ? '#f59e0b' : '#dc2626') : 'var(--gray-400)'}">${k.quality_score != null ? k.quality_score : '-'}</td>
