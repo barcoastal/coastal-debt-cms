@@ -239,6 +239,18 @@
       <div class="card">
         <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
           <h3 class="card-title">FB Deep Event Leads</h3>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <label style="font-size:13px;color:var(--gray-500);">Per page:</label>
+            <select id="perPage" onchange="loadLeads(1)" style="padding:5px 8px;border-radius:6px;border:1px solid var(--gray-300);font-size:13px;">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <button class="btn btn-secondary btn-small" onclick="exportToExcel()" title="Export to Excel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Export Excel
+            </button>
+          </div>
         </div>
         <div id="columnEditorMount" style="margin-bottom:12px;text-align:right;"></div>
         <div class="table-container">
@@ -457,7 +469,8 @@
       currentPage = page;
       try {
         const qs = buildQS();
-        const data = await api('/api/analytics/fb-deep-events/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=25');
+        const limit = document.getElementById('perPage').value;
+        const data = await api('/api/analytics/fb-deep-events/leads' + (qs || '?') + (qs ? '&' : '') + 'page=' + page + '&limit=' + limit);
         const tbody = document.getElementById('leadsTable');
 
         const cols = columnEditor.getVisibleColumns();
@@ -505,6 +518,52 @@
       } catch (err) {
         console.error('Error saving field:', err);
         cell.textContent = value || '-';
+      }
+    }
+
+    async function exportToExcel() {
+      try {
+        const qs = buildQS();
+        // Fetch all leads (up to 10000) for export
+        const data = await api('/api/analytics/fb-deep-events/leads' + (qs || '?') + (qs ? '&' : '') + 'page=1&limit=10000');
+        if (!data.leads.length) { alert('No leads to export'); return; }
+
+        const cols = columnEditor.getVisibleColumns();
+        const colLabels = cols.map(key => COLUMNS.find(c => c.key === key)?.label || key);
+
+        // Build CSV rows
+        const rows = [colLabels];
+        data.leads.forEach(function(lead) {
+          rows.push(cols.map(function(key) {
+            if (key === 'deep_events') {
+              return (lead.events || []).map(function(e) { return EVENT_LABELS[e.type || e.conversion_action_name] || e.type || ''; }).join(', ');
+            }
+            if (key === 'current_status') return EVENT_LABELS[lead.current_status] || lead.current_status || '';
+            if (key === 'debt_amount') return lead.debt_amount || '';
+            if (key === 'created_at') return lead.created_at || '';
+            return lead[key] || '';
+          }));
+        });
+
+        // Convert to CSV with proper escaping
+        var csv = rows.map(function(row) {
+          return row.map(function(cell) {
+            var s = String(cell).replace(/"/g, '""');
+            return '"' + s + '"';
+          }).join(',');
+        }).join('\n');
+
+        // Add BOM for Excel UTF-8 compatibility
+        var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var d = getDateRange();
+        link.href = URL.createObjectURL(blob);
+        link.download = 'fb-deep-events-' + (d.from || 'all') + '-to-' + (d.to || 'now') + '.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (err) {
+        console.error('Export error:', err);
+        alert('Failed to export: ' + err.message);
       }
     }
 
