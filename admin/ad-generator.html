@@ -1201,6 +1201,7 @@
           if (analyzeData.open_space_for_text) blueprint.open_space_for_text = analyzeData.open_space_for_text;
           if (analyzeData.logo_size) blueprint.logo_size = analyzeData.logo_size;
           if (analyzeData.text_style) blueprint.text_style = analyzeData.text_style;
+          if (analyzeData.visual_elements_position) blueprint.visual_elements_position = analyzeData.visual_elements_position;
           console.log('Design blueprint:', JSON.stringify(blueprint));
           stepDetail.textContent = 'Layout: text ' + blueprint.text_position + ', overlay: ' + blueprint.overlay_style + ' — "' + prompt.substring(0, 60) + '..."';
         } else if (referenceImageUrls.length && customPrompt) {
@@ -2177,10 +2178,14 @@
 
           var textLeft = pad;
           if (bp.open_space_for_text === 'top-left' || bp.open_space_for_text === 'left') {
-            textW = w * 0.55;
+            textW = w * 0.5;
           } else if (bp.open_space_for_text === 'top-right') {
-            textLeft = w * 0.4;
-            textW = w * 0.55;
+            textLeft = w * 0.42;
+            textW = w * 0.5;
+          }
+          // When visuals are centered or spread, keep text to ~60% width to avoid overlap
+          if (bp.visual_elements_position === 'center' || bp.visual_elements_position === 'spread') {
+            textW = Math.min(textW, w * 0.6);
           }
 
           // --- BADGE ---
@@ -2273,7 +2278,7 @@
           else if (ts.headUppercase) charW = headFs * 0.62;
           var charsPerLine = Math.max(1, Math.floor(textW / charW));
           var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
-          cursor += headLines * headFs * 1.14 + 10;
+          cursor += headLines * headFs * 1.14 + Math.round(pad * 0.4);
 
           // --- ACCENT BAR (after headline, if style uses it and badge was shown) ---
           if (ts.accentBar && copy.badge) {
@@ -2289,15 +2294,18 @@
 
           // --- SUBHEADLINE ---
           if (copy.subheadline) {
-            var subFs = isVertical ? Math.round(w * 0.028) : (isSquare ? Math.round(w * 0.023) : Math.round(w * 0.019));
-            subFs = Math.max(subFs, 12);
+            cursor += Math.round(pad * 0.3); // extra breathing room after headline
+            var subFs = isVertical ? Math.round(w * 0.038) : (isSquare ? Math.round(w * 0.032) : Math.round(w * 0.026));
+            subFs = Math.max(subFs, 15);
+            // Use white/light color for subheadline too (not dim gray) for readability
+            var subFill = bp.bg_is_dark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.75)';
             offCanvas.add(new fabric.Textbox(copy.subheadline, {
               left: textLeft, top: cursor, width: textW,
               fontSize: subFs, fontWeight: ts.subWeight,
               fontFamily: ts.subFont,
-              fill: subColor, lineHeight: 1.35,
+              fill: subFill, lineHeight: 1.4,
               charSpacing: ts.subSpacing,
-              shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', offsetX: 0, offsetY: 1, blur: 4 }),
+              shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', offsetX: 0, offsetY: 2, blur: 8 }),
               selectable: false
             }));
           }
