@@ -736,6 +736,89 @@ Respond with ONLY valid JSON: {"headline":"...","subheadline":"..."}`
   }
 });
 
+// ============ META AD COPY GENERATOR ============
+
+const META_AD_ANGLES = {
+  general: 'General MCA debt relief — highlight the service and benefits',
+  urgency: 'Create urgency — limited time offer, act now before it\'s too late',
+  savings: 'Focus on savings — settle for pennies on the dollar, save up to 80%',
+  pain: 'Address pain points — drowning in daily payments, MCA draining your business',
+  trust: 'Build trust — proven track record, hundreds of businesses helped, real results',
+  fresh_start: 'Fresh start angle — leave MCA debt behind, rebuild your business',
+  comparison: 'Why choose us — what makes Coastal Debt Resolve different from others',
+  educational: 'Educational — explain what MCA debt is and why settlement is the best option'
+};
+
+router.post('/generate-meta-copy', authenticateToken, async (req, res) => {
+  const { angle, count, custom_instructions } = req.body;
+  const numVariations = Math.min(Math.max(parseInt(count) || 3, 1), 10);
+  const angleDesc = META_AD_ANGLES[angle] || META_AD_ANGLES.general;
+
+  try {
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) return res.status(500).json({ error: 'Anthropic API key not configured' });
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const customLine = custom_instructions ? `\nAdditional instructions: ${custom_instructions}` : '';
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `You are an expert Meta (Facebook/Instagram) ad copywriter for Coastal Debt Resolve.
+
+ABOUT THE COMPANY:
+- Coastal Debt Resolve helps business owners settle MCA (Merchant Cash Advance) debt
+- They ONLY deal with MCA debt and business debt — NEVER mention credit cards, personal debt, student loans, or mortgages
+- They can reduce what businesses owe by up to 80%
+- Free consultation available
+- Website: coastaldebt.com
+
+AD ANGLE: ${angleDesc}${customLine}
+
+Generate exactly ${numVariations} UNIQUE Meta ad copy variations. Each variation should feel completely different — different hooks, different angles, different emotional triggers. Mix short punchy copy with longer storytelling copy.
+
+For each variation provide:
+- primary_text: The main ad body (80-300 chars). This is what appears above the image. Use line breaks for readability. Mix styles: some with emojis, some without, some with questions, some with statements, some with statistics.
+- headline: Bold headline below the image (max 40 chars). Should stop the scroll.
+- description: Optional description text below headline (max 30 chars). Can be empty string.
+- cta: Call to action button. Use ONLY these Meta-approved options: "Learn More", "Get Quote", "Contact Us", "Sign Up", "Apply Now"
+
+RULES:
+- ONLY MCA / business debt. Never mention credit cards or personal debt.
+- No phone numbers
+- Vary the tone: some professional, some emotional, some urgent, some educational
+- Use power words: free, save, proven, guaranteed, relief, resolve, settle
+- Some variations should use emojis sparingly (1-2 max), others none
+
+Return ONLY a valid JSON array:
+[
+  { "primary_text": "...", "headline": "...", "description": "...", "cta": "..." },
+  ...
+]`
+      }]
+    });
+
+    const rawText = (message.content[0]?.text || '').trim();
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('Meta copy: no JSON array found in response:', rawText.substring(0, 200));
+      return res.status(500).json({ error: 'AI returned invalid format' });
+    }
+
+    const variations = JSON.parse(jsonMatch[0]);
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'meta_ad_copy', null, `Generated ${variations.length} Meta ad copy variations (${angle})`, req.ip);
+
+    res.json({ variations });
+  } catch (err) {
+    console.error('Meta copy generation error:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to generate Meta ad copy' });
+  }
+});
+
 // ============ BACKGROUND PROCESSING ============
 
 async function processGeneration(genId, model, prompt, referenceImageUrls, size, useBrand = true, brandPrompt = null) {
