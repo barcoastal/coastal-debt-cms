@@ -2026,14 +2026,13 @@
         headFont: "'Montserrat', sans-serif", headWeight: '900',
         subFont: "'DM Sans', sans-serif", subWeight: '400',
         badgeFont: "'DM Sans', sans-serif", badgeWeight: '700',
-        headScale: 1.15, // multiplier on base headline size
-        headSpacing: 40, // charSpacing in Fabric.js (1/1000 em)
+        headScale: 1.15,
         headUppercase: true,
         headShadow: 'rgba(0,0,0,0.5) 2px 3px 6px',
-        subSpacing: 10,
-        accentBar: true, // decorative accent line above headline
+        accentBar: true,
         accentColor: '#FF9000',
-        badgePill: true // pill-shaped background behind badge
+        badgePill: true,
+        charWidthFactor: 0.65 // for line-count estimation
       },
       editorial: {
         name: 'Editorial',
@@ -2041,13 +2040,12 @@
         subFont: "'Inter', sans-serif", subWeight: '400',
         badgeFont: "'Inter', sans-serif", badgeWeight: '500',
         headScale: 1.1,
-        headSpacing: -10,
         headUppercase: false,
         headShadow: 'rgba(0,0,0,0.35) 1px 2px 8px',
-        subSpacing: 20,
         accentBar: false,
         accentColor: '#3052FF',
-        badgePill: false // simple text with line underneath
+        badgePill: false,
+        charWidthFactor: 0.55
       },
       clean_modern: {
         name: 'Clean Modern',
@@ -2055,27 +2053,25 @@
         subFont: "'Outfit', sans-serif", subWeight: '400',
         badgeFont: "'Outfit', sans-serif", badgeWeight: '600',
         headScale: 1.0,
-        headSpacing: 5,
         headUppercase: false,
         headShadow: 'rgba(0,0,0,0.3) 0px 2px 12px',
-        subSpacing: 5,
         accentBar: false,
         accentColor: '#3052FF',
-        badgePill: true
+        badgePill: true,
+        charWidthFactor: 0.55
       },
       condensed_power: {
         name: 'Condensed Power',
         headFont: "'Bebas Neue', sans-serif", headWeight: '400',
         subFont: "'Barlow', sans-serif", subWeight: '400',
         badgeFont: "'Barlow', sans-serif", badgeWeight: '700',
-        headScale: 1.45, // big since condensed font is narrower
-        headSpacing: 80,
+        headScale: 1.4,
         headUppercase: true,
         headShadow: 'rgba(0,0,0,0.5) 2px 2px 4px',
-        subSpacing: 30,
         accentBar: true,
         accentColor: '#FF9000',
-        badgePill: false
+        badgePill: false,
+        charWidthFactor: 0.42 // Bebas Neue is very narrow
       },
       elegant_sans: {
         name: 'Elegant Sans',
@@ -2083,27 +2079,25 @@
         subFont: "'Plus Jakarta Sans', sans-serif", subWeight: '400',
         badgeFont: "'Plus Jakarta Sans', sans-serif", badgeWeight: '700',
         headScale: 1.0,
-        headSpacing: -5,
         headUppercase: false,
         headShadow: 'rgba(0,0,0,0.25) 0px 4px 16px',
-        subSpacing: 10,
         accentBar: false,
         accentColor: '#7FB2FF',
-        badgePill: true
+        badgePill: true,
+        charWidthFactor: 0.56
       },
       tall_stark: {
         name: 'Tall Stark',
         headFont: "'Oswald', sans-serif", headWeight: '700',
         subFont: "'DM Sans', sans-serif", subWeight: '400',
         badgeFont: "'DM Sans', sans-serif", badgeWeight: '700',
-        headScale: 1.25,
-        headSpacing: 50,
+        headScale: 1.2,
         headUppercase: true,
         headShadow: 'rgba(0,0,0,0.6) 1px 2px 4px',
-        subSpacing: 15,
         accentBar: true,
         accentColor: '#3052FF',
-        badgePill: false
+        badgePill: false,
+        charWidthFactor: 0.48 // Oswald is semi-condensed
       }
     };
 
@@ -2266,19 +2260,16 @@
             left: textLeft, top: cursor, width: textW,
             fontSize: headFs, fontWeight: ts.headWeight,
             fontFamily: ts.headFont,
-            fill: textColor, lineHeight: 1.12,
-            charSpacing: ts.headSpacing,
+            fill: textColor, lineHeight: 1.15,
             shadow: headShadowObj,
             selectable: false
           }));
 
-          // Estimate headline height
-          var charW = headFs * 0.58;
-          if (ts.headUppercase && ts.headFont.indexOf('Bebas') > -1) charW = headFs * 0.38;
-          else if (ts.headUppercase) charW = headFs * 0.62;
+          // Estimate headline height using per-style char width factor
+          var charW = headFs * (ts.charWidthFactor || 0.58);
           var charsPerLine = Math.max(1, Math.floor(textW / charW));
           var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
-          cursor += headLines * headFs * 1.14 + Math.round(pad * 0.4);
+          cursor += headLines * headFs * 1.2 + Math.round(pad * 0.5);
 
           // --- ACCENT BAR (after headline, if style uses it and badge was shown) ---
           if (ts.accentBar && copy.badge) {
@@ -2304,7 +2295,6 @@
               fontSize: subFs, fontWeight: ts.subWeight,
               fontFamily: ts.subFont,
               fill: subFill, lineHeight: 1.4,
-              charSpacing: ts.subSpacing,
               shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', offsetX: 0, offsetY: 2, blur: 8 }),
               selectable: false
             }));

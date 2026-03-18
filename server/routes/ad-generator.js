@@ -653,7 +653,7 @@ router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
   const { prompt, size_label, full_design } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
-  const fallback = { headline: 'Settle Your Business Debt', subheadline: 'Reduce what you owe by up to 80%', cta: 'Get a Free Consultation', badge: 'Debt Relief' };
+  const fallback = { headline: 'Settle Your MCA Debt', subheadline: 'Reduce your merchant cash advance debt by up to 80%', badge: 'MCA Debt Relief' };
 
   try {
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
@@ -671,22 +671,26 @@ router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
         max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `You are an expert direct-response ad copywriter and designer for Coastal Debt Resolve, a business debt settlement company. Create compelling ad copy for a paid ad.${sizeHint}
+          content: `You are an expert direct-response ad copywriter for Coastal Debt Resolve, a company that ONLY deals with MCA (Merchant Cash Advance) debt settlement for business owners. Create compelling ad copy for a paid ad.${sizeHint}
+
+CRITICAL CONTEXT — Coastal Debt Resolve ONLY handles:
+- MCA (Merchant Cash Advance) debt
+- Business debt / business loan debt
+- Do NOT mention: credit card debt, personal debt, student loans, mortgages, or any non-MCA debt
 
 Ad concept: "${prompt}"
 
-Generate copy that is punchy, emotional, and drives clicks. Use power words. The headline should stop the scroll.
+Generate copy that is punchy, emotional, and drives clicks. Use power words. The headline should stop the scroll. Keep it focused on MCA / business debt only.
 
 Respond with ONLY valid JSON:
 {
-  "badge": "short badge/label text, 2-3 words (e.g. 'Debt Relief', 'Free Consultation', 'Limited Time')",
+  "badge": "short badge/label text, 2-3 words (e.g. 'MCA Debt Relief', 'Business Owners', 'Limited Time')",
   "headline": "powerful main headline, max 6 words, all caps friendly",
-  "subheadline": "supporting line, max 12 words, adds urgency or specifics",
-  "cta": "call to action button text, max 5 words",
+  "subheadline": "supporting line, max 12 words, adds urgency or specifics — MCA/business debt ONLY",
   "style": "dark_overlay or light_overlay or gradient_bar or minimal"
 }
 
-Do NOT include a phone number.`
+Do NOT include a phone number. Do NOT mention credit cards or personal debt.`
         }]
       });
 
@@ -699,7 +703,6 @@ Do NOT include a phone number.`
         badge: (parsed.badge || fallback.badge).slice(0, 30),
         headline: (parsed.headline || fallback.headline).slice(0, 80),
         subheadline: (parsed.subheadline || fallback.subheadline).slice(0, 100),
-        cta: (parsed.cta || fallback.cta).slice(0, 40),
         style: parsed.style || 'dark_overlay'
       });
     }
@@ -710,11 +713,11 @@ Do NOT include a phone number.`
       max_tokens: 200,
       messages: [{
         role: 'user',
-        content: `You write ad copy for Coastal Debt Resolve, a business debt settlement company. Given the ad prompt below, produce a short headline (max 8 words) and a CTA (max 5 words).${sizeHint}
+        content: `You write ad copy for Coastal Debt Resolve, a company that ONLY handles MCA (Merchant Cash Advance) debt settlement for business owners. Do NOT mention credit cards, personal debt, or non-MCA debt. Given the ad prompt below, produce a short headline (max 8 words) and a subheadline (max 12 words).${sizeHint}
 
 Ad prompt: "${prompt}"
 
-Respond with ONLY valid JSON: {"headline":"...","cta":"..."}`
+Respond with ONLY valid JSON: {"headline":"...","subheadline":"..."}`
       }]
     });
 
