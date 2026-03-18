@@ -661,6 +661,29 @@ router.delete('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Lead deleted' });
 });
 
+// Bulk delete test leads (Jane Doe / dummy data)
+router.delete('/test-leads', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+
+  const testLeads = db.prepare(`
+    SELECT id FROM leads
+    WHERE (first_name = 'Jane' AND last_name = 'Doe')
+       OR company LIKE '%Test Company%'
+       OR debt_amount LIKE '%test lead%'
+       OR debt_amount LIKE '%dummy data%'
+  `).all();
+
+  if (!testLeads.length) return res.json({ message: 'No test leads found', deleted: 0 });
+
+  const del = db.prepare('DELETE FROM leads WHERE id = ?');
+  for (const lead of testLeads) {
+    del.run(lead.id);
+  }
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', null, `Bulk deleted ${testLeads.length} test leads (Jane Doe / dummy data)`, req.ip);
+  res.json({ message: `Deleted ${testLeads.length} test leads`, deleted: testLeads.length });
+});
+
 // Zapier webhook - validates API key
 // POST /api/leads/zapier?key=xxx — accepts any JSON body, tries every field name
 router.post('/zapier', async (req, res) => {
