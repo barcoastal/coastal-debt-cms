@@ -194,7 +194,15 @@ function processLead(leadData, source) {
 
   const tiktokLeadId = leadData.lead_id || leadData.id || ('wh_' + crypto.randomBytes(8).toString('hex'));
 
-  // Deduplicate
+  // Skip test leads (TikTok sends "Jane Doe" / "Test Company" dummy data)
+  const rawJson = JSON.stringify(leadData).toLowerCase();
+  if (rawJson.includes('test lead') || rawJson.includes('dummy data') ||
+      (rawJson.includes('"jane"') && rawJson.includes('"doe"') && rawJson.includes('test company'))) {
+    console.log(`[TikTok] Skipping test lead: ${tiktokLeadId}`);
+    return { duplicate: true, test_lead: true };
+  }
+
+  // Deduplicate by tiktok_lead_id
   const existing = db.prepare(
     `SELECT id FROM leads WHERE hidden_fields LIKE ?`
   ).get(`%"tiktok_lead_id":"${tiktokLeadId}"%`);
