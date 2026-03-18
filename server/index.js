@@ -167,6 +167,55 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// DB size check and cleanup
+app.get('/api/db-status', (req, res) => {
+  try {
+    const tables = db.prepare(`
+      SELECT name, (SELECT COUNT(*) FROM pragma_table_info(name)) as columns
+      FROM sqlite_master WHERE type='table' ORDER BY name
+    `).all();
+    const counts = {};
+    for (const t of tables) {
+      try { counts[t.name] = db.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get().c; } catch(e) { counts[t.name] = -1; }
+    }
+    // DB file size
+    const fs = require('fs');
+    const path = require('path');
+    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+      ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'coastal-debt.db')
+      : path.join(__dirname, 'coastal-debt.db');
+    let dbSize = 0;
+    try { dbSize = fs.statSync(dbPath).size; } catch(e) {}
+    res.json({ db_size_mb: (dbSize / 1024 / 1024).toFixed(1), table_counts: counts });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Cleanup old data to free disk space
+app.post('/api/db-cleanup', (req, res) => {
+  const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Auth required' });
+  try {
+    const jwt = require('jsonwebtoken');
+    const verified = jwt.verify(token, process.env.JWT_SECRET || 'coastal-secret-key-change-in-production');
+    if (!verified) return res.status(401).json({ error: 'Invalid token' });
+  } catch(e) { return res.status(401).json({ error: 'Invalid token' }); }
+
+  try {
+    const results = {};
+    // Delete visitors older than 60 days that didn't convert
+    results.old_visitors = db.prepare(`DELETE FROM visitors WHERE converted = 0 AND first_visit < datetime('now', '-60 days')`).changes;
+    // Delete old activity logs (>90 days)
+    try { results.old_activity = db.prepare(`DELETE FROM activity_log WHERE created_at < datetime('now', '-90 days')`).changes; } catch(e) {}
+    // Delete old ad generations that failed
+    try { results.failed_ads = db.prepare(`DELETE FROM ad_generations WHERE status = 'failed' AND created_at < datetime('now', '-30 days')`).changes; } catch(e) {}
+    // Vacuum to reclaim space
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    db.exec('VACUUM');
+    results.vacuumed = true;
+    res.json({ message: 'Cleanup complete', deleted: results });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 
 // Regenerate all landing pages from DB on startup (Railway wipes filesystem on deploy)
 try {
