@@ -1199,6 +1199,7 @@
           if (analyzeData.text_color) blueprint.text_color = analyzeData.text_color;
           if (analyzeData.cta_style) blueprint.cta_style = analyzeData.cta_style;
           if (analyzeData.open_space_for_text) blueprint.open_space_for_text = analyzeData.open_space_for_text;
+          if (analyzeData.logo_size) blueprint.logo_size = analyzeData.logo_size;
           console.log('Design blueprint:', JSON.stringify(blueprint));
           stepDetail.textContent = 'Layout: text ' + blueprint.text_position + ', overlay: ' + blueprint.overlay_style + ' — "' + prompt.substring(0, 60) + '..."';
         } else if (referenceImageUrls.length && customPrompt) {
@@ -2100,15 +2101,7 @@
             fill: '#FFFFFF', selectable: false
           }));
 
-          if (copy.phone) {
-            var phoneFs = Math.max(Math.round(w * 0.019), 12);
-            offCanvas.add(new fabric.Text(copy.phone, {
-              left: pad + ctaBtnW + 16,
-              top: ctaRowY + (ctaBtnH - phoneFs) / 2,
-              fontSize: phoneFs, fontFamily: 'Arial, sans-serif',
-              fill: bp.bg_is_dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)', selectable: false
-            }));
-          }
+          // Phone number removed from ad design
 
           // --- TEXT (position driven by blueprint) ---
           var textW = w - pad * 2;
@@ -2167,11 +2160,14 @@
             }));
           }
 
-          // Brand logo (bottom-right on CTA row)
+          // Brand logo (bottom-right on CTA row, size driven by blueprint)
           var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
           fabric.Image.fromURL(logoUrl, function(logoImg) {
             if (logoImg && logoImg.width > 0) {
-              var maxLogoH = isVertical ? 32 : 26;
+              var logoSizeMap = { small: 0.06, medium: 0.1, large: 0.14 };
+              var logoFrac = logoSizeMap[bp.logo_size] || logoSizeMap.small;
+              var maxLogoH = Math.round(h * logoFrac);
+              maxLogoH = Math.max(maxLogoH, isVertical ? 28 : 22);
               var logoScale = maxLogoH / logoImg.height;
               logoImg.set({
                 left: w - (logoImg.width * logoScale) - pad,

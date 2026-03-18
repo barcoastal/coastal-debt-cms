@@ -254,6 +254,7 @@ function parseDesignBlueprint(rawText) {
     visual_elements_position: 'center',
     open_space_for_text: 'top',
     cta_style: 'bottom_bar',
+    logo_size: 'small',
     layout_notes: ''
   };
 
@@ -275,6 +276,7 @@ function parseDesignBlueprint(rawText) {
       visual_elements_position: parsed.visual_elements_position || defaults.visual_elements_position,
       open_space_for_text: parsed.open_space_for_text || defaults.open_space_for_text,
       cta_style: parsed.cta_style || defaults.cta_style,
+      logo_size: parsed.logo_size || defaults.logo_size,
       layout_notes: parsed.layout_notes || defaults.layout_notes
     };
   } catch (e) {
@@ -298,26 +300,29 @@ router.post('/analyze-references', authenticateToken, async (req, res) => {
     }
 
     const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-    const analysisPrompt = `You are an expert art director and ad designer. Study these reference ad images DEEPLY. Your job is to produce a complete design blueprint so we can recreate similar ads.
+    const analysisPrompt = `You are an expert art director and ad designer. Study these reference ad images for INSPIRATION. Your job is to produce a design blueprint for creating NEW ads that capture the same FEEL, STYLE, and ENERGY — but are NOT identical copies. Think of the references as mood boards.
 
 Think step by step about every visual detail:
 
 ## STEP 1: DEEP ANALYSIS
 Look at each reference image carefully and identify:
-- What is the EXACT visual scene? Describe every object, person, prop you see (ignore text/logos)
-- What is the background? Is it a solid color, gradient, photo, or mixed?
-- What is the dominant color? Is it a bright blue, dark navy, white, etc.?
-- Where are the visual elements placed? Left, right, center, top, bottom?
-- Where does the text sit in the reference? Top area? Middle? Bottom? Over the image or on empty colored space?
-- Is there a dark overlay/gradient over the image, or does text sit directly on the background color?
+- What is the visual scene? Describe the objects, people, props you see (ignore text/logos)
+- What MOOD and ENERGY does the ad convey? (bold, calm, urgent, professional, etc.)
+- What is the background style? Solid color, gradient, photo, or mixed?
+- What is the dominant color palette?
+- What is the composition style? Where are visual elements vs. empty space?
+- Where does the text sit? Top? Middle? Bottom? Over the image or on empty colored space?
+- Is there a dark overlay/gradient, or does text sit directly on the background?
 - Is there a CTA button? Where? What style?
-- What percentage of the image is the visual scene vs. text area vs. empty space?
+- How big is the logo relative to the overall ad? (small=5-8% of height, medium=8-12%, large=12%+)
 
 ## STEP 2: DESIGN BLUEPRINT (return as JSON)
-Based on your analysis, return ONLY valid JSON with these fields:
+Create a FRESH ad concept INSPIRED by the references — same style/mood but a DIFFERENT scene or angle. Don't copy the exact same image. Instead, create a new variation that feels like it belongs in the same campaign.
+
+Return ONLY valid JSON:
 
 {
-  "image_prompt": "A highly specific prompt for an AI image generator. Describe the EXACT visual scene to generate — objects, people, props, colors, composition, lighting. Be concrete like directing a photographer. Example: 'A hand in a business suit holding a fan of hundred dollar bills against a vibrant royal blue background, with a pile of crumpled cash bills on a blue rectangular platform to the left. Clean studio lighting, bright blue (#3052FF) solid background.' MUST end with: no text, no words, no letters, no logos, no watermarks",
+  "image_prompt": "A creative, FRESH scene inspired by the reference style but NOT a copy. Same mood, color palette, and energy — but a different subject, angle, or composition. Describe the visual scene specifically: objects, people, props, colors, lighting, composition. Be concrete like directing a photographer. MUST end with: no text, no words, no letters, no logos, no watermarks",
   "text_position": "top" | "middle" | "bottom",
   "text_color": "#FFFFFF" or another color that contrasts with the background,
   "overlay_style": "none" | "subtle_gradient" | "dark_band",
@@ -326,14 +331,16 @@ Based on your analysis, return ONLY valid JSON with these fields:
   "visual_elements_position": "center" | "right" | "left" | "bottom" | "spread",
   "open_space_for_text": "top" | "top-left" | "top-right" | "left" | "bottom",
   "cta_style": "bottom_bar" | "inline_button" | "none",
-  "layout_notes": "Brief description of how text, visuals, and CTA are arranged in the reference"
+  "logo_size": "small" | "medium" | "large",
+  "layout_notes": "Brief description of how text, visuals, and CTA are arranged"
 }
 
 IMPORTANT:
+- The image_prompt should be INSPIRED by the references, NOT a 1:1 copy — create a fresh variation
 - The image_prompt is for generating ONLY the background visual (no text/logos — those are added in post)
-- Be extremely specific in image_prompt — describe exact objects, exact colors, exact placement
-- If the background is a solid color with objects on it, say that explicitly
-- Match the reference's actual color palette, not generic "blue tones"
+- Be specific in image_prompt — describe exact objects, exact colors, exact placement
+- Match the reference's color palette and mood, but vary the subject matter
+- logo_size should match what you see in the references
 
 Return ONLY the JSON, no explanation.`;
 
@@ -636,7 +643,7 @@ router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
   const { prompt, size_label, full_design } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
-  const fallback = { headline: 'Settle Your Business Debt', subheadline: 'Reduce what you owe by up to 80%', cta: 'Get a Free Consultation', badge: 'Debt Relief', phone: '(888) 979-9511' };
+  const fallback = { headline: 'Settle Your Business Debt', subheadline: 'Reduce what you owe by up to 80%', cta: 'Get a Free Consultation', badge: 'Debt Relief' };
 
   try {
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
@@ -666,9 +673,10 @@ Respond with ONLY valid JSON:
   "headline": "powerful main headline, max 6 words, all caps friendly",
   "subheadline": "supporting line, max 12 words, adds urgency or specifics",
   "cta": "call to action button text, max 5 words",
-  "phone": "(888) 979-9511",
   "style": "dark_overlay or light_overlay or gradient_bar or minimal"
-}`
+}
+
+Do NOT include a phone number.`
         }]
       });
 
@@ -682,7 +690,6 @@ Respond with ONLY valid JSON:
         headline: (parsed.headline || fallback.headline).slice(0, 80),
         subheadline: (parsed.subheadline || fallback.subheadline).slice(0, 100),
         cta: (parsed.cta || fallback.cta).slice(0, 40),
-        phone: parsed.phone || fallback.phone,
         style: parsed.style || 'dark_overlay'
       });
     }
