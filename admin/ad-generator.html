@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ad Generator | Coastal Debt CMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:wght@400;700&family=Bebas+Neue&family=Nunito:wght@400;700&family=Work+Sans:wght@400;700&family=DM+Sans:wght@400;700&family=Space+Grotesk:wght@400;700&family=Outfit:wght@400;700&family=Plus+Jakarta+Sans:wght@400;700&family=Barlow:wght@400;700&family=Urbanist:wght@400;700&family=Archivo:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;500;700&family=Montserrat:wght@400;700;900&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:wght@400;700;900&family=Bebas+Neue&family=Nunito:wght@400;700&family=Work+Sans:wght@400;700&family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;700&family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;700;800&family=Barlow:wght@400;700&family=Urbanist:wght@400;700&family=Archivo:wght@400;700;900&family=Sora:wght@400;600;700;800&family=Cabinet+Grotesk:wght@700;800;900&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=5">
   <style>
     /* ============ WIZARD STEP INDICATOR ============ */
@@ -1200,6 +1200,7 @@
           if (analyzeData.cta_style) blueprint.cta_style = analyzeData.cta_style;
           if (analyzeData.open_space_for_text) blueprint.open_space_for_text = analyzeData.open_space_for_text;
           if (analyzeData.logo_size) blueprint.logo_size = analyzeData.logo_size;
+          if (analyzeData.text_style) blueprint.text_style = analyzeData.text_style;
           console.log('Design blueprint:', JSON.stringify(blueprint));
           stepDetail.textContent = 'Layout: text ' + blueprint.text_position + ', overlay: ' + blueprint.overlay_style + ' — "' + prompt.substring(0, 60) + '..."';
         } else if (referenceImageUrls.length && customPrompt) {
@@ -2016,19 +2017,117 @@
       throw new Error('Timed out waiting for image');
     }
 
+    // ============ TEXT STYLE PRESETS ============
+    // Each style defines fonts, sizes, decorative elements, and personality
+    var TEXT_STYLES = {
+      bold_impact: {
+        name: 'Bold Impact',
+        headFont: "'Montserrat', sans-serif", headWeight: '900',
+        subFont: "'DM Sans', sans-serif", subWeight: '400',
+        badgeFont: "'DM Sans', sans-serif", badgeWeight: '700',
+        headScale: 1.15, // multiplier on base headline size
+        headSpacing: 40, // charSpacing in Fabric.js (1/1000 em)
+        headUppercase: true,
+        headShadow: 'rgba(0,0,0,0.5) 2px 3px 6px',
+        subSpacing: 10,
+        accentBar: true, // decorative accent line above headline
+        accentColor: '#FF9000',
+        badgePill: true // pill-shaped background behind badge
+      },
+      editorial: {
+        name: 'Editorial',
+        headFont: "'Playfair Display', serif", headWeight: '900',
+        subFont: "'Inter', sans-serif", subWeight: '400',
+        badgeFont: "'Inter', sans-serif", badgeWeight: '500',
+        headScale: 1.1,
+        headSpacing: -10,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.35) 1px 2px 8px',
+        subSpacing: 20,
+        accentBar: false,
+        accentColor: '#3052FF',
+        badgePill: false // simple text with line underneath
+      },
+      clean_modern: {
+        name: 'Clean Modern',
+        headFont: "'Outfit', sans-serif", headWeight: '700',
+        subFont: "'Outfit', sans-serif", subWeight: '400',
+        badgeFont: "'Outfit', sans-serif", badgeWeight: '600',
+        headScale: 1.0,
+        headSpacing: 5,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.3) 0px 2px 12px',
+        subSpacing: 5,
+        accentBar: false,
+        accentColor: '#3052FF',
+        badgePill: true
+      },
+      condensed_power: {
+        name: 'Condensed Power',
+        headFont: "'Bebas Neue', sans-serif", headWeight: '400',
+        subFont: "'Barlow', sans-serif", subWeight: '400',
+        badgeFont: "'Barlow', sans-serif", badgeWeight: '700',
+        headScale: 1.45, // big since condensed font is narrower
+        headSpacing: 80,
+        headUppercase: true,
+        headShadow: 'rgba(0,0,0,0.5) 2px 2px 4px',
+        subSpacing: 30,
+        accentBar: true,
+        accentColor: '#FF9000',
+        badgePill: false
+      },
+      elegant_sans: {
+        name: 'Elegant Sans',
+        headFont: "'Plus Jakarta Sans', sans-serif", headWeight: '800',
+        subFont: "'Plus Jakarta Sans', sans-serif", subWeight: '400',
+        badgeFont: "'Plus Jakarta Sans', sans-serif", badgeWeight: '700',
+        headScale: 1.0,
+        headSpacing: -5,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.25) 0px 4px 16px',
+        subSpacing: 10,
+        accentBar: false,
+        accentColor: '#7FB2FF',
+        badgePill: true
+      },
+      tall_stark: {
+        name: 'Tall Stark',
+        headFont: "'Oswald', sans-serif", headWeight: '700',
+        subFont: "'DM Sans', sans-serif", subWeight: '400',
+        badgeFont: "'DM Sans', sans-serif", badgeWeight: '700',
+        headScale: 1.25,
+        headSpacing: 50,
+        headUppercase: true,
+        headShadow: 'rgba(0,0,0,0.6) 1px 2px 4px',
+        subSpacing: 15,
+        accentBar: true,
+        accentColor: '#3052FF',
+        badgePill: false
+      }
+    };
+
+    function pickTextStyle(blueprintStyle) {
+      if (blueprintStyle && TEXT_STYLES[blueprintStyle]) return TEXT_STYLES[blueprintStyle];
+      // Random pick for variety
+      var keys = Object.keys(TEXT_STYLES);
+      return TEXT_STYLES[keys[Math.floor(Math.random() * keys.length)]];
+    }
+
     function compositeAd(bgImageUrl, copy, w, h, sizeLabel, blueprint) {
       // Default blueprint if none provided
       var bp = blueprint || {
         text_position: 'middle', overlay_style: 'subtle_gradient',
-        bg_is_dark: true, text_color: '#FFFFFF', cta_style: 'bottom_bar'
+        bg_is_dark: true, text_color: '#FFFFFF'
       };
+
+      var ts = pickTextStyle(bp.text_style);
 
       return new Promise(function(resolve, reject) {
         var isVertical = sizeLabel === 'story_reel';
         var isSquare = sizeLabel === 'square' || sizeLabel === 'carousel_square';
         var pad = w * 0.06;
         var textColor = bp.text_color || '#FFFFFF';
-        var subColor = bp.bg_is_dark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.6)';
+        var subColor = bp.bg_is_dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
 
         // Create offscreen canvas
         var offEl = document.createElement('canvas');
@@ -2049,37 +2148,33 @@
 
           // --- OVERLAY (driven by blueprint) ---
           if (bp.overlay_style === 'subtle_gradient') {
-            // Gradient where text will be
             var gradFrom = bp.text_position === 'top' ? 0 : (bp.text_position === 'bottom' ? h * 0.4 : h * 0.3);
             var gradTo = bp.text_position === 'top' ? h * 0.6 : h;
             var gradH = gradTo - gradFrom;
-            var steps = 10;
+            var steps = 12;
             for (var g = 0; g < steps; g++) {
               var t = g / steps;
-              var op = bp.text_position === 'top' ? (1 - t) * 0.6 : t * 0.6;
+              var op = bp.text_position === 'top' ? (1 - t) * 0.55 : t * 0.55;
               offCanvas.add(new fabric.Rect({
                 left: 0, top: gradFrom + g * (gradH / steps),
                 width: w, height: gradH / steps + 1,
-                fill: 'rgba(10,20,40,' + op.toFixed(3) + ')', selectable: false
+                fill: 'rgba(10,18,36,' + op.toFixed(3) + ')', selectable: false
               }));
             }
           }
-          // overlay_style === 'none' → no overlay at all (text directly on bg)
 
-          // --- TEXT (position driven by blueprint) ---
+          // --- TEXT AREA SETUP ---
           var textW = w - pad * 2;
           var cursor;
 
           if (bp.text_position === 'top') {
-            cursor = pad;
+            cursor = pad * 1.2;
           } else if (bp.text_position === 'bottom') {
-            cursor = isVertical ? h * 0.5 : (isSquare ? h * 0.5 : h * 0.4);
+            cursor = isVertical ? h * 0.52 : (isSquare ? h * 0.48 : h * 0.42);
           } else {
-            // middle
-            cursor = isVertical ? h * 0.35 : (isSquare ? h * 0.35 : h * 0.28);
+            cursor = isVertical ? h * 0.35 : (isSquare ? h * 0.33 : h * 0.26);
           }
 
-          // Text uses left side or full width based on where visuals are
           var textLeft = pad;
           if (bp.open_space_for_text === 'top-left' || bp.open_space_for_text === 'left') {
             textW = w * 0.55;
@@ -2088,42 +2183,126 @@
             textW = w * 0.55;
           }
 
-          // Badge
+          // --- BADGE ---
           if (copy.badge) {
-            var badgeFs = Math.max(Math.round(w * 0.02), 12);
-            offCanvas.add(new fabric.Text(copy.badge.toUpperCase(), {
-              left: textLeft, top: cursor,
-              fontSize: badgeFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-              fill: '#FF9000', selectable: false
-            }));
-            cursor += badgeFs + 8;
+            var badgeFs = Math.max(Math.round(w * 0.019), 11);
+            var badgeText = copy.badge.toUpperCase();
+
+            if (ts.badgePill) {
+              // Pill-shaped badge with background
+              var badgeCharW = badgeFs * 0.6;
+              var pillW = badgeText.length * badgeCharW + badgeFs * 1.6;
+              var pillH = badgeFs + 10;
+              offCanvas.add(new fabric.Rect({
+                left: textLeft, top: cursor,
+                width: pillW, height: pillH,
+                fill: ts.accentColor, rx: pillH / 2, ry: pillH / 2,
+                selectable: false, opacity: 0.95
+              }));
+              offCanvas.add(new fabric.Text(badgeText, {
+                left: textLeft + badgeFs * 0.8, top: cursor + 5,
+                fontSize: badgeFs, fontWeight: ts.badgeWeight,
+                fontFamily: ts.badgeFont,
+                fill: '#FFFFFF', charSpacing: 60, selectable: false
+              }));
+              cursor += pillH + 14;
+            } else {
+              // Minimal badge — text with thin accent underline
+              offCanvas.add(new fabric.Text(badgeText, {
+                left: textLeft, top: cursor,
+                fontSize: badgeFs, fontWeight: ts.badgeWeight,
+                fontFamily: ts.badgeFont,
+                fill: ts.accentColor, charSpacing: 80, selectable: false
+              }));
+              cursor += badgeFs + 4;
+              // Accent line under badge
+              offCanvas.add(new fabric.Rect({
+                left: textLeft, top: cursor,
+                width: Math.min(badgeText.length * badgeFs * 0.6, textW * 0.3),
+                height: 2, fill: ts.accentColor, selectable: false
+              }));
+              cursor += 14;
+            }
           }
 
-          // Headline
-          var headFs = isVertical ? Math.round(w * 0.06) : (isSquare ? Math.round(w * 0.055) : Math.round(w * 0.044));
-          headFs = Math.max(headFs, 20);
+          // --- ACCENT BAR (decorative element before headline) ---
+          if (ts.accentBar && !copy.badge) {
+            var barW = isVertical ? w * 0.12 : w * 0.08;
+            var barH = Math.max(3, Math.round(w * 0.004));
+            offCanvas.add(new fabric.Rect({
+              left: textLeft, top: cursor,
+              width: barW, height: barH,
+              fill: ts.accentColor, selectable: false
+            }));
+            cursor += barH + 14;
+          }
+
+          // --- HEADLINE ---
+          var baseHeadFs = isVertical ? Math.round(w * 0.062) : (isSquare ? Math.round(w * 0.054) : Math.round(w * 0.044));
+          var headFs = Math.max(Math.round(baseHeadFs * ts.headScale), 22);
           var headlineText = copy.headline || '';
+          if (ts.headUppercase) headlineText = headlineText.toUpperCase();
+
+          // Parse shadow string for Fabric
+          var headShadowObj = null;
+          if (ts.headShadow) {
+            var sParts = ts.headShadow.match(/(rgba?\([^)]+\))\s+([-\d.]+)px\s+([-\d.]+)px\s+([-\d.]+)px/);
+            if (sParts) {
+              headShadowObj = new fabric.Shadow({
+                color: sParts[1],
+                offsetX: parseFloat(sParts[2]),
+                offsetY: parseFloat(sParts[3]),
+                blur: parseFloat(sParts[4])
+              });
+            }
+          }
+
           offCanvas.add(new fabric.Textbox(headlineText, {
             left: textLeft, top: cursor, width: textW,
-            fontSize: headFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-            fill: textColor, lineHeight: 1.15, selectable: false
+            fontSize: headFs, fontWeight: ts.headWeight,
+            fontFamily: ts.headFont,
+            fill: textColor, lineHeight: 1.12,
+            charSpacing: ts.headSpacing,
+            shadow: headShadowObj,
+            selectable: false
           }));
-          var charsPerLine = Math.floor(textW / (headFs * 0.58));
-          var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
-          cursor += headLines * headFs * 1.18 + 8;
 
-          // Subheadline
+          // Estimate headline height
+          var charW = headFs * 0.58;
+          if (ts.headUppercase && ts.headFont.indexOf('Bebas') > -1) charW = headFs * 0.38;
+          else if (ts.headUppercase) charW = headFs * 0.62;
+          var charsPerLine = Math.max(1, Math.floor(textW / charW));
+          var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
+          cursor += headLines * headFs * 1.14 + 10;
+
+          // --- ACCENT BAR (after headline, if style uses it and badge was shown) ---
+          if (ts.accentBar && copy.badge) {
+            var barW2 = isVertical ? w * 0.1 : w * 0.07;
+            var barH2 = Math.max(3, Math.round(w * 0.004));
+            offCanvas.add(new fabric.Rect({
+              left: textLeft, top: cursor,
+              width: barW2, height: barH2,
+              fill: ts.accentColor, selectable: false
+            }));
+            cursor += barH2 + 12;
+          }
+
+          // --- SUBHEADLINE ---
           if (copy.subheadline) {
-            var subFs = isVertical ? Math.round(w * 0.03) : (isSquare ? Math.round(w * 0.024) : Math.round(w * 0.02));
+            var subFs = isVertical ? Math.round(w * 0.028) : (isSquare ? Math.round(w * 0.023) : Math.round(w * 0.019));
             subFs = Math.max(subFs, 12);
             offCanvas.add(new fabric.Textbox(copy.subheadline, {
               left: textLeft, top: cursor, width: textW,
-              fontSize: subFs, fontFamily: 'Arial, sans-serif',
-              fill: subColor, lineHeight: 1.3, selectable: false
+              fontSize: subFs, fontWeight: ts.subWeight,
+              fontFamily: ts.subFont,
+              fill: subColor, lineHeight: 1.35,
+              charSpacing: ts.subSpacing,
+              shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', offsetX: 0, offsetY: 1, blur: 4 }),
+              selectable: false
             }));
           }
 
-          // Brand logo (bottom-right corner, size driven by blueprint)
+          // --- BRAND LOGO (bottom-right corner) ---
           var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
           fabric.Image.fromURL(logoUrl, function(logoImg) {
             if (logoImg && logoImg.width > 0) {
@@ -2135,7 +2314,9 @@
               logoImg.set({
                 left: w - (logoImg.width * logoScale) - pad,
                 top: h - maxLogoH - pad,
-                scaleX: logoScale, scaleY: logoScale, selectable: false
+                scaleX: logoScale, scaleY: logoScale,
+                shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.25)', offsetX: 0, offsetY: 1, blur: 4 }),
+                selectable: false
               });
               offCanvas.add(logoImg);
             }

@@ -255,6 +255,7 @@ function parseDesignBlueprint(rawText) {
     open_space_for_text: 'top',
     cta_style: 'bottom_bar',
     logo_size: 'small',
+    text_style: 'clean_modern',
     layout_notes: ''
   };
 
@@ -277,6 +278,7 @@ function parseDesignBlueprint(rawText) {
       open_space_for_text: parsed.open_space_for_text || defaults.open_space_for_text,
       cta_style: parsed.cta_style || defaults.cta_style,
       logo_size: parsed.logo_size || defaults.logo_size,
+      text_style: parsed.text_style || defaults.text_style,
       layout_notes: parsed.layout_notes || defaults.layout_notes
     };
   } catch (e) {
@@ -331,8 +333,17 @@ Return ONLY valid JSON:
   "visual_elements_position": "center" | "right" | "left" | "bottom" | "spread",
   "open_space_for_text": "top" | "top-left" | "top-right" | "left" | "bottom",
   "logo_size": "small" | "medium" | "large",
+  "text_style": "bold_impact" | "editorial" | "clean_modern" | "condensed_power" | "elegant_sans" | "tall_stark",
   "layout_notes": "Brief description of how text, visuals, and CTA are arranged"
 }
+
+TEXT STYLE GUIDE (pick the one that best matches the reference mood):
+- "bold_impact": Heavy Montserrat Black, all caps, orange accent bar — for aggressive/urgent ads
+- "editorial": Playfair Display serif headlines, elegant & sophisticated — for premium/trust ads
+- "clean_modern": Outfit font, rounded & friendly, pill badges — for approachable/modern ads
+- "condensed_power": Bebas Neue tall condensed, wide letter spacing — for bold/punchy statements
+- "elegant_sans": Plus Jakarta Sans, polished & refined — for professional/corporate ads
+- "tall_stark": Oswald semi-condensed, strong & direct — for clear/straightforward messaging
 
 IMPORTANT:
 - The image_prompt should be INSPIRED by the references, NOT a 1:1 copy — create a fresh variation
