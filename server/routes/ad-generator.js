@@ -708,7 +708,7 @@ Do NOT include a phone number. Do NOT mention credit cards or personal debt.`
     }
 
     // Simple mode (legacy)
-    const message = await client.messages.create({
+    const msg2 = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 200,
       messages: [{
@@ -721,14 +721,14 @@ Respond with ONLY valid JSON: {"headline":"...","subheadline":"..."}`
       }]
     });
 
-    const text = message.content[0].text.trim();
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return res.json(fallback);
+    const text2 = msg2.content[0].text.trim();
+    const match2 = text2.match(/\{[\s\S]*\}/);
+    if (!match2) return res.json(fallback);
 
-    const parsed = JSON.parse(match[0]);
+    const parsed2 = JSON.parse(match2[0]);
     res.json({
-      headline: (parsed.headline || fallback.headline).slice(0, 80),
-      cta: (parsed.cta || fallback.cta).slice(0, 40)
+      headline: (parsed2.headline || fallback.headline).slice(0, 80),
+      subheadline: (parsed2.subheadline || fallback.subheadline).slice(0, 100)
     });
   } catch (err) {
     console.error('Ad copy generation error:', err.message);
