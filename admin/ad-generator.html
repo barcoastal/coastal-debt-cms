@@ -1632,8 +1632,9 @@
         const res = await fetch('/api/ad-generator/generate-ad-copy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: promptText || 'Business debt settlement ad', size_label: selectedSize, full_design: true })
+          body: JSON.stringify({ prompt: promptText || 'MCA debt settlement ad', size_label: selectedSize, full_design: true })
         });
+        if (!res.ok) { const errText = await res.text(); throw new Error('Ad copy failed: ' + errText.substring(0, 100)); }
         const copy = await res.json();
 
         const isVertical = selectedSize === 'story_reel';
@@ -1968,7 +1969,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: prompt + ' (variation ' + (variation + 1) + ', be creative and different from other variations)', size_label: sizeLabel, full_design: true })
       });
-      var copy = await copyRes.json();
+      if (!copyRes.ok) {
+        console.error('Ad copy response not OK:', copyRes.status);
+        var copy = { badge: 'MCA Debt Relief', headline: 'Settle Your MCA Debt', subheadline: 'Reduce your merchant cash advance debt by up to 80%' };
+      } else {
+        var copy = await copyRes.json();
+      }
 
       // Step 3: Composite using offscreen fabric.js canvas
       cardEl.querySelector('.bulk-card-loading div:last-child').textContent = 'Designing layout...';
