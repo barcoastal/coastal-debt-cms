@@ -668,9 +668,12 @@ router.delete('/test-leads', authenticateToken, (req, res) => {
   const testLeads = db.prepare(`
     SELECT id FROM leads
     WHERE (first_name = 'Jane' AND last_name = 'Doe')
-       OR company LIKE '%Test Company%'
+       OR (full_name LIKE '%Jane Doe%')
+       OR company_name LIKE '%Test Company%'
        OR debt_amount LIKE '%test lead%'
        OR debt_amount LIKE '%dummy data%'
+       OR hidden_fields LIKE '%dummy data%'
+       OR hidden_fields LIKE '%test lead%'
   `).all();
 
   if (!testLeads.length) return res.json({ message: 'No test leads found', deleted: 0 });
