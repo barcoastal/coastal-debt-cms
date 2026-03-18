@@ -325,12 +325,11 @@ Return ONLY valid JSON:
   "image_prompt": "A creative, FRESH scene inspired by the reference style but NOT a copy. Same mood, color palette, and energy — but a different subject, angle, or composition. Describe the visual scene specifically: objects, people, props, colors, lighting, composition. Be concrete like directing a photographer. MUST end with: no text, no words, no letters, no logos, no watermarks",
   "text_position": "top" | "middle" | "bottom",
   "text_color": "#FFFFFF" or another color that contrasts with the background,
-  "overlay_style": "none" | "subtle_gradient" | "dark_band",
+  "overlay_style": "none" | "subtle_gradient",
   "bg_is_dark": true | false,
   "bg_dominant_color": "#hex color of the main background",
   "visual_elements_position": "center" | "right" | "left" | "bottom" | "spread",
   "open_space_for_text": "top" | "top-left" | "top-right" | "left" | "bottom",
-  "cta_style": "bottom_bar" | "inline_button" | "none",
   "logo_size": "small" | "medium" | "large",
   "layout_notes": "Brief description of how text, visuals, and CTA are arranged"
 }

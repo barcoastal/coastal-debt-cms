@@ -2063,45 +2063,8 @@
                 fill: 'rgba(10,20,40,' + op.toFixed(3) + ')', selectable: false
               }));
             }
-          } else if (bp.overlay_style === 'dark_band') {
-            var bandTop = bp.text_position === 'top' ? 0 : h * 0.55;
-            var bandH = bp.text_position === 'top' ? h * 0.45 : h * 0.45;
-            offCanvas.add(new fabric.Rect({
-              left: 0, top: bandTop, width: w, height: bandH,
-              fill: 'rgba(15,28,46,0.8)', selectable: false
-            }));
           }
           // overlay_style === 'none' → no overlay at all (text directly on bg)
-
-          // --- CTA ROW (always at bottom) ---
-          var ctaFs = isVertical ? Math.round(w * 0.038) : (isSquare ? Math.round(w * 0.03) : Math.round(w * 0.024));
-          ctaFs = Math.max(ctaFs, 15);
-          var ctaPadH = Math.round(w * 0.035);
-          var ctaPadV = Math.round(ctaFs * 0.5);
-          var ctaBtnH = ctaFs + ctaPadV * 2;
-          var ctaRowY = h - pad - ctaBtnH;
-          var ctaTextW = (copy.cta || '').length * ctaFs * 0.56;
-          var ctaBtnW = ctaTextW + ctaPadH * 2;
-
-          // Subtle dark strip behind CTA for readability (only if bg is not dark enough)
-          if (bp.overlay_style === 'none' && !bp.bg_is_dark) {
-            offCanvas.add(new fabric.Rect({
-              left: 0, top: ctaRowY - 10, width: w, height: ctaBtnH + 20,
-              fill: 'rgba(0,0,0,0.3)', selectable: false
-            }));
-          }
-
-          offCanvas.add(new fabric.Rect({
-            left: pad, top: ctaRowY, width: ctaBtnW, height: ctaBtnH,
-            fill: '#3052FF', rx: 6, ry: 6, selectable: false
-          }));
-          offCanvas.add(new fabric.Text(copy.cta || '', {
-            left: pad + ctaPadH, top: ctaRowY + ctaPadV,
-            fontSize: ctaFs, fontWeight: 'bold', fontFamily: 'Arial, sans-serif',
-            fill: '#FFFFFF', selectable: false
-          }));
-
-          // Phone number removed from ad design
 
           // --- TEXT (position driven by blueprint) ---
           var textW = w - pad * 2;
@@ -2160,7 +2123,7 @@
             }));
           }
 
-          // Brand logo (bottom-right on CTA row, size driven by blueprint)
+          // Brand logo (bottom-right corner, size driven by blueprint)
           var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
           fabric.Image.fromURL(logoUrl, function(logoImg) {
             if (logoImg && logoImg.width > 0) {
@@ -2171,7 +2134,7 @@
               var logoScale = maxLogoH / logoImg.height;
               logoImg.set({
                 left: w - (logoImg.width * logoScale) - pad,
-                top: ctaRowY + (ctaBtnH - maxLogoH) / 2,
+                top: h - maxLogoH - pad,
                 scaleX: logoScale, scaleY: logoScale, selectable: false
               });
               offCanvas.add(logoImg);
