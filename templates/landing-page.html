@@ -966,8 +966,8 @@
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
-    // When skipPreQual: move trust bar into hero-content (left side, after bullet points)
-    if (skipPreQual) {
+    // When skipPreQual on desktop: move trust bar into hero-content (left side, after bullet points)
+    if (skipPreQual && window.innerWidth > 768) {
       var trustBar = document.querySelector('.trust-bar');
       var heroContent = document.querySelector('.hero-content');
       if (trustBar && heroContent) {
