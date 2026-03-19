@@ -418,6 +418,7 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{formSubmitText}}/g, formSubmitText);
   html = html.replace(/{{formSuccessMsg}}/g, formSuccessMsg);
   html = html.replace(/{{skipPreQual}}/g, String(skipPreQual));
+  html = html.replace(/{{mobileCta}}/g, content.mobileCta || 'call');
 
   // Remove phone elements if no phone number is set
   if (!mergedContent.phone) {

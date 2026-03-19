@@ -352,6 +352,13 @@
               <label>Display Phone Number</label>
               <input type="text" id="editPhone" placeholder="(888) 555-0123">
             </div>
+            <div class="form-group">
+              <label>Mobile Sticky Button Action</label>
+              <select id="editMobileCta">
+                <option value="call">Call Now (phone call)</option>
+                <option value="form">Open Form (scroll to form)</option>
+              </select>
+            </div>
             <div class="form-group" style="display: flex; align-items: center; gap: 12px;">
               <label class="toggle">
                 <input type="checkbox" id="editActive">
@@ -764,6 +771,7 @@
       document.getElementById('editSource').value = page.traffic_source || '';
       document.getElementById('editFormId').value = page.form_id || '';
       document.getElementById('editPhone').value = content.phone || '';
+      document.getElementById('editMobileCta').value = content.mobileCta || 'call';
       document.getElementById('editActive').checked = page.is_active;
 
       // SEO section
@@ -863,6 +871,7 @@
         pageTitle: document.getElementById('editPageTitle').value,
         metaDescription: document.getElementById('editMetaDescription').value,
         phone: document.getElementById('editPhone').value,
+        mobileCta: document.getElementById('editMobileCta').value,
         badge: document.getElementById('editBadge').value,
         headline: document.getElementById('editHeadline').value,
         headlineLine2: document.getElementById('editHeadlineLine2').value,

@@ -591,8 +591,8 @@
   </footer>
 
   <!-- Mobile Sticky CTA -->
-  <div class="mobile-cta phone-element">
-    <a href="tel:{{phone}}">Call Now: {{phone}}</a>
+  <div class="mobile-cta" id="mobileStickyCtaBar">
+    <a id="mobileStickyCtaLink" href="tel:{{phone}}">Call Now: {{phone}}</a>
   </div>
 
   <!-- Form JS -->
@@ -602,6 +602,25 @@
       var phone = '{{phone}}';
       if (!phone || phone === '{{' + 'phone}}') {
         document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // Mobile sticky CTA: switch between call and form scroll
+    (function() {
+      var mobileCta = '{{mobileCta}}';
+      var ctaLink = document.getElementById('mobileStickyCtaLink');
+      var ctaBar = document.getElementById('mobileStickyCtaBar');
+      if (!ctaLink || !ctaBar) return;
+
+      if (mobileCta === 'form') {
+        ctaLink.href = '#';
+        ctaLink.textContent = 'Get My Free Consultation';
+        ctaBar.classList.remove('phone-element');
+        ctaLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          var formCard = document.querySelector('.form-card');
+          if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
       }
     })();
 
