@@ -978,15 +978,19 @@
         var trustBlock = document.createElement('div');
         trustBlock.style.cssText = 'margin-top:36px;display:flex;flex-direction:column;align-items:flex-start;';
 
-        // Title
+        // One blue container around all logos (title inside)
+        var logoBox = document.createElement('div');
+        logoBox.style.cssText = 'border:2px solid #3052FF;border-radius:16px;background:#fff;padding:18px 32px 24px;display:flex;flex-direction:column;align-items:center;gap:0;';
+
+        // Title inside the box
         var trustTitle = document.createElement('div');
         trustTitle.textContent = 'As Seen In & Trusted By';
-        trustTitle.style.cssText = 'font-size:12px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;align-self:center;';
-        trustBlock.appendChild(trustTitle);
+        trustTitle.style.cssText = 'font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;';
+        logoBox.appendChild(trustTitle);
 
-        // One blue container around all logos
-        var logoBox = document.createElement('div');
-        logoBox.style.cssText = 'border:2px solid #3052FF;border-radius:16px;background:#fff;padding:24px 32px;display:flex;align-items:center;gap:28px;';
+        // Logo row
+        var logoRow = document.createElement('div');
+        logoRow.style.cssText = 'display:flex;align-items:center;gap:28px;';
 
         // Left: 2x2 grid of 4 logos
         var grid2x2 = document.createElement('div');
@@ -999,18 +1003,20 @@
           img.style.cssText = 'max-width:120px;max-height:55px;object-fit:contain;';
           grid2x2.appendChild(img);
         });
-        logoBox.appendChild(grid2x2);
+        logoRow.appendChild(grid2x2);
 
         // Vertical divider
         var divider = document.createElement('div');
         divider.style.cssText = 'width:1.5px;height:90px;background:#d0d8e8;';
-        logoBox.appendChild(divider);
+        logoRow.appendChild(divider);
 
         // Right: Business Insider
         var biImg = document.createElement('img');
         biImg.src = '/lp/assets/trust-logos/business-insider.svg';
         biImg.style.cssText = 'max-width:120px;max-height:70px;object-fit:contain;';
-        logoBox.appendChild(biImg);
+        logoRow.appendChild(biImg);
+
+        logoBox.appendChild(logoRow);
 
         trustBlock.appendChild(logoBox);
         heroContent.appendChild(trustBlock);
