@@ -966,23 +966,55 @@
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
-    // When skipPreQual on desktop: move trust bar into hero-content (left side, after bullet points)
+    // When skipPreQual on desktop: build custom trust block in hero-content
     if (skipPreQual && window.innerWidth > 768) {
       var trustBar = document.querySelector('.trust-bar');
       var heroContent = document.querySelector('.hero-content');
       if (trustBar && heroContent) {
-        trustBar.style.background = 'none';
-        trustBar.style.padding = '24px 0 0';
-        trustBar.style.border = 'none';
-        trustBar.style.boxShadow = 'none';
-        var trustContainer = trustBar.querySelector('.container');
-        if (trustContainer) trustContainer.style.padding = '0';
-        var trustLabel = trustBar.querySelector('.trust-label');
-        if (trustLabel) { trustLabel.style.textAlign = 'left'; trustLabel.style.fontSize = '12px'; trustLabel.style.marginBottom = '10px'; trustLabel.style.color = 'var(--gray-400)'; }
-        var trustLogosEl = trustBar.querySelector('.trust-logos');
-        if (trustLogosEl) { trustLogosEl.style.justifyContent = 'flex-start'; trustLogosEl.style.gap = '16px'; }
-        trustBar.querySelectorAll('.trust-logos img').forEach(function(img) { img.style.maxHeight = '50px'; });
-        heroContent.appendChild(trustBar);
+        // Hide original trust bar
+        trustBar.style.display = 'none';
+
+        // Build custom trust layout
+        var trustBlock = document.createElement('div');
+        trustBlock.style.cssText = 'margin-top:28px;text-align:center;';
+
+        // Title
+        var trustTitle = document.createElement('div');
+        trustTitle.textContent = 'As Seen In & Trusted By';
+        trustTitle.style.cssText = 'font-size:13px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;';
+        trustBlock.appendChild(trustTitle);
+
+        // Logo grid: 2x2 on left + Business Insider on right
+        var logoGrid = document.createElement('div');
+        logoGrid.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;';
+
+        // Left: 2x2 grid of 4 logos in blue bordered squares
+        var grid2x2 = document.createElement('div');
+        grid2x2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+
+        var fourLogos = ['bbb.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
+        fourLogos.forEach(function(file) {
+          var cell = document.createElement('div');
+          cell.style.cssText = 'width:90px;height:60px;display:flex;align-items:center;justify-content:center;border:2px solid #3052FF;border-radius:10px;background:#fff;padding:6px;';
+          var img = document.createElement('img');
+          img.src = '/lp/assets/trust-logos/' + file;
+          img.style.cssText = 'max-width:70px;max-height:40px;object-fit:contain;';
+          cell.appendChild(img);
+          grid2x2.appendChild(cell);
+        });
+        logoGrid.appendChild(grid2x2);
+
+        // Right: Business Insider in tall blue bordered square
+        var biCell = document.createElement('div');
+        biCell.style.cssText = 'width:90px;height:130px;display:flex;align-items:center;justify-content:center;border:2px solid #3052FF;border-radius:10px;background:#fff;padding:10px;';
+        var biImg = document.createElement('img');
+        biImg.src = '/lp/assets/trust-logos/business-insider.svg';
+        biImg.style.cssText = 'max-width:70px;max-height:80px;object-fit:contain;';
+        biCell.appendChild(biImg);
+        logoGrid.appendChild(biCell);
+
+        trustBlock.appendChild(logoGrid);
+        heroContent.appendChild(trustBlock);
       }
     }
 
