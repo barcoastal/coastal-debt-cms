@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  {{HEAD_SCRIPTS}}
+  <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --navy:#1a2e4a;
+      --navy-dark:#0f1c2e;
+      --blue:{{colors.primary}};
+      --blue-light:{{colors.primaryLight}};
+      --bbb-blue:#005A8C;
+      --bbb-gold:#C6922A;
+      --white:#ffffff;
+      --gray-50:#f9fafb;
+      --gray-100:#f3f4f6;
+      --gray-200:#e5e7eb;
+      --gray-300:#d1d5db;
+      --gray-600:#4b5563;
+      --gray-800:#1f2937;
+      --red-600:#dc2626;
+      --green-600:#16a34a;
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --headline-hl:{{colors.headlineHighlight}};
+      --serif:'Libre Baskerville', Georgia, 'Times New Roman', serif;
+      --sans:'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body{font-family:var(--sans);color:var(--gray-800);line-height:1.6;background:var(--white)}
+
+    /* Header */
+    .art-header{background:var(--white);padding:16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.06);border-bottom:1px solid var(--gray-200)}
+    .art-header-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
+    .art-header .logo img{height:32px;width:auto}
+    .art-header-right{display:flex;align-items:center;gap:20px}
+    .art-header .bbb-header-badge{height:40px;width:auto}
+    .art-header-phone{display:flex;align-items:center;gap:6px;color:var(--blue);font-weight:600;text-decoration:none;font-size:0.95rem;transition:color 0.2s}
+    .art-header-phone:hover{color:var(--navy)}
+    .art-header-phone svg{width:16px;height:16px}
+
+    /* Article meta bar */
+    .article-meta-bar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:12px 0}
+    .article-meta-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:24px;font-size:0.85rem;color:var(--gray-600)}
+    .reading-time{display:flex;align-items:center;gap:6px}
+    .reading-time svg{width:14px;height:14px;opacity:0.6}
+    .article-category{background:var(--bbb-blue);color:var(--white);padding:3px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+
+    /* Hero / Article Header */
+    .article-hero{padding:60px 0 0;background:var(--white)}
+    .article-hero-inner{max-width:1200px;margin:0 auto;padding:0 24px}
+    .bbb-hero-badge{display:flex;align-items:center;gap:16px;margin-bottom:32px;padding:20px 28px;background:linear-gradient(135deg, #f0f4ff 0%, #e8f4f8 100%);border:2px solid var(--bbb-blue);border-radius:16px}
+    .bbb-hero-badge img{height:72px;width:auto;flex-shrink:0}
+    .bbb-hero-badge-text{display:flex;flex-direction:column;gap:4px}
+    .bbb-hero-badge-text .bbb-label{font-size:0.8rem;font-weight:600;color:var(--bbb-blue);text-transform:uppercase;letter-spacing:1px}
+    .bbb-hero-badge-text .bbb-name{font-size:1.1rem;font-weight:700;color:var(--navy);font-family:var(--sans)}
+    .bbb-hero-badge-text .bbb-rating{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-600)}
+    .bbb-rating-badge{background:var(--bbb-gold);color:var(--white);font-weight:700;padding:2px 10px;border-radius:4px;font-size:0.8rem}
+    .article-hero h1{font-family:var(--serif);font-size:2.8rem;font-weight:700;line-height:1.25;color:var(--navy);margin-bottom:20px;max-width:720px}
+    .article-hero .subheadline{font-family:var(--serif);font-size:1.25rem;color:var(--gray-600);line-height:1.6;font-style:italic;max-width:680px;margin-bottom:0}
+
+    /* Article Layout */
+    .article-layout{max-width:1200px;margin:0 auto;padding:48px 24px 80px;display:grid;grid-template-columns:1fr 380px;gap:60px;align-items:start}
+
+    /* Article Content */
+    .article-content{max-width:720px}
+    .article-content p{font-family:var(--serif);font-size:18px;line-height:1.8;color:var(--gray-800);margin-bottom:28px}
+    .article-content h2{font-family:var(--serif);font-size:1.75rem;font-weight:700;color:var(--navy);margin:48px 0 24px;line-height:1.3}
+    .article-content h3{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--navy);margin:32px 0 16px;line-height:1.4}
+
+    /* Article Section Animations */
+    .art-section{opacity:0;transform:translateY(30px);transition:opacity 0.6s ease, transform 0.6s ease}
+    .art-section.visible{opacity:1;transform:translateY(0)}
+
+    /* Pull quote / callout */
+    .pull-quote{border-left:4px solid var(--bbb-blue);padding:24px 32px;margin:36px 0;background:var(--gray-50);border-radius:0 12px 12px 0}
+    .pull-quote p{font-family:var(--serif);font-size:1.15rem;font-style:italic;color:var(--navy);margin-bottom:0;line-height:1.7}
+
+    /* Stats callout */
+    .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:36px 0}
+    .stat-card{background:linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);border:1px solid rgba(48,82,255,0.15);border-radius:16px;padding:28px 24px;text-align:center}
+    .stat-card .stat-value{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--blue);margin-bottom:6px}
+    .stat-card .stat-label{font-family:var(--sans);font-size:0.85rem;color:var(--gray-600);font-weight:500}
+
+    /* Trust items (Why BBB) */
+    .trust-items{display:flex;flex-direction:column;gap:28px;margin:32px 0 40px}
+    .trust-item{display:flex;gap:20px;align-items:flex-start}
+    .trust-item-icon{width:48px;height:48px;background:var(--bbb-blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .trust-item-icon svg{width:24px;height:24px;color:var(--white)}
+    .trust-item-content h4{font-family:var(--sans);font-size:1.05rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+    .trust-item-content p{font-family:var(--serif);font-size:0.95rem;line-height:1.7;color:var(--gray-600);margin-bottom:0}
+
+    /* 3-Step Process (editorial style) */
+    .process-intro{font-family:var(--serif);font-size:1.05rem;line-height:1.8;color:var(--gray-600);margin-bottom:36px;font-style:italic}
+    .process-steps{display:flex;flex-direction:column;gap:0;margin:0 0 40px;position:relative}
+    .process-steps::before{content:'';position:absolute;left:23px;top:24px;bottom:24px;width:2px;background:var(--gray-200)}
+    .process-step{display:flex;gap:24px;align-items:flex-start;padding:24px 0;position:relative}
+    .process-step:first-child{padding-top:0}
+    .process-step:last-child{padding-bottom:0}
+    .step-number{width:48px;height:48px;background:var(--blue);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:1.1rem;font-weight:700;flex-shrink:0;position:relative;z-index:1}
+    .step-body h4{font-family:var(--sans);font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+    .step-body p{font-family:var(--serif);font-size:1rem;line-height:1.7;color:var(--gray-600);margin-bottom:0}
+
+    /* CTA Section in article */
+    .article-cta{background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);border-radius:20px;padding:48px 40px;text-align:center;margin:48px 0 0}
+    .article-cta h2{font-family:var(--serif);font-size:1.8rem;font-weight:700;color:var(--white);margin-bottom:16px}
+    .article-cta p{font-family:var(--serif);font-size:1.05rem;line-height:1.8;color:rgba(255,255,255,0.8);margin-bottom:28px;max-width:580px;margin-left:auto;margin-right:auto}
+    .article-cta .cta-button{display:inline-block;background:var(--cta-btn);color:var(--white);padding:16px 40px;border-radius:50px;font-family:var(--sans);font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;border:none;cursor:pointer}
+    .article-cta .cta-button:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
+
+    /* Sidebar Form */
+    .sidebar-form{position:sticky;top:100px}
+    .form-card{background:linear-gradient(135deg, #1a3a5c 0%, #0f1c2e 100%);border-radius:20px;padding:36px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.2);position:relative;overflow:hidden}
+    .form-card::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,rgba(48,82,255,0.12) 0%,transparent 70%);pointer-events:none}
+    .form-title{font-family:var(--sans);font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px;text-align:center;position:relative}
+    .form-subtitle{font-family:var(--sans);color:rgba(255,255,255,0.65);font-size:0.9rem;text-align:center;margin-bottom:20px;position:relative}
+    .form-group{margin-bottom:12px;position:relative}
+    .form-group label{display:block;font-family:var(--sans);font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:8px;font-size:0.9rem}
+    .form-group input,.form-group select{width:100%;height:48px;padding:0 18px;border:2px solid rgba(255,255,255,0.15);border-radius:500px;font-size:0.95rem;font-family:var(--sans);transition:all 0.2s;background:rgba(255,255,255,0.1);box-shadow:none;outline:none;color:#fff}
+    .phone-wrapper{display:flex;align-items:center;border:2px solid rgba(255,255,255,0.15);border-radius:500px;background:rgba(255,255,255,0.1);height:48px;transition:all 0.2s}
+    .phone-wrapper:focus-within{border-color:var(--blue)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.9rem;color:rgba(255,255,255,0.8);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:44px;border-radius:0 500px 500px 0;background:transparent;color:#fff}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    .phone-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:18px}
+    .form-group input::placeholder{color:rgba(255,255,255,0.4)}
+    .form-group input:focus,.form-group select:focus{border-color:var(--blue);background:rgba(255,255,255,0.15)}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:#fff}
+    .form-group select option{color:#1a1a1a;background:#fff}
+    .radio-group{display:flex;gap:10px}
+    .radio-label{flex:1;height:48px;border:2px solid rgba(255,255,255,0.15);border-radius:500px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.1);font-weight:500;font-size:0.95rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:#fff;font-family:var(--sans)}
+    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.25);color:#fff;font-weight:600}
+    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    .radio-label span{line-height:48px}
+    .submit-btn{width:100%;height:52px;background:#fff;color:var(--navy);border:none;border-radius:50px;font-family:var(--sans);font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px;position:relative;box-shadow:0 4px 15px rgba(0,0,0,0.2)}
+    .submit-btn:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.25)}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .form-disclaimer{font-size:0.75rem;color:rgba(255,255,255,0.45);text-align:center;margin-top:14px;line-height:1.5;font-family:var(--sans)}
+    .consent-group{margin:14px 0 0}
+    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.7rem;color:rgba(255,255,255,0.5);line-height:1.5;font-family:var(--sans)}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+    .consent-label a{color:rgba(255,255,255,0.7);text-decoration:underline}
+    .consent-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
+
+    /* Form Steps */
+    .form-step{display:none}
+    .form-step.active{display:block;animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Sorry Message */
+    .sorry-message{text-align:center;padding:24px 8px;position:relative}
+    .sorry-icon{width:52px;height:52px;margin:0 auto 16px;color:rgba(255,255,255,0.6)}
+    .sorry-icon svg{width:100%;height:100%}
+    .sorry-message h3{font-size:1.3rem;color:#fff;margin-bottom:10px;font-weight:600;font-family:var(--sans)}
+    .sorry-message p{color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:6px;font-family:var(--sans)}
+    .sorry-message .sorry-sub{font-size:0.8rem;color:rgba(255,255,255,0.5)}
+
+    /* Form Success */
+    .form-success{text-align:center;padding:40px 16px;position:relative}
+    .form-success h3{color:#4ade80;font-size:1.4rem;margin-bottom:10px;font-weight:600;font-family:var(--sans)}
+    .form-success p{color:rgba(255,255,255,0.8);font-size:0.95rem;font-family:var(--sans)}
+
+    /* Form BBB trust under form */
+    .form-trust{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);position:relative}
+    .form-trust img{height:28px;opacity:0.7}
+    .form-trust span{font-size:0.75rem;color:rgba(255,255,255,0.45);font-family:var(--sans)}
+
+    /* Trust Logos Footer Bar */
+    .trust-logos-bar{background:var(--gray-50);padding:40px 0;border-top:1px solid var(--gray-200)}
+    .trust-logos-inner{max-width:1200px;margin:0 auto;padding:0 24px}
+    .trust-logos-label{text-align:center;font-size:0.8rem;color:var(--gray-600);margin-bottom:20px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:var(--sans)}
+    .trust-logos-row{display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap}
+    .trust-logos-row img{height:auto;max-height:45px;opacity:0.8;transition:opacity 0.2s;filter:grayscale(0)}
+    .trust-logos-row img:hover{opacity:1}
+
+    /* Footer */
+    .art-footer{background:var(--navy-dark);padding:32px 0;text-align:center}
+    .art-footer p{color:rgba(255,255,255,0.5);font-size:0.8rem;font-family:var(--sans)}
+    .art-footer a{color:rgba(255,255,255,0.7);text-decoration:none}
+    .art-footer a:hover{color:var(--white)}
+
+    /* Mobile Sticky CTA */
+    .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:12px 20px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
+    .mobile-cta a{display:block;text-align:center;background:var(--cta-btn);color:var(--white);font-family:var(--sans);font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
+
+    /* Responsive */
+    @media(max-width:1024px){
+      .article-layout{grid-template-columns:1fr;gap:40px}
+      .sidebar-form{position:relative;top:0;max-width:520px;margin:0 auto}
+      .article-content{max-width:100%}
+      .article-hero h1{font-size:2.2rem}
+    }
+    @media(max-width:768px){
+      .article-hero{padding:40px 0 0}
+      .article-hero h1{font-size:1.7rem}
+      .article-hero .subheadline{font-size:1.05rem}
+      .bbb-hero-badge{flex-direction:column;text-align:center;padding:16px 20px;gap:12px}
+      .bbb-hero-badge img{height:56px}
+      .bbb-hero-badge-text{align-items:center}
+      .stats-row{grid-template-columns:1fr}
+      .article-content p{font-size:16px}
+      .article-content h2{font-size:1.4rem;margin-top:36px}
+      .article-cta{padding:32px 24px}
+      .article-cta h2{font-size:1.4rem}
+      .article-cta p{font-size:0.95rem}
+      .form-card{padding:28px 22px}
+      .mobile-cta{display:block}
+      .art-footer{padding-bottom:80px}
+      .article-meta-inner{flex-wrap:wrap;gap:12px}
+      .pull-quote{padding:18px 20px;margin:24px 0}
+      .process-step{gap:16px}
+      .art-header-phone span{display:none}
+      .radio-group{flex-direction:column;gap:10px}
+    }
+  </style>
+</head>
+<body>
+  {{BODY_SCRIPTS}}
+
+  <!-- Header -->
+  <header class="art-header">
+    <div class="art-header-inner">
+      <span class="logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="32"></span>
+      <div class="art-header-right">
+        <img src="/lp/assets/trust-logos/bbb.png" alt="BBB Accredited" class="bbb-header-badge">
+        <a href="tel:{{phone}}" class="art-header-phone phone-element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          <span>{{phone}}</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Article Meta Bar -->
+  <div class="article-meta-bar">
+    <div class="article-meta-inner">
+      <span class="article-category">BBB Accredited Partner</span>
+      <span class="reading-time">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        5 min read
+      </span>
+      <span>Coastal Debt Resolve &mdash; Business Debt Relief</span>
+    </div>
+  </div>
+
+  <!-- Article Hero -->
+  <section class="article-hero">
+    <div class="article-hero-inner">
+      <!-- BBB Accreditation Badge -->
+      <div class="bbb-hero-badge">
+        <img src="/lp/assets/trust-logos/bbb.png" alt="BBB Accredited Business">
+        <div class="bbb-hero-badge-text">
+          <span class="bbb-label">BBB Accredited Business</span>
+          <span class="bbb-name">Coastal Debt Resolve</span>
+          <span class="bbb-rating"><span class="bbb-rating-badge">A+</span> Rating &bull; Accredited Since 2018</span>
+        </div>
+      </div>
+
+      <h1>A BBB Accredited MCA Debt Relief Alternative to Bankruptcy</h1>
+      <p class="subheadline">Stop the Cycle of Daily MCA Withdrawals. Restore Your Business Cash Flow.</p>
+    </div>
+  </section>
+
+  <!-- Article Layout: Content + Sidebar Form -->
+  <div class="article-layout">
+
+    <!-- Article Content -->
+    <article class="article-content">
+
+      <!-- Intro -->
+      <div class="art-section">
+        <p>You didn't build your business to end up beholden to a lender. If Merchant Cash Advances (MCAs) are draining your daily revenue, you aren't alone and bankruptcy isn't your only exit. As a BBB accredited business, Coastal Debt Resolve provides a path to restructuring and settling high-cost, unsecured business debt like MCAs.</p>
+      </div>
+
+      <!-- Why BBB Trusts Coastal Debt Resolve -->
+      <div class="art-section">
+        <h2>Why the BBB Trusts Coastal Debt Resolve</h2>
+
+        <div class="trust-items">
+          <div class="trust-item">
+            <div class="trust-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="trust-item-content">
+              <h4>Accreditation</h4>
+              <p>We maintain the highest standards of transparency and ethics in the debt resolution industry.</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="trust-item-content">
+              <h4>Doing It Since 2018</h4>
+              <p>Coastal Debt Resolve has been saving the American Dream for small business owners across the country since 2018.</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div class="trust-item-content">
+              <h4>$100M+ Resolved</h4>
+              <p>Proven track record of settling high-balance MCAs for small businesses across the country.</p>
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="trust-item-content">
+              <h4>Testimonials</h4>
+              <p>We host many real-life testimonials on our site so you can see the efficacy of our relief program directly from our clients.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Callout -->
+      <div class="art-section">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value">$100M+</div>
+            <div class="stat-label">In MCA Debt Resolved</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">Since 2018</div>
+            <div class="stat-label">Helping Small Businesses</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pull Quote -->
+      <div class="art-section">
+        <div class="pull-quote">
+          <p>We understand the nuances of cash-heavy industries like construction, trucking, hospitality, retail, auto repair, healthcare, and many more. We know that cash flow is the life blood of these companies.</p>
+        </div>
+      </div>
+
+      <!-- 3-Step Process -->
+      <div class="art-section">
+        <h2>Our 3-Step Cash Flow First Process</h2>
+
+        <div class="process-steps">
+          <div class="process-step">
+            <div class="step-number">1</div>
+            <div class="step-body">
+              <h4>Strategic Analysis</h4>
+              <p>We review your stacked MCA positions and identify the most aggressive lenders.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-number">2</div>
+            <div class="step-body">
+              <h4>Professional Advocacy</h4>
+              <p>Our highly experienced negotiators work directly with funders to stop daily sweeps and reduce total balances.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="step-number">3</div>
+            <div class="step-body">
+              <h4>Final Resolution</h4>
+              <p>We replace high-frequency debt with a manageable, long-term plan that lets you focus on growth, not survival.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Section -->
+      <div class="art-section">
+        <div class="article-cta">
+          <h2>Take Back Control Today!</h2>
+          <p>Every day you wait pushes your business closer to possible insolvency. We are Coastal Debt Resolve because we help resolve MCA debt and save the American Dream for small business owners from coast to coast. Whether you are searching for an MCA debt advisor or a bankruptcy alternative, the time to act is before a default occurs.</p>
+          <button class="cta-button" onclick="var fc=document.querySelector('.form-card'); if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'}); var fi=fc.querySelector('input:not([type=hidden])'); if(fi) setTimeout(function(){fi.focus()},600);}">Get Your Free Consultation</button>
+        </div>
+      </div>
+
+    </article>
+
+    <!-- Sidebar Form -->
+    <aside class="sidebar-form">
+      <div class="form-card">
+        <!-- Step 1: Debt Amount -->
+        <div class="form-step form-step-1 active">
+          <h2 class="form-title">{{formTitle}}</h2>
+          <p class="form-subtitle">{{formSubtitle}}</p>
+          <div class="form-group">
+            <label for="debt_amount">How much business debt do you have?</label>
+            <select id="debt_amount" name="debt_amount">
+              <option value="">Select amount...</option>
+              <option value="under-20000">Under $20,000</option>
+              <option value="20000-50000">$20,000 - $50,000</option>
+              <option value="50000-100000">$50,000 - $100,000</option>
+              <option value="100000-250000">$100,000 - $250,000</option>
+              <option value="250000-500000">$250,000 - $500,000</option>
+              <option value="500000-1000000">$500,000 - $1,000,000</option>
+              <option value="1000000+">$1,000,000+</option>
+            </select>
+          </div>
+          <button type="button" class="submit-btn" id="checkDebtBtn" style="display:none;">Continue</button>
+        </div>
+
+        <!-- Step 2: Sorry - Debt too low -->
+        <div class="form-step form-step-sorry">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 3: MCA Question -->
+        <div class="form-step form-step-mca">
+          <h2 class="form-title">One Quick Question</h2>
+          <p class="form-subtitle">Do you currently have a Merchant Cash Advance (MCA)?</p>
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="Yes">
+                <span>Yes</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="No">
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Sorry - No MCA -->
+        <div class="form-step form-step-sorry-mca">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Rest of Form -->
+        <div class="form-step form-step-2">
+          <h2 class="form-title">Great! You Qualify</h2>
+          <p class="form-subtitle">Complete your details for a free consultation.</p>
+          <form id="leadForm">
+            <input type="hidden" id="debt_amount_hidden" name="debt_amount">
+            <input type="hidden" id="has_mca_hidden" name="has_mca" value="">
+            <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+            <input type="hidden" id="gclid" name="gclid" value="">
+            <input type="hidden" id="msclkid" name="msclkid" value="">
+            <input type="hidden" id="fbclid" name="fbclid" value="">
+            <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+            <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+            <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+            <input type="hidden" id="keyword" name="keyword" value="">
+            <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+            <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+            <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+            <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+            <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+            <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+            <input type="hidden" id="fb_placement" name="fb_placement" value="">
+            <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+            <input type="hidden" id="page_url" name="page_url" value="">
+            <input type="hidden" id="referrer_url" name="referrer_url" value="">
+            {{HIDDEN_FIELDS}}
+            <div id="dynamicFormFields"></div>
+            <div class="consent-group">
+              <label class="consent-label">
+                <input type="checkbox" id="consentCheckbox" required>
+                <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+              </label>
+              <div class="consent-error" id="consentError">You must agree to continue</div>
+            </div>
+            <button type="submit" class="submit-btn">{{formSubmitText}}</button>
+          </form>
+        </div>
+
+        <!-- Success -->
+        <div class="form-step form-success">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+
+        <!-- BBB trust under form -->
+        <div class="form-trust">
+          <img src="/lp/assets/trust-logos/bbb.png" alt="BBB">
+          <span>BBB Accredited &bull; A+ Rating</span>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Trust Logos Bar -->
+  <section class="trust-logos-bar">
+    <div class="trust-logos-inner">
+      <p class="trust-logos-label">As Seen In & Trusted By</p>
+      <div class="trust-logos-row">
+        <img src="/lp/assets/trust-logos/bbb.png" alt="BBB Accredited Business" height="50">
+        <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI" height="45">
+        <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot" height="45">
+        <img src="/lp/assets/trust-logos/featured-partner.webp" alt="Featured Partner" height="40">
+        <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider" height="28">
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="art-footer">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px">
+      <p>&copy; 2026 Coastal Debt Resolve. All rights reserved. | <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> | <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a></p>
+    </div>
+  </footer>
+
+  <!-- Mobile Sticky CTA -->
+  <div class="mobile-cta" id="mobileStickyCtaBar">
+    <a id="mobileStickyCtaLink" href="tel:{{phone}}">Call Now: {{phone}}</a>
+  </div>
+
+  <!-- Form JS -->
+  <script>
+    // Hide phone elements if no phone number is set
+    (function() {
+      var phone = '{{phone}}';
+      if (!phone || phone === '{{' + 'phone}}') {
+        document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // Mobile sticky CTA: switch between call and form scroll
+    (function() {
+      var mobileCta = '{{mobileCta}}';
+      var ctaLink = document.getElementById('mobileStickyCtaLink');
+      var ctaBar = document.getElementById('mobileStickyCtaBar');
+      if (!ctaLink || !ctaBar) return;
+
+      if (mobileCta === 'form') {
+        ctaLink.href = '#';
+        ctaLink.textContent = 'Get My Free Consultation';
+        ctaBar.classList.remove('phone-element');
+        ctaLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          var formCard = document.querySelector('.form-card');
+          if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+    })();
+
+    // Page configuration from CMS
+    const PAGE_SLUG = '{{SLUG}}';
+    const API_BASE = '/api';
+
+    // Generate unique visitor ID (eli_clickid) - passes ad blockers
+    (function() {
+      var k = '_vid_'; // storage key (non-obvious name)
+      var id = localStorage.getItem(k);
+      if (!id) {
+        // Generate unique ID: timestamp (base36) + random string
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        var s = Math.random().toString(36).substring(2, 6);
+        id = 'eli_' + t + r + s;
+        try { localStorage.setItem(k, id); } catch(e) {}
+      }
+      // Set hidden field
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      // Also store in window for reference
+      window._eliClickId = id;
+
+      // Track visitor with full device info
+      try {
+        var ua = navigator.userAgent;
+        var browser = 'Unknown', browserVer = '', os = 'Unknown', osVer = '', deviceType = 'Desktop';
+
+        // Detect browser
+        if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) { browser = 'Chrome'; browserVer = ua.match(/Chrome\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) { browser = 'Safari'; browserVer = ua.match(/Version\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Firefox') > -1) { browser = 'Firefox'; browserVer = ua.match(/Firefox\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Edg') > -1) { browser = 'Edge'; browserVer = ua.match(/Edg\/(\d+)/)?.[1] || ''; }
+
+        // Detect OS
+        if (ua.indexOf('Windows') > -1) { os = 'Windows'; osVer = ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Mac OS') > -1) { os = 'macOS'; osVer = ua.match(/Mac OS X (\d+[._]\d+)/)?.[1]?.replace('_','.') || ''; }
+        else if (ua.indexOf('Android') > -1) { os = 'Android'; osVer = ua.match(/Android (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) { os = 'iOS'; osVer = ua.match(/OS (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Linux') > -1) { os = 'Linux'; }
+
+        // Detect device type
+        if (/Mobile|Android|iPhone|iPod/.test(ua)) deviceType = 'Mobile';
+        else if (/iPad|Tablet/.test(ua)) deviceType = 'Tablet';
+
+        // Get UTM params
+        var params = new URLSearchParams(window.location.search);
+
+        // Helper to get cookie value - robust parsing
+        function getCookieVal(name) {
+          var cookies = {};
+          document.cookie.split(';').forEach(function(c) {
+            var parts = c.trim().split('=');
+            if (parts.length >= 2) {
+              cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+            }
+          });
+          var val = cookies[name];
+          if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+          return '';
+        }
+
+        // Send tracking data
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eli_clickid: id,
+            gclid: params.get('gclid') || '',
+            msclkid: params.get('msclkid') || '',
+            fbclid: params.get('fbclid') || '',
+            fbc: getCookieVal('_fbc') || '',
+            fbp: getCookieVal('_fbp') || '',
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
+            rdt_cid: params.get('rdt_cid') || '',
+            user_agent: ua,
+            browser: browser,
+            browser_version: browserVer,
+            os: os,
+            os_version: osVer,
+            device_type: deviceType,
+            screen_width: screen.width,
+            screen_height: screen.height,
+            language: navigator.language || '',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            referrer_url: document.referrer || '',
+            landing_page: window.location.pathname,
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
+          })
+        }).catch(function(){});
+
+        // Retry visitor tracking with rt_clickid after RedTrack script loads
+        setTimeout(function() {
+          var rtId = '';
+          try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
+          if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
+          // Also retry fbc/fbp after Facebook Pixel has had time to set cookies
+          var fbcRetry = getCookieVal('_fbc') || '';
+          var fbpRetry = getCookieVal('_fbp') || '';
+          if (rtId || fbcRetry || fbpRetry) {
+            var retryData = { eli_clickid: id };
+            if (rtId) retryData.rt_clickid = rtId;
+            if (fbcRetry) retryData.fbc = fbcRetry;
+            if (fbpRetry) retryData.fbp = fbpRetry;
+            fetch('/api/visitors/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryData)
+            }).catch(function(){});
+          }
+        }, 3000);
+      } catch(e) {}
+    })();
+
+    // Wrap in IIFE to avoid variable name collisions with external scripts (e.g., RedTrack)
+    (function() {
+    // Helper to get cookie value - robust parsing
+    function getCookie(name) {
+      // Method 1: Parse all cookies into object
+      const cookies = {};
+      document.cookie.split(';').forEach(function(c) {
+        const parts = c.trim().split('=');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join('=').trim();
+          cookies[key] = val;
+        }
+      });
+      const value = cookies[name];
+      if (value) {
+        try { return decodeURIComponent(value); } catch(e) { return value; }
+      }
+      return '';
+    }
+
+    // Helper to safely get/set localStorage
+    function getStored(key) {
+      try { return localStorage.getItem(key) || ''; } catch(e) { return ''; }
+    }
+    function setStored(key, val) {
+      try { if (val) localStorage.setItem(key, val); } catch(e) {}
+    }
+
+    // Capture URL parameters (use unique name to avoid collision with RedTrack script)
+    var _lpParams = new URLSearchParams(window.location.search);
+
+    // GCLID: URL param -> localStorage -> _gcl_aw cookie
+    let gclid = _lpParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    if (gclid) {
+      // Clean gclid from cookie format (GCL.timestamp.value -> value)
+      if (gclid.startsWith('GCL.')) {
+        const parts = gclid.split('.');
+        gclid = parts[parts.length - 1];
+      }
+      setStored('_gclid', gclid);
+      document.getElementById('gclid').value = gclid;
+    }
+
+    // MSCLKID: URL param -> localStorage
+    let msclkid = _lpParams.get('msclkid') || getStored('_msclkid') || '';
+    if (msclkid) {
+      setStored('_msclkid', msclkid);
+      document.getElementById('msclkid').value = msclkid;
+    }
+
+    // FBCLID: URL param -> localStorage
+    let fbclid = _lpParams.get('fbclid') || getStored('_fbclid') || '';
+    if (fbclid) {
+      setStored('_fbclid', fbclid);
+      document.getElementById('fbclid').value = fbclid;
+    }
+
+    // KEYWORD (utm_term): URL param -> localStorage
+    // Skip pure numeric values (Facebook ad IDs use utm_term for ad ID)
+    let keyword = _lpParams.get('keyword') || '';
+    if (!keyword) {
+      var _utmTerm = _lpParams.get('utm_term') || '';
+      if (_utmTerm && !/^\d+$/.test(_utmTerm)) keyword = _utmTerm;
+    }
+    keyword = keyword || getStored('_keyword') || '';
+    if (keyword) {
+      setStored('_keyword', keyword);
+      document.getElementById('keyword').value = keyword;
+    }
+
+    // META ADS PARAMS: URL params -> localStorage
+    var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+    // Also check common alt param names (campaign_id, adset_id, ad_id, etc.)
+    var metaAltNames = {
+      fb_campaign_id: ['campaign_id','c_id','sub6','utm_id'],
+      fb_adset_id: ['adset_id','as_id','sub5','utm_content'],
+      fb_ad_id: ['ad_id','sub4','utm_term'],
+      fb_campaign_name: ['campaign_name','c_name','utm_campaign'],
+      fb_adset_name: ['adset_name','as_name'],
+      fb_ad_name: ['ad_name','sub2'],
+      fb_placement: ['placement','sub7']
+    };
+    metaParams.forEach(function(p) {
+      var val = _lpParams.get(p) || '';
+      if (!val && metaAltNames[p]) {
+        for (var i = 0; i < metaAltNames[p].length; i++) {
+          val = _lpParams.get(metaAltNames[p][i]) || '';
+          if (val) break;
+        }
+      }
+      val = val || getStored('_' + p) || '';
+      if (val) {
+        setStored('_' + p, val);
+        var el = document.getElementById(p);
+        if (el) el.value = val;
+      }
+    });
+
+    // VISITOR IP: fetch from server
+    fetch('/api/visitors/ip').then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ip) {
+        var el = document.getElementById('visitor_ip');
+        if (el) el.value = d.ip;
+        window._visitorIp = d.ip;
+      }
+    }).catch(function(){});
+
+    // RT_CLICKID: URL param -> sessionStorage (RedTrack) -> localStorage -> cookie
+    function getRtClickId() {
+      try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+    }
+    var rtClickId = getRtClickId();
+    if (rtClickId) {
+      setStored('_rt_clickid', rtClickId);
+      document.getElementById('rt_clickid').value = rtClickId;
+    }
+    // RedTrack script may set cookie/sessionStorage after page load - retry after delay
+    setTimeout(function() {
+      if (!document.getElementById('rt_clickid').value) {
+        var delayed = getRtClickId();
+        if (delayed) {
+          setStored('_rt_clickid', delayed);
+          document.getElementById('rt_clickid').value = delayed;
+        }
+      }
+    }, 2000);
+
+    // RDT_CID (Reddit): URL param -> localStorage
+    var rdtCid = _lpParams.get('rdt_cid') || getStored('_rdt_cid') || '';
+    if (rdtCid) {
+      setStored('_rdt_cid', rdtCid);
+      document.getElementById('rdt_cid').value = rdtCid;
+    }
+
+    // Capture page URL and referrer
+    document.getElementById('page_url').value = window.location.href;
+    document.getElementById('referrer_url').value = document.referrer || '';
+
+    // Form step elements
+    const skipPreQual = {{skipPreQual}};
+    const step1 = document.querySelector('.form-step-1');
+    const stepSorry = document.querySelector('.form-step-sorry');
+    const stepMca = document.querySelector('.form-step-mca');
+    const stepSorryMca = document.querySelector('.form-step-sorry-mca');
+    const step2 = document.querySelector('.form-step-2');
+    const stepSuccess = document.querySelector('.form-success');
+    const debtSelect = document.getElementById('debt_amount');
+    const checkDebtBtn = document.getElementById('checkDebtBtn');
+
+    // Skip pre-qualification: hide debt/MCA steps, show form directly
+    if (skipPreQual) {
+      step1.classList.remove('active');
+      step1.style.display = 'none';
+      stepSorry.style.display = 'none';
+      stepMca.style.display = 'none';
+      stepSorryMca.style.display = 'none';
+      step2.querySelector('.form-title').textContent = '{{formTitle}}';
+      step2.querySelector('.form-subtitle').textContent = '{{formSubtitle}}';
+      step2.classList.add('active');
+    }
+
+    // Render dynamic form fields (skip has_mca -- handled by its own step)
+    const formFields = {{formFieldsJson}};
+    const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
+      if (field.type === 'radio') {
+        const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label>${field.label}</label>
+            <div class="radio-group">
+              ${options.map((opt, i) => `
+                <label class="radio-label">
+                  <input type="radio" name="${field.name}" value="${opt.toLowerCase()}" ${field.required && i === 0 ? 'required' : ''}>
+                  <span>${opt}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (field.type === 'select') {
+        const options = (field.options || '').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <select id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}>
+              <option value="">Select...</option>
+              ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          </div>
+        `;
+      } else if (field.type === 'textarea') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <textarea id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} rows="3" style="border-radius:16px;padding:12px 18px;width:100%;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.1);color:#fff;font-family:var(--sans);font-size:0.95rem;outline:none;resize:vertical;"></textarea>
+          </div>
+        `;
+      } else if (field.type === 'hidden') {
+        // Skip if this hidden field already exists in the form (to avoid duplicates)
+        const existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
+        if (existingIds.includes(field.name)) return '';
+        return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
+      } else if (field.type === 'tel') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <div class="phone-wrapper">
+              <span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>
+              <input type="tel" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || '(555) 123-4567'}" ${field.required ? 'required' : ''}>
+            </div>
+            <div class="phone-error" id="${field.name}_error">Please enter a valid 10-digit US phone number</div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <input type="${field.type}" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>
+          </div>
+        `;
+      }
+    }).join('');
+    document.getElementById('dynamicFormFields').innerHTML = formFieldsHtml;
+
+    // US phone validation: valid area code (2-9 first digit), 10 digits total
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      var areaCode = parseInt(digits.substring(0, 3));
+      if (digits[0] === '0' || digits[0] === '1') return false; // area codes start 2-9
+      if (digits[3] === '0' || digits[3] === '1') return false; // exchange starts 2-9
+      if (areaCode === 555) return false; // fictional
+      return true;
+    }
+
+    // Add phone formatting and validation
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        // Clear error on typing
+        var errEl = document.getElementById(e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // Step 1: Auto-advance on debt amount selection
+    debtSelect.addEventListener('change', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) return;
+
+      setTimeout(function() {
+        step1.classList.remove('active');
+        if (debtValue === 'under-20000') {
+          stepSorry.classList.add('active');
+        } else {
+          document.getElementById('debt_amount_hidden').value = debtValue;
+          stepMca.classList.add('active');
+        }
+      }, 200);
+    });
+
+    // Step 2: MCA question -- auto-advance on radio select
+    document.querySelectorAll('input[name="mca_check"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        const mcaValue = this.value;
+        setTimeout(function() {
+          stepMca.classList.remove('active');
+          if (mcaValue === 'No') {
+            stepSorryMca.classList.add('active');
+          } else {
+            // Set has_mca hidden field in the form
+            var mcaHidden = document.getElementById('has_mca_hidden');
+            if (mcaHidden) mcaHidden.value = mcaValue;
+            step2.classList.add('active');
+          }
+        }, 200);
+      });
+    });
+
+    // Keep button as no-JS fallback
+    checkDebtBtn.addEventListener('click', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) {
+        debtSelect.focus();
+        debtSelect.style.borderColor = '#dc2626';
+        setTimeout(() => debtSelect.style.borderColor = '#eee', 2000);
+        return;
+      }
+      step1.classList.remove('active');
+      if (debtValue === 'under-20000') {
+        stepSorry.classList.add('active');
+      } else {
+        document.getElementById('debt_amount_hidden').value = debtValue;
+        stepMca.classList.add('active');
+      }
+    });
+
+    // Dedup flag to prevent double-submissions
+    var _formSubmitting = false;
+
+    // Form submission
+    document.getElementById('leadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      // Validate consent checkbox
+      var consentBox = document.getElementById('consentCheckbox');
+      var consentErr = document.getElementById('consentError');
+      if (!consentBox.checked) {
+        consentErr.style.display = 'block';
+        consentBox.focus();
+        return;
+      }
+      consentErr.style.display = 'none';
+
+      // Validate phone fields
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById(phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      _formSubmitting = true;
+      const btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+
+      // Always re-check rt_clickid at submit time from all sources
+      if (!data.rt_clickid) {
+        data.rt_clickid = getRtClickId();
+      }
+
+      try {
+        const response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          // Fire Facebook Pixel Lead event for deduplication with server-side CAPI
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          step2.classList.remove('active');
+          stepSuccess.classList.add('active');
+          document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formSubmitText}}';
+      }
+    });
+
+    })(); // end IIFE
+
+    // Scroll animations for article sections
+    (function() {
+      var sections = document.querySelectorAll('.art-section');
+      if (!sections.length) return;
+
+      // Mark all sections visible immediately if IntersectionObserver not supported
+      if (!('IntersectionObserver' in window)) {
+        sections.forEach(function(s) { s.classList.add('visible'); });
+        return;
+      }
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+      sections.forEach(function(s) { observer.observe(s); });
+    })();
+  </script>
+</body>
+</html>

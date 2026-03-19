@@ -261,6 +261,7 @@
               <option value="form">Form (Lead Capture)</option>
               <option value="call">Call Now (Phone Focused)</option>
               <option value="game">Game (Gamification)</option>
+              <option value="article">Article (Editorial + Form)</option>
             </select>
           </div>
           <div class="form-group">
@@ -665,7 +666,7 @@
             </td>
             <td><code>/lp/${page.slug}/</code></td>
             <td><span class="badge badge-blue">${page.platform}</span></td>
-            <td><span class="badge ${page.template_type === 'call' ? 'badge-green' : (page.template_type === 'game' ? 'badge-orange' : 'badge-blue')}">${page.template_type === 'call' ? 'Call Now' : (page.template_type === 'game' ? 'Game' : 'Form')}</span></td>
+            <td><span class="badge ${{call:'badge-green',game:'badge-orange',article:'badge-purple'}[page.template_type]||'badge-blue'}">${{call:'Call Now',game:'Game',article:'Article'}[page.template_type]||'Form'}</span></td>
             <td>${page.traffic_source || '-'}</td>
             <td>${page.lead_count || 0}</td>
             <td>
