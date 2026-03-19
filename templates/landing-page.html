@@ -966,6 +966,26 @@
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
 
+    // When skipPreQual: move trust bar into hero-content (left side, after bullet points)
+    if (skipPreQual) {
+      var trustBar = document.querySelector('.trust-bar');
+      var heroContent = document.querySelector('.hero-content');
+      if (trustBar && heroContent) {
+        trustBar.style.background = 'none';
+        trustBar.style.padding = '20px 0 0';
+        trustBar.style.border = 'none';
+        trustBar.style.boxShadow = 'none';
+        var trustContainer = trustBar.querySelector('.container');
+        if (trustContainer) trustContainer.style.padding = '0';
+        var trustLabel = trustBar.querySelector('.trust-label');
+        if (trustLabel) { trustLabel.style.textAlign = 'left'; trustLabel.style.fontSize = '12px'; trustLabel.style.marginBottom = '10px'; trustLabel.style.color = 'rgba(255,255,255,0.7)'; }
+        var trustLogosEl = trustBar.querySelector('.trust-logos');
+        if (trustLogosEl) { trustLogosEl.style.justifyContent = 'flex-start'; trustLogosEl.style.gap = '12px'; }
+        trustBar.querySelectorAll('.trust-logos img').forEach(function(img) { img.style.maxHeight = '32px'; img.style.filter = 'brightness(0) invert(1)'; img.style.opacity = '0.75'; });
+        heroContent.appendChild(trustBar);
+      }
+    }
+
     // Render dynamic form fields (skip has_mca — handled by its own step)
     const formFields = {{formFieldsJson}};
     const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
