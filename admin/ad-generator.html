@@ -2756,7 +2756,8 @@
     }
 
     function loadCompositeElements(copy, blueprint, sizeLabel) {
-      if (!canvas) return;
+      if (!canvas) { console.error('loadCompositeElements: no canvas'); return; }
+      console.log('loadCompositeElements called', { copy: copy, blueprint: blueprint, sizeLabel: sizeLabel, canvasW: canvasW, canvasH: canvasH });
 
       var bp = blueprint || { text_position: 'middle', bg_is_dark: true, text_color: '#FFFFFF' };
       var ts = pickTextStyle(bp.text_style);
@@ -2850,6 +2851,7 @@
         _elementType: 'headline'
       });
       canvas.add(headlineObj);
+      console.log('Added headline:', { text: headlineText, left: textLeft, top: cursor, width: textW, fontSize: headFs, fill: textColor, font: ts.headFont });
 
       // Estimate headline height
       var charW = headFs * (ts.charWidthFactor || 0.58);
@@ -2873,7 +2875,12 @@
           _elementType: 'subheadline'
         });
         canvas.add(subObj);
+        console.log('Added subheadline:', { text: copy.subheadline, left: textLeft, top: cursor, fontSize: subFs });
       }
+
+      // Render text elements immediately (logo loads async and renders again)
+      canvas.renderAll();
+      console.log('Canvas objects after text:', canvas.getObjects().length, canvas.getObjects().map(function(o) { return o.type + ' at ' + Math.round(o.left) + ',' + Math.round(o.top); }));
 
       // --- LOGO ---
       var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
