@@ -1543,7 +1543,16 @@
 
       // Load background image
       fabric.Image.fromURL(generatedImageUrl, function(img) {
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+        canvas.setBackgroundImage(img, function() {
+          canvas.renderAll();
+          fitCanvas();
+          // Load composite elements if pending (from editBulkAd)
+          if (_pendingCompositeLoad) {
+            var pend = _pendingCompositeLoad;
+            _pendingCompositeLoad = null;
+            loadCompositeElements(pend.copy, pend.blueprint, pend.sizeLabel);
+          }
+        }, {
           scaleX: canvasW / img.width,
           scaleY: canvasH / img.height
         });
@@ -2718,6 +2727,9 @@
       });
     }
 
+    // Pending composite elements to load after canvas background is ready
+    var _pendingCompositeLoad = null;
+
     function editBulkAd(genId, imageUrl, sizeLabel, resultIndex) {
       var result = typeof resultIndex === 'number' ? bulkResults[resultIndex] : null;
 
@@ -2728,20 +2740,19 @@
       canvasH = meta.height;
       selectedSize = sizeLabel;
 
-      // Reset canvas
+      // Store pending load if we have element data
+      if (result && result.copy && result.blueprint) {
+        _pendingCompositeLoad = { copy: result.copy, blueprint: result.blueprint, sizeLabel: sizeLabel };
+      } else {
+        _pendingCompositeLoad = null;
+      }
+
+      // Reset canvas so ensureCanvas will reinitialize
       if (canvas) { canvas.dispose(); canvas = null; }
 
       maxStepReached = 1;
       document.getElementById('step1Nav').style.display = 'flex';
       goToStep(2);
-
-      // If we have copy/blueprint data, load elements as interactive objects
-      if (result && result.copy && result.blueprint) {
-        // Wait for canvas to initialize then add elements
-        setTimeout(function() {
-          loadCompositeElements(result.copy, result.blueprint, sizeLabel);
-        }, 500);
-      }
     }
 
     function loadCompositeElements(copy, blueprint, sizeLabel) {
