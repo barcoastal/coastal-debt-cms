@@ -676,6 +676,51 @@
                 <button class="btn btn-secondary btn-small" onclick="deleteSelected()" style="color:#dc2626;font-size:11px;">Delete</button>
               </div>
 
+              <div class="controls-section" id="textEditControls" style="display:none;">
+                <h4>Edit Text</h4>
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Font Size</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="range" id="textFontSize" min="10" max="200" value="40" style="flex:1;" oninput="updateSelectedFontSize(this.value)">
+                    <span id="textFontSizeVal" style="font-size:12px;font-weight:600;color:var(--gray-600);min-width:32px;">40</span>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Text Color</label>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="color-swatch" onclick="updateSelectedColor('#FFFFFF')" style="background:#FFFFFF;border:2px solid #ddd;width:28px;height:28px;border-radius:6px;cursor:pointer;"></button>
+                    <button class="color-swatch" onclick="updateSelectedColor('#000000')" style="background:#000000;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
+                    <button class="color-swatch" onclick="updateSelectedColor('#3052FF')" style="background:#3052FF;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
+                    <button class="color-swatch" onclick="updateSelectedColor('#FF9000')" style="background:#FF9000;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
+                    <button class="color-swatch" onclick="updateSelectedColor('#7FB2FF')" style="background:#7FB2FF;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
+                    <input type="color" id="textColorPicker" value="#FFFFFF" onchange="updateSelectedColor(this.value)" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;padding:0;">
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Font Family</label>
+                  <select id="textFontFamily" class="form-input" style="font-size:12px;padding:6px 10px;" onchange="updateSelectedFont(this.value)">
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Playfair Display', serif">Playfair Display</option>
+                    <option value="'Outfit', sans-serif">Outfit</option>
+                    <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                    <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
+                    <option value="'Oswald', sans-serif">Oswald</option>
+                    <option value="'Sora', sans-serif">Sora</option>
+                    <option value="'Archivo', sans-serif">Archivo</option>
+                    <option value="'Nunito', sans-serif">Nunito</option>
+                    <option value="'Urbanist', sans-serif">Urbanist</option>
+                    <option value="'Work Sans', sans-serif">Work Sans</option>
+                    <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                    <option value="'DM Sans', sans-serif">DM Sans</option>
+                    <option value="'Barlow', sans-serif">Barlow</option>
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="'Raleway', sans-serif">Raleway</option>
+                    <option value="'Lato', sans-serif">Lato</option>
+                  </select>
+                </div>
+              </div>
+
               <!-- Text Input -->
               <div class="controls-section">
                 <h4>Add Text</h4>
@@ -1539,10 +1584,62 @@
     function showSelectedInfo() {
       document.getElementById('selectedInfo').classList.add('visible');
       document.getElementById('selectedInfo3').classList.add('visible');
+      // Show text controls if selected object is text
+      var obj = canvas ? canvas.getActiveObject() : null;
+      var textControls = document.getElementById('textEditControls');
+      if (textControls && obj && (obj.type === 'textbox' || obj.type === 'text')) {
+        textControls.style.display = 'block';
+        document.getElementById('textFontSize').value = obj.fontSize || 40;
+        document.getElementById('textFontSizeVal').textContent = obj.fontSize || 40;
+        if (obj.fill && obj.fill[0] === '#') document.getElementById('textColorPicker').value = obj.fill;
+        // Try to match font family in dropdown
+        var fontSelect = document.getElementById('textFontFamily');
+        if (fontSelect && obj.fontFamily) {
+          for (var i = 0; i < fontSelect.options.length; i++) {
+            if (fontSelect.options[i].value === obj.fontFamily) {
+              fontSelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
+      } else if (textControls) {
+        textControls.style.display = 'none';
+      }
     }
     function hideSelectedInfo() {
       document.getElementById('selectedInfo').classList.remove('visible');
       document.getElementById('selectedInfo3').classList.remove('visible');
+      var textControls = document.getElementById('textEditControls');
+      if (textControls) textControls.style.display = 'none';
+    }
+
+    function updateSelectedFontSize(val) {
+      document.getElementById('textFontSizeVal').textContent = val;
+      if (!canvas) return;
+      var obj = canvas.getActiveObject();
+      if (obj && (obj.type === 'textbox' || obj.type === 'text')) {
+        obj.set('fontSize', parseInt(val));
+        canvas.renderAll();
+      }
+    }
+
+    function updateSelectedColor(color) {
+      document.getElementById('textColorPicker').value = color;
+      if (!canvas) return;
+      var obj = canvas.getActiveObject();
+      if (obj && (obj.type === 'textbox' || obj.type === 'text')) {
+        obj.set('fill', color);
+        canvas.renderAll();
+      }
+    }
+
+    function updateSelectedFont(fontFamily) {
+      if (!canvas) return;
+      var obj = canvas.getActiveObject();
+      if (obj && (obj.type === 'textbox' || obj.type === 'text')) {
+        obj.set('fontFamily', fontFamily);
+        canvas.renderAll();
+      }
     }
 
     function deleteSelected() {
@@ -2086,7 +2183,7 @@
 
       // Step 5: Show result
       var savedUrl = saveData.edited_image_url || finalDataUrl;
-      bulkResults.push({ url: savedUrl, dataUrl: finalDataUrl, headline: copy.headline, size: sizeLabel, genId: genId });
+      bulkResults.push({ url: savedUrl, dataUrl: finalDataUrl, headline: copy.headline, size: sizeLabel, genId: genId, bgImageUrl: imageUrl, copy: copy, blueprint: blueprint });
 
       cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" onclick="window.open(this.src)">' +
         '<div class="bulk-card-info">' +
@@ -2095,7 +2192,7 @@
         '</div>' +
         '<div class="bulk-card-actions">' +
           '<button class="btn btn-secondary" onclick="downloadBulkAd(' + (bulkResults.length - 1) + ')">Download</button>' +
-          '<button class="btn btn-primary" onclick="editBulkAd(' + genId + ',\'' + escapeHtml(imageUrl) + '\',\'' + sizeLabel + '\')">Edit</button>' +
+          '<button class="btn btn-primary" onclick="editBulkAd(' + genId + ',\'' + escapeHtml(imageUrl) + '\',\'' + sizeLabel + '\',' + (bulkResults.length - 1) + ')">Edit</button>' +
         '</div>';
     }
 
@@ -2197,6 +2294,84 @@
         accentColor: '#3052FF',
         badgePill: false,
         charWidthFactor: 0.48 // Oswald is semi-condensed
+      },
+      geometric_sharp: {
+        name: 'Geometric Sharp',
+        headFont: "'Sora', sans-serif", headWeight: '800',
+        subFont: "'DM Sans', sans-serif", subWeight: '400',
+        badgeFont: "'Sora', sans-serif", badgeWeight: '600',
+        headScale: 1.05,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.4) 0px 3px 10px',
+        accentBar: false,
+        accentColor: '#FF9000',
+        badgePill: true,
+        charWidthFactor: 0.56
+      },
+      industrial_heavy: {
+        name: 'Industrial Heavy',
+        headFont: "'Archivo', sans-serif", headWeight: '900',
+        subFont: "'Archivo', sans-serif", subWeight: '400',
+        badgeFont: "'Archivo', sans-serif", badgeWeight: '700',
+        headScale: 1.1,
+        headUppercase: true,
+        headShadow: 'rgba(0,0,0,0.55) 2px 3px 5px',
+        accentBar: true,
+        accentColor: '#3052FF',
+        badgePill: false,
+        charWidthFactor: 0.58
+      },
+      rounded_friendly: {
+        name: 'Rounded Friendly',
+        headFont: "'Nunito', sans-serif", headWeight: '700',
+        subFont: "'Nunito', sans-serif", subWeight: '400',
+        badgeFont: "'Nunito', sans-serif", badgeWeight: '700',
+        headScale: 1.0,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.3) 0px 2px 8px',
+        accentBar: false,
+        accentColor: '#7FB2FF',
+        badgePill: true,
+        charWidthFactor: 0.58
+      },
+      urbanist_minimal: {
+        name: 'Urbanist Minimal',
+        headFont: "'Urbanist', sans-serif", headWeight: '700',
+        subFont: "'Urbanist', sans-serif", subWeight: '400',
+        badgeFont: "'Urbanist', sans-serif", badgeWeight: '600',
+        headScale: 1.0,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.2) 0px 2px 14px',
+        accentBar: false,
+        accentColor: '#3052FF',
+        badgePill: true,
+        charWidthFactor: 0.52
+      },
+      work_sans_bold: {
+        name: 'Work Sans Bold',
+        headFont: "'Work Sans', sans-serif", headWeight: '700',
+        subFont: "'Work Sans', sans-serif", subWeight: '400',
+        badgeFont: "'Work Sans', sans-serif", badgeWeight: '600',
+        headScale: 1.05,
+        headUppercase: false,
+        headShadow: 'rgba(0,0,0,0.35) 1px 2px 6px',
+        accentBar: true,
+        accentColor: '#FF9000',
+        badgePill: false,
+        charWidthFactor: 0.55
+      },
+      space_tech: {
+        name: 'Space Tech',
+        headFont: "'Space Grotesk', sans-serif", headWeight: '700',
+        subFont: "'Space Grotesk', sans-serif", subWeight: '400',
+        badgeFont: "'Space Grotesk', sans-serif", badgeWeight: '700',
+        headScale: 1.0,
+        headUppercase: true,
+        headShadow: 'rgba(0,0,0,0.45) 0px 2px 8px',
+        accentBar: true,
+        accentColor: '#7FB2FF',
+        badgePill: false,
+        charWidthFactor: 0.54
       }
     };
 
@@ -2543,8 +2718,9 @@
       });
     }
 
-    function editBulkAd(genId, imageUrl, sizeLabel) {
-      // Load this ad into the editor (step 2)
+    function editBulkAd(genId, imageUrl, sizeLabel, resultIndex) {
+      var result = typeof resultIndex === 'number' ? bulkResults[resultIndex] : null;
+
       generationId = genId;
       generatedImageUrl = imageUrl;
       var meta = SIZE_META[sizeLabel];
@@ -2552,12 +2728,161 @@
       canvasH = meta.height;
       selectedSize = sizeLabel;
 
-      // Reset canvas so it reinitializes with new dimensions
+      // Reset canvas
       if (canvas) { canvas.dispose(); canvas = null; }
 
       maxStepReached = 1;
       document.getElementById('step1Nav').style.display = 'flex';
       goToStep(2);
+
+      // If we have copy/blueprint data, load elements as interactive objects
+      if (result && result.copy && result.blueprint) {
+        // Wait for canvas to initialize then add elements
+        setTimeout(function() {
+          loadCompositeElements(result.copy, result.blueprint, sizeLabel);
+        }, 500);
+      }
+    }
+
+    function loadCompositeElements(copy, blueprint, sizeLabel) {
+      if (!canvas) return;
+
+      var bp = blueprint || { text_position: 'middle', bg_is_dark: true, text_color: '#FFFFFF' };
+      var ts = pickTextStyle(bp.text_style);
+      var w = canvasW, h = canvasH;
+      var isVertical = sizeLabel === 'story_reel';
+      var isSquare = sizeLabel === 'square' || sizeLabel === 'carousel_square';
+      var pad = w * 0.06;
+      var textColor = bp.text_color || '#FFFFFF';
+      var textW = w - pad * 2;
+      var textLeft = pad;
+
+      // Calculate cursor position based on text_position
+      var cursor;
+      if (bp.text_position === 'top') {
+        cursor = pad * 1.2;
+      } else if (bp.text_position === 'bottom') {
+        cursor = isVertical ? h * 0.52 : (isSquare ? h * 0.48 : h * 0.42);
+      } else {
+        cursor = isVertical ? h * 0.35 : (isSquare ? h * 0.33 : h * 0.26);
+      }
+
+      if (bp.open_space_for_text === 'top-left' || bp.open_space_for_text === 'left') {
+        textW = w * 0.5;
+      } else if (bp.open_space_for_text === 'top-right') {
+        textLeft = w * 0.42;
+        textW = w * 0.5;
+      }
+
+      // Parse shadow
+      var headShadowObj = null;
+      if (ts.headShadow) {
+        var sParts = ts.headShadow.match(/(rgba?\([^)]+\))\s+([-\d.]+)px\s+([-\d.]+)px\s+([-\d.]+)px/);
+        if (sParts) {
+          headShadowObj = new fabric.Shadow({
+            color: sParts[1], offsetX: parseFloat(sParts[2]),
+            offsetY: parseFloat(sParts[3]), blur: parseFloat(sParts[4])
+          });
+        }
+      }
+
+      // --- BADGE ---
+      if (copy.badge) {
+        var badgeFs = Math.max(Math.round(w * 0.019), 11);
+        var badgeText = copy.badge.toUpperCase();
+
+        if (ts.badgePill) {
+          // Create a group: rect + text
+          var badgeCharW = badgeFs * 0.6;
+          var pillW = badgeText.length * badgeCharW + badgeFs * 1.6;
+          var pillH = badgeFs + 10;
+          var pillRect = new fabric.Rect({
+            width: pillW, height: pillH,
+            fill: ts.accentColor, rx: pillH / 2, ry: pillH / 2,
+            opacity: 0.95, originX: 'left', originY: 'top'
+          });
+          var pillText = new fabric.Text(badgeText, {
+            fontSize: badgeFs, fontWeight: ts.badgeWeight,
+            fontFamily: ts.badgeFont, fill: '#FFFFFF',
+            charSpacing: 60, originX: 'left', originY: 'top',
+            left: badgeFs * 0.8, top: 5
+          });
+          var badgeGroup = new fabric.Group([pillRect, pillText], {
+            left: textLeft, top: cursor,
+            _elementType: 'badge'
+          });
+          canvas.add(badgeGroup);
+          cursor += pillH + 14;
+        } else {
+          var badgeObj = new fabric.Text(badgeText, {
+            left: textLeft, top: cursor,
+            fontSize: badgeFs, fontWeight: ts.badgeWeight,
+            fontFamily: ts.badgeFont, fill: ts.accentColor,
+            charSpacing: 80, _elementType: 'badge'
+          });
+          canvas.add(badgeObj);
+          cursor += badgeFs + 18;
+        }
+      }
+
+      // --- HEADLINE ---
+      var baseHeadFs = isVertical ? Math.round(w * 0.062) : (isSquare ? Math.round(w * 0.054) : Math.round(w * 0.044));
+      var headFs = Math.max(Math.round(baseHeadFs * ts.headScale), 22);
+      var headlineText = copy.headline || '';
+      if (ts.headUppercase) headlineText = headlineText.toUpperCase();
+
+      var headlineObj = new fabric.Textbox(headlineText, {
+        left: textLeft, top: cursor, width: textW,
+        fontSize: headFs, fontWeight: ts.headWeight,
+        fontFamily: ts.headFont, fill: textColor,
+        lineHeight: 1.15, shadow: headShadowObj,
+        _elementType: 'headline'
+      });
+      canvas.add(headlineObj);
+
+      // Estimate headline height
+      var charW = headFs * (ts.charWidthFactor || 0.58);
+      var charsPerLine = Math.max(1, Math.floor(textW / charW));
+      var headLines = Math.max(1, Math.ceil(headlineText.length / charsPerLine));
+      cursor += headLines * headFs * 1.2 + Math.round(pad * 0.5);
+
+      // --- SUBHEADLINE ---
+      if (copy.subheadline) {
+        cursor += Math.round(pad * 0.3);
+        var subFs = isVertical ? Math.round(w * 0.038) : (isSquare ? Math.round(w * 0.032) : Math.round(w * 0.026));
+        subFs = Math.max(subFs, 15);
+        var subFill = bp.bg_is_dark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.75)';
+
+        var subObj = new fabric.Textbox(copy.subheadline, {
+          left: textLeft, top: cursor, width: textW,
+          fontSize: subFs, fontWeight: ts.subWeight,
+          fontFamily: ts.subFont, fill: subFill,
+          lineHeight: 1.4,
+          shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', offsetX: 0, offsetY: 2, blur: 8 }),
+          _elementType: 'subheadline'
+        });
+        canvas.add(subObj);
+      }
+
+      // --- LOGO ---
+      var logoUrl = bp.bg_is_dark ? getBestBrandLogoForDarkBg() : BRAND_LOGOS['dark-text'];
+      fabric.Image.fromURL(logoUrl, function(logoImg) {
+        if (logoImg && logoImg.width > 0) {
+          var logoSizeMap = { small: 0.06, medium: 0.1, large: 0.14 };
+          var logoFrac = logoSizeMap[bp.logo_size] || logoSizeMap.small;
+          var maxLogoH = Math.round(h * logoFrac);
+          maxLogoH = Math.max(maxLogoH, isVertical ? 28 : 22);
+          var logoScale = maxLogoH / logoImg.height;
+          logoImg.set({
+            left: w - (logoImg.width * logoScale) - pad,
+            top: h - maxLogoH - pad,
+            scaleX: logoScale, scaleY: logoScale,
+            _elementType: 'logo'
+          });
+          canvas.add(logoImg);
+        }
+        canvas.renderAll();
+      }, { crossOrigin: 'anonymous' });
     }
 
     // ============ LOGO ============
