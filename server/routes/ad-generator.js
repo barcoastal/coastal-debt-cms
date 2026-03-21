@@ -103,6 +103,7 @@ TYPOGRAPHY:
 
 PHOTOGRAPHY STYLE:
 - People: Diverse men and women, ages 21-54, business owners and entrepreneurs
+- IMPORTANT: Vary gender equally — include men just as often as women. Alternate between male and female subjects across different ads. Do NOT default to always showing women.
 - Positive expressions and attitudes — NOT stressed or defeated
 - Neutral color palette with blue or cool accents
 - Settings: Interior/exterior of small businesses (bakeries, cafes, construction), offices, handshakes, business deals
@@ -324,7 +325,7 @@ Create a FRESH ad concept INSPIRED by the references — same style/mood but a D
 Return ONLY valid JSON:
 
 {
-  "image_prompt": "A creative, FRESH scene inspired by the reference style but NOT a copy. Same mood, color palette, and energy — but a different subject, angle, or composition. Describe the visual scene specifically: objects, people, props, colors, lighting, composition. Be concrete like directing a photographer. MUST end with: no text, no words, no letters, no logos, no watermarks",
+  "image_prompt": "A creative, FRESH scene inspired by the reference style but NOT a copy. Same mood, color palette, and energy — but a different subject, angle, or composition. Describe the visual scene specifically: objects, people, props, colors, lighting, composition. Be concrete like directing a photographer. IMPORTANT: Vary gender — use male subjects (men, businessmen) just as often as female. Do NOT always default to women. MUST end with: no text, no words, no letters, no logos, no watermarks",
   "text_position": "top" | "middle" | "bottom",
   "text_color": "#FFFFFF" or another color that contrasts with the background,
   "overlay_style": "none" | "subtle_gradient",
