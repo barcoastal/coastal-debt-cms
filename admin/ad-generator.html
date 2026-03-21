@@ -165,10 +165,9 @@
     /* ============ CANVAS AREA (Steps 2 & 3) ============ */
     .canvas-container-wrapper {
       background: #1a1a2e; border-radius: 12px; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      min-height: 400px; position: relative; width: 100%;
+      position: relative; width: 100%; min-height: 200px;
     }
-    .canvas-scale-wrapper { transform-origin: top left; }
+    .canvas-scale-wrapper { transform-origin: top left; position: relative; }
     .controls-panel {
       background: #fff; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px;
     }
@@ -1575,18 +1574,24 @@
         : document.getElementById('canvasWrapper');
       if (!wrapper) return;
 
-      const pad = 16;
-      const maxW = wrapper.clientWidth - pad * 2;
-      const maxH = Math.max(window.innerHeight - 240, 400);
+      const pad = 8;
+      const wrapperW = wrapper.clientWidth || wrapper.offsetWidth || 800;
+      const maxW = wrapperW - pad * 2;
+      const maxH = Math.max(window.innerHeight - 200, 350);
       const scale = Math.min(maxW / canvasW, maxH / canvasH, 1);
+
+      const scaledW = canvasW * scale;
+      const scaledH = canvasH * scale;
 
       const scaleWrapper = document.getElementById('canvasScaleWrapper');
       scaleWrapper.style.width = canvasW + 'px';
       scaleWrapper.style.height = canvasH + 'px';
       scaleWrapper.style.transform = `scale(${scale})`;
+      // Center horizontally within wrapper
+      scaleWrapper.style.left = Math.max(0, (wrapperW - scaledW) / 2) + 'px';
 
-      // Set wrapper height to match the scaled canvas so layout doesn't collapse
-      wrapper.style.height = (canvasH * scale + pad * 2) + 'px';
+      // Set wrapper height to match the scaled canvas
+      wrapper.style.height = (scaledH + pad * 2) + 'px';
       wrapper.style.minHeight = '0';
     }
 
