@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  <meta property="og:title" content="{{pageTitle}}">
+  <meta property="og:description" content="{{metaDescription}}">
+  <meta property="og:image" content="{{metaImage}}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{pageTitle}}">
+  <meta name="twitter:description" content="{{metaDescription}}">
+  <meta name="twitter:image" content="{{metaImage}}">
+  {{headScripts}}
+  <!-- Facebook Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FAQPage JSON-LD (rendered by JS) -->
+  <script id="faqSchema" type="application/ld+json">{}</script>
+  <!-- Organization JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Coastal Debt Resolve",
+    "url": "https://www.coastaldebt.com",
+    "logo": "https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg",
+    "sameAs": []
+  }
+  </script>
+  <!-- AggregateRating JSON-LD (rendered by JS) -->
+  <script id="ratingSchema" type="application/ld+json">{}</script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --primary:{{colors.primary}};
+      --primary-light:{{colors.primaryLight}};
+      --hero-bg:{{colors.heroBg}};
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --headline-hl:{{colors.headlineHighlight}};
+      --navy:{{colors.navy}};
+      --navy-dark:{{colors.navyDark}};
+      --white:#ffffff;
+      --gray-100:#f3f4f6;
+      --gray-200:#e5e7eb;
+      --gray-600:#4b5563;
+      --gray-800:#1f2937;
+      --gold:#f59e0b;
+      --green-600:#16a34a;
+      --red-600:#dc2626;
+    }
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px}
+
+    /* Blue accent strip */
+    body::before{content:'';position:fixed;top:0;left:0;width:5px;height:100%;background:linear-gradient(180deg,var(--primary) 0%,var(--primary-light) 100%);z-index:200}
+
+    /* Nav */
+    .nav{background:var(--white);padding:16px 0;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+    .nav-inner{display:flex;justify-content:space-between;align-items:center}
+    .nav-logo{display:flex;align-items:center;gap:6px;font-weight:800;font-size:1.1rem;color:var(--navy);text-decoration:none;cursor:default}
+    .nav-logo .chevron{color:var(--primary);font-size:1.3rem;font-weight:900}
+    .nav-logo .resolve{font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--primary);margin-left:4px}
+    .nav-phone{display:flex;align-items:center;gap:8px;background:var(--cta-btn);color:var(--white);font-weight:600;font-size:0.95rem;padding:10px 22px;border-radius:50px;text-decoration:none;transition:all 0.2s}
+    .nav-phone:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    .nav-phone svg{width:16px;height:16px;flex-shrink:0}
+
+    /* Hero */
+    .hero{background:var(--hero-bg);padding:60px 0 70px}
+    .hero-grid{display:grid;grid-template-columns:1fr 400px;gap:50px;align-items:start}
+    .hero-badge{display:inline-block;background:rgba(48,82,255,0.1);color:var(--primary);padding:8px 16px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:20px}
+    .hero h1{font-size:2.8rem;font-weight:800;line-height:1.15;margin-bottom:20px;color:#0a0a0a}
+    .hero h1 .hl{color:var(--headline-hl)}
+    .hero-sub{font-size:1.1rem;color:var(--gray-600);margin-bottom:28px;line-height:1.7}
+    #bulletPoints{display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
+    .bullet-item{display:flex;align-items:center;gap:12px;font-size:1rem;color:var(--gray-800)}
+    .bullet-item .bicon{color:var(--primary);font-weight:900;font-size:1.1rem;flex-shrink:0}
+    .trust-bar-inline{margin-top:8px}
+    .trust-bar-inline .trust-label{font-size:0.75rem;color:var(--gray-600);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:12px}
+    .trust-logos{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    .trust-logos img{height:auto;max-height:40px;opacity:0.8;filter:grayscale(0.2);transition:opacity 0.2s}
+    .trust-logos img:hover{opacity:1;filter:grayscale(0)}
+
+    /* Form Card */
+    .form-card{background:var(--white);border-radius:16px;padding:36px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+    .form-title{font-size:1.5rem;font-weight:800;color:var(--navy);margin-bottom:6px;text-align:center}
+    .form-subtitle{color:var(--gray-600);font-size:0.95rem;text-align:center;margin-bottom:20px}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-weight:500;color:var(--gray-800);margin-bottom:6px;font-size:0.9rem}
+    .form-group input,.form-group select{width:100%;height:48px;padding:0 16px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;transition:all 0.2s;background:var(--white);outline:none}
+    .form-group input:focus,.form-group select:focus{border-color:var(--primary)}
+    .form-group input::placeholder{color:#aab}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234b5563' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+    .form-group select option{color:var(--gray-800)}
+    .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;height:48px;transition:all 0.2s;background:var(--white)}
+    .phone-wrapper:focus-within{border-color:var(--primary)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:44px;border-radius:0 12px 12px 0;background:transparent}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
+    .radio-group{display:flex;gap:10px}
+    .radio-label{flex:1;height:48px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;background:var(--white);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--gray-800)}
+    .radio-label:has(input:checked){border-color:var(--primary);background:rgba(48,82,255,0.05);color:var(--primary);font-weight:600}
+    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    .radio-label span{line-height:48px}
+    .consent-group{margin:14px 0 0}
+    .consent-label{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:0.72rem;color:var(--gray-600);line-height:1.5}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+    .consent-label a{color:var(--primary);text-decoration:underline}
+    .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:24px}
+    .submit-btn{width:100%;height:52px;background:var(--cta-btn);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px}
+    .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .form-security{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:0.8rem;color:var(--gray-600)}
+    .form-security svg{width:14px;height:14px;color:var(--green-600)}
+    .form-success{text-align:center;padding:40px 20px}
+    .form-success h3{color:var(--green-600);font-size:1.5rem;margin-bottom:10px;font-weight:700}
+    .form-success p{color:var(--gray-600);font-size:1rem}
+
+    /* Section base */
+    .section{padding:70px 0}
+    .section-title{text-align:center;font-size:2rem;font-weight:800;color:var(--navy);margin-bottom:12px}
+    .section-sub{text-align:center;color:var(--gray-600);max-width:650px;margin:0 auto 45px;font-size:1.05rem}
+
+    /* How It Works */
+    .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+    .step-card{text-align:center;padding:36px 28px;border-radius:16px;background:var(--white);border:1px solid var(--gray-200);transition:all 0.3s}
+    .step-card:hover{border-color:var(--primary);box-shadow:0 10px 40px rgba(48,82,255,0.1)}
+    .step-num{width:52px;height:52px;background:var(--primary);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;margin:0 auto 18px}
+    .step-card h3{font-size:1.15rem;color:var(--navy);margin-bottom:8px;font-weight:700}
+    .step-card p{color:var(--gray-600);font-size:0.95rem}
+
+    /* Educational */
+    .edu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:50px}
+    .edu-stat{text-align:center;padding:30px 20px;background:var(--white);border-radius:16px;border:1px solid var(--gray-200)}
+    .edu-stat .num{font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:6px}
+    .edu-stat .lbl{font-size:0.95rem;color:var(--gray-600)}
+    .edu-sections{max-width:800px;margin:0 auto}
+    .edu-section{margin-bottom:32px}
+    .edu-section h3{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:12px}
+    .edu-section p{color:var(--gray-600);font-size:1rem;line-height:1.7;margin-bottom:12px}
+
+    /* Calculator */
+    .calc-card{max-width:600px;margin:0 auto;background:var(--white);border-radius:16px;padding:40px 36px;border:1px solid var(--gray-200);box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+    .calc-label{font-size:0.95rem;color:var(--gray-600);text-align:center;margin-bottom:8px}
+    .calc-amount{font-size:2.8rem;font-weight:800;color:var(--navy);text-align:center;margin-bottom:20px}
+    .calc-slider{width:100%;height:8px;-webkit-appearance:none;appearance:none;background:var(--gray-200);border-radius:4px;outline:none;margin-bottom:28px}
+    .calc-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 2px 8px rgba(48,82,255,0.3)}
+    .calc-slider::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;border:none;box-shadow:0 2px 8px rgba(48,82,255,0.3)}
+    .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    .calc-result{text-align:center;padding:20px;border-radius:12px;background:#f8f9fb}
+    .calc-result .cr-label{font-size:0.85rem;color:var(--gray-600);margin-bottom:6px}
+    .calc-result .cr-value{font-size:1.6rem;font-weight:800;color:var(--navy)}
+    .calc-result.savings .cr-value{color:var(--green-600)}
+    .calc-cta{display:block;width:100%;text-align:center;background:var(--cta-btn);color:var(--white);padding:16px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;border:none;cursor:pointer}
+    .calc-cta:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+
+    /* Comparison */
+    .comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .comp-card{border-radius:16px;padding:32px 28px}
+    .comp-card.bad{background:var(--white);border:1px solid var(--gray-200)}
+    .comp-card.good{background:var(--navy);color:var(--white);border:2px solid var(--primary);position:relative}
+    .comp-card .comp-badge{display:inline-block;padding:6px 14px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:16px}
+    .comp-card.bad .comp-badge{background:#fee2e2;color:var(--red-600)}
+    .comp-card.good .comp-badge{background:rgba(48,82,255,0.2);color:var(--primary-light)}
+    .comp-card.good .comp-recommended{position:absolute;top:-12px;right:20px;background:var(--primary);color:var(--white);padding:4px 14px;border-radius:50px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+    .comp-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:0.95rem}
+    .comp-item .comp-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;margin-top:2px}
+    .comp-card.bad .comp-icon{background:#fee2e2;color:var(--red-600)}
+    .comp-card.good .comp-icon{background:rgba(22,163,106,0.2);color:#4ade80}
+    .comp-card.good .comp-text{color:rgba(255,255,255,0.9)}
+
+    /* Case Studies */
+    .cases-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+    .case-card{background:var(--white);border-radius:16px;padding:28px;border:1px solid var(--gray-200);transition:box-shadow 0.3s}
+    .case-card:hover{box-shadow:0 8px 30px rgba(0,0,0,0.08)}
+    .case-industry{display:inline-block;background:rgba(48,82,255,0.1);color:var(--primary);padding:4px 12px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:12px}
+    .case-story{font-size:0.9rem;color:var(--gray-600);line-height:1.6;margin-bottom:16px}
+    .case-original{color:var(--gray-600);font-size:0.9rem;margin-bottom:4px}
+    .case-original span{text-decoration:line-through}
+    .case-settled{font-size:1.8rem;font-weight:800;color:var(--primary);margin-bottom:8px}
+    .case-savings-badge{display:inline-block;background:#dcfce7;color:var(--green-600);padding:4px 14px;border-radius:50px;font-weight:700;font-size:0.85rem}
+    .case-note{font-size:0.8rem;color:var(--gray-600);margin-top:8px;font-style:italic}
+    .case-link{display:inline-block;margin-top:12px;padding:8px 18px;background:transparent;border:2px solid var(--primary);color:var(--primary);border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    .case-link:hover{background:var(--primary);color:var(--white)}
+
+    /* Person CTA */
+    .person-cta{background:var(--navy);overflow:hidden}
+    .person-cta-grid{display:grid;grid-template-columns:1fr 1fr;align-items:center}
+    .person-cta-content{padding:60px 50px 60px 0}
+    .person-cta-content h2{font-size:2rem;font-weight:800;color:var(--white);margin-bottom:16px;line-height:1.3}
+    .person-cta-content h2 .hl{color:var(--primary)}
+    .person-cta-content p{color:rgba(255,255,255,0.8);font-size:1.05rem;line-height:1.7;margin-bottom:24px}
+    .person-cta-content .pcta-btn{display:inline-block;background:var(--cta-btn);color:var(--white);padding:14px 36px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;margin-right:16px}
+    .person-cta-content .pcta-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    .person-cta-content .pcta-phone{color:rgba(255,255,255,0.8);text-decoration:none;font-size:1rem}
+    .person-cta-content .pcta-phone:hover{color:var(--white)}
+    .person-cta-img{height:100%;min-height:350px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%)}
+    .person-cta-img img{width:100%;height:100%;object-fit:cover;display:block}
+
+    /* Testimonials */
+    .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .testimonial-card{background:var(--white);border-radius:16px;padding:32px;border:1px solid var(--gray-200)}
+    .testimonial-stars{color:var(--gold);font-size:1.1rem;margin-bottom:14px}
+    .testimonial-text{color:var(--gray-800);font-size:0.95rem;margin-bottom:20px;font-style:italic;line-height:1.6}
+    .testimonial-author{display:flex;align-items:center;gap:12px}
+    .author-avatar{width:42px;height:42px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:700;font-size:0.85rem;flex-shrink:0}
+    .author-name{font-size:0.9rem;font-weight:700;color:var(--navy)}
+    .author-role{font-size:0.8rem;color:var(--gray-600)}
+
+    /* FAQ */
+    .faq-grid{max-width:800px;margin:0 auto}
+    .faq-item{border-bottom:1px solid var(--gray-200)}
+    .faq-q{padding:20px 0;font-size:1.05rem;font-weight:700;color:var(--navy);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .faq-q .arrow{font-size:1.2rem;transition:transform 0.3s;color:var(--primary);flex-shrink:0}
+    .faq-q .arrow.open{transform:rotate(180deg)}
+    .faq-a{display:none;padding:0 0 20px;color:var(--gray-600);font-size:1rem;line-height:1.7}
+
+    /* Bottom CTA */
+    .bottom-cta{background:var(--navy);padding:70px 0;text-align:center}
+    .bottom-cta h2{color:var(--white);font-size:2rem;font-weight:800;margin-bottom:12px}
+    .bottom-cta .section-sub{color:rgba(255,255,255,0.8)}
+    .bottom-cta .cta-form-card{background:var(--white);border-radius:16px;padding:32px 28px;max-width:520px;margin:0 auto 20px;text-align:left}
+    .bottom-cta .cta-form-card .form-group{margin-bottom:14px}
+    .bottom-cta .cta-form-card label{display:block;font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+    .bottom-cta .cta-form-card input[type="text"],.bottom-cta .cta-form-card input[type="email"],.bottom-cta .cta-form-card input[type="tel"],.bottom-cta .cta-form-card select,.bottom-cta .cta-form-card textarea{width:100%;padding:12px 16px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;transition:border 0.2s;background:var(--white)}
+    .bottom-cta .cta-form-card input:focus,.bottom-cta .cta-form-card select:focus,.bottom-cta .cta-form-card textarea:focus{outline:none;border-color:var(--primary)}
+    .bottom-cta .cta-form-card .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;overflow:hidden;transition:border 0.2s;background:var(--white)}
+    .bottom-cta .cta-form-card .phone-wrapper:focus-within{border-color:var(--primary)}
+    .bottom-cta .cta-form-card .phone-wrapper .phone-prefix{padding:12px;background:#f8f9fb;font-size:0.9rem;white-space:nowrap;border-right:1px solid var(--gray-200)}
+    .bottom-cta .cta-form-card .phone-wrapper input{border:none;border-radius:0;padding:12px 16px}
+    .bottom-cta .cta-form-card .phone-wrapper input:focus{outline:none;box-shadow:none}
+    .bottom-cta .cta-form-card .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none}
+    .bottom-cta .cta-form-card .radio-group{display:flex;gap:12px}
+    .bottom-cta .cta-form-card .radio-label{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;font-weight:600;height:auto}
+    .bottom-cta .cta-form-card .radio-label:has(input:checked){border-color:var(--primary);background:rgba(48,82,255,0.05)}
+    .bottom-cta .cta-form-card .radio-label input{display:none}
+    .bottom-cta .cta-form-card .consent-group{margin-top:10px}
+    .bottom-cta .cta-form-card .consent-label{font-size:0.72rem;color:#666}
+    .bottom-cta .cta-form-card .consent-label a{color:var(--primary)}
+    .bottom-cta .cta-form-card .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none}
+    .bottom-cta .cta-form-card .submit-btn{margin-top:12px}
+    .bottom-form-success{text-align:center;padding:24px}
+    .bottom-form-success h3{font-size:1.4rem;color:var(--green-600);margin-bottom:8px}
+    .bottom-form-success p{color:var(--gray-600);font-size:1rem}
+    .cta-phone{color:var(--white);font-size:1.2rem;font-weight:600;margin-top:8px}
+    .cta-phone a{color:var(--white);text-decoration:none}
+    .cta-phone a:hover{text-decoration:underline}
+
+    /* Guide */
+    .guide-header{padding:60px 0 0;text-align:center}
+    .guide-header h2{font-size:2rem;font-weight:800;color:var(--navy);margin-bottom:12px}
+    .guide-header p{color:var(--gray-600);max-width:650px;margin:0 auto;font-size:1.05rem}
+    .guide-section{padding:50px 0}
+    .guide-section.bg-white{background:var(--white)}
+    .guide-section.bg-light{background:#f2f4f9}
+    .guide-section .guide-inner{max-width:800px;margin:0 auto}
+    .guide-section h3{font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:14px}
+    .guide-section p{color:var(--gray-600);font-size:1rem;line-height:1.7;margin-bottom:12px}
+    .guide-inline-cta{text-align:center;padding:30px 0}
+    .guide-inline-cta a{display:inline-block;background:var(--cta-btn);color:var(--white);padding:14px 32px;border-radius:50px;font-weight:700;font-size:1rem;text-decoration:none;transition:all 0.2s}
+    .guide-inline-cta a:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    .glossary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .glossary-card{background:var(--white);border:1px solid var(--gray-200);border-radius:12px;padding:20px}
+    .glossary-card .term{font-weight:700;color:var(--navy);margin-bottom:4px;font-size:0.95rem}
+    .glossary-card .def{color:var(--gray-600);font-size:0.9rem;line-height:1.5}
+    .guide-final-cta{text-align:center;padding:50px 0;background:var(--navy)}
+    .guide-final-cta .gfc-btn{display:inline-block;background:var(--cta-btn);color:var(--white);padding:16px 40px;border-radius:50px;font-weight:700;font-size:1.1rem;text-decoration:none;transition:all 0.2s;margin-bottom:10px}
+    .guide-final-cta .gfc-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    .guide-final-cta .gfc-sub{color:rgba(255,255,255,0.7);font-size:0.95rem}
+
+    /* Footer */
+    footer{background:var(--navy-dark);padding:40px 0;text-align:center}
+    footer p{color:rgba(255,255,255,0.6);font-size:0.85rem}
+    footer a{color:rgba(255,255,255,0.8);text-decoration:none}
+    footer a:hover{color:var(--white)}
+
+    /* Mobile Sticky CTA */
+    .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 16px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1);gap:8px}
+    .mobile-cta a{flex:1;text-align:center;font-weight:700;font-size:0.9rem;text-decoration:none;padding:12px 16px;border-radius:50px;display:block}
+    .mobile-cta .mcta-call{background:var(--navy);color:var(--white)}
+    .mobile-cta .mcta-form{background:var(--cta-btn);color:var(--white)}
+
+    /* Responsive */
+    @media(max-width:992px){
+      .hero-grid{grid-template-columns:1fr;gap:36px}
+      .hero h1{font-size:2.2rem}
+      .form-card{max-width:520px;margin:0 auto}
+      .comp-grid{grid-template-columns:1fr}
+      .person-cta-grid{grid-template-columns:1fr}
+      .person-cta-content{padding:50px 20px}
+      .person-cta-img{min-height:250px}
+      .testimonials-grid{grid-template-columns:repeat(2,1fr)}
+      .cases-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:768px){
+      body::before{display:none}
+      .hero{padding:40px 0 50px}
+      .hero h1{font-size:1.8rem}
+      .hero-sub{font-size:0.95rem}
+      .form-card{padding:28px 22px}
+      .form-title{font-size:1.3rem}
+      .steps-grid{grid-template-columns:1fr}
+      .edu-stats{grid-template-columns:1fr}
+      .calc-card{padding:28px 22px}
+      .calc-amount{font-size:2rem}
+      .comp-grid{grid-template-columns:1fr}
+      .cases-grid{grid-template-columns:1fr}
+      .testimonials-grid{grid-template-columns:1fr}
+      .glossary-grid{grid-template-columns:1fr}
+      .section{padding:50px 0}
+      .section-title{font-size:1.5rem}
+      .trust-logos{gap:12px}
+      .trust-logos img{max-height:30px}
+      .mobile-cta{display:flex}
+      .bottom-cta{padding-bottom:100px}
+      .nav-phone span{display:none}
+      .nav-phone{padding:10px 14px}
+      .radio-group{flex-direction:column;gap:8px}
+      .person-cta-content h2{font-size:1.5rem}
+      .person-cta-content{padding:40px 20px}
+    }
+  </style>
+</head>
+<body>
+  {{bodyStartScripts}}
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <span class="nav-logo"><span class="chevron">&gt;</span> Coastal Debt <span class="resolve">RESOLVE</span></span>
+      <a href="tel:{{phone}}" class="nav-phone phone-element">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        <span>{{phone}}</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">{{badge}}</div>
+        <h1>{{headline}}<br><span class="hl">{{headlineLine2}}</span></h1>
+        <p class="hero-sub">{{subheadline}}</p>
+        <div id="bulletPoints"></div>
+        <div class="trust-bar-inline">
+          <div class="trust-label">{{trustLabel}}</div>
+          <div class="trust-logos">
+            <img src="/lp/assets/trust-logos/bbb.png" alt="BBB A+" height="40">
+            <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot" height="36">
+            <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider" height="24">
+            <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI" height="36">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card" id="heroFormCard">
+        <h2 class="form-title">{{formTitle}}</h2>
+        <p class="form-subtitle">{{formSubtitle}}</p>
+        <form id="leadForm">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" id="gclid" name="gclid" value="">
+          <input type="hidden" id="msclkid" name="msclkid" value="">
+          <input type="hidden" id="fbclid" name="fbclid" value="">
+          <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+          <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+          <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+          <input type="hidden" id="keyword" name="keyword" value="">
+          <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+          <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+          <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+          <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+          <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+          <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+          <input type="hidden" id="fb_placement" name="fb_placement" value="">
+          <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+          <input type="hidden" id="page_url" name="page_url" value="">
+          <input type="hidden" id="referrer_url" name="referrer_url" value="">
+          {{hiddenFieldsHtml}}
+          <div id="dynamicFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="consentCheckbox" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="consentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{formButton}}</button>
+        </form>
+        <div class="form-success" id="heroFormSuccess" style="display:none;">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+        <div class="form-security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          Your information is secure
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION:howItWorks -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{howItWorksTitle}}</h2>
+      <p class="section-sub">{{howItWorksSubtitle}}</p>
+      <div class="steps-grid" id="stepsGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:howItWorks -->
+
+  <!-- SECTION:educational -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{eduTitle}}</h2>
+      <p class="section-sub">{{eduSubtitle}}</p>
+      <div class="edu-stats" id="eduStats"></div>
+      <div class="edu-sections" id="eduSections"></div>
+    </div>
+  </section>
+  <!-- /SECTION:educational -->
+
+  <!-- SECTION:calculator -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{calcTitle}}</h2>
+      <p class="section-sub">{{calcSubtitle}}</p>
+      <div class="calc-card">
+        <div class="calc-label">Your estimated business debt</div>
+        <div class="calc-amount" id="calcAmountDisplay">$50,000</div>
+        <input type="range" class="calc-slider" id="calcSlider" min="{{calcMinDebt}}" max="{{calcMaxDebt}}" value="{{calcDefaultDebt}}" step="5000">
+        <div class="calc-results">
+          <div class="calc-result">
+            <div class="cr-label">Estimated Settlement</div>
+            <div class="cr-value" id="calcSettlement">$25,000</div>
+          </div>
+          <div class="calc-result savings">
+            <div class="cr-label">Estimated Savings</div>
+            <div class="cr-value" id="calcSavings">$25,000</div>
+          </div>
+        </div>
+        <a href="#leadForm" class="calc-cta" onclick="document.getElementById('heroFormCard').scrollIntoView({behavior:'smooth',block:'center'});return false;">{{calcCta}}</a>
+      </div>
+    </div>
+  </section>
+  <!-- /SECTION:calculator -->
+
+  <!-- SECTION:comparison -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{comparisonTitle}}</h2>
+      <p class="section-sub">{{comparisonSubtitle}}</p>
+      <div class="comp-grid" id="compGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:comparison -->
+
+  <!-- SECTION:caseStudies -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{caseStudiesTitle}}</h2>
+      <p class="section-sub">{{caseStudiesSubtitle}}</p>
+      <div class="cases-grid" id="casesGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:caseStudies -->
+
+  <!-- SECTION:personCta -->
+  <section class="person-cta">
+    <div class="container">
+      <div class="person-cta-grid">
+        <div class="person-cta-content">
+          <h2>{{personCtaTitle}} <span class="hl">{{personCtaTitleHighlight}}</span></h2>
+          <p>{{personCtaText}}</p>
+          <a href="#leadForm" class="pcta-btn" onclick="document.getElementById('heroFormCard').scrollIntoView({behavior:'smooth',block:'center'});return false;">{{personCtaButton}}</a>
+          <a href="tel:{{phone}}" class="pcta-phone phone-element">Or call: {{phone}}</a>
+        </div>
+        <div class="person-cta-img">
+          <img src="{{personCtaImage}}" alt="" loading="lazy" onerror="this.style.display='none'">
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- /SECTION:personCta -->
+
+  <!-- SECTION:testimonials -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{testimonialsTitle}}</h2>
+      <p class="section-sub">{{testimonialsSubtitle}}</p>
+      <div class="testimonials-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:testimonials -->
+
+  <!-- SECTION:faq -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{faqTitle}}</h2>
+      <p class="section-sub">{{faqSubtitle}}</p>
+      <div class="faq-grid" id="faqGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:faq -->
+
+  <!-- SECTION:cta -->
+  <section class="bottom-cta">
+    <div class="container">
+      <h2>{{ctaTitle}}</h2>
+      <p class="section-sub">{{ctaSubtitle}}</p>
+      <div class="cta-form-card" id="bottomFormCard">
+        <form id="bottomLeadForm" class="bottom-form">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="gclid" class="bottom-gclid" value="">
+          <input type="hidden" name="msclkid" class="bottom-msclkid" value="">
+          <input type="hidden" name="fbclid" class="bottom-fbclid" value="">
+          <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
+          <input type="hidden" name="rdt_cid" class="bottom-rdt-cid" value="">
+          <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
+          <input type="hidden" name="keyword" class="bottom-keyword" value="">
+          <input type="hidden" name="fb_campaign_id" class="bottom-fb-campaign-id" value="">
+          <input type="hidden" name="fb_adset_id" class="bottom-fb-adset-id" value="">
+          <input type="hidden" name="fb_ad_id" class="bottom-fb-ad-id" value="">
+          <input type="hidden" name="fb_campaign_name" class="bottom-fb-campaign-name" value="">
+          <input type="hidden" name="fb_adset_name" class="bottom-fb-adset-name" value="">
+          <input type="hidden" name="fb_ad_name" class="bottom-fb-ad-name" value="">
+          <input type="hidden" name="fb_placement" class="bottom-fb-placement" value="">
+          <input type="hidden" name="visitor_ip" class="bottom-visitor-ip" value="">
+          <input type="hidden" name="page_url" class="bottom-pageurl" value="">
+          <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
+          {{hiddenFieldsHtml}}
+          <div id="bottomFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="bottomConsentCheckbox" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="bottomConsentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{formButton}}</button>
+        </form>
+        <div class="bottom-form-success" id="bottomFormSuccess" style="display:none;">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
+      <p class="cta-phone phone-element">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
+    </div>
+  </section>
+  <!-- /SECTION:cta -->
+
+  <!-- SECTION:guide -->
+  <div id="guideContainer"></div>
+  <!-- /SECTION:guide -->
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 {{siteName}}. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <!-- Mobile Sticky CTA -->
+  <div class="mobile-cta" id="mobileStickyCtaBar">
+    <a href="tel:{{phone}}" class="mcta-call phone-element">Call Now</a>
+    <a href="#leadForm" class="mcta-form" onclick="document.getElementById('heroFormCard').scrollIntoView({behavior:'smooth',block:'start'});return false;">Get Free Consultation</a>
+  </div>
+
+  <script>
+    // ============= Configuration =============
+    var PAGE_SLUG = '{{SLUG}}';
+    var API_BASE = '/api';
+
+    // ============= Hide phone elements if no phone =============
+    (function() {
+      var phone = '{{phone}}';
+      if (!phone || phone === '{' + '{phone}}') {
+        document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // ============= Visitor ID & Tracking =============
+    (function() {
+      var k = '_vid_';
+      var id = localStorage.getItem(k);
+      if (!id) {
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        var s = Math.random().toString(36).substring(2, 6);
+        id = 'eli_' + t + r + s;
+        try { localStorage.setItem(k, id); } catch(e) {}
+      }
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      window._eliClickId = id;
+
+      try {
+        var ua = navigator.userAgent;
+        var browser = 'Unknown', browserVer = '', os = 'Unknown', osVer = '', deviceType = 'Desktop';
+
+        if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) { browser = 'Chrome'; browserVer = ua.match(/Chrome\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) { browser = 'Safari'; browserVer = ua.match(/Version\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Firefox') > -1) { browser = 'Firefox'; browserVer = ua.match(/Firefox\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Edg') > -1) { browser = 'Edge'; browserVer = ua.match(/Edg\/(\d+)/)?.[1] || ''; }
+
+        if (ua.indexOf('Windows') > -1) { os = 'Windows'; osVer = ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Mac OS') > -1) { os = 'macOS'; osVer = ua.match(/Mac OS X (\d+[._]\d+)/)?.[1]?.replace('_','.') || ''; }
+        else if (ua.indexOf('Android') > -1) { os = 'Android'; osVer = ua.match(/Android (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) { os = 'iOS'; osVer = ua.match(/OS (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Linux') > -1) { os = 'Linux'; }
+
+        if (/Mobile|Android|iPhone|iPod/.test(ua)) deviceType = 'Mobile';
+        else if (/iPad|Tablet/.test(ua)) deviceType = 'Tablet';
+
+        var params = new URLSearchParams(window.location.search);
+
+        function getCookieVal(name) {
+          var cookies = {};
+          document.cookie.split(';').forEach(function(c) {
+            var parts = c.trim().split('=');
+            if (parts.length >= 2) cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+          });
+          var val = cookies[name];
+          if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+          return '';
+        }
+
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eli_clickid: id,
+            gclid: params.get('gclid') || '',
+            msclkid: params.get('msclkid') || '',
+            fbclid: params.get('fbclid') || '',
+            fbc: getCookieVal('_fbc') || '',
+            fbp: getCookieVal('_fbp') || '',
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
+            rdt_cid: params.get('rdt_cid') || '',
+            user_agent: ua,
+            browser: browser,
+            browser_version: browserVer,
+            os: os,
+            os_version: osVer,
+            device_type: deviceType,
+            screen_width: screen.width,
+            screen_height: screen.height,
+            language: navigator.language || '',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            referrer_url: document.referrer || '',
+            landing_page: window.location.pathname,
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
+          })
+        }).catch(function(){});
+
+        setTimeout(function() {
+          var rtId = '';
+          try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
+          if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
+          var fbcRetry = getCookieVal('_fbc') || '';
+          var fbpRetry = getCookieVal('_fbp') || '';
+          if (rtId || fbcRetry || fbpRetry) {
+            var retryData = { eli_clickid: id };
+            if (rtId) retryData.rt_clickid = rtId;
+            if (fbcRetry) retryData.fbc = fbcRetry;
+            if (fbpRetry) retryData.fbp = fbpRetry;
+            fetch('/api/visitors/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryData)
+            }).catch(function(){});
+          }
+        }, 3000);
+      } catch(e) {}
+    })();
+
+    // ============= Phone click tracking =============
+    (function() {
+      document.querySelectorAll('a[href^="tel:"]').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (typeof fbq !== 'undefined') {
+            fbq('track', 'Contact');
+          }
+          fetch('/api/visitors/phone-click', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              eli_clickid: localStorage.getItem('_vid_') || '',
+              page_slug: PAGE_SLUG
+            })
+          }).catch(function() {});
+        });
+      });
+    })();
+
+    // ============= Main IIFE =============
+    (function() {
+
+    // Helper functions
+    function getCookie(name) {
+      var cookies = {};
+      document.cookie.split(';').forEach(function(c) {
+        var parts = c.trim().split('=');
+        if (parts.length >= 2) cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+      });
+      var val = cookies[name];
+      if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+      return '';
+    }
+    function getStored(key) { try { return localStorage.getItem(key) || ''; } catch(e) { return ''; } }
+    function setStored(key, val) { try { if (val) localStorage.setItem(key, val); } catch(e) {} }
+    function fmtCurrency(n) { return '$' + n.toLocaleString('en-US'); }
+
+    var _lpParams = new URLSearchParams(window.location.search);
+
+    // ============= Capture URL Params =============
+    var gclid = _lpParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    if (gclid) {
+      if (gclid.startsWith('GCL.')) { var parts = gclid.split('.'); gclid = parts[parts.length - 1]; }
+      setStored('_gclid', gclid);
+      document.getElementById('gclid').value = gclid;
+    }
+
+    var msclkid = _lpParams.get('msclkid') || getStored('_msclkid') || '';
+    if (msclkid) { setStored('_msclkid', msclkid); document.getElementById('msclkid').value = msclkid; }
+
+    var fbclid = _lpParams.get('fbclid') || getStored('_fbclid') || '';
+    if (fbclid) { setStored('_fbclid', fbclid); document.getElementById('fbclid').value = fbclid; }
+
+    var keyword = _lpParams.get('keyword') || '';
+    if (!keyword) { var _utmTerm = _lpParams.get('utm_term') || ''; if (_utmTerm && !/^\d+$/.test(_utmTerm)) keyword = _utmTerm; }
+    keyword = keyword || getStored('_keyword') || '';
+    if (keyword) { setStored('_keyword', keyword); document.getElementById('keyword').value = keyword; }
+
+    var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+    var metaAltNames = {
+      fb_campaign_id: ['campaign_id','c_id','sub6','utm_id'],
+      fb_adset_id: ['adset_id','as_id','sub5','utm_content'],
+      fb_ad_id: ['ad_id','sub4','utm_term'],
+      fb_campaign_name: ['campaign_name','c_name','utm_campaign'],
+      fb_adset_name: ['adset_name','as_name'],
+      fb_ad_name: ['ad_name','sub2'],
+      fb_placement: ['placement','sub7']
+    };
+    metaParams.forEach(function(p) {
+      var val = _lpParams.get(p) || '';
+      if (!val && metaAltNames[p]) { for (var i = 0; i < metaAltNames[p].length; i++) { val = _lpParams.get(metaAltNames[p][i]) || ''; if (val) break; } }
+      val = val || getStored('_' + p) || '';
+      if (val) { setStored('_' + p, val); var el = document.getElementById(p); if (el) el.value = val; }
+    });
+
+    fetch('/api/visitors/ip').then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ip) { var el = document.getElementById('visitor_ip'); if (el) el.value = d.ip; window._visitorIp = d.ip; }
+    }).catch(function(){});
+
+    function getRtClickId() {
+      try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+    }
+    var rtClickId = getRtClickId();
+    if (rtClickId) { setStored('_rt_clickid', rtClickId); document.getElementById('rt_clickid').value = rtClickId; }
+    setTimeout(function() {
+      if (!document.getElementById('rt_clickid').value) {
+        var delayed = getRtClickId();
+        if (delayed) { setStored('_rt_clickid', delayed); document.getElementById('rt_clickid').value = delayed; }
+      }
+    }, 2000);
+
+    var rdtCid = _lpParams.get('rdt_cid') || getStored('_rdt_cid') || '';
+    if (rdtCid) { setStored('_rdt_cid', rdtCid); document.getElementById('rdt_cid').value = rdtCid; }
+
+    document.getElementById('page_url').value = window.location.href;
+    document.getElementById('referrer_url').value = document.referrer || '';
+
+    // ============= Render Bullet Points =============
+    var bulletPoints = JSON.parse('{{bulletPointsJson}}');
+    document.getElementById('bulletPoints').innerHTML = bulletPoints.map(function(point) {
+      return '<div class="bullet-item"><span class="bicon">&gt;</span><span>' + point + '</span></div>';
+    }).join('');
+
+    // ============= Render Steps =============
+    var steps = JSON.parse('{{stepsJson}}');
+    document.getElementById('stepsGrid').innerHTML = steps.map(function(step, i) {
+      return '<div class="step-card"><div class="step-num">' + (i + 1) + '</div><h3>' + step.title + '</h3><p>' + step.description + '</p></div>';
+    }).join('');
+
+    // ============= Render Educational Stats =============
+    var eduStats = JSON.parse('{{eduStatsJson}}');
+    document.getElementById('eduStats').innerHTML = eduStats.map(function(stat) {
+      return '<div class="edu-stat"><div class="num">' + stat.number + '</div><div class="lbl">' + stat.label + '</div></div>';
+    }).join('');
+
+    // ============= Render Educational Sections =============
+    var eduSections = JSON.parse('{{eduSectionsJson}}');
+    document.getElementById('eduSections').innerHTML = eduSections.map(function(sec) {
+      var paragraphs = sec.content.split('\n\n').map(function(p) { return '<p>' + p.trim() + '</p>'; }).join('');
+      return '<div class="edu-section"><h3>' + sec.title + '</h3>' + paragraphs + '</div>';
+    }).join('');
+
+    // ============= Calculator =============
+    var calcSlider = document.getElementById('calcSlider');
+    var savingsPercent = {{calcSavingsPercent}};
+    var calcTracked = false;
+
+    function updateCalc() {
+      var debt = parseInt(calcSlider.value);
+      var settlement = Math.round(debt * (1 - savingsPercent / 100));
+      var savings = debt - settlement;
+      document.getElementById('calcAmountDisplay').textContent = fmtCurrency(debt);
+      document.getElementById('calcSettlement').textContent = fmtCurrency(settlement);
+      document.getElementById('calcSavings').textContent = fmtCurrency(savings);
+    }
+    updateCalc();
+
+    calcSlider.addEventListener('input', function() {
+      updateCalc();
+      if (!calcTracked) {
+        calcTracked = true;
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eli_clickid: window._eliClickId || '', event: 'calculator_interaction', page_slug: PAGE_SLUG })
+        }).catch(function(){});
+      }
+    });
+
+    // ============= Render Comparison Cards =============
+    var compBad = JSON.parse('{{comparisonBadJson}}');
+    var compGood = JSON.parse('{{comparisonGoodJson}}');
+
+    var compHtml = '<div class="comp-card bad">';
+    compHtml += '<div class="comp-badge">' + (compBad.badge || '') + '</div>';
+    compBad.items.forEach(function(item) {
+      compHtml += '<div class="comp-item"><span class="comp-icon">&#10007;</span><span class="comp-text">' + item + '</span></div>';
+    });
+    compHtml += '</div>';
+
+    compHtml += '<div class="comp-card good"><div class="comp-recommended">Recommended</div>';
+    compHtml += '<div class="comp-badge">' + (compGood.badge || '') + '</div>';
+    compGood.items.forEach(function(item) {
+      compHtml += '<div class="comp-item"><span class="comp-icon">&#10003;</span><span class="comp-text">' + item + '</span></div>';
+    });
+    compHtml += '</div>';
+    document.getElementById('compGrid').innerHTML = compHtml;
+
+    // ============= Render Case Studies =============
+    var caseStudies = JSON.parse('{{caseStudiesJson}}');
+    document.getElementById('casesGrid').innerHTML = caseStudies.map(function(cs) {
+      var html = '<div class="case-card">';
+      html += '<div class="case-industry">' + cs.industry + '</div>';
+      html += '<p class="case-story">' + cs.story + '</p>';
+      html += '<p class="case-original">Original: <span>' + cs.originalAmount + '</span></p>';
+      html += '<p class="case-settled">' + cs.settledAmount + '</p>';
+      html += '<div class="case-savings-badge">' + cs.savingsPercent + ' Savings</div>';
+      if (cs.savingsNote) html += '<p class="case-note">' + cs.savingsNote + '</p>';
+      if (cs.proofLink) html += '<a href="' + cs.proofLink + '" target="_blank" class="case-link">View Settlement</a>';
+      html += '</div>';
+      return html;
+    }).join('');
+
+    // ============= Render Testimonials =============
+    var testimonials = JSON.parse('{{testimonialsJson}}');
+    document.getElementById('testimonialsGrid').innerHTML = testimonials.map(function(t) {
+      var initials = t.name ? t.name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase() : '';
+      return '<div class="testimonial-card">' +
+        '<div class="testimonial-stars">\u2605\u2605\u2605\u2605\u2605</div>' +
+        '<p class="testimonial-text">"' + t.text + '"</p>' +
+        '<div class="testimonial-author">' +
+        '<div class="author-avatar">' + initials + '</div>' +
+        '<div><div class="author-name">' + t.name + '</div><div class="author-role">' + (t.role || '') + '</div></div>' +
+        '</div></div>';
+    }).join('');
+
+    // ============= Render FAQ =============
+    var faqItems = JSON.parse('{{faqItemsJson}}');
+    document.getElementById('faqGrid').innerHTML = faqItems.map(function(item) {
+      return '<div class="faq-item"><div class="faq-q"><span>' + item.question + '</span><span class="arrow">&#9660;</span></div><div class="faq-a">' + item.answer + '</div></div>';
+    }).join('');
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-q').forEach(function(q) {
+      q.addEventListener('click', function() {
+        var answer = q.nextElementSibling;
+        var arrow = q.querySelector('.arrow');
+        var isOpen = answer.style.display === 'block';
+        // Close all
+        document.querySelectorAll('.faq-a').forEach(function(a) { a.style.display = 'none'; });
+        document.querySelectorAll('.faq-q .arrow').forEach(function(a) { a.classList.remove('open'); });
+        // Toggle this one
+        if (!isOpen) {
+          answer.style.display = 'block';
+          arrow.classList.add('open');
+        }
+      });
+    });
+
+    // FAQPage JSON-LD
+    var faqSchemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': faqItems.map(function(item) {
+        return { '@type': 'Question', 'name': item.question, 'acceptedAnswer': { '@type': 'Answer', 'text': item.answer } };
+      })
+    };
+    document.getElementById('faqSchema').textContent = JSON.stringify(faqSchemaData);
+
+    // AggregateRating JSON-LD
+    var ratingData = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      'name': 'Coastal Debt Resolve',
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': '5',
+        'bestRating': '5',
+        'ratingCount': String(testimonials.length)
+      }
+    };
+    document.getElementById('ratingSchema').textContent = JSON.stringify(ratingData);
+
+    // ============= Render Guide =============
+    (function() {
+      var guideContainer = document.getElementById('guideContainer');
+      var guideTitle = '{{guideTitle}}';
+      var guideSubtitle = '{{guideSubtitle}}';
+      if (!guideTitle || guideTitle === '{' + '{guideTitle}}') return;
+
+      var guideSections = JSON.parse('{{guideSectionsJson}}');
+      var guideCta = '{{guideCta}}';
+      var guideCtaSubtext = '{{guideCtaSubtext}}';
+
+      var html = '<div class="guide-header container"><h2>' + guideTitle + '</h2><p>' + guideSubtitle + '</p></div>';
+
+      guideSections.forEach(function(sec, i) {
+        var bgClass = sec.background === 'light' ? 'bg-light' : 'bg-white';
+        html += '<div class="guide-section ' + bgClass + '"><div class="container"><div class="guide-inner">';
+        html += '<h3>' + sec.title + '</h3>';
+
+        // Detect glossary: content has multiple lines with ":" pattern
+        var lines = sec.content.split('\n');
+        var colonCount = 0;
+        lines.forEach(function(l) { if (l.indexOf(':') > 0 && l.indexOf(':') < 40) colonCount++; });
+
+        if (colonCount >= 3) {
+          // Render as glossary grid
+          html += '<div class="glossary-grid">';
+          lines.forEach(function(line) {
+            line = line.trim();
+            if (!line) return;
+            var colonIdx = line.indexOf(':');
+            if (colonIdx > 0) {
+              var term = line.substring(0, colonIdx).trim();
+              var def = line.substring(colonIdx + 1).trim();
+              html += '<div class="glossary-card"><div class="term">' + term + '</div><div class="def">' + def + '</div></div>';
+            }
+          });
+          html += '</div>';
+        } else {
+          // Render as paragraphs
+          var paragraphs = sec.content.split('\n').filter(function(p) { return p.trim(); });
+          paragraphs.forEach(function(p) { html += '<p>' + p.trim() + '</p>'; });
+        }
+
+        html += '</div></div></div>';
+
+        // Inline CTA every 2-3 sections
+        if ((i + 1) % 2 === 0 && i < guideSections.length - 1) {
+          html += '<div class="guide-inline-cta"><a href="#leadForm" onclick="document.getElementById(\'heroFormCard\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Get Your Free Consultation</a></div>';
+        }
+      });
+
+      // Final guide CTA
+      if (guideCta && guideCta !== '{' + '{guideCta}}') {
+        html += '<div class="guide-final-cta"><a href="#leadForm" class="gfc-btn" onclick="document.getElementById(\'heroFormCard\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">' + guideCta + '</a>';
+        if (guideCtaSubtext) html += '<div class="gfc-sub">' + guideCtaSubtext + '</div>';
+        html += '</div>';
+      }
+
+      guideContainer.innerHTML = html;
+    })();
+
+    // ============= Render Form Fields =============
+    var formFields = JSON.parse('{{formFieldsJson}}');
+
+    function renderFormFields(fields, containerId, prefix) {
+      var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url'];
+      var html = fields.map(function(field) {
+        var fid = prefix ? prefix + field.name : field.name;
+        var fname = prefix && field.type === 'radio' ? prefix + field.name : field.name;
+        if (field.type === 'radio') {
+          var options = (field.options || 'Yes,No').split(',').map(function(o) { return o.trim(); });
+          return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+            options.map(function(opt, i) {
+              return '<label class="radio-label"><input type="radio" name="' + fname + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
+            }).join('') + '</div></div>';
+        } else if (field.type === 'select') {
+          var options = (field.options || '').split(',').map(function(o) { return o.trim(); });
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><select id="' + fid + '" name="' + field.name + '"' + (field.required ? ' required' : '') + '><option value="">Select...</option>' +
+            options.map(function(opt) { return '<option value="' + opt + '">' + opt + '</option>'; }).join('') + '</select></div>';
+        } else if (field.type === 'hidden') {
+          if (existingIds.includes(field.name)) return '';
+          return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+        } else if (field.type === 'tel') {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label>' +
+            '<div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>' +
+            '<input type="tel" id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div>' +
+            '<div class="phone-error" id="' + fid + '_error">Please enter a valid 10-digit US phone number</div></div>';
+        } else if (field.type === 'textarea') {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><textarea id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + ' rows="3" style="border-radius:12px;padding:12px 16px;width:100%;border:2px solid var(--gray-200);font-size:1rem;font-family:inherit;outline:none;transition:border 0.2s;resize:vertical"></textarea></div>';
+        } else {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><input type="' + field.type + '" id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+        }
+      }).join('');
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    renderFormFields(formFields, 'dynamicFormFields', '');
+    renderFormFields(formFields, 'bottomFormFields', 'bottom_');
+
+    // ============= Phone Formatting =============
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      if (digits[0] === '0' || digits[0] === '1') return false;
+      if (digits[3] === '0' || digits[3] === '1') return false;
+      if (parseInt(digits.substring(0, 3)) === 555) return false;
+      return true;
+    }
+
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        var errEl = document.getElementById(e.target.id + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // ============= Bottom Form Hidden Fields =============
+    function setBottomHiddenFields() {
+      var eli = window._eliClickId || '';
+      document.querySelectorAll('.bottom-eli').forEach(function(f) { f.value = eli; });
+      document.querySelectorAll('.bottom-gclid').forEach(function(f) { f.value = document.getElementById('gclid') ? document.getElementById('gclid').value : ''; });
+      document.querySelectorAll('.bottom-msclkid').forEach(function(f) { f.value = document.getElementById('msclkid') ? document.getElementById('msclkid').value : ''; });
+      document.querySelectorAll('.bottom-fbclid').forEach(function(f) { f.value = document.getElementById('fbclid') ? document.getElementById('fbclid').value : ''; });
+      document.querySelectorAll('.bottom-rt').forEach(function(f) { f.value = document.getElementById('rt_clickid') ? document.getElementById('rt_clickid').value : ''; });
+      document.querySelectorAll('.bottom-rdt-cid').forEach(function(f) { f.value = document.getElementById('rdt_cid') ? document.getElementById('rdt_cid').value : ''; });
+      document.querySelectorAll('.bottom-keyword').forEach(function(f) { f.value = document.getElementById('keyword') ? document.getElementById('keyword').value : ''; });
+      ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'].forEach(function(p) {
+        document.querySelectorAll('.bottom-' + p.replace(/_/g, '-')).forEach(function(f) { f.value = document.getElementById(p) ? document.getElementById(p).value : ''; });
+      });
+      document.querySelectorAll('.bottom-visitor-ip').forEach(function(f) { f.value = window._visitorIp || (document.getElementById('visitor_ip') ? document.getElementById('visitor_ip').value : ''); });
+      document.querySelectorAll('.bottom-pageurl').forEach(function(f) { f.value = window.location.href; });
+      document.querySelectorAll('.bottom-referrer').forEach(function(f) { f.value = document.referrer || ''; });
+    }
+    setBottomHiddenFields();
+    setTimeout(setBottomHiddenFields, 3000);
+
+    // ============= Dedup Flag =============
+    var _formSubmitting = false;
+
+    // ============= Hero Form Submission =============
+    document.getElementById('leadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      var consentBox = document.getElementById('consentCheckbox');
+      var consentErr = document.getElementById('consentError');
+      if (!consentBox.checked) { consentErr.style.display = 'block'; consentBox.focus(); return; }
+      consentErr.style.display = 'none';
+
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById(phoneInputs[i].id + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      _formSubmitting = true;
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = Object.fromEntries(formData.entries());
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+      if (!data.rt_clickid) data.rt_clickid = getRtClickId();
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          document.getElementById('leadForm').style.display = 'none';
+          document.querySelector('.form-security').style.display = 'none';
+          document.getElementById('heroFormSuccess').style.display = 'block';
+          document.getElementById('heroFormCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          var bf = document.getElementById('bottomLeadForm');
+          if (bf) bf.style.display = 'none';
+          var bs = document.getElementById('bottomFormSuccess');
+          if (bs) bs.style.display = 'block';
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formButton}}';
+      }
+    });
+
+    // ============= Bottom Form Submission =============
+    document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      var consentBox = document.getElementById('bottomConsentCheckbox');
+      var consentErr = document.getElementById('bottomConsentError');
+      if (!consentBox.checked) { consentErr.style.display = 'block'; consentBox.focus(); return; }
+      consentErr.style.display = 'none';
+
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById('bottom_' + phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      setBottomHiddenFields();
+      _formSubmitting = true;
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = {};
+      formData.forEach(function(val, key) {
+        var cleanKey = key.startsWith('bottom_') ? key.substring(7) : key;
+        data[cleanKey] = val;
+      });
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+      if (!data.rt_clickid) data.rt_clickid = getRtClickId();
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          document.getElementById('bottomLeadForm').style.display = 'none';
+          document.getElementById('bottomFormSuccess').style.display = 'block';
+          document.getElementById('leadForm').style.display = 'none';
+          document.querySelector('.form-security').style.display = 'none';
+          document.getElementById('heroFormSuccess').style.display = 'block';
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formButton}}';
+      }
+    });
+
+    // ============= Section Visibility =============
+    (function() {
+      var sections = document.querySelectorAll('[class*="section"]');
+      var allComments = [];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_COMMENT, null, false);
+      while (walker.nextNode()) allComments.push(walker.currentNode);
+
+      allComments.forEach(function(comment) {
+        var text = comment.textContent.trim();
+        if (text.startsWith('SECTION:')) {
+          var key = text.replace('SECTION:', '').trim();
+          var node = comment.nextElementSibling;
+          // Section visibility is controlled server-side by removing the section markers and content
+        }
+      });
+    })();
+
+    })(); // end main IIFE
+  </script>
+  {{bodyEndScripts}}
+</body>
+</html>
