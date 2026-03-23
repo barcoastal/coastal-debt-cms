@@ -215,8 +215,8 @@ const defaultContentAuthority = {
       proofLink: "https://join.coastaldebt.com/wp-content/uploads/2026/02/AMA-B-Squared-Carpentry-LLC-dba-B-Squared-Carpentry.pdf"
     }
   ],
-  personCtaTitle: "Your Financial Future Starts Today",
-  personCtaTitleHighlight: "Financial Future",
+  personCtaTitle: "Your",
+  personCtaTitleHighlight: "Financial Future Starts Today",
   personCtaText: "When creditors are calling every day and you're searching for bankruptcy options, it feels like there's no way out. But even with business bankruptcies rising, filing is not your only option. Let us fight for you.",
   personCtaButton: "Get Your Free Consultation",
   personCtaImage: "",
@@ -637,8 +637,9 @@ function generateLandingPage(pageId) {
     });
   }
 
-  // Helper: escape single quotes in JSON for safe embedding in JS single-quoted strings
-  const jsJson = (obj) => JSON.stringify(obj).replace(/'/g, "\\'").replace(/<\//g, '<\\/');
+  // Helper: escape JSON for safe embedding in JS single-quoted strings
+  // Must double-escape backslashes so \n stays as \n after JS parsing, then JSON.parse handles it
+  const jsJson = (obj) => JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/<\//g, '<\\/');
 
   // Handle JSON arrays for JavaScript
   html = html.replace(/{{bulletPointsJson}}/g, jsJson(mergedContent.bulletPoints || []));
@@ -711,8 +712,8 @@ function generateLandingPage(pageId) {
     }
     if (branding.site_name) {
       brandingTags += `\n  <meta property="og:site_name" content="${branding.site_name}">`;
-      html = html.replace(/{{siteName}}/g, branding.site_name);
     }
+    html = html.replace(/{{siteName}}/g, branding.site_name || 'Coastal Debt Resolve');
     if (brandingTags) {
       html = html.replace('</head>', brandingTags + '\n</head>');
     }
