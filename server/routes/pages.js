@@ -97,6 +97,232 @@ const defaultContent = {
   }
 };
 
+const defaultContentAuthority = {
+  badge: "Business Bankruptcy Alternative 2026",
+  headline: "Facing Business Bankruptcy?",
+  headlineLine2: "Settle Your Debt for 50-80% Less.",
+  subheadline: "With business bankruptcies rising in 2026, thousands of small business owners are choosing debt settlement instead. No court filings. No public record. Keep your business running.",
+  bulletPoints: [
+    "Avoid small business bankruptcies - no court filings or public record",
+    "Settle business debt for 50-80% less than you owe",
+    "Keep your business open and your assets protected",
+    "Credit recovers in months - not 7-10 years after company bankruptcy"
+  ],
+  formTitle: "Find Your Path to Debt-Free Business",
+  formSubtitle: "Takes 60 seconds. No obligation.",
+  formButton: "Get My Free Consultation",
+  trustLabel: "As Seen In & Trusted By",
+  howItWorksTitle: "The 1-2-3 Path to Freedom",
+  howItWorksSubtitle: "Our proven process has helped over 1,500 businesses avoid company bankruptcies",
+  steps: [
+    { title: "Free Business Debt Analysis", description: "Tell us about your situation. We'll review your business debt and show you how to avoid bankruptcy while reducing what you owe by 50-80%." },
+    { title: "We Negotiate With Creditors", description: "Our team contacts your lenders directly - no bankruptcy attorneys or court filings needed. We negotiate to settle for a fraction of what you owe." },
+    { title: "Debt Settled, Bankruptcy Avoided", description: "Pay significantly less than your total debt. No business bankruptcy on your record. Your company keeps operating and growing." }
+  ],
+  eduTitle: "Understanding Business Bankruptcies in 2026",
+  eduSubtitle: "What every small business owner needs to know before considering bankruptcy options",
+  eduStats: [
+    { number: "44%", label: "Increase in business bankruptcies since 2023" },
+    { number: "$50K+", label: "Average cost of filing business bankruptcy" },
+    { number: "7-10yr", label: "Bankruptcy stays on your record" }
+  ],
+  eduSections: [
+    {
+      title: "Why Are Business Bankruptcies Rising?",
+      content: "Business bankruptcies in 2026 are at their highest level in over a decade. High interest rates, tightening credit markets, and lingering effects of pandemic-era debt have pushed thousands of small businesses toward insolvency. Many business owners are searching for bankruptcy options for small business - but filing isn't always the best path forward."
+    },
+    {
+      title: "Types of Company Bankruptcies",
+      content: "Chapter 7 (Liquidation): The business ceases operations. Assets are sold to pay creditors. This is the most common form of small business bankruptcies, but it means closing your doors permanently.\n\nChapter 11 (Reorganization): The business continues operating under a court-approved repayment plan. Expensive (legal fees often exceed $50,000) and time-consuming (12-18 months minimum).\n\nChapter 13 (Individual): Available only to sole proprietors. Creates a 3-5 year repayment plan. Not available for LLCs or corporations."
+    },
+    {
+      title: "The Alternative: Business Debt Settlement",
+      content: "For business owners wondering how to resolve business debt without destroying their future, debt settlement offers a private, faster, and less damaging alternative. Instead of court filings and public records, we negotiate directly with your creditors to reduce what you owe - typically by 50-80%."
+    }
+  ],
+  calcTitle: "Realize Your Savings",
+  calcSubtitle: "See how much you could save through debt settlement vs. filing for business bankruptcy",
+  calcMinDebt: 10000,
+  calcMaxDebt: 500000,
+  calcDefaultDebt: 150000,
+  calcSavingsPercent: 70,
+  calcCta: "Get Your Free Analysis",
+  comparisonTitle: "Bankruptcy vs. Debt Settlement",
+  comparisonSubtitle: "See why thousands chose settlement over small business bankruptcies",
+  comparisonBad: {
+    title: "Filing Business Bankruptcy",
+    badge: "Not Recommended",
+    items: [
+      "Public record - searchable forever",
+      "Credit damaged for 7-10 years",
+      "Often forces business closure",
+      "Court may seize business assets",
+      "6-18 months in court",
+      "Attorney fees $10K-$50K+",
+      "Nearly impossible to get future loans"
+    ]
+  },
+  comparisonGood: {
+    title: "Business Debt Settlement",
+    badge: "Better Option",
+    items: [
+      "Private negotiation - no public record",
+      "Credit recovers in 12-24 months",
+      "Keep your business open and operating",
+      "Your assets stay protected",
+      "Settled in 3-6 months",
+      "No upfront fees - save 50-80%",
+      "Access to financing within months"
+    ]
+  },
+  caseStudiesTitle: "Real Businesses That Avoided Bankruptcy",
+  caseStudiesSubtitle: "Actual settlements for business owners who explored bankruptcy options for small business",
+  caseStudies: [
+    {
+      industry: "Home Interiors",
+      story: "Facing a $107K judgment from Mulligan Funding, this interior design business was days away from filing. We negotiated a settlement that saved their company.",
+      originalAmount: "$107,684",
+      settledAmount: "$55,000",
+      savingsPercent: "49%",
+      savingsNote: "$52,684 saved",
+      proofLink: "https://join.coastaldebt.com/wp-content/uploads/2026/02/Mulligan.pdf"
+    },
+    {
+      industry: "Pumping Services",
+      story: "Sued by DLP Funding over an MCA default. We stepped in and settled the lawsuit for a fraction of what was owed.",
+      originalAmount: "$12,792",
+      settledAmount: "$5,000",
+      savingsPercent: "61%",
+      savingsNote: "Lawsuit dismissed",
+      proofLink: "https://join.coastaldebt.com/wp-content/uploads/2026/02/DLP.pdf"
+    },
+    {
+      industry: "Education",
+      story: "RTQ Academy was drowning in MCA debt from Byzfunder. We negotiated a settlement that let them keep serving their community.",
+      originalAmount: "$40,570",
+      settledAmount: "$18,000",
+      savingsPercent: "56%",
+      savingsNote: "$22,570 saved",
+      proofLink: "https://join.coastaldebt.com/wp-content/uploads/2026/02/Bzfunder.pdf"
+    },
+    {
+      industry: "Construction",
+      story: "B Squared Carpentry faced $169K in MCA debt. Our team negotiated aggressively and kept them in business.",
+      originalAmount: "$169,006",
+      settledAmount: "$117,955",
+      savingsPercent: "30%",
+      savingsNote: "$51,051 saved",
+      proofLink: "https://join.coastaldebt.com/wp-content/uploads/2026/02/AMA-B-Squared-Carpentry-LLC-dba-B-Squared-Carpentry.pdf"
+    }
+  ],
+  personCtaTitle: "Your Financial Future Starts Today",
+  personCtaTitleHighlight: "Financial Future",
+  personCtaText: "When creditors are calling every day and you're searching for bankruptcy options, it feels like there's no way out. But even with business bankruptcies rising, filing is not your only option. Let us fight for you.",
+  personCtaButton: "Get Your Free Consultation",
+  personCtaImage: "",
+  testimonialsTitle: "Business Owners Who Chose Settlement Over Bankruptcy",
+  testimonialsSubtitle: "Real stories from business owners who avoided company bankruptcies",
+  testimonials: [
+    {
+      quote: "They were helpful, clear communication, effective results. I couldn't have asked for a better team to help my trucking company through this difficult time.",
+      name: "KMJ Trucking, LLC",
+      role: "Trucking Company",
+      initials: "KT"
+    },
+    {
+      quote: "Their team was very responsive. As an auto repair shop owner, I was overwhelmed with MCA debt. Coastal Debt gave me my life back.",
+      name: "AAMCO Auburn",
+      role: "Auto Repair Shop",
+      initials: "AA"
+    },
+    {
+      quote: "When I thought bankruptcy was my only option, Coastal Debt showed me there was another way. I cannot thank Carlos enough.",
+      name: "Edward Sweeney",
+      role: "Business Owner",
+      initials: "ES"
+    }
+  ],
+  faqTitle: "Business Bankruptcy Questions? We Have Answers.",
+  faqSubtitle: "Everything you need to know about avoiding small business bankruptcies",
+  faqItems: [
+    { question: "What are the best alternatives to business bankruptcy?", answer: "The most effective alternative to business bankruptcy is debt settlement. Instead of filing for company bankruptcy and going through the courts, a debt settlement firm negotiates directly with your creditors to reduce what you owe by 50-80%. You avoid the public record, keep your business running, and resolve your debt faster than filing for small business bankruptcies." },
+    { question: "How do small business bankruptcies affect my credit?", answer: "Small business bankruptcies severely damage your personal credit for 7-10 years, especially if you personally guaranteed business loans. They also create a permanent public record and make future financing extremely difficult. Debt settlement avoids all of this - your credit can recover in 12-24 months and there's no public filing." },
+    { question: "What are the bankruptcy options for small business owners in 2026?", answer: "Small business owners typically face Chapter 7 (liquidation) or Chapter 11 (reorganization). Both are expensive, time-consuming, and damaging. With business bankruptcies in 2026 rising, more owners are choosing debt settlement as a faster, more private alternative." },
+    { question: "Is debt settlement really better than filing for business bankruptcy?", answer: "For most business owners, yes. Business bankruptcy stays on your record for 7-10 years, can force closure, and makes future financing nearly impossible. Debt settlement is private, faster (3-6 months vs. 6-18 months), and lets you keep operating." },
+    { question: "How to handle business debt without bankruptcy?", answer: "If you're looking into how to resolve business debt, consider all options first. Chapter 7 liquidates and closes your business. Chapter 11 reorganizes debt but costs $50K+. Debt settlement is often the smarter path - resolve your debt for 50-80% less, keep your doors open, and protect your personal credit." },
+    { question: "Can debt consolidation help me avoid business bankruptcy?", answer: "Consolidation combines debts into one payment but doesn't reduce what you owe. If your business debt is too high to manage even with consolidation, debt settlement is stronger - it actually reduces your total debt by 50-80%, making it the most effective bankruptcy alternative." },
+    { question: "What business relief programs are available to avoid bankruptcy?", answer: "Business relief programs include SBA assistance, state-level aid, and private debt settlement programs like ours. Our program helps business owners settle debt for 50-80% less, avoiding company bankruptcies while keeping operations running." },
+    { question: "How long does debt settlement take compared to business bankruptcy?", answer: "Most business debt settlements complete in 3-6 months. Small business bankruptcies take 6-18 months or longer due to court proceedings, creditor meetings, and legal filings. Settlement is faster and gets you back on track sooner." }
+  ],
+  ctaTitle: "Don't Let Bankruptcy Be Your Only Option",
+  ctaSubtitle: "Free consultation. See how much you could save without filing for bankruptcy.",
+  guideTitle: "The Complete Guide to Business Bankruptcies in 2026",
+  guideSubtitle: "Everything small business owners need to know about business bankruptcy - and how to avoid it",
+  guideSections: [
+    {
+      title: "Chapter 7 vs Chapter 11 vs Chapter 13: Which Business Bankruptcy Type Applies to You?",
+      content: "When considering business bankruptcy, understanding the three main types is critical. Each chapter serves a different purpose and has different eligibility requirements depending on your business structure.\n\nChapter 7 (Liquidation) is the most common form of small business bankruptcies. The court appoints a trustee who sells your business assets to pay creditors. Once complete, remaining eligible debts are discharged. The catch: your business ceases to exist.\n\nChapter 11 (Reorganization) lets you keep operating while restructuring debt under a court-approved plan. It's the most complex and expensive form of company bankruptcy, typically costing $50,000-$200,000+ in legal fees.\n\nChapter 13 (Individual Reorganization) is only available to sole proprietors (not LLCs or corporations). It creates a 3-5 year repayment plan based on your income.",
+      background: "white"
+    },
+    {
+      title: "The True Cost of Filing for Business Bankruptcy",
+      content: "Many business owners underestimate the total cost of filing business bankruptcy. Beyond the obvious attorney fees, there are court costs, administrative expenses, and significant hidden costs.\n\nChapter 7 costs: Filing fee ($338) + attorney fees ($1,500-$5,000 for simple cases, $10,000+ for complex). Total: $2,000-$15,000. But the real cost is losing your entire business.\n\nChapter 11 costs: Filing fee ($1,738) + attorney fees ($15,000-$200,000+) + quarterly trustee fees + accountant fees. Total: $50,000-$250,000+.\n\nDebt settlement comparison: No upfront fees. No court costs. No public record. Settle your business debt for 50-80% less than you owe, typically resolved in 3-6 months.",
+      background: "light"
+    },
+    {
+      title: "How Business Bankruptcy Affects Your Personal Credit",
+      content: "If you signed a personal guarantee on any business loan, line of credit, or MCA advance (which most small business owners have), your personal credit is directly tied to that debt. A business bankruptcy involving personally guaranteed debts will appear on your personal credit report.\n\nBankruptcy typically drops your personal credit score by 150-250 points. Chapter 7 stays on your report for 10 years. Chapter 13 stays for 7 years.\n\nWith debt settlement: Your credit may dip temporarily during negotiations (typically 50-100 points), but begins recovering as soon as debts are settled. Most clients see recovery within 12-24 months.",
+      background: "white"
+    },
+    {
+      title: "Business Bankruptcy Timeline: What to Expect",
+      content: "Chapter 7 Timeline (3-6 months): Filing, automatic stay, 341 meeting of creditors (30-45 days), trustee liquidates assets (30-90 days), discharge. But your business is gone.\n\nChapter 11 Timeline (12-36 months): Filing, automatic stay, disclosure statement (2-4 months), creditor negotiations (3-6 months), plan confirmation (1-3 months), ongoing execution.\n\nChapter 13 Timeline (3-5 years): Filing, automatic stay, plan proposal, confirmation hearing, 3-5 years of monthly payments.\n\nDebt settlement timeline (3-6 months): Free consultation, debt analysis, creditor negotiations, settlements reached, debts resolved. No court dates, no trustees.",
+      background: "light"
+    },
+    {
+      title: "Industries Most Affected by Business Bankruptcies in 2026",
+      content: "Business bankruptcies in 2026 are not hitting all industries equally. Restaurants and food service have seen filings increase 38% year-over-year due to elevated lease costs and unsustainable MCA payments.\n\nRetail continues facing pressure from e-commerce. Construction companies that took multiple MCAs to bridge cash flow gaps are among the most common seeking bankruptcy alternatives.\n\nTrucking and transportation have been hit by fuel cost volatility, insurance increases, and freight rate declines. Healthcare practices that expanded during 2020-2022 are carrying debt loads that don't match current revenue.",
+      background: "white"
+    },
+    {
+      title: "What Happens to Your Employees When You File Business Bankruptcy",
+      content: "Chapter 7 (Liquidation): All employees are terminated. The WARN Act requires 60 days notice for 100+ employees. Unpaid wages become priority claims but employees often wait months for partial payment.\n\nChapter 11 (Reorganization): You can keep employees during reorganization, but uncertainty causes key staff to leave. The court may require workforce reductions.\n\nWith debt settlement: Your business keeps operating normally. Employees keep their jobs, benefits, and stability. Your team never needs to know about the debt negotiation process.",
+      background: "light"
+    },
+    {
+      title: "Alternatives to Business Bankruptcy Beyond Debt Settlement",
+      content: "Debt consolidation combines multiple debts into one payment but does NOT reduce what you owe. Business restructuring means renegotiating terms directly, but creditors have little incentive to negotiate with individuals.\n\nSBA disaster loans offer low interest rates but have limited availability and strict eligibility. Asset-based lending uses equipment or receivables as collateral but adds more debt.\n\nDebt settlement is the only approach that actually reduces your total debt burden (by 50-80%) without court involvement, public record, or business closure.",
+      background: "white"
+    },
+    {
+      title: "Glossary of Business Bankruptcy Terms",
+      content: "Automatic Stay: A court order that stops creditors from collecting once bankruptcy is filed.\nDischarge: The court order eliminating your legal obligation to pay certain debts.\nLiquidation: Selling business assets to pay creditors (Chapter 7).\nReorganization: Restructuring debts under court supervision (Chapter 11).\nCreditor Committee: Group of largest unsecured creditors in Chapter 11 cases.\nMeans Test: Calculation for Chapter 7 eligibility based on income.\nPreference Payment: Payments to creditors within 90 days before filing that can be clawed back.\nPersonal Guarantee: Your personal promise to repay business debt, exposing personal assets.\n341 Meeting: Mandatory hearing where trustee and creditors question the debtor under oath.\nDebt Settlement: Private negotiation to accept a reduced payment. No court, no public record.",
+      background: "light"
+    }
+  ],
+  guideCta: "Talk to a Debt Specialist - Free Consultation",
+  guideCtaSubtext: "Still have questions? Our team can walk you through your specific situation.",
+  phone: "(888) 730-2056",
+  colors: {
+    primary: "#3052FF",
+    primaryLight: "#7FB2FF",
+    heroBg: "#F2F4F9",
+    ctaButton: "#FF9000",
+    ctaButtonHover: "#e68200",
+    headlineHighlight: "#3052FF",
+    navy: "#0f1c2e",
+    navyDark: "#0a0f18"
+  },
+  pageTitle: "Business Bankruptcy Alternative 2026 | Avoid Small Business Bankruptcies",
+  metaDescription: "Facing business bankruptcy? Settle your business debt for 50-80% less without filing. No court, no public record. Free consultation. Call (888) 730-2056.",
+  mobileCta: "both"
+};
+
+const defaultSectionsVisibleAuthority = {
+  howItWorks: true, educational: true, calculator: true, comparison: true,
+  caseStudies: true, personCta: true, testimonials: true, faq: true, cta: true, guide: true
+};
+
 const defaultSectionsVisible = {
   trustBar: true,
   comparison: true,
@@ -140,7 +366,8 @@ router.get('/:id', authenticateToken, (req, res) => {
   try {
     const saved = JSON.parse(page.content || '{}');
     // Merge with defaults so editor fields show actual values
-    page.content = { ...defaultContent, ...saved, colors: { ...defaultContent.colors, ...(saved.colors || {}) } };
+    const defaults = (page.template_type === 'authority') ? defaultContentAuthority : defaultContent;
+    page.content = { ...defaults, ...saved, colors: { ...defaults.colors, ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
     page.hidden_fields = JSON.parse(page.hidden_fields || '{}');
   } catch (e) {}
@@ -171,8 +398,8 @@ router.post('/', authenticateToken, (req, res) => {
       platform || 'other',
       traffic_source || '',
       form_id || null,
-      JSON.stringify(defaultContent),
-      JSON.stringify(defaultSectionsVisible),
+      JSON.stringify(validTemplateType === 'authority' ? defaultContentAuthority : defaultContent),
+      JSON.stringify(validTemplateType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
       JSON.stringify({}),
       validTemplateType
     );
@@ -377,7 +604,8 @@ function generateLandingPage(pageId) {
 
   // Merge content with defaults so all template placeholders get replaced
   // If a field is explicitly set (even to empty string), respect it
-  const mergedContent = { ...defaultContent };
+  const defaults = (page.template_type === 'authority') ? defaultContentAuthority : defaultContent;
+  const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
     if (value !== null && value !== undefined) {
       mergedContent[key] = value;
@@ -385,7 +613,7 @@ function generateLandingPage(pageId) {
   });
 
   // Deep merge colors so partial overrides don't lose defaults
-  mergedContent.colors = { ...defaultContent.colors, ...(content.colors || {}) };
+  mergedContent.colors = { ...defaults.colors, ...(content.colors || {}) };
 
   // Replace content placeholders
   Object.entries(mergedContent).forEach(([key, value]) => {
@@ -407,6 +635,21 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{empathyTextJson}}/g, JSON.stringify(mergedContent.empathyText || []));
   html = html.replace(/{{comparisonRowsJson}}/g, JSON.stringify(mergedContent.comparisonRows || []));
   html = html.replace(/{{faqItemsJson}}/g, JSON.stringify(mergedContent.faqItems || []));
+
+    // Authority template JSON fields
+    html = html.replace(/{{eduStatsJson}}/g, JSON.stringify(mergedContent.eduStats || []));
+    html = html.replace(/{{eduSectionsJson}}/g, JSON.stringify(mergedContent.eduSections || []));
+    html = html.replace(/{{caseStudiesJson}}/g, JSON.stringify(mergedContent.caseStudies || []));
+    html = html.replace(/{{testimonialsJson}}/g, JSON.stringify(mergedContent.testimonials || []));
+    html = html.replace(/{{comparisonBadJson}}/g, JSON.stringify(mergedContent.comparisonBad || {}));
+    html = html.replace(/{{comparisonGoodJson}}/g, JSON.stringify(mergedContent.comparisonGood || {}));
+    html = html.replace(/{{guideSectionsJson}}/g, JSON.stringify(mergedContent.guideSections || []));
+
+    // Authority template numeric fields (generic string replacement skips non-string values)
+    html = html.replace(/{{calcMinDebt}}/g, String(mergedContent.calcMinDebt || 10000));
+    html = html.replace(/{{calcMaxDebt}}/g, String(mergedContent.calcMaxDebt || 500000));
+    html = html.replace(/{{calcDefaultDebt}}/g, String(mergedContent.calcDefaultDebt || 150000));
+    html = html.replace(/{{calcSavingsPercent}}/g, String(mergedContent.calcSavingsPercent || 70));
 
   // Handle form data
   const formFields = form ? form.fields : defaultFormFields;
@@ -430,6 +673,17 @@ function generateLandingPage(pageId) {
     html = html.replace(/<p[^>]*phone-element[\s\S]*?<\/p>/g, '');
     html = html.replace(/<div[^>]*phone-element[\s\S]*?<\/div>/g, '');
   }
+
+    // Strip hidden sections based on sectionsVisible
+    if (page.template_type === 'authority') {
+      const sectionKeys = ['howItWorks', 'educational', 'calculator', 'comparison', 'caseStudies', 'personCta', 'testimonials', 'faq', 'cta', 'guide'];
+      for (const key of sectionKeys) {
+        if (sectionsVisible[key] === false) {
+          const regex = new RegExp(`<!-- SECTION:${key} -->[\\s\\S]*?<!-- /SECTION:${key} -->`, 'g');
+          html = html.replace(regex, '');
+        }
+      }
+    }
 
   // Inject branding from settings
   try {
