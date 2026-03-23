@@ -563,6 +563,8 @@ function generateLandingPage(pageId) {
 
   const headScripts = pageScripts.filter(s => s.position === 'head').map(s => s.code).join('\n');
   const bodyScripts = pageScripts.filter(s => s.position === 'body_start' || s.position === 'body_end').map(s => s.code).join('\n');
+  const bodyStartScripts = pageScripts.filter(s => s.position === 'body_start').map(s => s.code).join('\n');
+  const bodyEndScripts = pageScripts.filter(s => s.position === 'body_end').map(s => s.code).join('\n');
 
   // Generate hidden fields HTML (skip names already hardcoded in the template)
   const HARDCODED_HIDDEN = new Set([
@@ -602,6 +604,12 @@ function generateLandingPage(pageId) {
   html = html.replace(/{{HIDDEN_FIELDS}}/g, hiddenFieldsHtml);
   html = html.replace(/{{FB_PIXEL_ID}}/g, fbPixelId);
 
+  // Authority template uses camelCase placeholders
+  html = html.replace(/{{headScripts}}/g, headScripts);
+  html = html.replace(/{{bodyStartScripts}}/g, bodyStartScripts);
+  html = html.replace(/{{bodyEndScripts}}/g, bodyEndScripts);
+  html = html.replace(/{{hiddenFieldsHtml}}/g, hiddenFieldsHtml);
+
   // Merge content with defaults so all template placeholders get replaced
   // If a field is explicitly set (even to empty string), respect it
   const defaults = (page.template_type === 'authority') ? defaultContentAuthority : defaultContent;
@@ -629,21 +637,24 @@ function generateLandingPage(pageId) {
     });
   }
 
+  // Helper: escape single quotes in JSON for safe embedding in JS single-quoted strings
+  const jsJson = (obj) => JSON.stringify(obj).replace(/'/g, "\\'").replace(/<\//g, '<\\/');
+
   // Handle JSON arrays for JavaScript
-  html = html.replace(/{{bulletPointsJson}}/g, JSON.stringify(mergedContent.bulletPoints || []));
-  html = html.replace(/{{stepsJson}}/g, JSON.stringify(mergedContent.steps || []));
-  html = html.replace(/{{empathyTextJson}}/g, JSON.stringify(mergedContent.empathyText || []));
-  html = html.replace(/{{comparisonRowsJson}}/g, JSON.stringify(mergedContent.comparisonRows || []));
-  html = html.replace(/{{faqItemsJson}}/g, JSON.stringify(mergedContent.faqItems || []));
+  html = html.replace(/{{bulletPointsJson}}/g, jsJson(mergedContent.bulletPoints || []));
+  html = html.replace(/{{stepsJson}}/g, jsJson(mergedContent.steps || []));
+  html = html.replace(/{{empathyTextJson}}/g, jsJson(mergedContent.empathyText || []));
+  html = html.replace(/{{comparisonRowsJson}}/g, jsJson(mergedContent.comparisonRows || []));
+  html = html.replace(/{{faqItemsJson}}/g, jsJson(mergedContent.faqItems || []));
 
     // Authority template JSON fields
-    html = html.replace(/{{eduStatsJson}}/g, JSON.stringify(mergedContent.eduStats || []));
-    html = html.replace(/{{eduSectionsJson}}/g, JSON.stringify(mergedContent.eduSections || []));
-    html = html.replace(/{{caseStudiesJson}}/g, JSON.stringify(mergedContent.caseStudies || []));
-    html = html.replace(/{{testimonialsJson}}/g, JSON.stringify(mergedContent.testimonials || []));
-    html = html.replace(/{{comparisonBadJson}}/g, JSON.stringify(mergedContent.comparisonBad || {}));
-    html = html.replace(/{{comparisonGoodJson}}/g, JSON.stringify(mergedContent.comparisonGood || {}));
-    html = html.replace(/{{guideSectionsJson}}/g, JSON.stringify(mergedContent.guideSections || []));
+    html = html.replace(/{{eduStatsJson}}/g, jsJson(mergedContent.eduStats || []));
+    html = html.replace(/{{eduSectionsJson}}/g, jsJson(mergedContent.eduSections || []));
+    html = html.replace(/{{caseStudiesJson}}/g, jsJson(mergedContent.caseStudies || []));
+    html = html.replace(/{{testimonialsJson}}/g, jsJson(mergedContent.testimonials || []));
+    html = html.replace(/{{comparisonBadJson}}/g, jsJson(mergedContent.comparisonBad || {}));
+    html = html.replace(/{{comparisonGoodJson}}/g, jsJson(mergedContent.comparisonGood || {}));
+    html = html.replace(/{{guideSectionsJson}}/g, jsJson(mergedContent.guideSections || []));
 
     // Authority template numeric fields (generic string replacement skips non-string values)
     html = html.replace(/{{calcMinDebt}}/g, String(mergedContent.calcMinDebt || 10000));
@@ -659,7 +670,7 @@ function generateLandingPage(pageId) {
 
   const skipPreQual = form ? (form.skip_pre_qual ? true : false) : false;
 
-  html = html.replace(/{{formFieldsJson}}/g, JSON.stringify(formFields));
+  html = html.replace(/{{formFieldsJson}}/g, jsJson(formFields));
   html = html.replace(/{{formWebhook}}/g, formWebhook);
   html = html.replace(/{{formSubmitText}}/g, formSubmitText);
   html = html.replace(/{{formSuccessMsg}}/g, formSuccessMsg);
@@ -700,6 +711,7 @@ function generateLandingPage(pageId) {
     }
     if (branding.site_name) {
       brandingTags += `\n  <meta property="og:site_name" content="${branding.site_name}">`;
+      html = html.replace(/{{siteName}}/g, branding.site_name);
     }
     if (brandingTags) {
       html = html.replace('</head>', brandingTags + '\n</head>');
