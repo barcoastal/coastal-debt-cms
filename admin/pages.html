@@ -67,6 +67,27 @@
     .faq-remove-btn:hover { background: #fecaca; }
     .faq-add-btn { background: #f0fdf4; color: #16a34a; border: 1px dashed #86efac; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; }
     .faq-add-btn:hover { background: #dcfce7; }
+    /* Authority Keywords Modal */
+    .kw-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; }
+    .kw-modal-overlay.active { display: flex; }
+    .kw-modal { background: white; border-radius: 16px; max-width: 520px; width: 90%; padding: 0; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+    .kw-modal-top { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 28px 28px 24px; color: white; }
+    .kw-modal-top h2 { margin: 0 0 6px; font-size: 20px; }
+    .kw-modal-top p { margin: 0; font-size: 13px; opacity: 0.85; line-height: 1.5; }
+    .kw-modal-body { padding: 24px 28px 28px; }
+    .kw-modal-body label { font-weight: 600; font-size: 13px; color: #374151; display: block; margin-bottom: 6px; }
+    .kw-modal-body textarea { width: 100%; border: 2px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 80px; }
+    .kw-modal-body textarea:focus { border-color: #667eea; outline: none; }
+    .kw-modal-body .kw-hint { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+    .kw-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .kw-modal-actions button { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .kw-modal-actions .kw-skip { background: #f3f4f6; color: #6b7280; }
+    .kw-modal-actions .kw-skip:hover { background: #e5e7eb; }
+    .kw-modal-actions .kw-gen { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .kw-modal-actions .kw-gen:hover { opacity: 0.9; }
+    .kw-modal-actions .kw-gen:disabled { opacity: 0.5; cursor: not-allowed; }
+    .kw-modal-status { margin-top: 12px; font-size: 13px; color: #667eea; display: none; }
+    .kw-modal-status.error { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -700,6 +721,7 @@
     document.getElementById('createForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const templateType = document.getElementById('createTemplateType').value;
       const formId = document.getElementById('createFormId').value;
       const data = {
         name: document.getElementById('createName').value,
@@ -707,18 +729,23 @@
         platform: document.getElementById('createPlatform').value,
         traffic_source: document.getElementById('createSource').value,
         form_id: formId ? parseInt(formId) : null,
-        template_type: document.getElementById('createTemplateType').value
+        template_type: templateType
       };
 
       try {
-        await api('/api/pages', {
+        const result = await api('/api/pages', {
           method: 'POST',
           body: JSON.stringify(data)
         });
 
         hideModal('createModal');
         document.getElementById('createForm').reset();
-        loadPages();
+        await loadPages();
+
+        // If authority template, show keyword modal for AI content generation
+        if (templateType === 'authority' && result && result.id) {
+          showKeywordsModal(result.id, true);
+        }
       } catch (err) {
         alert(err.message);
       }
@@ -1309,6 +1336,203 @@
     }
 
     loadPages();
+
+    // ==================== Authority Keywords Modal ====================
+    let _kwPendingPageId = null;
+    let _kwIsCreate = false;
+
+    // Show keyword modal
+    function showKeywordsModal(pageId, isCreate) {
+      _kwPendingPageId = pageId;
+      _kwIsCreate = isCreate;
+      document.getElementById('kwKeywords').value = '';
+      document.getElementById('kwStatus').style.display = 'none';
+      document.getElementById('kwStatus').className = 'kw-modal-status';
+      document.getElementById('kwGenBtn').disabled = false;
+      document.getElementById('kwGenBtn').textContent = 'Generate Optimized Content';
+      document.getElementById('kwModal').classList.add('active');
+    }
+
+    function hideKeywordsModal() {
+      document.getElementById('kwModal').classList.remove('active');
+    }
+
+    // When editing a page, check if authority template and show keyword modal if content is default
+    let _skipKwCheck = false;
+    const origEditPage = editPage;
+    editPage = async function(id) {
+      await origEditPage(id);
+      if (_skipKwCheck) { _skipKwCheck = false; return; }
+      const templateType = document.getElementById('editTemplateType').value;
+      // Show keyword modal if authority and content looks like defaults
+      if (templateType === 'authority') {
+        const badge = document.getElementById('editBadge').value || '';
+        const isDefault = !badge || badge === 'Business Bankruptcy Alternative 2026';
+        if (isDefault) {
+          hideModal('editModal');
+          showKeywordsModal(id, false);
+        }
+      }
+    };
+
+    // When template type changes in edit modal, show keyword modal
+    document.getElementById('editTemplateType').addEventListener('change', function() {
+      if (this.value === 'authority') {
+        const id = document.getElementById('editId').value;
+        if (id) {
+          hideModal('editModal');
+          showKeywordsModal(id, false);
+        }
+      }
+    });
+
+    // Generate authority content from keywords
+    async function generateAuthorityContent() {
+      const input = document.getElementById('kwKeywords').value.trim();
+      if (!input) {
+        const status = document.getElementById('kwStatus');
+        status.textContent = 'Please enter at least one keyword.';
+        status.className = 'kw-modal-status error';
+        status.style.display = 'block';
+        return;
+      }
+
+      const keywords = input.split('\n').flatMap(line => line.split(',')).map(k => k.trim()).filter(Boolean);
+      const btn = document.getElementById('kwGenBtn');
+      const status = document.getElementById('kwStatus');
+
+      btn.disabled = true;
+      btn.textContent = 'Generating content...';
+      status.textContent = 'Using AI to generate keyword-optimized content. This takes about 30 seconds...';
+      status.className = 'kw-modal-status';
+      status.style.display = 'block';
+
+      try {
+        const res = await api('/api/ai/generate-authority-content', {
+          method: 'POST',
+          body: JSON.stringify({ keywords, platform: 'google' })
+        });
+
+        const c = res.content;
+
+        // Build the full authority content object
+        const content = {
+          badge: c.hero?.badge || '',
+          headline: c.hero?.headline || '',
+          headlineLine2: c.hero?.headlineLine2 || '',
+          subheadline: c.hero?.subheadline || '',
+          bulletPoints: c.hero?.bulletPoints || [],
+          formTitle: c.hero?.formTitle || '',
+          formSubtitle: c.hero?.formSubtitle || '',
+          formButton: c.hero?.formButton || '',
+          pageTitle: c.seo?.pageTitle || '',
+          metaDescription: c.seo?.metaDescription || '',
+          howItWorksTitle: c.howItWorks?.title || '',
+          howItWorksSubtitle: c.howItWorks?.subtitle || '',
+          steps: c.howItWorks?.steps || [],
+          eduTitle: c.educational?.title || '',
+          eduSubtitle: c.educational?.subtitle || '',
+          eduStats: c.educational?.stats || [],
+          eduSections: c.educational?.sections || [],
+          calcTitle: c.calculator?.title || '',
+          calcSubtitle: c.calculator?.subtitle || '',
+          calcCta: c.calculator?.cta || '',
+          calcMinDebt: c.calculator?.minDebt || 10000,
+          calcMaxDebt: c.calculator?.maxDebt || 500000,
+          calcDefaultDebt: c.calculator?.defaultDebt || 150000,
+          calcSavingsPercent: c.calculator?.savingsPercent || 70,
+          comparisonTitle: c.comparison?.title || '',
+          comparisonSubtitle: c.comparison?.subtitle || '',
+          comparisonBad: c.comparison?.bad || {},
+          comparisonGood: c.comparison?.good || {},
+          caseStudiesTitle: c.caseStudies?.title || '',
+          caseStudiesSubtitle: c.caseStudies?.subtitle || '',
+          caseStudies: c.caseStudies?.items || [],
+          personCtaTitle: c.personCta?.title || '',
+          personCtaTitleHighlight: c.personCta?.titleHighlight || '',
+          personCtaText: c.personCta?.text || '',
+          personCtaButton: c.personCta?.button || '',
+          personCtaImage: '',
+          testimonialsTitle: c.testimonials?.title || '',
+          testimonialsSubtitle: c.testimonials?.subtitle || '',
+          testimonials: c.testimonials?.items || [],
+          faqTitle: c.faq?.title || '',
+          faqSubtitle: c.faq?.subtitle || '',
+          faqItems: c.faq?.items || [],
+          ctaTitle: c.cta?.title || '',
+          ctaSubtitle: c.cta?.subtitle || '',
+          guideTitle: c.guide?.title || '',
+          guideSubtitle: c.guide?.subtitle || '',
+          guideCta: c.guide?.cta || '',
+          guideCtaSubtext: c.guide?.ctaSubtext || '',
+          guideSections: c.guide?.sections || [],
+          phone: '(888) 730-2056',
+          mobileCta: 'both',
+          colors: {
+            primary: '#3052FF',
+            primaryLight: '#7FB2FF',
+            heroBg: '#F2F4F9',
+            ctaButton: '#FF9000',
+            ctaButtonHover: '#e68200',
+            headlineHighlight: '#3052FF',
+            navy: '#0f1c2e',
+            navyDark: '#0a0f18'
+          }
+        };
+
+        // Save the content to the page
+        const pageId = _kwPendingPageId;
+        await api(`/api/pages/${pageId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ content })
+        });
+
+        status.textContent = 'Content generated and saved! Opening editor...';
+
+        // Wait briefly then open the edit modal
+        setTimeout(async () => {
+          hideKeywordsModal();
+          await loadPages();
+          _skipKwCheck = true;
+          editPage(pageId);
+        }, 1000);
+
+      } catch (e) {
+        status.textContent = e.message || 'Generation failed. Try again.';
+        status.className = 'kw-modal-status error';
+        status.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Generate Optimized Content';
+      }
+    }
+
+    function skipKeywordsAndEdit() {
+      hideKeywordsModal();
+      if (_kwPendingPageId) {
+        _skipKwCheck = true;
+        editPage(_kwPendingPageId);
+      }
+    }
   </script>
+
+  <!-- Authority Keywords Modal -->
+  <div class="kw-modal-overlay" id="kwModal">
+    <div class="kw-modal">
+      <div class="kw-modal-top">
+        <h2>Authority Page - Enter Ad Group Keywords</h2>
+        <p>Enter the keywords from your ad group. AI will generate keyword-optimized content designed to maximize your Google Ads Landing Page Experience score.</p>
+      </div>
+      <div class="kw-modal-body">
+        <label>Ad Group Keywords</label>
+        <textarea id="kwKeywords" placeholder="business bankruptcies&#10;small business bankruptcies&#10;bankruptcy options for small business&#10;how to bankrupt your business"></textarea>
+        <div class="kw-hint">One keyword per line, or comma-separated. Include all keywords from your ad group for best optimization.</div>
+        <div class="kw-modal-actions">
+          <button type="button" class="kw-skip" onclick="skipKeywordsAndEdit()">Skip - Use Defaults</button>
+          <button type="button" class="kw-gen" id="kwGenBtn" onclick="generateAuthorityContent()">Generate Optimized Content</button>
+        </div>
+        <div class="kw-modal-status" id="kwStatus"></div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
