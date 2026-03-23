@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /lp/
+Allow: /a/
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /

@@ -81,6 +81,11 @@ app.use('/lp/uploads', express.static(uploadsDir, {
   etag: true
 }));
 
+// Serve robots.txt from root
+app.get('/robots.txt', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'robots.txt'));
+});
+
 // Serve generated landing pages with cache headers
 const isProduction = !!process.env.RAILWAY_VOLUME_MOUNT_PATH;
 app.use('/lp', (req, res, next) => {
