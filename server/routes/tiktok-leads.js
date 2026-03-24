@@ -1071,11 +1071,20 @@ router.get('/debug/raw-leads', authenticateToken, async (req, res) => {
         }
         results.leads.push({ form_id: pageId, method: 'task', task: taskRes.data, poll: pollData });
 
-        // If download URL available, fetch it
-        const dlUrl = pollData?.download_url;
-        if (dlUrl) {
-          const csv = await fetch(dlUrl).then(r => r.text());
-          results.leads.push({ form_id: pageId, method: 'csv', data: csv.substring(0, 5000), length: csv.length });
+        // Download CSV if task succeeded
+        const taskStatus = pollData?.status || pollData?.task_status;
+        if (taskStatus === 'SUCCEED' || taskStatus === 'SUCCESS' || taskStatus === 'COMPLETED') {
+          try {
+            const dlUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/download/');
+            dlUrl.searchParams.set('advertiser_id', config.advertiser_id);
+            dlUrl.searchParams.set('task_id', taskRes.data.task_id);
+            const dlRes = await fetch(dlUrl.toString(), { headers });
+            const ct = dlRes.headers.get('content-type') || '';
+            const body = await dlRes.text();
+            results.leads.push({ form_id: pageId, method: 'csv', contentType: ct, data: body.substring(0, 5000), length: body.length });
+          } catch (dlErr) {
+            results.errors.push({ form_id: pageId, method: 'download', error: dlErr.message });
+          }
         }
       } else {
         results.leads.push({ form_id: pageId, method: 'task', error: taskRes.message, code: taskRes.code });
