@@ -307,8 +307,8 @@ const defaultContentAuthority = {
     primary: "#3052FF",
     primaryLight: "#7FB2FF",
     heroBg: "#F2F4F9",
-    ctaButton: "#FF9000",
-    ctaButtonHover: "#e68200",
+    ctaButton: "#3052FF",
+    ctaButtonHover: "#2442d4",
     headlineHighlight: "#3052FF",
     navy: "#0f1c2e",
     navyDark: "#0a0f18"
