@@ -1011,6 +1011,73 @@ router.get('/debug/forms', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
+// Debug: raw lead pull from TikTok API (no dedup, no test filter)
+router.get('/debug/raw-leads', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+  if (!config || !config.access_token || !config.advertiser_id) {
+    return res.status(400).json({ error: 'TikTok not configured' });
+  }
+
+  const headers = { 'Access-Token': config.access_token, 'Content-Type': 'application/json' };
+  const results = { forms: [], leads: [], errors: [] };
+
+  // Get forms
+  const formsUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/page/get/');
+  formsUrl.searchParams.set('advertiser_id', config.advertiser_id);
+  formsUrl.searchParams.set('page_size', '100');
+  const formsData = await fetch(formsUrl.toString(), { headers }).then(r => r.json());
+  const forms = formsData.code === 0 ? (formsData.data?.list || formsData.data?.pages || []) : [];
+  results.forms = forms.map(f => ({ id: f.page_id || f.id, name: f.page_name || f.name }));
+
+  // For each form, try to get leads
+  for (const form of forms) {
+    const pageId = form.page_id || form.id;
+    if (!pageId) continue;
+
+    // Method A: direct /lead/get/
+    try {
+      const leadUrl = new URL('https://business-api.tiktok.com/open_api/v1.3/lead/get/');
+      leadUrl.searchParams.set('advertiser_id', config.advertiser_id);
+      leadUrl.searchParams.set('page_id', pageId);
+      leadUrl.searchParams.set('lead_source', 'INSTANT_FORM');
+      const leadData = await fetch(leadUrl.toString(), { headers }).then(r => r.json());
+      results.leads.push({ form_id: pageId, method: 'direct', raw: leadData });
+    } catch (err) {
+      results.errors.push({ form_id: pageId, method: 'direct', error: err.message });
+    }
+
+    // Method B: task-based download
+    try {
+      const taskRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
+        method: 'POST', headers,
+        body: JSON.stringify({ advertiser_id: config.advertiser_id, page_id: pageId })
+      }).then(r => r.json());
+
+      if (taskRes.code === 0 && taskRes.data?.task_id) {
+        // Wait and poll
+        await new Promise(r => setTimeout(r, 5000));
+        const pollRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
+          method: 'POST', headers,
+          body: JSON.stringify({ advertiser_id: config.advertiser_id, page_id: pageId, task_id: taskRes.data.task_id })
+        }).then(r => r.json());
+        results.leads.push({ form_id: pageId, method: 'task', task: taskRes.data, poll: pollRes.data });
+
+        // If download URL available, fetch it
+        if (pollRes.data?.download_url) {
+          const csv = await fetch(pollRes.data.download_url).then(r => r.text());
+          results.leads.push({ form_id: pageId, method: 'csv', data: csv.substring(0, 2000) });
+        }
+      } else {
+        results.leads.push({ form_id: pageId, method: 'task', error: taskRes.message, code: taskRes.code });
+      }
+    } catch (err) {
+      results.errors.push({ form_id: pageId, method: 'task', error: err.message });
+    }
+  }
+
+  res.json(results);
+});
+
 // Background sync - poll every 5 minutes
 let syncInterval = null;
 function startBackgroundSync() {
