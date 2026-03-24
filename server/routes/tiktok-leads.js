@@ -1057,18 +1057,25 @@ router.get('/debug/raw-leads', authenticateToken, async (req, res) => {
       }).then(r => r.json());
 
       if (taskRes.code === 0 && taskRes.data?.task_id) {
-        // Wait and poll
-        await new Promise(r => setTimeout(r, 5000));
-        const pollRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
-          method: 'POST', headers,
-          body: JSON.stringify({ advertiser_id: config.advertiser_id, page_id: pageId, task_id: taskRes.data.task_id })
-        }).then(r => r.json());
-        results.leads.push({ form_id: pageId, method: 'task', task: taskRes.data, poll: pollRes.data });
+        // Poll up to 60 seconds
+        let pollData = null;
+        for (let attempt = 0; attempt < 12; attempt++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const pollRes = await fetch('https://business-api.tiktok.com/open_api/v1.3/page/lead/task/', {
+            method: 'POST', headers,
+            body: JSON.stringify({ advertiser_id: config.advertiser_id, page_id: pageId, task_id: taskRes.data.task_id })
+          }).then(r => r.json());
+          pollData = pollRes.data;
+          const status = pollData?.status || pollData?.task_status;
+          if (status === 'SUCCEED' || status === 'SUCCESS' || status === 'COMPLETED' || status === 'FAILED' || status === 'ERROR') break;
+        }
+        results.leads.push({ form_id: pageId, method: 'task', task: taskRes.data, poll: pollData });
 
         // If download URL available, fetch it
-        if (pollRes.data?.download_url) {
-          const csv = await fetch(pollRes.data.download_url).then(r => r.text());
-          results.leads.push({ form_id: pageId, method: 'csv', data: csv.substring(0, 2000) });
+        const dlUrl = pollData?.download_url;
+        if (dlUrl) {
+          const csv = await fetch(dlUrl).then(r => r.text());
+          results.leads.push({ form_id: pageId, method: 'csv', data: csv.substring(0, 5000), length: csv.length });
         }
       } else {
         results.leads.push({ form_id: pageId, method: 'task', error: taskRes.message, code: taskRes.code });
