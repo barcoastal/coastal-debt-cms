@@ -646,22 +646,7 @@ router.patch('/:id', authenticateToken, (req, res) => {
 });
 
 // Delete lead (cascades to conversion_events and visitors)
-router.delete('/:id', authenticateToken, (req, res) => {
-  const lead = db.prepare('SELECT first_name, last_name, eli_clickid FROM leads WHERE id = ?').get(req.params.id);
-  if (!lead) return res.status(404).json({ error: 'Lead not found' });
-
-  // Delete related records first
-  db.prepare('DELETE FROM conversion_events WHERE lead_id = ?').run(req.params.id);
-  if (lead.eli_clickid) {
-    db.prepare('UPDATE visitors SET lead_id = NULL, converted = 0 WHERE lead_id = ?').run(req.params.id);
-  }
-  db.prepare('DELETE FROM leads WHERE id = ?').run(req.params.id);
-
-  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${[lead?.first_name, lead?.last_name].filter(Boolean).join(' ') || req.params.id}`, req.ip);
-  res.json({ message: 'Lead deleted' });
-});
-
-// Bulk delete test leads (Jane Doe / dummy data)
+// Bulk delete test leads (Jane Doe / dummy data) — must be before /:id route
 router.delete('/test-leads', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
 
@@ -688,6 +673,21 @@ router.delete('/test-leads', authenticateToken, (req, res) => {
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', null, `Bulk deleted ${testLeads.length} test leads (Jane Doe / dummy data)`, req.ip);
   res.json({ message: `Deleted ${testLeads.length} test leads`, deleted: testLeads.length });
+});
+
+router.delete('/:id', authenticateToken, (req, res) => {
+  const lead = db.prepare('SELECT first_name, last_name, eli_clickid FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  // Delete related records first
+  db.prepare('DELETE FROM conversion_events WHERE lead_id = ?').run(req.params.id);
+  if (lead.eli_clickid) {
+    db.prepare('UPDATE visitors SET lead_id = NULL, converted = 0 WHERE lead_id = ?').run(req.params.id);
+  }
+  db.prepare('DELETE FROM leads WHERE id = ?').run(req.params.id);
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'lead', parseInt(req.params.id), `Deleted lead: ${[lead?.first_name, lead?.last_name].filter(Boolean).join(' ') || req.params.id}`, req.ip);
+  res.json({ message: 'Lead deleted' });
 });
 
 // Zapier webhook - validates API key
