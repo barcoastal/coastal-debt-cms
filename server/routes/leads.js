@@ -674,6 +674,9 @@ router.delete('/test-leads', authenticateToken, (req, res) => {
        OR debt_amount LIKE '%dummy data%'
        OR hidden_fields LIKE '%dummy data%'
        OR hidden_fields LIKE '%test lead%'
+       OR email = 'test_work_email_address@mail.com'
+       OR phone = '8001000000'
+       OR phone LIKE '%<test lead%'
   `).all();
 
   if (!testLeads.length) return res.json({ message: 'No test leads found', deleted: 0 });
