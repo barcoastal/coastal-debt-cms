@@ -189,26 +189,28 @@ router.post('/config', authenticateToken, (req, res) => {
 /**
  * Helper: process a single lead from either webhook or API poll
  */
-function processLead(leadData, source) {
+function processLead(leadData, source, forceImport = false) {
   const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
 
   const tiktokLeadId = leadData.lead_id || leadData.id || ('wh_' + crypto.randomBytes(8).toString('hex'));
 
-  // Skip test leads (TikTok sends dummy data in various formats)
-  const rawJson = JSON.stringify(leadData).toLowerCase();
-  if (rawJson.includes('test lead') || rawJson.includes('dummy data') ||
-      rawJson.includes('test_work_email') || rawJson.includes('8001000000') ||
-      rawJson.includes('<test lead') ||
-      (rawJson.includes('"jane"') && rawJson.includes('"doe"') && rawJson.includes('test company'))) {
-    console.log(`[TikTok] Skipping test lead: ${tiktokLeadId}`);
-    return { duplicate: true, test_lead: true };
+  if (!forceImport) {
+    // Skip test leads (TikTok sends dummy data in various formats)
+    const rawJson = JSON.stringify(leadData).toLowerCase();
+    if (rawJson.includes('test lead') || rawJson.includes('dummy data') ||
+        rawJson.includes('test_work_email') || rawJson.includes('8001000000') ||
+        rawJson.includes('<test lead') ||
+        (rawJson.includes('"jane"') && rawJson.includes('"doe"') && rawJson.includes('test company'))) {
+      console.log(`[TikTok] Skipping test lead: ${tiktokLeadId}`);
+      return { duplicate: true, test_lead: true };
+    }
   }
 
   // Deduplicate by tiktok_lead_id
   const existing = db.prepare(
     `SELECT id FROM leads WHERE hidden_fields LIKE ?`
   ).get(`%"tiktok_lead_id":"${tiktokLeadId}"%`);
-  if (existing) return { duplicate: true };
+  if (existing) return { duplicate: true, existing_id: existing.id };
 
   // Extract fields - handle multiple payload formats
   const fields = {};
@@ -527,7 +529,7 @@ function parseCSVLine(line) {
  * Uses: GET /page/get/ to list forms, then POST /page/lead/task/ + GET /page/lead/task/download/
  * Also tries direct GET /lead/get/ endpoint for newer API access
  */
-async function syncTikTokLeads() {
+async function syncTikTokLeads(forceImport = false) {
   const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
   if (!config || !config.access_token) {
     return { synced: 0, error: 'TikTok not configured (missing access token)' };
@@ -649,7 +651,7 @@ async function syncTikTokLeads() {
               lead.form_id = lead.form_id || pageId;
               lead.form_name = lead.form_name || formName;
               try {
-                const result = processLead(lead, 'api_poll');
+                const result = processLead(lead, 'api_poll', forceImport);
                 if (result.imported) synced++;
               } catch (err) {
                 if (!err.message?.includes('duplicate')) {
@@ -748,7 +750,7 @@ async function syncTikTokLeads() {
             lead.form_id = pageId;
             lead.form_name = formName;
             try {
-              const result = processLead(lead, 'api_poll');
+              const result = processLead(lead, 'api_poll', forceImport);
               if (result.imported) synced++;
             } catch (err) {
               if (!err.message?.includes('duplicate')) {
@@ -785,7 +787,7 @@ async function syncTikTokLeads() {
             };
 
             try {
-              const result = processLead(leadObj, 'api_poll');
+              const result = processLead(leadObj, 'api_poll', forceImport);
               if (result.imported) synced++;
             } catch (err) {
               if (!err.message?.includes('duplicate')) {
@@ -806,7 +808,7 @@ async function syncTikTokLeads() {
   if (synced > 0) {
     console.log(`TikTok sync complete: ${synced} new leads imported`);
   }
-  return { synced, message: synced === 0 ? 'No new leads found' : undefined, errors: errors.length ? errors : undefined };
+  return { synced, message: synced === 0 ? 'No new leads found' : `Imported ${synced} leads`, errors: errors.length ? errors : undefined, forceImport };
 }
 
 /**
@@ -926,7 +928,8 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
  */
 router.post('/sync', authenticateToken, async (req, res) => {
   try {
-    const result = await syncTikTokLeads();
+    const forceImport = req.query.force === 'true';
+    const result = await syncTikTokLeads(forceImport);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
