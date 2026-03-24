@@ -1425,6 +1425,65 @@ router.post('/debug/test-event', authenticateToken, async (req, res) => {
   });
 });
 
+/**
+ * POST /import-sheet — Import TikTok leads from Google Sheet data
+ * Body: { leads: [{ first_name, last_name, email, phone, company_name, debt_amount, has_mca, created_at, ... }] }
+ */
+router.post('/import-sheet', authenticateToken, async (req, res) => {
+  try {
+    const { leads } = req.body;
+    if (!Array.isArray(leads) || leads.length === 0) {
+      return res.status(400).json({ error: 'leads array required' });
+    }
+
+    const config = db.prepare('SELECT * FROM tiktok_config WHERE id = 1').get();
+    const landingPageId = config?.default_landing_page_id || null;
+
+    let imported = 0, skipped = 0, errors = [];
+
+    for (const lead of leads) {
+      try {
+        // Dedup by email+phone combo
+        const dupCheck = db.prepare(
+          `SELECT id FROM leads WHERE (email = ? AND email != '') OR (phone = ? AND phone != '')`
+        ).get(lead.email || '', lead.phone || '');
+        if (dupCheck) {
+          skipped++;
+          continue;
+        }
+
+        const hiddenFields = JSON.stringify({
+          source: 'google_sheet_import',
+          tiktok_form: true,
+          has_mca: lead.has_mca || lead['Do you have any unsecured business loans or MCAs (merchant cash advances)?'] || '',
+          original_data: lead
+        });
+
+        const firstName = lead.first_name || lead['First Name'] || '';
+        const lastName = lead.last_name || lead['Last Name'] || '';
+        const email = lead.email || lead['Email'] || lead['Work Email'] || '';
+        const phone = lead.phone || lead['Phone'] || lead['Phone Number'] || '';
+        const companyName = lead.company_name || lead['Company Name'] || lead['Company'] || '';
+        const debtAmount = lead.debt_amount || lead['How Much Debt Does Your Business Have?'] || '';
+        const createdAt = lead.created_at || lead['Created Time'] || lead['Timestamp'] || new Date().toISOString();
+
+        db.prepare(`
+          INSERT INTO leads (first_name, last_name, email, phone, company_name, debt_amount, landing_page_id, source, hidden_fields, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'tiktok_sheet_import', ?, ?)
+        `).run(firstName, lastName, email, phone, companyName, debtAmount, landingPageId, hiddenFields, createdAt);
+
+        imported++;
+      } catch (err) {
+        errors.push({ lead: lead.email || lead.phone || 'unknown', error: err.message });
+      }
+    }
+
+    res.json({ imported, skipped, errors, total: leads.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
 module.exports.sendTikTokEvent = sendTikTokEvent;
 module.exports.fetchTikTokMissingCosts = fetchTikTokMissingCosts;
