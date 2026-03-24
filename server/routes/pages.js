@@ -22,6 +22,16 @@ const defaultFormFields = [
   { name: 'phone', label: 'Phone', type: 'tel', required: true, placeholder: '(555) 123-4567' }
 ];
 
+// Authority template form fields (no MCA radio question)
+const authorityFormFields = [
+  { name: 'first_name', label: 'First Name', type: 'text', required: true, placeholder: 'John' },
+  { name: 'last_name', label: 'Last Name', type: 'text', required: true, placeholder: 'Smith' },
+  { name: 'company_name', label: 'Business Name', type: 'text', required: true, placeholder: 'Your Company Name' },
+  { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@company.com' },
+  { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+  { name: 'debt_amount', label: 'Estimated Business Debt', type: 'select', required: true, options: '$10,000 - $50,000,$50,000 - $100,000,$100,000 - $250,000,$250,000 - $500,000,$500,000+' }
+];
+
 // Default content template
 const defaultContent = {
   badge: "MCA Debt Relief",
@@ -664,7 +674,8 @@ function generateLandingPage(pageId) {
     html = html.replace(/{{calcSavingsPercent}}/g, String(mergedContent.calcSavingsPercent || 70));
 
   // Handle form data
-  const formFields = form ? form.fields : defaultFormFields;
+  const isAuthority = page.template === 'authority';
+  const formFields = form ? form.fields : (isAuthority ? authorityFormFields : defaultFormFields);
   const formWebhook = page.webhook_url || (form ? form.webhook_url : '');
   const formSubmitText = form ? form.submit_button_text : content.formButton || 'Get My Free Debt Analysis';
   const formSuccessMsg = form ? form.success_message : 'Thank you! A debt specialist will call you within 15 minutes.';
