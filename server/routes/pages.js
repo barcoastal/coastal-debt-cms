@@ -219,7 +219,7 @@ const defaultContentAuthority = {
   personCtaTitleHighlight: "Financial Future Starts Today",
   personCtaText: "When creditors are calling every day and you're searching for bankruptcy options, it feels like there's no way out. But even with business bankruptcies rising, filing is not your only option. Let us fight for you.",
   personCtaButton: "Get Your Free Consultation",
-  personCtaImage: "",
+  personCtaImage: "/assets/person-cta.webp",
   testimonialsTitle: "Business Owners Who Chose Settlement Over Bankruptcy",
   testimonialsSubtitle: "Real stories from business owners who avoided company bankruptcies",
   testimonials: [

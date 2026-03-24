@@ -371,6 +371,7 @@
             <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot" height="36">
             <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider" height="24">
             <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI" height="36">
+            <img src="/lp/assets/trust-logos/featured-partner.webp" alt="Featured Partner" height="36">
           </div>
         </div>
       </div>
@@ -887,10 +888,10 @@
     // ============= Render Testimonials =============
     var testimonials = JSON.parse('{{testimonialsJson}}');
     document.getElementById('testimonialsGrid').innerHTML = testimonials.map(function(t) {
-      var initials = t.name ? t.name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase() : '';
+      var initials = t.initials || (t.name ? t.name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase() : '');
       return '<div class="testimonial-card">' +
         '<div class="testimonial-stars">\u2605\u2605\u2605\u2605\u2605</div>' +
-        '<p class="testimonial-text">"' + t.text + '"</p>' +
+        '<p class="testimonial-text">"' + t.quote + '"</p>' +
         '<div class="testimonial-author">' +
         '<div class="author-avatar">' + initials + '</div>' +
         '<div><div class="author-name">' + t.name + '</div><div class="author-role">' + (t.role || '') + '</div></div>' +
