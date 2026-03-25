@@ -42,8 +42,8 @@ router.post('/track', async (req, res) => {
     ab_variant
   } = req.body;
 
-  // Get rt_clickid from: body → cookie → referer URL param
-  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
+  // Get rt_clickid from: body → cookie → assume adblock if missing
+  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || 'adblock_blocked';
   console.log('Visitor rt_clickid:', { body: rt_clickid_body, cookie: req.cookies?.['rtkclickid-store'], final: rt_clickid });
 
   if (!eli_clickid) {

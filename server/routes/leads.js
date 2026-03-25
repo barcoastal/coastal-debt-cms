@@ -66,8 +66,8 @@ router.post('/', async (req, res) => {
     ...hiddenFields
   } = req.body;
 
-  // Get rt_clickid from: body → RedTrack cookie
-  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
+  // Get rt_clickid from: body → RedTrack cookie → assume adblock if missing
+  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || 'adblock_blocked';
   console.log('Lead click IDs:', { gclid: gclid || '', eli_clickid: eli_clickid || '', rt_clickid_body: rt_clickid_body || '', rt_clickid_cookie: req.cookies?.['rtkclickid-store'] || '', rt_clickid_final: rt_clickid, msclkid: msclkid || '', fbclid: fbclid || '', slug: landing_page_slug || article_slug });
 
   // Find the landing page or article

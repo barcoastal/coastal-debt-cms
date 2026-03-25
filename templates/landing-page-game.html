@@ -1066,7 +1066,7 @@
             fbclid: params.get('fbclid') || '',
             fbc: getCookieVal('_fbc') || '',
             fbp: getCookieVal('_fbp') || '',
-            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || 'adblock_blocked'; })(),
             rdt_cid: params.get('rdt_cid') || '',
             user_agent: ua,
             browser: browser,
@@ -1200,7 +1200,7 @@
     // RT_CLICKID
     function getRtClickId() {
       try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
-      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || 'adblock_blocked';
     }
     var rtClickId = getRtClickId();
     if (rtClickId) {

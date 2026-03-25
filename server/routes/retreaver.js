@@ -754,7 +754,7 @@ function processCallData(call, campaignMap) {
   } catch (e) {}
 
   // RedTrack click ID
-  const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || '';
+  const rtClickid = tags.red_track_clickid || tags.rt_clickid || tags.sub_id || call.sid || 'adblock_blocked';
 
   // Visitor URL (store directly)
   const visitorUrl = call.visitor_url || '';
