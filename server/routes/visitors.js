@@ -5,6 +5,47 @@ const { getConfiguredTimezone, localDateToUtcRange, getTodayInTz, getTimezoneOff
 
 const router = express.Router();
 
+// RedTrack server-side click creation for visitors
+const RT_API_KEY = process.env.REDTRACK_API_KEY || 'tQqIhdIIBzLQg3J9Z3zs';
+const RT_CAMPAIGNS = {
+  google:   '6855272ea2fde3e964e81fb6',
+  bing:     '685d8993e716389bea3a393a',
+  meta:     '685e703c73306f36aa1ddcd3',
+  facebook: '685e703c73306f36aa1ddcd3',
+  tiktok:   '697a25cdcad13a4d8c67233e',
+  reddit:   '69b90b3d6ee379cc32a10958',
+  outbrain: '6936e2124771cdaf5c31b2bf',
+  vibe:     '697a30edb0f7a392bd042a3c',
+  organic:  '685425cdc6ecfb983788b92c'
+};
+
+async function createRedTrackClick(source, params = {}) {
+  try {
+    const campaignHash = RT_CAMPAIGNS[source?.toLowerCase()] || RT_CAMPAIGNS.organic;
+    const url = new URL(`https://click.coastaldebt.com/${campaignHash}`);
+    url.searchParams.set('format', 'json');
+    if (params.gclid) url.searchParams.set('ref_id', params.gclid);
+    if (params.fbclid) url.searchParams.set('ref_id', params.fbclid);
+    if (params.msclkid) url.searchParams.set('ref_id', params.msclkid);
+    if (params.utm_source) url.searchParams.set('utm_source', params.utm_source);
+
+    const res = await fetch(url.toString(), {
+      headers: { 'X-API-KEY': RT_API_KEY },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await res.json();
+    if (data.clickid) {
+      console.log(`[RedTrack] Visitor click created: ${data.clickid} (source: ${source})`);
+      return data.clickid;
+    }
+    return null;
+  } catch (err) {
+    console.error('[RedTrack] Visitor click failed:', err.message);
+    return null;
+  }
+}
+
 // Return visitor IP (public endpoint - called from landing pages)
 router.get('/ip', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
@@ -42,8 +83,13 @@ router.post('/track', async (req, res) => {
     ab_variant
   } = req.body;
 
-  // Get rt_clickid from: body → cookie → assume adblock if missing
-  const rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || 'adblock_blocked';
+  // Get rt_clickid from: body → cookie → create server-side via RedTrack API
+  let rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
+  if (!rt_clickid || rt_clickid === 'adblock_blocked') {
+    const source = gclid ? 'google' : msclkid ? 'bing' : fbclid ? 'facebook' : rdt_cid ? 'reddit' : (utm_source || '').toLowerCase() || 'organic';
+    const ssClickId = await createRedTrackClick(source, { gclid, fbclid, msclkid, utm_source });
+    rt_clickid = ssClickId || 'adblock_blocked';
+  }
   console.log('Visitor rt_clickid:', { body: rt_clickid_body, cookie: req.cookies?.['rtkclickid-store'], final: rt_clickid });
 
   if (!eli_clickid) {
