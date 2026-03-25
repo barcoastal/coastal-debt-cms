@@ -591,8 +591,8 @@
   </footer>
 
   <!-- Mobile Sticky CTA -->
-  <div class="mobile-cta phone-element">
-    <a href="tel:(800) 123-0000">Call Now: (800) 123-0000</a>
+  <div class="mobile-cta" id="mobileStickyCtaBar">
+    <a id="mobileStickyCtaLink" href="tel:(800) 123-0000">Call Now: (800) 123-0000</a>
   </div>
 
   <!-- Form JS -->
@@ -602,6 +602,25 @@
       var phone = '(800) 123-0000';
       if (!phone || phone === '{{' + 'phone}}') {
         document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // Mobile sticky CTA: switch between call and form scroll
+    (function() {
+      var mobileCta = 'call';
+      var ctaLink = document.getElementById('mobileStickyCtaLink');
+      var ctaBar = document.getElementById('mobileStickyCtaBar');
+      if (!ctaLink || !ctaBar) return;
+
+      if (mobileCta === 'form') {
+        ctaLink.href = '#';
+        ctaLink.textContent = 'Get My Free Consultation';
+        ctaBar.classList.remove('phone-element');
+        ctaLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          var formCard = document.querySelector('.form-card');
+          if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
       }
     })();
 
@@ -965,6 +984,63 @@
     ];
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
+
+    // When skipPreQual on desktop: build custom trust block in hero-content
+    if (skipPreQual && window.innerWidth > 768) {
+      var trustBar = document.querySelector('.trust-bar');
+      var heroContent = document.querySelector('.hero-content');
+      if (trustBar && heroContent) {
+        // Hide original trust bar
+        trustBar.style.display = 'none';
+
+        // Build custom trust layout — left-aligned, part of content flow
+        var trustBlock = document.createElement('div');
+        trustBlock.style.cssText = 'margin-top:36px;display:flex;flex-direction:column;align-items:flex-start;';
+
+        // One blue container around all logos (title inside)
+        var logoBox = document.createElement('div');
+        logoBox.style.cssText = 'border:2px solid #3052FF;border-radius:16px;background:#fff;padding:18px 32px 24px;display:flex;flex-direction:column;align-items:center;gap:0;';
+
+        // Title inside the box
+        var trustTitle = document.createElement('div');
+        trustTitle.textContent = 'As Seen In & Trusted By';
+        trustTitle.style.cssText = 'font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;';
+        logoBox.appendChild(trustTitle);
+
+        // Logo row
+        var logoRow = document.createElement('div');
+        logoRow.style.cssText = 'display:flex;align-items:center;gap:28px;';
+
+        // Left: 2x2 grid of 4 logos
+        var grid2x2 = document.createElement('div');
+        grid2x2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;';
+
+        var fourLogos = ['bbb.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
+        fourLogos.forEach(function(file) {
+          var img = document.createElement('img');
+          img.src = '/lp/assets/trust-logos/' + file;
+          img.style.cssText = 'max-width:120px;max-height:55px;object-fit:contain;';
+          grid2x2.appendChild(img);
+        });
+        logoRow.appendChild(grid2x2);
+
+        // Vertical divider
+        var divider = document.createElement('div');
+        divider.style.cssText = 'width:1.5px;height:90px;background:#d0d8e8;';
+        logoRow.appendChild(divider);
+
+        // Right: Business Insider
+        var biImg = document.createElement('img');
+        biImg.src = '/lp/assets/trust-logos/business-insider.svg';
+        biImg.style.cssText = 'max-width:120px;max-height:70px;object-fit:contain;';
+        logoRow.appendChild(biImg);
+
+        logoBox.appendChild(logoRow);
+
+        trustBlock.appendChild(logoBox);
+        heroContent.appendChild(trustBlock);
+      }
+    }
 
     // Render dynamic form fields (skip has_mca — handled by its own step)
     const formFields = [{"name":"has_mca","label":"Do you have MCA (Merchant Cash Advance) debt?","type":"radio","required":true,"options":"Yes,No"},{"name":"company_name","label":"Company Name","type":"text","required":true,"placeholder":"Your Company Name"},{"name":"first_name","label":"First Name","type":"text","required":true,"placeholder":"John"},{"name":"last_name","label":"Last Name","type":"text","required":true,"placeholder":"Smith"},{"name":"email","label":"Email","type":"email","required":true,"placeholder":"john@company.com"},{"name":"phone","label":"Phone","type":"tel","required":true,"placeholder":"(555) 123-4567"}];
