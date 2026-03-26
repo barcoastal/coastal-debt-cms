@@ -1084,32 +1084,11 @@ async function resolveSheetId(driveApi, sheetConf) {
 // Supports multiple sheets (one per campaign). Use ?source=label to filter.
 router.get('/google-ads/auction-insights', authenticateToken, async (req, res) => {
   try {
-    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig) {
-      return res.json({ connected: false, available: false, sources: [], domains: [] });
-    }
-
-    let allSheets = [];
-    try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
-    if (!allSheets.length) {
-      return res.json({ connected: true, available: false, sources: [], domains: [] });
-    }
-
-    const { source } = req.query;
-    const targetSheets = source
-      ? allSheets.filter(s => s.label === source)
-      : allSheets;
-
-    if (!targetSheets.length) {
-      return res.json({ connected: true, available: false, sources: allSheets.map(s => s.label), domains: [] });
-    }
-
-    // Reuse the same service account auth from google-sheets route
     const { google } = require('googleapis');
     const fs = require('fs');
     const keyPath = require('path').join(__dirname, '..', 'google-sheets-key.json');
     if (!fs.existsSync(keyPath)) {
-      return res.json({ connected: true, available: false, error: 'Google Sheets service account key not found', sources: [], domains: [] });
+      return res.json({ connected: false, available: false, error: 'Google Sheets service account key not found', sources: [], domains: [] });
     }
 
     const auth = new google.auth.GoogleAuth({ keyFile: keyPath, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.readonly'] });
@@ -1117,7 +1096,36 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     const sheetsApi = google.sheets({ version: 'v4', auth: client });
     const driveApi = google.drive({ version: 'v3', auth: client });
 
-    // Map Google Ads export headers to our keys
+    // Find all auction insights sheets on Drive
+    const driveRes = await driveApi.files.list({
+      q: "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and name contains 'Auction insights'",
+      orderBy: 'modifiedTime desc',
+      pageSize: 50,
+      fields: 'files(id, name, createdTime, modifiedTime)'
+    });
+    const driveSheets = driveRes.data.files || [];
+    if (!driveSheets.length) {
+      return res.json({ connected: true, available: false, sources: [], domains: [] });
+    }
+
+    const { source } = req.query;
+    // Derive labels from sheet names for filtering
+    function deriveLabel(name) {
+      let label = name.replace(/auction insights report/i, '').replace(/masterfile/i, '').replace(/master file/i, '').trim();
+      label = label.replace(/\|/g, ' ').replace(/\[|\]/g, '').replace(/- All Devices/i, '').replace(/IS\d+/g, '').trim();
+      label = label.replace(/\s+/g, ' ').replace(/^\s*-\s*/, '').replace(/\s*-\s*$/, '').trim();
+      return label || name;
+    }
+
+    const allLabels = driveSheets.map(f => deriveLabel(f.name));
+    const targetSheets = source
+      ? driveSheets.filter(f => deriveLabel(f.name) === source)
+      : driveSheets;
+
+    if (!targetSheets.length) {
+      return res.json({ connected: true, available: false, sources: [...new Set(allLabels)], domains: [] });
+    }
+
     const HEADER_MAP = {
       'display url domain': 'domain',
       'impr. share': 'impression_share',
@@ -1129,7 +1137,6 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       'outranking share': 'outranking_share'
     };
 
-    // Parse percentage values: "45.23%" → 0.4523, "< 10%" → 0.10
     function parsePct(val) {
       if (!val || val === '--' || val === '-') return null;
       const cleaned = val.replace(/[<%>]/g, '').trim();
@@ -1138,20 +1145,20 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       return num / 100;
     }
 
-    // Parse date from Google Ads export metadata row (e.g. "March 11, 2026 - March 11, 2026")
     function parseDateRow(rows) {
       for (let r = 0; r < Math.min(rows.length, 5); r++) {
-        const cell = (rows[r][0] || '').trim();
-        const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
-        if (m) {
-          const d = new Date(m[1] + ' 12:00:00'); // noon to avoid timezone shift
-          if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        for (let c = 0; c < (rows[r] || []).length; c++) {
+          const cell = (rows[r][c] || '').trim();
+          const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
+          if (m) {
+            const d = new Date(m[1] + ' 12:00:00');
+            if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+          }
         }
       }
       return null;
     }
 
-    // Fetch all target sheets in parallel
     const domainMap = {};
     const reportDates = [];
     const errors = [];
@@ -1159,19 +1166,16 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       (report_date, source_label, domain, impression_share, overlap_rate, position_above_rate, top_of_page_rate, abs_top_of_page_rate, outranking_share)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
-    await Promise.all(targetSheets.map(async (sheetConf) => {
+    await Promise.all(targetSheets.map(async (file) => {
       try {
-        const sheetId = await resolveSheetId(driveApi, sheetConf);
-        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'A:AZ' });
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: file.id, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) return;
 
         const reportDate = parseDateRow(rows);
-        console.log(`[Auction Insights] Sheet "${sheetConf.label}": ${rows.length} rows, date=${reportDate}, row1="${(rows[0] || [])[0]}", row2="${(rows[1] || [])[0]}"`);
+        const label = deriveLabel(file.name);
         if (reportDate && !reportDates.includes(reportDate)) reportDates.push(reportDate);
 
-        // Auto-detect header row — Google Ads exports have metadata rows before actual headers
-        // Scan all cells in each row (not just column 0) since some sheets have extra columns before "Display URL domain"
         let headerRowIdx = -1;
         for (let r = 0; r < Math.min(rows.length, 10); r++) {
           for (let c = 0; c < (rows[r] || []).length; c++) {
@@ -1180,7 +1184,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
           if (headerRowIdx !== -1) break;
         }
         if (headerRowIdx === -1) {
-          errors.push(`${sheetConf.label}: no "Display URL domain" column found`);
+          errors.push(`${label}: no "Display URL domain" column found`);
           return;
         }
 
@@ -1191,13 +1195,13 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
           if (key) headerIndices[key] = i;
         });
 
+        const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
         for (let i = headerRowIdx + 1; i < rows.length; i++) {
           const row = rows[i];
           const domain = (row[headerIndices.domain] || '').trim();
           if (!domain) continue;
 
           const parsed = {};
-          const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
           for (const m of metricKeys) {
             parsed[m] = headerIndices[m] != null ? parsePct(row[headerIndices[m]]) : null;
           }
@@ -1211,17 +1215,16 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
             if (parsed[m] != null) d[m] += parsed[m];
           }
 
-          // Store daily snapshot
           if (reportDate) {
             try {
-              storeInsert.run(reportDate, sheetConf.label, domain,
+              storeInsert.run(reportDate, label, domain,
                 parsed.impression_share, parsed.overlap_rate, parsed.position_above_rate,
                 parsed.top_of_page_rate, parsed.abs_top_of_page_rate, parsed.outranking_share);
-            } catch (e) {} // ignore duplicate key errors
+            } catch (e) {}
           }
         }
       } catch (e) {
-        errors.push(`${sheetConf.label}: ${e.message}`);
+        errors.push(`${file.name}: ${e.message}`);
       }
     }));
 
@@ -1238,7 +1241,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
     res.json({
       connected: true,
       available: domains.length > 0,
-      sources: allSheets.map(s => s.label),
+      sources: [...new Set(allLabels)],
       report_dates: reportDates.sort(),
       error: errors.length ? errors.join('; ') : undefined,
       domains
@@ -3007,18 +3010,11 @@ router.get('/campaigns/performance', authenticateToken, (req, res) => {
 });
 
 // ============ Background Auction Insights Sync ============
-// Pulls latest data from all configured Google Sheets and stores daily snapshots.
-// Called on a daily interval from index.js.
+// Scans Google Drive for any auction insights sheets shared with the service account,
+// reads competition data, and stores daily snapshots. Runs every 6 hours from index.js.
 
 async function syncAuctionInsights() {
   try {
-    const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig) return;
-
-    let allSheets = [];
-    try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
-    if (!allSheets.length) return;
-
     const { google } = require('googleapis');
     const fs = require('fs');
     const keyPath = require('path').join(__dirname, '..', 'google-sheets-key.json');
@@ -3031,6 +3027,21 @@ async function syncAuctionInsights() {
     const client = await auth.getClient();
     const sheetsApi = google.sheets({ version: 'v4', auth: client });
     const driveApi = google.drive({ version: 'v3', auth: client });
+
+    // Find all auction insights sheets on Drive shared with service account
+    const driveRes = await driveApi.files.list({
+      q: "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and name contains 'Auction insights'",
+      orderBy: 'modifiedTime desc',
+      pageSize: 50,
+      fields: 'files(id, name, createdTime, modifiedTime)'
+    });
+    const driveSheets = driveRes.data.files || [];
+    if (!driveSheets.length) {
+      console.log('[Auction Insights Sync] No auction insights sheets found on Drive');
+      return;
+    }
+
+    console.log(`[Auction Insights Sync] Found ${driveSheets.length} sheets on Drive`);
 
     const HEADER_MAP = {
       'display url domain': 'domain',
@@ -3053,14 +3064,27 @@ async function syncAuctionInsights() {
 
     function parseDateRow(rows) {
       for (let r = 0; r < Math.min(rows.length, 5); r++) {
-        const cell = (rows[r][0] || '').trim();
-        const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
-        if (m) {
-          const d = new Date(m[1] + ' 12:00:00'); // noon to avoid timezone shift
-          if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+        for (let c = 0; c < (rows[r] || []).length; c++) {
+          const cell = (rows[r][c] || '').trim();
+          const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
+          if (m) {
+            const d = new Date(m[1] + ' 12:00:00');
+            if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+          }
         }
       }
       return null;
+    }
+
+    // Derive a label from the sheet name (e.g. "RLSA | [Broad] - All Devices Auction insights report" → "RLSA Broad")
+    function deriveLabel(name) {
+      // Remove common suffixes
+      let label = name.replace(/auction insights report/i, '').replace(/masterfile/i, '').replace(/master file/i, '').trim();
+      // Clean up separators and brackets
+      label = label.replace(/\|/g, ' ').replace(/\[|\]/g, '').replace(/- All Devices/i, '').replace(/IS\d+/g, '').trim();
+      // Collapse whitespace
+      label = label.replace(/\s+/g, ' ').replace(/^\s*-\s*/, '').replace(/\s*-\s*$/, '').trim();
+      return label || 'General';
     }
 
     const storeInsert = db.prepare(`INSERT OR REPLACE INTO auction_insights_history
@@ -3068,10 +3092,9 @@ async function syncAuctionInsights() {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
     let totalStored = 0;
-    for (const sheetConf of allSheets) {
+    for (const file of driveSheets) {
       try {
-        const sheetId = await resolveSheetId(driveApi, sheetConf);
-        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'A:AZ' });
+        const resp = await sheetsApi.spreadsheets.values.get({ spreadsheetId: file.id, range: 'A:AZ' });
         const rows = resp.data.values;
         if (!rows || rows.length < 2) continue;
 
@@ -3094,6 +3117,7 @@ async function syncAuctionInsights() {
           if (key) headerIndices[key] = i;
         });
 
+        const label = deriveLabel(file.name);
         const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
         for (let i = headerRowIdx + 1; i < rows.length; i++) {
           const row = rows[i];
@@ -3106,16 +3130,16 @@ async function syncAuctionInsights() {
           }
 
           try {
-            storeInsert.run(reportDate, sheetConf.label, domain,
+            storeInsert.run(reportDate, label, domain,
               parsed.impression_share, parsed.overlap_rate, parsed.position_above_rate,
               parsed.top_of_page_rate, parsed.abs_top_of_page_rate, parsed.outranking_share);
             totalStored++;
           } catch (e) {} // ignore duplicate key errors
         }
 
-        console.log(`[Auction Insights Sync] ${sheetConf.label}: stored ${reportDate}`);
+        console.log(`[Auction Insights Sync] "${label}" (${file.id}): date=${reportDate}`);
       } catch (e) {
-        console.error(`[Auction Insights Sync] ${sheetConf.label} error:`, e.message);
+        console.error(`[Auction Insights Sync] "${file.name}" error:`, e.message);
       }
     }
 
