@@ -3,6 +3,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const compression = require('compression');
 const path = require('path');
+const fs = require('fs');
 
 const db = require('./database');
 const authRoutes = require('./routes/auth');
@@ -86,8 +87,44 @@ app.get('/robots.txt', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'robots.txt'));
 });
 
-// Serve generated landing pages with cache headers
+// A/B template test: serve variant-b.html if visitor is in variant B
 const isProduction = !!process.env.RAILWAY_VOLUME_MOUNT_PATH;
+app.use('/lp', (req, res, next) => {
+  // Check if requesting a page directory (ends with / or no extension)
+  if (req.path.match(/\/[^.]+\/?$/) || req.path.endsWith('/')) {
+    const slug = req.path.replace(/^\/|\/$/g, '');
+    if (slug) {
+      try {
+        const page = db.prepare('SELECT id, ab_config FROM landing_pages WHERE slug = ?').get(slug);
+        if (page) {
+          const abCfg = JSON.parse(page.ab_config || '{}');
+          if (abCfg.enabled && abCfg.variantB_template) {
+            const cookieName = `ab_${page.id}`;
+            const cookies = req.headers.cookie || '';
+            const match = cookies.match(new RegExp(cookieName + '=([^;]+)'));
+            let variant = match ? match[1] : null;
+
+            if (!variant) {
+              const split = abCfg.split || 50;
+              variant = Math.random() * 100 < split ? 'B' : 'A';
+              res.cookie(cookieName, variant, { maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' });
+            }
+
+            if (variant === 'B') {
+              const variantPath = path.join(__dirname, '..', 'public', slug, 'variant-b.html');
+              if (fs.existsSync(variantPath)) {
+                return res.sendFile(variantPath);
+              }
+            }
+          }
+        }
+      } catch (e) { /* fall through to static */ }
+    }
+  }
+  next();
+});
+
+// Serve generated landing pages with cache headers
 app.use('/lp', (req, res, next) => {
   if (isProduction) {
     // Production: cache for Cloudflare CDN

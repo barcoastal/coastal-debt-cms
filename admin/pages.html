@@ -1161,6 +1161,19 @@
               <small style="color:#6b7280">A: ${100 - (abConfig.split || 50)}% &nbsp;|&nbsp; B: ${abConfig.split || 50}%</small>
             </div>
 
+            <div class="form-group" style="margin-bottom:16px">
+              <label style="font-weight:600">Variant B Template</label>
+              <select id="abTemplate" style="width:100%">
+                <option value="">Same template as A (text overrides only)</option>
+                <option value="form" ${abConfig.variantB_template === 'form' ? 'selected' : ''}>Form (Standard)</option>
+                <option value="authority" ${abConfig.variantB_template === 'authority' ? 'selected' : ''}>Authority (SEO)</option>
+                <option value="call" ${abConfig.variantB_template === 'call' ? 'selected' : ''}>Call Now</option>
+                <option value="game" ${abConfig.variantB_template === 'game' ? 'selected' : ''}>Game</option>
+                <option value="article" ${abConfig.variantB_template === 'article' ? 'selected' : ''}>Article</option>
+              </select>
+              <small style="color:#6b7280">Choose a different template for variant B, or leave as "Same" to only override text/colors below.</small>
+            </div>
+
             <h4 style="margin:16px 0 12px;font-size:14px;color:#7c3aed">Variant B Overrides</h4>
             <p style="color:#6b7280;font-size:13px;margin-bottom:12px">Leave fields empty to keep the same as variant A (the default page content).</p>
 
@@ -1328,7 +1341,9 @@
       if (hlHex && /^#[0-9a-fA-F]{6}$/.test(hlHex)) colors.headlineHighlight = hlHex;
       if (Object.keys(colors).length > 0) variantB.colors = colors;
 
+      const variantB_template = document.getElementById('abTemplate')?.value || '';
       const abConfig = { enabled, split, variantB };
+      if (variantB_template) abConfig.variantB_template = variantB_template;
 
       try {
         await api(`/api/pages/${abCurrentPageId}/ab-config`, {

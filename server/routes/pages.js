@@ -791,6 +791,53 @@ function generateLandingPage(pageId) {
 
   fs.writeFileSync(path.join(pageDir, 'index.html'), html);
   console.log(`Generated landing page: ${page.slug}`);
+
+  // Generate variant B if template-level A/B test is configured
+  const abCfg = JSON.parse(page.ab_config || '{}');
+  if (abCfg.enabled && abCfg.variantB_template) {
+    const variantTemplateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', form: 'landing-page.html' };
+    const variantTemplateFile = variantTemplateFiles[abCfg.variantB_template] || 'landing-page.html';
+    const variantTemplatePath = path.join(__dirname, '..', '..', 'templates', variantTemplateFile);
+
+    if (fs.existsSync(variantTemplatePath)) {
+      let htmlB = fs.readFileSync(variantTemplatePath, 'utf8');
+
+      // Use variant B content if provided, otherwise same content
+      const variantContent = abCfg.variantB_content ? { ...mergedContent, ...abCfg.variantB_content } : mergedContent;
+      const variantDefaults = (abCfg.variantB_template === 'authority') ? defaultContentAuthority : defaultContent;
+      const mergedVariant = { ...variantDefaults, ...variantContent };
+      mergedVariant.colors = { ...variantDefaults.colors, ...(variantContent.colors || {}) };
+
+      // Replace placeholders (same logic as variant A)
+      htmlB = htmlB.replace(/{{SLUG}}/g, page.slug);
+      htmlB = htmlB.replace(/{{HEAD_SCRIPTS}}/g, headScripts);
+      htmlB = htmlB.replace(/{{BODY_SCRIPTS}}/g, bodyScripts);
+      htmlB = htmlB.replace(/{{HIDDEN_FIELDS}}/g, hiddenFieldsHtml);
+      htmlB = htmlB.replace(/{{FB_PIXEL_ID}}/g, fbPixelId);
+      htmlB = htmlB.replace(/{{headScripts}}/g, headScripts);
+      htmlB = htmlB.replace(/{{bodyStartScripts}}/g, bodyStartScripts);
+      htmlB = htmlB.replace(/{{bodyEndScripts}}/g, bodyEndScripts);
+      htmlB = htmlB.replace(/{{hiddenFieldsHtml}}/g, hiddenFieldsHtml);
+
+      // Replace all template placeholders
+      for (const [key, value] of Object.entries(mergedVariant)) {
+        if (typeof value === 'string') {
+          htmlB = htmlB.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        }
+      }
+
+      // Inject JSON config for JS-driven sections
+      const configJson = JSON.stringify(mergedVariant).replace(/<\//g, '<\\/');
+      htmlB = htmlB.replace('</body>', `<script>window.__PAGE_CONFIG__=${configJson};</script>\n</body>`);
+
+      fs.writeFileSync(path.join(pageDir, 'variant-b.html'), htmlB);
+      console.log(`Generated variant B (${abCfg.variantB_template}) for: ${page.slug}`);
+    }
+  } else {
+    // Clean up variant B file if A/B test disabled
+    const variantBPath = path.join(pageDir, 'variant-b.html');
+    if (fs.existsSync(variantBPath)) fs.unlinkSync(variantBPath);
+  }
 }
 
 // Regenerate all landing pages (useful after template changes)
