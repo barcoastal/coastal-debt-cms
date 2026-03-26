@@ -98,7 +98,7 @@ app.use('/lp', (req, res, next) => {
         const page = db.prepare('SELECT id, ab_config FROM landing_pages WHERE slug = ?').get(slug);
         if (page) {
           const abCfg = JSON.parse(page.ab_config || '{}');
-          if (abCfg.enabled && abCfg.variantB_template) {
+          if (abCfg.enabled && (abCfg.variantB_template || abCfg.variantB_page)) {
             // Disable CDN caching for A/B tested pages
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.setHeader('CDN-Cache-Control', 'no-store');
@@ -118,11 +118,23 @@ app.use('/lp', (req, res, next) => {
             console.log(`[A/B] Page ${slug} (id:${page.id}): variant=${variant}, cookie=${match ? match[1] : 'new'}`);
 
             if (variant === 'B') {
+              // Option 1: Serve another existing page as variant B
+              if (abCfg.variantB_page) {
+                const bPage = db.prepare('SELECT slug FROM landing_pages WHERE id = ?').get(abCfg.variantB_page);
+                if (bPage) {
+                  const bPath = path.join(__dirname, '..', 'public', bPage.slug, 'index.html');
+                  if (fs.existsSync(bPath)) {
+                    console.log(`[A/B] Serving page "${bPage.slug}" as variant B for "${slug}"`);
+                    return res.sendFile(bPath);
+                  }
+                }
+              }
+              // Option 2: Serve generated variant-b.html
               const variantPath = path.join(__dirname, '..', 'public', slug, 'variant-b.html');
               if (fs.existsSync(variantPath)) {
                 return res.sendFile(variantPath);
               } else {
-                console.log(`[A/B] WARNING: variant-b.html not found at ${variantPath}`);
+                console.log(`[A/B] WARNING: no variant B file found for ${slug}`);
               }
             }
           }

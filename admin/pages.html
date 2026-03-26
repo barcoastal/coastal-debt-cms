@@ -1163,16 +1163,11 @@
             </div>
 
             <div class="form-group" style="margin-bottom:16px">
-              <label style="font-weight:600">Variant B Template</label>
-              <select id="abTemplate" style="width:100%">
-                <option value="">Same template as A (text overrides only)</option>
-                <option value="form" ${abConfig.variantB_template === 'form' ? 'selected' : ''}>Form (Standard)</option>
-                <option value="authority" ${abConfig.variantB_template === 'authority' ? 'selected' : ''}>Authority (SEO)</option>
-                <option value="call" ${abConfig.variantB_template === 'call' ? 'selected' : ''}>Call Now</option>
-                <option value="game" ${abConfig.variantB_template === 'game' ? 'selected' : ''}>Game</option>
-                <option value="article" ${abConfig.variantB_template === 'article' ? 'selected' : ''}>Article</option>
+              <label style="font-weight:600">Variant B — Use Existing Page</label>
+              <select id="abPageSelect" style="width:100%">
+                <option value="">None (use text overrides below)</option>
               </select>
-              <small style="color:#6b7280">Choose a different template for variant B, or leave as "Same" to only override text/colors below.</small>
+              <small style="color:#6b7280">Pick another landing page to serve as variant B on the same URL. This is the easiest way to A/B test different templates.</small>
             </div>
 
             <h4 style="margin:16px 0 12px;font-size:14px;color:#7c3aed">Variant B Overrides</h4>
@@ -1274,6 +1269,21 @@
         document.getElementById('abSplitLabel').textContent = (100 - b) + '% / ' + b + '%';
       });
 
+      // Populate page selector for variant B
+      try {
+        const pagesRes = await fetch('/api/pages');
+        const pagesData = await pagesRes.json();
+        const allPages = pagesData.pages || pagesData;
+        const select = document.getElementById('abPageSelect');
+        allPages.filter(p => p.id !== pageId).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `${p.name} (/lp/${p.slug}/) — ${p.template_type || 'form'}`;
+          if (abConfig.variantB_page == p.id) opt.selected = true;
+          select.appendChild(opt);
+        });
+      } catch(e) {}
+
       // Wire up color pickers
       syncColorPicker('abCtaColor', 'abCtaColorHex');
       syncColorPicker('abCtaHoverColor', 'abCtaHoverColorHex');
@@ -1342,9 +1352,9 @@
       if (hlHex && /^#[0-9a-fA-F]{6}$/.test(hlHex)) colors.headlineHighlight = hlHex;
       if (Object.keys(colors).length > 0) variantB.colors = colors;
 
-      const variantB_template = document.getElementById('abTemplate')?.value || '';
+      const variantB_page = document.getElementById('abPageSelect')?.value || '';
       const abConfig = { enabled, split, variantB };
-      if (variantB_template) abConfig.variantB_template = variantB_template;
+      if (variantB_page) abConfig.variantB_page = parseInt(variantB_page);
 
       try {
         await api(`/api/pages/${abCurrentPageId}/ab-config`, {
