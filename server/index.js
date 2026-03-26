@@ -99,6 +99,11 @@ app.use('/lp', (req, res, next) => {
         if (page) {
           const abCfg = JSON.parse(page.ab_config || '{}');
           if (abCfg.enabled && abCfg.variantB_template) {
+            // Disable CDN caching for A/B tested pages
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('CDN-Cache-Control', 'no-store');
+            res.setHeader('Vary', 'Cookie');
+
             const cookieName = `ab_${page.id}`;
             const cookies = req.headers.cookie || '';
             const match = cookies.match(new RegExp(cookieName + '=([^;]+)'));
@@ -110,15 +115,21 @@ app.use('/lp', (req, res, next) => {
               res.cookie(cookieName, variant, { maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' });
             }
 
+            console.log(`[A/B] Page ${slug} (id:${page.id}): variant=${variant}, cookie=${match ? match[1] : 'new'}`);
+
             if (variant === 'B') {
               const variantPath = path.join(__dirname, '..', 'public', slug, 'variant-b.html');
               if (fs.existsSync(variantPath)) {
                 return res.sendFile(variantPath);
+              } else {
+                console.log(`[A/B] WARNING: variant-b.html not found at ${variantPath}`);
               }
             }
           }
         }
-      } catch (e) { /* fall through to static */ }
+      } catch (e) {
+        console.error('[A/B] Error:', e.message);
+      }
     }
   }
   next();

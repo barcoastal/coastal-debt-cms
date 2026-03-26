@@ -526,6 +526,26 @@ router.put('/:id/ab-config', authenticateToken, (req, res) => {
   res.json({ message: 'A/B config saved' });
 });
 
+// Debug A/B test - check config and file status
+router.get('/:id/ab-debug', authenticateToken, (req, res) => {
+  const page = db.prepare('SELECT id, slug, ab_config FROM landing_pages WHERE id = ?').get(req.params.id);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+
+  const abCfg = JSON.parse(page.ab_config || '{}');
+  const variantBPath = path.join(__dirname, '..', '..', 'public', page.slug, 'variant-b.html');
+  const indexPath = path.join(__dirname, '..', '..', 'public', page.slug, 'index.html');
+
+  res.json({
+    page_id: page.id,
+    slug: page.slug,
+    ab_config: abCfg,
+    files: {
+      'index.html': fs.existsSync(indexPath),
+      'variant-b.html': fs.existsSync(variantBPath)
+    }
+  });
+});
+
 // Get A/B test stats (per-variant visitors, leads)
 router.get('/:id/ab-stats', authenticateToken, (req, res) => {
   const page = db.prepare('SELECT id, slug, ab_config FROM landing_pages WHERE id = ?').get(req.params.id);
