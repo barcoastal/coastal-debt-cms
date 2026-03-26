@@ -553,14 +553,32 @@ router.get('/:id/ab-stats', authenticateToken, (req, res) => {
 
   const pageId = page.id;
 
+  const abCfg = JSON.parse(page.ab_config || '{}');
+  const variantBPageId = abCfg.variantB_page || null;
+
+  // Count visitors & leads for both variants
   const visitorA = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'A'").get(`%${page.slug}%`)?.c || 0;
   const visitorB = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'B'").get(`%${page.slug}%`)?.c || 0;
-  const leadA = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'A'").get(pageId)?.c || 0;
-  const leadB = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'B'").get(pageId)?.c || 0;
+
+  // Leads: variant A from this page, variant B from this page OR the variant B page
+  const leadA = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL)").get(pageId)?.c || 0;
+  let leadB = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'B'").get(pageId)?.c || 0;
+  if (variantBPageId) {
+    leadB += db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ?").get(variantBPageId)?.c || 0;
+  }
+
+  // Get actual lead records for both variants
+  const leadsA = db.prepare("SELECT id, first_name, last_name, email, phone, created_at FROM leads WHERE landing_page_id = ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL) ORDER BY created_at DESC LIMIT 20").all(pageId);
+  let leadsB = db.prepare("SELECT id, first_name, last_name, email, phone, created_at, ab_variant FROM leads WHERE landing_page_id = ? AND ab_variant = 'B' ORDER BY created_at DESC LIMIT 20").all(pageId);
+  if (variantBPageId) {
+    const bPageLeads = db.prepare("SELECT id, first_name, last_name, email, phone, created_at FROM leads WHERE landing_page_id = ? ORDER BY created_at DESC LIMIT 20").all(variantBPageId);
+    leadsB = [...leadsB, ...bPageLeads].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
+  }
 
   res.json({
     visitors: { A: visitorA, B: visitorB },
-    leads: { A: leadA, B: leadB }
+    leads: { A: leadA, B: leadB },
+    leadRecords: { A: leadsA, B: leadsB }
   });
 });
 

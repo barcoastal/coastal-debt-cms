@@ -1304,6 +1304,16 @@
         const crA = res.visitors.A > 0 ? (res.leads.A / res.visitors.A * 100).toFixed(1) : '0.0';
         const crB = res.visitors.B > 0 ? (res.leads.B / res.visitors.B * 100).toFixed(1) : '0.0';
 
+        function leadRows(leads) {
+          if (!leads || !leads.length) return '<tr><td colspan="4" style="color:#9ca3af;text-align:center;padding:12px">No leads yet</td></tr>';
+          return leads.map(l => `<tr>
+            <td style="padding:6px 8px;font-size:12px">${l.first_name || ''} ${l.last_name || ''}</td>
+            <td style="padding:6px 8px;font-size:12px">${l.email || ''}</td>
+            <td style="padding:6px 8px;font-size:12px">${l.phone || ''}</td>
+            <td style="padding:6px 8px;font-size:12px;color:#9ca3af">${new Date(l.created_at).toLocaleDateString()}</td>
+          </tr>`).join('');
+        }
+
         grid.innerHTML = `
           <div class="ab-variant-card variant-a">
             <h4>Variant A (Control)</h4>
@@ -1311,6 +1321,12 @@
             <div class="ab-label">visitors</div>
             <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.A}</div>
             <div class="ab-label">leads (${crA}% CR)</div>
+            <div style="margin-top:12px;max-height:200px;overflow-y:auto">
+              <table style="width:100%;font-size:12px;table-layout:auto">
+                <thead><tr style="border-bottom:1px solid #e5e7eb"><th style="padding:4px 8px;text-align:left">Name</th><th style="padding:4px 8px;text-align:left">Email</th><th style="padding:4px 8px;text-align:left">Phone</th><th style="padding:4px 8px;text-align:left">Date</th></tr></thead>
+                <tbody>${leadRows(res.leadRecords?.A)}</tbody>
+              </table>
+            </div>
           </div>
           <div class="ab-variant-card variant-b">
             <h4>Variant B</h4>
@@ -1318,6 +1334,12 @@
             <div class="ab-label">visitors</div>
             <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.B}</div>
             <div class="ab-label">leads (${crB}% CR)</div>
+            <div style="margin-top:12px;max-height:200px;overflow-y:auto">
+              <table style="width:100%;font-size:12px;table-layout:auto">
+                <thead><tr style="border-bottom:1px solid #e5e7eb"><th style="padding:4px 8px;text-align:left">Name</th><th style="padding:4px 8px;text-align:left">Email</th><th style="padding:4px 8px;text-align:left">Phone</th><th style="padding:4px 8px;text-align:left">Date</th></tr></thead>
+                <tbody>${leadRows(res.leadRecords?.B)}</tbody>
+              </table>
+            </div>
           </div>
         `;
       } catch (err) {
