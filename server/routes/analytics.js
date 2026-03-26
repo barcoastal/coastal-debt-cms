@@ -3151,5 +3151,183 @@ async function syncAuctionInsights() {
   }
 }
 
+// ============ Inbound Email Webhook for Auction Insights ============
+// Receives CSV reports via Mailgun inbound email webhook.
+// Google Ads emails daily reports → Mailgun → this endpoint.
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Verify Mailgun webhook signature
+function verifyMailgunSignature(timestamp, token, signature) {
+  const signingKey = process.env.MAILGUN_SIGNING_KEY;
+  if (!signingKey) return true; // Skip verification if no key configured
+  const crypto = require('crypto');
+  const hmac = crypto.createHmac('sha256', signingKey);
+  hmac.update(timestamp + token);
+  return hmac.digest('hex') === signature;
+}
+
+// Parse auction insights CSV content
+function parseAuctionInsightsCsv(csvText, sourceLabel) {
+  const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return { rows: 0, date: null };
+
+  const HEADER_MAP = {
+    'display url domain': 'domain',
+    'impr. share': 'impression_share', 'impression share': 'impression_share',
+    'overlap rate': 'overlap_rate', 'position above rate': 'position_above_rate',
+    'top of page rate': 'top_of_page_rate', 'abs. top of page rate': 'abs_top_of_page_rate',
+    'outranking share': 'outranking_share'
+  };
+
+  function parsePct(val) {
+    if (!val || val === '--' || val === '-') return null;
+    const cleaned = val.replace(/[<%>"]/g, '').trim();
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num / 100;
+  }
+
+  // Find report date from metadata rows (e.g. "March 25, 2026 - March 25, 2026")
+  let reportDate = null;
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const m = lines[i].match(/(\w+ \d{1,2},? \d{4})/);
+    if (m) {
+      const d = new Date(m[1] + ' 12:00:00');
+      if (!isNaN(d.getTime())) { reportDate = d.toISOString().split('T')[0]; break; }
+    }
+  }
+
+  // Find header row containing "Display URL domain"
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    if (lines[i].toLowerCase().includes('display url domain')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return { rows: 0, date: reportDate, error: 'No "Display URL domain" header found' };
+
+  // Parse CSV header (handle quoted fields)
+  function parseCsvLine(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQuotes = !inQuotes; }
+      else if (line[i] === ',' && !inQuotes) { fields.push(current.trim()); current = ''; }
+      else { current += line[i]; }
+    }
+    fields.push(current.trim());
+    return fields;
+  }
+
+  const headers = parseCsvLine(lines[headerIdx]).map(h => h.toLowerCase().replace(/"/g, ''));
+  const colMap = {};
+  headers.forEach((h, i) => { if (HEADER_MAP[h]) colMap[HEADER_MAP[h]] = i; });
+
+  if (colMap.domain === undefined) return { rows: 0, date: reportDate, error: 'Could not map domain column' };
+
+  const storeInsert = db.prepare(`INSERT OR REPLACE INTO auction_insights_history
+    (report_date, source_label, domain, impression_share, overlap_rate, position_above_rate, top_of_page_rate, abs_top_of_page_rate, outranking_share)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+  const date = reportDate || new Date().toISOString().split('T')[0];
+  let stored = 0;
+  const metricKeys = ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'abs_top_of_page_rate', 'outranking_share'];
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const fields = parseCsvLine(lines[i]);
+    const domain = (fields[colMap.domain] || '').replace(/"/g, '').trim();
+    if (!domain) continue;
+
+    const metrics = {};
+    for (const m of metricKeys) {
+      metrics[m] = colMap[m] != null ? parsePct(fields[colMap[m]]) : null;
+    }
+
+    try {
+      storeInsert.run(date, sourceLabel, domain,
+        metrics.impression_share, metrics.overlap_rate, metrics.position_above_rate,
+        metrics.top_of_page_rate, metrics.abs_top_of_page_rate, metrics.outranking_share);
+      stored++;
+    } catch (e) {}
+  }
+
+  return { rows: stored, date };
+}
+
+// Mailgun inbound webhook — receives email with CSV attachments
+router.post('/auction-insights/inbound', upload.any(), (req, res) => {
+  try {
+    // Verify Mailgun signature if configured
+    const timestamp = req.body.timestamp || '';
+    const token = req.body.token || '';
+    const signature = req.body.signature || '';
+    if (process.env.MAILGUN_SIGNING_KEY && !verifyMailgunSignature(timestamp, token, signature)) {
+      console.warn('[Inbound Email] Invalid Mailgun signature');
+      return res.status(406).json({ error: 'Invalid signature' });
+    }
+
+    const subject = req.body.subject || '';
+    const from = req.body.from || req.body.sender || '';
+    const files = req.files || [];
+
+    console.log(`[Inbound Email] From: ${from}, Subject: "${subject}", Attachments: ${files.length}`);
+
+    // Derive source label from email subject
+    let sourceLabel = 'General';
+    const subjectClean = subject.replace(/auction insights report/i, '').replace(/masterfile/i, '').replace(/master file/i, '').trim();
+    const labelMatch = subjectClean.replace(/\|/g, ' ').replace(/\[|\]/g, '').replace(/- All Devices/i, '').replace(/IS\d+/g, '').replace(/\s+/g, ' ').replace(/^\s*-\s*/, '').replace(/\s*-\s*$/, '').trim();
+    if (labelMatch) sourceLabel = labelMatch;
+
+    const results = [];
+
+    // Process CSV attachments
+    for (const file of files) {
+      if (!file.originalname.match(/\.csv$/i) && !file.mimetype.includes('csv') && !file.mimetype.includes('text')) continue;
+
+      const csvText = file.buffer.toString('utf8');
+      console.log(`[Inbound Email] Processing "${file.originalname}" (${csvText.length} bytes)`);
+
+      const result = parseAuctionInsightsCsv(csvText, sourceLabel);
+      results.push({ file: file.originalname, ...result });
+      console.log(`[Inbound Email] "${file.originalname}": ${result.rows} rows stored, date=${result.date}`);
+    }
+
+    // Also check if CSV is in the email body (some exports inline the data)
+    const bodyPlain = req.body['body-plain'] || '';
+    if (!files.length && bodyPlain.toLowerCase().includes('display url domain')) {
+      const result = parseAuctionInsightsCsv(bodyPlain, sourceLabel);
+      results.push({ file: 'email-body', ...result });
+      console.log(`[Inbound Email] Body CSV: ${result.rows} rows stored, date=${result.date}`);
+    }
+
+    if (!results.length || results.every(r => r.rows === 0)) {
+      console.warn('[Inbound Email] No auction insights data found in email');
+      return res.json({ message: 'No auction insights data found', subject, attachments: files.map(f => f.originalname) });
+    }
+
+    res.json({ message: 'Processed', results });
+  } catch (e) {
+    console.error('[Inbound Email] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Manual CSV upload endpoint (admin panel fallback)
+router.post('/auction-insights/upload', authenticateToken, upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const sourceLabel = req.body.label || 'Upload';
+    const csvText = req.file.buffer.toString('utf8');
+    const result = parseAuctionInsightsCsv(csvText, sourceLabel);
+
+    console.log(`[Upload] "${req.file.originalname}": ${result.rows} rows stored, date=${result.date}`);
+    res.json({ message: 'Processed', ...result });
+  } catch (e) {
+    console.error('[Upload] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;
 module.exports.syncAuctionInsights = syncAuctionInsights;
