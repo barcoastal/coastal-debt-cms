@@ -602,7 +602,7 @@
 
     // Mobile sticky CTA: switch between call and form scroll
     (function() {
-      var mobileCta = 'call';
+      var mobileCta = '{{mobileCta}}';
       var ctaLink = document.getElementById('mobileStickyCtaLink');
       var ctaBar = document.getElementById('mobileStickyCtaBar');
       if (!ctaLink || !ctaBar) return;
@@ -691,7 +691,7 @@
             fbclid: params.get('fbclid') || '',
             fbc: getCookieVal('_fbc') || '',
             fbp: getCookieVal('_fbp') || '',
-            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || ''; })(),
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || 'adblock_blocked'; })(),
             rdt_cid: params.get('rdt_cid') || '',
             user_agent: ua,
             browser: browser,
@@ -848,7 +848,7 @@
     // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
     function getRtClickId() {
       try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
-      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || '';
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || 'adblock_blocked';
     }
     var rtClickId = getRtClickId();
     if (rtClickId) {
@@ -971,11 +971,12 @@
     document.getElementById('testimonialsGrid').innerHTML = testimonialsHtml;
 
     const trustLogos = [
-      { src: '/lp/assets/trust-logos/bbb.png', alt: 'BBB Accredited Business', height: '50' },
-      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI', height: '45' },
+      { src: '/lp/assets/trust-logos/bbb-accredited.png', alt: 'BBB Accredited Business', height: '50' },
       { src: '/lp/assets/trust-logos/trustpilot.webp', alt: 'Trustpilot', height: '45' },
-      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'Featured Partner', height: '40' },
-      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' }
+      { src: '/lp/assets/trust-logos/forbes.svg', alt: 'Forbes', height: '28' },
+      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' },
+      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI ISO 9001 Certified', height: '45' },
+      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'ISO 9001:2015 Certified', height: '40' }
     ];
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
@@ -1010,7 +1011,7 @@
         var grid2x2 = document.createElement('div');
         grid2x2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;';
 
-        var fourLogos = ['bbb.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
+        var fourLogos = ['bbb-accredited.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
         fourLogos.forEach(function(file) {
           var img = document.createElement('img');
           img.src = '/lp/assets/trust-logos/' + file;

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <text x="100" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700">
+    <tspan fill="#4285F4">G</tspan><tspan fill="#EA4335">o</tspan><tspan fill="#FBBC05">o</tspan><tspan fill="#4285F4">g</tspan><tspan fill="#34A853">l</tspan><tspan fill="#EA4335">e</tspan>
+  </text>
+  <text x="100" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#5f6368">Reviews</text>
+  <g transform="translate(52, 56)">
+    <polygon points="8,0 10.5,5 16,6 12,10 13,16 8,13 3,16 4,10 0,6 5.5,5" fill="#FBBC05"/>
+    <polygon points="28,0 30.5,5 36,6 32,10 33,16 28,13 23,16 24,10 20,6 25.5,5" fill="#FBBC05"/>
+    <polygon points="48,0 50.5,5 56,6 52,10 53,16 48,13 43,16 44,10 40,6 45.5,5" fill="#FBBC05"/>
+    <polygon points="68,0 70.5,5 76,6 72,10 73,16 68,13 63,16 64,10 60,6 65.5,5" fill="#FBBC05"/>
+    <polygon points="88,0 90.5,5 96,6 92,10 93,16 88,13 83,16 84,10 80,6 85.5,5" fill="#FBBC05"/>
+  </g>
+</svg>

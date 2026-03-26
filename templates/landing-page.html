@@ -976,11 +976,12 @@
     document.getElementById('testimonialsGrid').innerHTML = testimonialsHtml;
 
     const trustLogos = [
-      { src: '/lp/assets/trust-logos/bbb.png', alt: 'BBB Accredited Business', height: '50' },
-      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI', height: '45' },
+      { src: '/lp/assets/trust-logos/bbb-accredited.png', alt: 'BBB Accredited Business', height: '50' },
       { src: '/lp/assets/trust-logos/trustpilot.webp', alt: 'Trustpilot', height: '45' },
-      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'Featured Partner', height: '40' },
-      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' }
+      { src: '/lp/assets/trust-logos/forbes.svg', alt: 'Forbes', height: '28' },
+      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' },
+      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI ISO 9001 Certified', height: '45' },
+      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'ISO 9001:2015 Certified', height: '40' }
     ];
     const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
     document.getElementById('trustLogos').innerHTML = trustLogosHtml;
@@ -1015,7 +1016,7 @@
         var grid2x2 = document.createElement('div');
         grid2x2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;';
 
-        var fourLogos = ['bbb.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
+        var fourLogos = ['bbb-accredited.png', 'bsi.webp', 'trustpilot.webp', 'featured-partner.webp'];
         fourLogos.forEach(function(file) {
           var img = document.createElement('img');
           img.src = '/lp/assets/trust-logos/' + file;

@@ -94,11 +94,11 @@
     #bulletPoints{display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
     .bullet-item{display:flex;align-items:center;gap:12px;font-size:1rem;color:var(--gray-800)}
     .bullet-item .bicon{color:var(--primary);font-weight:900;font-size:1.1rem;flex-shrink:0}
-    .trust-bar-inline{margin-top:8px}
-    .trust-bar-inline .trust-label{font-size:0.75rem;color:var(--gray-600);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:12px}
-    .trust-logos{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-    .trust-logos img{height:auto;max-height:40px;opacity:0.8;filter:grayscale(0.2);transition:opacity 0.2s}
-    .trust-logos img:hover{opacity:1;filter:grayscale(0)}
+    .trust-bar-inline{margin-top:16px;padding:20px 24px;background:#fff;border-radius:12px;border:1px solid #e8eaf0}
+    .trust-bar-inline .trust-label{font-size:0.7rem;color:var(--gray-600);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:14px}
+    .trust-logos{display:grid;grid-template-columns:repeat(3,auto);align-items:center;justify-content:start;gap:20px 32px}
+    .trust-logos img{height:auto;max-height:55px;opacity:0.85;transition:opacity 0.2s}
+    .trust-logos img:hover{opacity:1}
 
     /* Form Card */
     .form-card{background:var(--white);border-radius:16px;padding:36px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
@@ -329,8 +329,9 @@
       .glossary-grid{grid-template-columns:1fr}
       .section{padding:50px 0}
       .section-title{font-size:1.5rem}
-      .trust-logos{gap:12px}
-      .trust-logos img{max-height:30px}
+      .trust-bar-inline{padding:16px 18px}
+      .trust-logos{grid-template-columns:repeat(3,auto);gap:14px 20px}
+      .trust-logos img{max-height:36px}
       .mobile-cta{display:flex}
       .bottom-cta{padding-bottom:100px}
       .nav-phone span{display:none}
@@ -366,11 +367,12 @@
         <div class="trust-bar-inline">
           <div class="trust-label">{{trustLabel}}</div>
           <div class="trust-logos">
-            <img src="/lp/assets/trust-logos/bbb.png" alt="BBB A+" height="40">
-            <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot" height="36">
-            <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider" height="24">
-            <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI" height="36">
-            <img src="/lp/assets/trust-logos/featured-partner.webp" alt="Featured Partner" height="36">
+            <img src="/lp/assets/trust-logos/bbb-blue-seal.png" alt="BBB Accredited Business - Click for Profile" height="55">
+            <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI ISO 9001 Certified" height="50">
+            <img src="/lp/assets/trust-logos/google-reviews.svg" alt="Google Reviews" height="55">
+            <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot 4.8 Stars" height="44">
+            <img src="/lp/assets/trust-logos/featured-partner.webp" alt="ISO 9001:2015 Certified" height="50">
+            <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider" height="28">
           </div>
         </div>
       </div>
