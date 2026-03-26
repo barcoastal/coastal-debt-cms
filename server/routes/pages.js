@@ -557,8 +557,15 @@ router.get('/:id/ab-stats', authenticateToken, (req, res) => {
   const variantBPageId = abCfg.variantB_page || null;
 
   // Count visitors & leads for both variants
-  const visitorA = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'A'").get(`%${page.slug}%`)?.c || 0;
-  const visitorB = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'B'").get(`%${page.slug}%`)?.c || 0;
+  // Variant A includes visitors with empty/null ab_variant (pre-A/B or untagged)
+  const visitorA = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL)").get(`%${page.slug}%`)?.c || 0;
+  let visitorB = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'B'").get(`%${page.slug}%`)?.c || 0;
+  if (variantBPageId) {
+    const bPage = db.prepare('SELECT slug FROM landing_pages WHERE id = ?').get(variantBPageId);
+    if (bPage) {
+      visitorB += db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?").get(`%${bPage.slug}%`)?.c || 0;
+    }
+  }
 
   // Leads: variant A from this page, variant B from this page OR the variant B page
   const leadA = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL)").get(pageId)?.c || 0;

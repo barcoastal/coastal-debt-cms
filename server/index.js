@@ -117,6 +117,13 @@ app.use('/lp', (req, res, next) => {
 
             console.log(`[A/B] Page ${slug} (id:${page.id}): variant=${variant}, cookie=${match ? match[1] : 'new'}`);
 
+            // Helper: inject variant script into HTML before </head>
+            function sendWithVariant(filePath, variantLabel) {
+              let html = fs.readFileSync(filePath, 'utf8');
+              html = html.replace('</head>', `<script>window._abVariant="${variantLabel}";</script>\n</head>`);
+              res.type('html').send(html);
+            }
+
             if (variant === 'B') {
               // Option 1: Serve another existing page as variant B
               if (abCfg.variantB_page) {
@@ -125,16 +132,22 @@ app.use('/lp', (req, res, next) => {
                   const bPath = path.join(__dirname, '..', 'public', bPage.slug, 'index.html');
                   if (fs.existsSync(bPath)) {
                     console.log(`[A/B] Serving page "${bPage.slug}" as variant B for "${slug}"`);
-                    return res.sendFile(bPath);
+                    return sendWithVariant(bPath, 'B');
                   }
                 }
               }
               // Option 2: Serve generated variant-b.html
               const variantPath = path.join(__dirname, '..', 'public', slug, 'variant-b.html');
               if (fs.existsSync(variantPath)) {
-                return res.sendFile(variantPath);
+                return sendWithVariant(variantPath, 'B');
               } else {
                 console.log(`[A/B] WARNING: no variant B file found for ${slug}`);
+              }
+            } else {
+              // Variant A: serve normal page but inject variant tag
+              const aPath = path.join(__dirname, '..', 'public', slug, 'index.html');
+              if (fs.existsSync(aPath)) {
+                return sendWithVariant(aPath, 'A');
               }
             }
           }
