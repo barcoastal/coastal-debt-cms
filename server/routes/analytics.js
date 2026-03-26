@@ -1085,7 +1085,7 @@ async function resolveSheetId(driveApi, sheetConf) {
 router.get('/google-ads/auction-insights', authenticateToken, async (req, res) => {
   try {
     const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig || !gConfig.customer_id) {
+    if (!gConfig) {
       return res.json({ connected: false, available: false, sources: [], domains: [] });
     }
 
@@ -1171,10 +1171,13 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
         if (reportDate && !reportDates.includes(reportDate)) reportDates.push(reportDate);
 
         // Auto-detect header row — Google Ads exports have metadata rows before actual headers
+        // Scan all cells in each row (not just column 0) since some sheets have extra columns before "Display URL domain"
         let headerRowIdx = -1;
         for (let r = 0; r < Math.min(rows.length, 10); r++) {
-          const firstCell = (rows[r][0] || '').trim().toLowerCase();
-          if (firstCell === 'display url domain') { headerRowIdx = r; break; }
+          for (let c = 0; c < (rows[r] || []).length; c++) {
+            if ((rows[r][c] || '').trim().toLowerCase() === 'display url domain') { headerRowIdx = r; break; }
+          }
+          if (headerRowIdx !== -1) break;
         }
         if (headerRowIdx === -1) {
           errors.push(`${sheetConf.label}: no "Display URL domain" column found`);
@@ -1250,7 +1253,7 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
 router.get('/google-ads/auction-insights/debug', authenticateToken, async (req, res) => {
   try {
     const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig || !gConfig.customer_id) {
+    if (!gConfig) {
       return res.json({ error: 'Google Ads not configured' });
     }
 
@@ -1296,7 +1299,10 @@ router.get('/google-ads/auction-insights/debug', authenticateToken, async (req, 
           // Check header row
           let hasHeader = false;
           for (let r = 0; r < Math.min(rows.length, 10); r++) {
-            if ((rows[r][0] || '').trim().toLowerCase() === 'display url domain') { hasHeader = true; break; }
+            for (let c = 0; c < (rows[r] || []).length; c++) {
+              if ((rows[r][c] || '').trim().toLowerCase() === 'display url domain') { hasHeader = true; break; }
+            }
+            if (hasHeader) break;
           }
           entry.status = hasHeader ? 'ok' : 'no_header';
           entry.first_rows = rows.slice(0, 5).map(r => r.slice(0, 3));
@@ -3007,7 +3013,7 @@ router.get('/campaigns/performance', authenticateToken, (req, res) => {
 async function syncAuctionInsights() {
   try {
     const gConfig = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!gConfig || !gConfig.customer_id) return;
+    if (!gConfig) return;
 
     let allSheets = [];
     try { allSheets = JSON.parse(gConfig.auction_insights_sheets || '[]'); } catch (e) {}
@@ -3074,8 +3080,10 @@ async function syncAuctionInsights() {
 
         let headerRowIdx = -1;
         for (let r = 0; r < Math.min(rows.length, 10); r++) {
-          const firstCell = (rows[r][0] || '').trim().toLowerCase();
-          if (firstCell === 'display url domain') { headerRowIdx = r; break; }
+          for (let c = 0; c < (rows[r] || []).length; c++) {
+            if ((rows[r][c] || '').trim().toLowerCase() === 'display url domain') { headerRowIdx = r; break; }
+          }
+          if (headerRowIdx !== -1) break;
         }
         if (headerRowIdx === -1) continue;
 
