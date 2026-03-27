@@ -29,22 +29,53 @@ async function createRedTrackClick(source, params = {}) {
     if (params.msclkid) url.searchParams.set('ref_id', params.msclkid);
     if (params.utm_source) url.searchParams.set('utm_source', params.utm_source);
 
+    console.log(`[RedTrack] Creating click: source=${source}, campaign=${campaignHash}, url=${url.toString()}`);
+
     const res = await fetch(url.toString(), {
       headers: { 'X-API-KEY': RT_API_KEY },
       redirect: 'manual',
       signal: AbortSignal.timeout(5000)
     });
+
+    console.log(`[RedTrack] Response: status=${res.status}, type=${res.headers.get('content-type')}`);
+
+    if (res.status >= 300) {
+      const text = await res.text();
+      console.error(`[RedTrack] Non-200 response: ${res.status} — ${text.substring(0, 200)}`);
+      return null;
+    }
+
     const data = await res.json();
+    console.log(`[RedTrack] Response data:`, JSON.stringify(data));
+
     if (data.clickid) {
-      console.log(`[RedTrack] Visitor click created: ${data.clickid} (source: ${source})`);
+      console.log(`[RedTrack] Click created: ${data.clickid} (source: ${source})`);
       return data.clickid;
     }
+    console.warn(`[RedTrack] No clickid in response`);
     return null;
   } catch (err) {
-    console.error('[RedTrack] Visitor click failed:', err.message);
+    console.error(`[RedTrack] Click creation failed: ${err.name}: ${err.message}`);
     return null;
   }
 }
+
+// Debug endpoint — test RedTrack click creation from production server
+router.get('/test-redtrack', authenticateToken, async (req, res) => {
+  const source = req.query.source || 'google';
+  const gclid = req.query.gclid || 'test_' + Date.now();
+  const result = await createRedTrackClick(source, { gclid, utm_source: source });
+  res.json({ source, gclid, rt_clickid: result, success: !!result });
+});
+
+// Lookup visitor by eli_clickid
+router.get('/lookup/:eli', authenticateToken, (req, res) => {
+  const visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(req.params.eli);
+  if (!visitor) return res.status(404).json({ error: 'Visitor not found' });
+  // Also find associated lead
+  const lead = db.prepare('SELECT * FROM leads WHERE eli_clickid = ?').get(req.params.eli);
+  res.json({ visitor, lead: lead || null });
+});
 
 // Return visitor IP (public endpoint - called from landing pages)
 router.get('/ip', (req, res) => {
