@@ -68,20 +68,33 @@ async function createRedTrackClick(source, params = {}) {
     if (params.utm_campaign) url.searchParams.set('utm_campaign', params.utm_campaign);
     if (params.utm_source) url.searchParams.set('utm_source', params.utm_source);
 
+    console.log(`[RedTrack Lead] Creating click: source=${source}, url=${url.toString()}`);
+
     const res = await fetch(url.toString(), {
       headers: { 'X-API-KEY': RT_API_KEY },
-      redirect: 'manual',
-      signal: AbortSignal.timeout(5000)
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000)
     });
-    const data = await res.json();
+
+    console.log(`[RedTrack Lead] Response: status=${res.status}, type=${res.headers.get('content-type')}`);
+
+    const text = await res.text();
+    console.log(`[RedTrack Lead] Body: ${text.substring(0, 300)}`);
+
+    let data;
+    try { data = JSON.parse(text); } catch (e) {
+      console.error(`[RedTrack Lead] Response not JSON: ${text.substring(0, 200)}`);
+      return null;
+    }
+
     if (data.clickid) {
-      console.log(`[RedTrack] Server-side click created: ${data.clickid} (source: ${source})`);
+      console.log(`[RedTrack Lead] Click created: ${data.clickid} (source: ${source})`);
       return data.clickid;
     }
-    console.log('[RedTrack] No clickid in response:', data);
+    console.warn('[RedTrack Lead] No clickid in response:', JSON.stringify(data));
     return null;
   } catch (err) {
-    console.error('[RedTrack] Server-side click failed:', err.message);
+    console.error(`[RedTrack Lead] Failed: ${err.name}: ${err.message}`);
     return null;
   }
 }

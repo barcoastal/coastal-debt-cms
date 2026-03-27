@@ -33,20 +33,25 @@ async function createRedTrackClick(source, params = {}) {
 
     const res = await fetch(url.toString(), {
       headers: { 'X-API-KEY': RT_API_KEY },
-      redirect: 'manual',
-      signal: AbortSignal.timeout(5000)
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000)
     });
 
     console.log(`[RedTrack] Response: status=${res.status}, type=${res.headers.get('content-type')}`);
 
+    const text = await res.text();
+    console.log(`[RedTrack] Body: ${text.substring(0, 300)}`);
+
     if (res.status >= 300) {
-      const text = await res.text();
-      console.error(`[RedTrack] Non-200 response: ${res.status} — ${text.substring(0, 200)}`);
+      console.error(`[RedTrack] Non-200 response: ${res.status}`);
       return null;
     }
 
-    const data = await res.json();
-    console.log(`[RedTrack] Response data:`, JSON.stringify(data));
+    let data;
+    try { data = JSON.parse(text); } catch (e) {
+      console.error(`[RedTrack] Response not JSON: ${text.substring(0, 200)}`);
+      return null;
+    }
 
     if (data.clickid) {
       console.log(`[RedTrack] Click created: ${data.clickid} (source: ${source})`);
