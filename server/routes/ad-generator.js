@@ -386,7 +386,7 @@ Return ONLY the JSON, no explanation.`;
       }
 
       const message = await client.messages.create({
-        model: 'claude-sonnet-4-6-20250627',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1200,
         messages: [{ role: 'user', content }]
       });
@@ -668,7 +668,7 @@ router.post('/generate-ad-copy', authenticateToken, async (req, res) => {
     if (full_design) {
       // Full design mode: generate complete ad copy with layout guidance
       const message = await client.messages.create({
-        model: 'claude-sonnet-4-6-20250627',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 500,
         messages: [{
           role: 'user',
@@ -710,7 +710,7 @@ Do NOT include a phone number. Do NOT mention credit cards or personal debt.`
 
     // Simple mode (legacy)
     const msg2 = await client.messages.create({
-      model: 'claude-sonnet-4-6-20250627',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 200,
       messages: [{
         role: 'user',
@@ -765,7 +765,7 @@ router.post('/generate-meta-copy', authenticateToken, async (req, res) => {
     const customLine = custom_instructions ? `\nAdditional instructions: ${custom_instructions}` : '';
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6-20250627',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       messages: [{
         role: 'user',

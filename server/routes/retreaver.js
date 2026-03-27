@@ -598,7 +598,7 @@ async function transcribeCallBackground(callId) {
 
     console.log(`Transcribing call ${call.id}: scoring with Claude...`);
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6-20250627',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       messages: [{
         role: 'user',
@@ -949,7 +949,7 @@ router.get('/test-api-key', requireAuth, async (req, res) => {
     const Anthropic = require('@anthropic-ai/sdk');
     const anthropic = new Anthropic({ apiKey: cleanKey });
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6-20250627',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 50,
       messages: [{ role: 'user', content: 'Reply with only the word "OK"' }]
     });
