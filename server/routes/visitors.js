@@ -72,9 +72,35 @@ router.get('/test-redtrack', authenticateToken, async (req, res) => {
 router.get('/lookup/:eli', authenticateToken, (req, res) => {
   const visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(req.params.eli);
   if (!visitor) return res.status(404).json({ error: 'Visitor not found' });
-  // Also find associated lead
   const lead = db.prepare('SELECT * FROM leads WHERE eli_clickid = ?').get(req.params.eli);
   res.json({ visitor, lead: lead || null });
+});
+
+// Create RedTrack click for a specific visitor (retry)
+router.post('/create-click/:eli', authenticateToken, async (req, res) => {
+  const visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(req.params.eli);
+  if (!visitor) return res.status(404).json({ error: 'Visitor not found' });
+
+  if (visitor.rt_clickid && visitor.rt_clickid !== '' && visitor.rt_clickid !== 'adblock_blocked') {
+    return res.json({ message: 'Already has rt_clickid', rt_clickid: visitor.rt_clickid });
+  }
+
+  const source = visitor.gclid ? 'google' : visitor.msclkid ? 'bing' : visitor.fbclid ? 'facebook' : visitor.rdt_cid ? 'reddit' : (visitor.utm_source || '').toLowerCase() || 'organic';
+  const clickid = await createRedTrackClick(source, {
+    gclid: visitor.gclid,
+    fbclid: visitor.fbclid,
+    msclkid: visitor.msclkid,
+    utm_source: visitor.utm_source
+  });
+
+  if (clickid) {
+    db.prepare('UPDATE visitors SET rt_clickid = ? WHERE eli_clickid = ?').run(clickid, req.params.eli);
+    // Also update lead if exists
+    db.prepare('UPDATE leads SET rt_clickid = ? WHERE eli_clickid = ?').run(clickid, req.params.eli);
+    res.json({ success: true, rt_clickid: clickid, source });
+  } else {
+    res.json({ success: false, error: 'RedTrack API call failed — check server logs for details' });
+  }
 });
 
 // Return visitor IP (public endpoint - called from landing pages)
