@@ -147,7 +147,7 @@ Return a JSON object with this EXACT structure:
 Return ONLY valid JSON. No markdown fences, no extra text.`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -325,7 +325,7 @@ Return a JSON object with this EXACT structure (all fields required, no placehol
 CRITICAL: Return ONLY valid JSON. No markdown fences, no comments, no extra text. Every string value must be complete content, not a description of what to write.`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -356,7 +356,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     const client = new Anthropic({ apiKey });
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     });
