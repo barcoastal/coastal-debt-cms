@@ -427,6 +427,48 @@ router.post('/', authenticateToken, (req, res) => {
   }
 });
 
+// Duplicate landing page
+router.post('/:id/duplicate', authenticateToken, (req, res) => {
+  const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
+  if (!page) {
+    return res.status(404).json({ error: 'Page not found' });
+  }
+
+  try {
+    // Find a unique slug
+    let newSlug = page.slug + '-copy';
+    let counter = 1;
+    while (db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(newSlug)) {
+      newSlug = page.slug + '-copy-' + counter;
+      counter++;
+    }
+
+    const result = db.prepare(`
+      INSERT INTO landing_pages (name, slug, platform, traffic_source, form_id, webhook_url, content, sections_visible, hidden_fields, template_type, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      page.name + ' (Copy)',
+      newSlug,
+      page.platform,
+      page.traffic_source,
+      page.form_id,
+      page.webhook_url,
+      page.content,
+      page.sections_visible,
+      page.hidden_fields,
+      page.template_type,
+      page.is_active
+    );
+
+    generateLandingPage(result.lastInsertRowid);
+
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'duplicated', 'page', result.lastInsertRowid, `Duplicated page: ${page.name} → ${newSlug}`, req.ip);
+    res.json({ id: result.lastInsertRowid, slug: newSlug, message: 'Page duplicated' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to duplicate page' });
+  }
+});
+
 // Update landing page
 router.put('/:id', authenticateToken, (req, res) => {
   const { name, slug, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active, template_type } = req.body;
