@@ -915,6 +915,15 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
+    // Hide extra bullets on mobile
+    const mobileBulletsCount = 'all';
+    if (mobileBulletsCount !== 'all') {
+      const n = parseInt(mobileBulletsCount) + 1;
+      const style = document.createElement('style');
+      style.textContent = '@media(max-width:768px){.hero-points li:nth-child(n+' + n + '){display:none !important}}';
+      document.head.appendChild(style);
+    }
+
     const steps = [{"title":"Free, Confidential Consultation","description":"Our expert advisors will call you to quickly determine whether your business is qualified for our debt relief program. We need to ensure this will be the best solution for your business."},{"title":"Expert Debt Analysis","description":"Our trusted team will do a deep-dive analysis of your MCA debt and lender agreements. They will work on a plan based on your unique situation to ensure the best outcome."},{"title":"Same-Day Sign Up","description":"Not all businesses qualify for our program, but we hope we can help yours. If your business does qualify, we can sign you up on the spot and get you fast-tracked to financial freedom."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">

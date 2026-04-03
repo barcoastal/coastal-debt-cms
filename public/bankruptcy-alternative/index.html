@@ -915,6 +915,15 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
+    // Hide extra bullets on mobile
+    const mobileBulletsCount = 'all';
+    if (mobileBulletsCount !== 'all') {
+      const n = parseInt(mobileBulletsCount) + 1;
+      const style = document.createElement('style');
+      style.textContent = '@media(max-width:768px){.hero-points li:nth-child(n+' + n + '){display:none !important}}';
+      document.head.appendChild(style);
+    }
+
     const steps = [{"title":"Free Business Debt Analysis","description":"Tell us about your situation. We\'ll review your business debt and show you exactly how to avoid bankruptcy while reducing what you owe by 50-80%."},{"title":"We Negotiate With Your Creditors","description":"Our team contacts your lenders directly - no bankruptcy attorneys or court filings needed. We negotiate to settle your business debt for a fraction of what you owe."},{"title":"Debt Settled, Bankruptcy Avoided","description":"Pay significantly less than your total debt. No business bankruptcy on your record. Your company keeps operating and growing."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">

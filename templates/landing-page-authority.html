@@ -812,6 +812,14 @@
       return '<div class="bullet-item"><span class="bicon">&gt;</span><span>' + point + '</span></div>';
     }).join('');
 
+    var mobileBulletsCount = '{{mobileBulletsCount}}';
+    if (mobileBulletsCount !== 'all') {
+      var n = parseInt(mobileBulletsCount) + 1;
+      var s = document.createElement('style');
+      s.textContent = '@media(max-width:768px){#bulletPoints .bullet-item:nth-child(n+' + n + '){display:none !important}}';
+      document.head.appendChild(s);
+    }
+
     // ============= Render Steps =============
     var steps = JSON.parse('{{stepsJson}}');
     document.getElementById('stepsGrid').innerHTML = steps.map(function(step, i) {

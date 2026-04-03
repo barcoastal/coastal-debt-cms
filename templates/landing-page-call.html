@@ -653,6 +653,14 @@
         return '<li><span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>' + point + '</li>';
       }).join('');
 
+      var mobileBulletsCount = '{{mobileBulletsCount}}';
+      if (mobileBulletsCount !== 'all') {
+        var n = parseInt(mobileBulletsCount) + 1;
+        var s = document.createElement('style');
+        s.textContent = '@media(max-width:768px){.hero-points li:nth-child(n+' + n + '){display:none !important}}';
+        document.head.appendChild(s);
+      }
+
       var steps = {{stepsJson}};
       document.getElementById('stepsGrid').innerHTML = steps.map(function(step, i) {
         return '<div class="step-card"><div class="step-num">' + (i + 1) + '</div><h3>' + step.title + '</h3><p>' + step.description + '</p></div>';

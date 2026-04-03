@@ -915,6 +915,15 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
+    // Hide extra bullets on mobile
+    const mobileBulletsCount = 'all';
+    if (mobileBulletsCount !== 'all') {
+      const n = parseInt(mobileBulletsCount) + 1;
+      const style = document.createElement('style');
+      style.textContent = '@media(max-width:768px){.hero-points li:nth-child(n+' + n + '){display:none !important}}';
+      document.head.appendChild(style);
+    }
+
     const steps = [{"title":"Free Debt Analysis","description":"Tell us about your situation. We\'ll review your debt and show you exactly how much you could save without filing bankruptcy."},{"title":"We Negotiate With Creditors","description":"Our team contacts your lenders directly. No lawyers, no court. We negotiate to reduce your total debt by 50-80%."},{"title":"Debt Resolved, Business Saved","description":"Pay a fraction of what you owed. No bankruptcy on your record. Your business keeps running."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">

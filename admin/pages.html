@@ -495,6 +495,16 @@
               <textarea id="editBulletPoints" rows="4" placeholder="Stop daily/weekly ACH withdrawals&#10;Reduce your total MCA balance by 50-80%"></textarea>
             </div>
             <div class="form-group">
+              <label>Bullets to show on Mobile</label>
+              <select id="editMobileBulletsCount" style="width:120px;">
+                <option value="all">All</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>Form Title</label>
               <input type="text" id="editFormTitle" placeholder="See If You Qualify">
             </div>
@@ -825,6 +835,7 @@
       document.getElementById('editHeadlineHighlight').value = content.headlineHighlight || '';
       document.getElementById('editSubheadline').value = content.subheadline || '';
       document.getElementById('editBulletPoints').value = (content.bulletPoints || []).join('\n');
+      document.getElementById('editMobileBulletsCount').value = content.mobileBulletsCount || 'all';
       document.getElementById('editFormTitle').value = content.formTitle || '';
       document.getElementById('editFormSubtitle').value = content.formSubtitle || '';
 
@@ -918,6 +929,7 @@
         headlineHighlight: document.getElementById('editHeadlineHighlight').value,
         subheadline: document.getElementById('editSubheadline').value,
         bulletPoints: bulletPoints,
+        mobileBulletsCount: document.getElementById('editMobileBulletsCount').value,
         formTitle: document.getElementById('editFormTitle').value,
         formSubtitle: document.getElementById('editFormSubtitle').value,
         howItWorksTitle: document.getElementById('editHowItWorksTitle').value,
