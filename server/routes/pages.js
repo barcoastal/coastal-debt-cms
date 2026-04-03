@@ -942,6 +942,21 @@ router.post('/regenerate-all', authenticateToken, (req, res) => {
   res.json({ message: `Regenerated ${count} landing pages` });
 });
 
+// ============ MIGRATION: Remove em-dashes from landing page content ============
+(function removeEmDashes() {
+  const pages = db.prepare('SELECT id, slug, content FROM landing_pages').all();
+  let fixed = 0;
+  for (const p of pages) {
+    if (p.content && p.content.includes('\u2014')) {
+      const cleaned = p.content.replace(/\u2014/g, '-');
+      db.prepare('UPDATE landing_pages SET content = ? WHERE id = ?').run(cleaned, p.id);
+      generateLandingPage(p.id);
+      fixed++;
+    }
+  }
+  if (fixed > 0) console.log(`[Pages] Fixed em-dashes in ${fixed} landing pages and regenerated`);
+})();
+
 // Export the generate function
 module.exports = router;
 module.exports.generateLandingPage = generateLandingPage;
