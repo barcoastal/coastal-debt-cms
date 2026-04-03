@@ -427,6 +427,23 @@
     }
     .removebg-btn:hover { background: #fde68a; }
     .removebg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ============ LIVE PREVIEW MIRROR ============ */
+    .live-preview-mirror {
+      background: #F2F4F9;
+      transition: background 0.2s;
+    }
+
+    /* ============ ACTIVE TOGGLE BUTTONS ============ */
+    .chevron-pos-btn.active,
+    .chevron-layer-btn.active,
+    .text-pos-btn.active,
+    .logo-pos-btn.active,
+    .badge-pos-btn.active {
+      background: #eef1ff !important;
+      border-color: #3052FF !important;
+      color: #3052FF !important;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.4.0/dist/fabric.min.js"></script>
 </head>
@@ -561,19 +578,23 @@
       <!-- Step Indicator -->
       <div class="wizard-steps">
         <div class="wizard-step active" data-step="1" onclick="goToStep(1)">
-          <span class="wizard-step-num">1</span> Create Ads
+          <span class="wizard-step-num">1</span> Person
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="2" onclick="goToStep(2)">
-          <span class="wizard-step-num">2</span> Edit Ad
+          <span class="wizard-step-num">2</span> Background
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="3" onclick="goToStep(3)">
-          <span class="wizard-step-num">3</span> Add Logo
+          <span class="wizard-step-num">3</span> Shapes
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="4" onclick="goToStep(4)">
-          <span class="wizard-step-num">4</span> Compose &amp; Export
+          <span class="wizard-step-num">4</span> Text &amp; CTA
+        </div>
+        <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <div class="wizard-step" data-step="5" onclick="goToStep(5)">
+          <span class="wizard-step-num">5</span> Logo &amp; Export
         </div>
       </div>
 
@@ -830,10 +851,10 @@
           <div id="generatePromptBtn" style="display:none;"></div>
         </div>
 
-        <!-- Bulk Results -->
+        <!-- Bulk Results / Person Selection -->
         <div id="bulkResultsPanel" style="display:none;margin-top:20px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--gray-800);">Your Ads</h3>
+            <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--gray-800);">Generated Images — Click to select a person</h3>
             <div style="display:flex;gap:8px;align-items:center;">
               <span id="bulkProgress" style="font-size:12px;color:var(--gray-500);"></span>
               <button class="btn btn-secondary btn-small" onclick="downloadAllBulk()">
@@ -844,270 +865,258 @@
           </div>
           <div id="bulkResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
         </div>
-      </div>
 
-      <!-- ============ STEP 2: ADD TEXT ============ -->
-      <div class="step-panel" id="step2">
-        <!-- Ad Copy V2 Generator -->
-        <div class="copy-v2-section">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <h4 style="margin:0;font-size:14px;font-weight:700;color:var(--gray-800);">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              AI Ad Copy
-            </h4>
-            <span style="font-size:11px;color:var(--gray-400);">Generate headline, subheadline &amp; CTA with AI</span>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:10px;">
-            <div style="flex:1;">
-              <label class="pb-label">Topic / Angle</label>
-              <input type="text" id="copyV2Topic" class="form-input" placeholder="e.g. 'MCA debt stress', 'fresh start', 'save 80%'..." style="font-size:13px;">
+        <!-- Person Position Slider -->
+        <div id="personPositionStep1" style="display:none;margin-top:16px;background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);white-space:nowrap;">Person Position (Left/Right)</label>
+              <input type="range" id="personPositionSlider" min="-30" max="30" value="0" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('personPosVal').textContent=this.value+'%'">
+              <span id="personPosVal" style="font-size:12px;color:var(--gray-400);min-width:36px;">0%</span>
             </div>
-            <div style="flex-shrink:0;align-self:flex-end;">
-              <button class="btn btn-primary" id="generateCopyV2Btn" onclick="generateCopyV2()" style="font-size:13px;padding:8px 18px;">Generate Copy</button>
-            </div>
-          </div>
-          <div id="copyV2Fields" style="display:none;">
-            <div class="copy-v2-fields">
-              <div class="form-group">
-                <label>Headline</label>
-                <input type="text" id="copyV2Headline" class="form-input" placeholder="Main headline...">
-              </div>
-              <div class="form-group">
-                <label>Highlight Words <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(comma-separated)</span></label>
-                <input type="text" id="copyV2Highlights" class="form-input" placeholder="e.g. FREE, 80%, Relief">
-              </div>
-              <div class="form-group">
-                <label>Subheadline</label>
-                <input type="text" id="copyV2Subheadline" class="form-input" placeholder="Supporting text...">
-              </div>
-              <div class="form-group">
-                <label>CTA Text</label>
-                <input type="text" id="copyV2Cta" class="form-input" placeholder="e.g. Get Free Consultation">
-              </div>
-              <div class="form-group" style="grid-column:1/-1;">
-                <label>CTA Button URL</label>
-                <input type="text" id="copyV2CtaUrl" class="form-input" value="CoastalDebt.com" readonly style="background:var(--gray-50);color:var(--gray-400);">
-              </div>
+            <div id="selectedPersonPreview" style="display:none;flex-shrink:0;">
+              <img id="selectedPersonImg" src="" alt="Selected person" style="height:80px;border-radius:8px;border:2px solid #3052FF;">
             </div>
           </div>
         </div>
 
-        <div class="step-split canvas-layout">
-          <!-- Left: Canvas -->
-          <div>
-            <div class="canvas-container-wrapper" id="canvasWrapper">
-              <div class="canvas-scale-wrapper" id="canvasScaleWrapper">
-                <canvas id="wizardCanvas"></canvas>
-              </div>
-            </div>
-          </div>
+        <!-- Step Navigation -->
+        <div class="step-nav" id="step1Nav" style="display:none;margin-top:16px;">
+          <div></div>
+          <button class="btn btn-primary" onclick="goToStep(2)">Next: Background &rarr;</button>
+        </div>
+      </div>
 
-          <!-- Right: Text Controls -->
+      <!-- ============ STEP 2: BACKGROUND ============ -->
+      <div class="step-panel" id="step2">
+        <div class="step-split">
+          <!-- Left: Controls -->
           <div>
             <div class="controls-panel">
-              <!-- Selected object -->
-              <div class="selected-info" id="selectedInfo">
-                <span style="font-size:13px;font-weight:600;color:#92400e;">Object selected</span>
-                <button class="btn btn-secondary btn-small" onclick="deleteSelected()" style="color:#dc2626;font-size:11px;">Delete</button>
+              <div class="controls-section">
+                <h4>Background Color</h4>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                  <input type="color" id="bgColorPicker" value="#F2F4F9" onchange="updateBgColor(this.value)" style="width:40px;height:40px;border:1px solid var(--gray-300);border-radius:6px;padding:2px;cursor:pointer;">
+                  <span id="bgColorHex" style="font-size:13px;font-weight:600;color:var(--gray-600);">#F2F4F9</span>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button onclick="updateBgColor('#F2F4F9')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#F2F4F9;cursor:pointer;" title="Brand Light"></button>
+                  <button onclick="updateBgColor('#FFFFFF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#FFFFFF;cursor:pointer;" title="White"></button>
+                  <button onclick="updateBgColor('#1a1a2e')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#1a1a2e;cursor:pointer;" title="Dark Navy"></button>
+                  <button onclick="updateBgColor('#000000')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#000000;cursor:pointer;" title="Black"></button>
+                  <button onclick="updateBgColor('#3052FF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#3052FF;cursor:pointer;" title="Brand Blue"></button>
+                </div>
               </div>
 
-              <div class="controls-section" id="textEditControls" style="display:none;">
-                <h4>Edit Text</h4>
-                <div class="form-group" style="margin-bottom:8px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Font Size</label>
+              <div class="controls-section">
+                <h4>Custom Background Image</h4>
+                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Upload a background image instead of a solid color</p>
+                <input type="file" id="bgImageUpload" accept=".png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleBgImageUpload(this)">
+                <button class="btn btn-secondary" onclick="document.getElementById('bgImageUpload').click()" style="width:100%;font-size:13px;">Upload Background Image</button>
+                <div id="bgImagePreviewThumb" style="display:none;margin-top:8px;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="range" id="textFontSize" min="10" max="200" value="40" style="flex:1;" oninput="updateSelectedFontSize(this.value)">
-                    <span id="textFontSizeVal" style="font-size:12px;font-weight:600;color:var(--gray-600);min-width:32px;">40</span>
+                    <img id="bgImageThumb" src="" style="height:48px;border-radius:6px;border:1px solid var(--gray-300);">
+                    <button class="btn btn-secondary btn-small" onclick="clearBgImage()" style="font-size:11px;color:#dc2626;">Remove</button>
                   </div>
                 </div>
-                <div class="form-group" style="margin-bottom:8px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Text Color</label>
-                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="color-swatch" onclick="updateSelectedColor('#FFFFFF')" style="background:#FFFFFF;border:2px solid #ddd;width:28px;height:28px;border-radius:6px;cursor:pointer;"></button>
-                    <button class="color-swatch" onclick="updateSelectedColor('#000000')" style="background:#000000;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
-                    <button class="color-swatch" onclick="updateSelectedColor('#3052FF')" style="background:#3052FF;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
-                    <button class="color-swatch" onclick="updateSelectedColor('#FF9000')" style="background:#FF9000;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
-                    <button class="color-swatch" onclick="updateSelectedColor('#7FB2FF')" style="background:#7FB2FF;width:28px;height:28px;border-radius:6px;cursor:pointer;border:none;"></button>
-                    <input type="color" id="textColorPicker" value="#FFFFFF" onchange="updateSelectedColor(this.value)" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;padding:0;">
-                  </div>
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Font Family</label>
-                  <select id="textFontFamily" class="form-input" style="font-size:12px;padding:6px 10px;" onchange="updateSelectedFont(this.value)">
-                    <option value="'Montserrat', sans-serif">Montserrat</option>
-                    <option value="'Playfair Display', serif">Playfair Display</option>
-                    <option value="'Outfit', sans-serif">Outfit</option>
-                    <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-                    <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
-                    <option value="'Oswald', sans-serif">Oswald</option>
-                    <option value="'Sora', sans-serif">Sora</option>
-                    <option value="'Archivo', sans-serif">Archivo</option>
-                    <option value="'Nunito', sans-serif">Nunito</option>
-                    <option value="'Urbanist', sans-serif">Urbanist</option>
-                    <option value="'Work Sans', sans-serif">Work Sans</option>
-                    <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
-                    <option value="'DM Sans', sans-serif">DM Sans</option>
-                    <option value="'Barlow', sans-serif">Barlow</option>
-                    <option value="'Inter', sans-serif">Inter</option>
-                    <option value="'Poppins', sans-serif">Poppins</option>
-                    <option value="'Raleway', sans-serif">Raleway</option>
-                    <option value="'Lato', sans-serif">Lato</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Text Input -->
-              <div class="controls-section">
-                <h4>Add Text</h4>
-                <input type="text" id="textInput" class="form-input" placeholder="Enter text..." style="margin-bottom:8px;">
-                <select id="fontFamily" class="form-input" style="margin-bottom:8px;">
-                  <option value="Arial, Helvetica, sans-serif">Arial</option>
-                  <option value="'Inter', sans-serif" selected>Inter</option>
-                  <option value="'Montserrat', sans-serif">Montserrat</option>
-                  <option value="'Poppins', sans-serif">Poppins</option>
-                  <option value="'Roboto', sans-serif">Roboto</option>
-                  <option value="'Open Sans', sans-serif">Open Sans</option>
-                  <option value="'Lato', sans-serif">Lato</option>
-                  <option value="'Oswald', sans-serif">Oswald</option>
-                  <option value="'Raleway', sans-serif">Raleway</option>
-                  <option value="'Playfair Display', serif">Playfair Display</option>
-                  <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-                  <option value="'Nunito', sans-serif">Nunito</option>
-                  <option value="'Work Sans', sans-serif">Work Sans</option>
-                  <option value="'DM Sans', sans-serif">DM Sans</option>
-                  <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
-                  <option value="'Outfit', sans-serif">Outfit</option>
-                  <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
-                  <option value="'Barlow', sans-serif">Barlow</option>
-                  <option value="'Urbanist', sans-serif">Urbanist</option>
-                  <option value="'Archivo', sans-serif">Archivo</option>
-                </select>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                  <select id="fontSize" class="form-input" style="width:50%;">
-                    <option value="24">24px</option>
-                    <option value="32">32px</option>
-                    <option value="40">40px</option>
-                    <option value="48" selected>48px</option>
-                    <option value="56">56px</option>
-                    <option value="64">64px</option>
-                    <option value="72">72px</option>
-                    <option value="96">96px</option>
-                  </select>
-                  <select id="fontWeight" class="form-input" style="width:50%;">
-                    <option value="normal">Regular</option>
-                    <option value="bold" selected>Bold</option>
-                  </select>
-                </div>
-                <div class="color-row">
-                  <label style="font-size:12px;color:var(--gray-500);">Text</label>
-                  <input type="color" id="textColor" value="#ffffff">
-                  <label style="font-size:12px;color:var(--gray-500);margin-left:8px;">Bg</label>
-                  <input type="color" id="textBgColor" value="#3052FF">
-                  <label class="switch" style="margin-left:4px;" title="Enable text background">
-                    <input type="checkbox" id="textBgEnabled">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <button class="btn btn-primary" onclick="addTextToCanvas()" style="width:100%;margin-top:10px;">Add Text</button>
-              </div>
-
-              <!-- Quick Presets -->
-              <div class="controls-section">
-                <h4>Quick Presets</h4>
-                <div class="quick-btns">
-                  <button class="btn btn-secondary" onclick="addPresetText('Get Your Free Consultation', 40, 'bold', '#FFFFFF', '#3052FF')">CTA Button</button>
-                  <button class="btn btn-secondary" onclick="addPresetText('coastaldebtresolve.com', 28, 'normal', '#FFFFFF', null)">Website URL</button>
-                  <button class="btn btn-secondary" onclick="addPresetText('(888) 961-5338', 32, 'bold', '#FFFFFF', null)">Phone Number</button>
-                </div>
-              </div>
-
-              <!-- AI Auto-Design -->
-              <div class="controls-section">
-                <h4>AI Auto-Design</h4>
-                <button class="btn btn-primary" onclick="aiAutoDesign()" style="width:100%;background:linear-gradient(135deg,#3052FF,#7FB2FF);font-size:14px;padding:12px;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                  AI Auto-Design Full Ad
-                </button>
-                <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">AI copywriter + designer: generates headline, subheadline, CTA, and lays out the full ad professionally</p>
-                <button class="btn btn-secondary btn-small" onclick="autoCompose()" style="width:100%;margin-top:6px;font-size:11px;">
-                  Simple: Headline + CTA only
-                </button>
-              </div>
-
-              <!-- Shapes & Elements -->
-              <div class="controls-section">
-                <h4>Shapes</h4>
-                <div class="color-row" style="margin-bottom:8px;">
-                  <label style="font-size:12px;color:var(--gray-500);">Fill</label>
-                  <input type="color" id="shapeColor" value="#3052FF">
-                  <label style="font-size:12px;color:var(--gray-500);margin-left:6px;">Opacity</label>
-                  <input type="range" id="shapeOpacity" min="0.1" max="1" step="0.1" value="1" style="width:60px;">
-                </div>
-                <div class="shapes-grid">
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('rect')" title="Rectangle">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-                    Rect
-                  </button>
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('circle')" title="Circle">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-                    Circle
-                  </button>
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('triangle')" title="Triangle">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 22,22 2,22"/></svg>
-                    Triangle
-                  </button>
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('line')" title="Line">
-                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><line x1="2" y1="12" x2="22" y2="12"/></svg>
-                    Line
-                  </button>
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('bar')" title="Wide bar / banner strip">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="0" y="8" width="24" height="8" rx="1"/></svg>
-                    Bar
-                  </button>
-                  <button class="btn btn-secondary shape-btn" onclick="addShape('diagonal')" title="Diagonal block">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="0,0 24,0 24,24"/></svg>
-                    Diagonal
-                  </button>
-                </div>
-              </div>
-
-              <!-- Upload Element / Badge -->
-              <div class="controls-section">
-                <h4>Upload Element</h4>
-                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Add badges, icons, or any image to the canvas</p>
-                <input type="file" id="elementUpload" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="addUploadedElement(this)">
-                <button class="btn btn-secondary" onclick="document.getElementById('elementUpload').click()" style="width:100%;font-size:13px;">Choose Image...</button>
               </div>
             </div>
 
             <!-- Nav -->
             <div class="step-nav">
               <button class="btn btn-secondary" onclick="goToStep(1)">&larr; Back</button>
-              <button class="btn btn-primary" onclick="goToStep(3)">Next: Add Logo &rarr;</button>
+              <button class="btn btn-primary" onclick="goToStep(3)">Next: Shapes &rarr;</button>
+            </div>
+          </div>
+
+          <!-- Right: Live Preview -->
+          <div>
+            <div class="controls-panel" style="padding:12px;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Live Preview</h4>
+              <div id="livePreview" style="position:relative;width:100%;aspect-ratio:1200/628;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#F2F4F9;">
+                <img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+                <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:90%;object-fit:contain;display:none;">
+                <div id="livePreviewChevrons" style="position:absolute;display:none;"></div>
+                <div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>
+                <div id="livePreviewLogo" style="position:absolute;display:none;"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ============ STEP 3: ADD LOGO ============ -->
+      <!-- ============ STEP 3: SHAPES & DECORATIVE ELEMENTS ============ -->
       <div class="step-panel" id="step3">
-        <div class="step-split canvas-layout">
-          <!-- Left: Same Canvas -->
+        <div class="step-split">
+          <!-- Left: Controls -->
           <div>
-            <div class="canvas-container-wrapper" id="canvasWrapper3">
-              <!-- Canvas moves here when step 3 is active -->
+            <div class="controls-panel">
+              <div class="controls-section">
+                <h4>Chevron Arrows</h4>
+                <div class="brand-toggle-bar" style="margin-bottom:10px;">
+                  <label class="switch">
+                    <input type="checkbox" id="chevronsVisible" onchange="updateLivePreview()">
+                    <span class="slider"></span>
+                  </label>
+                  <span style="font-weight:600;font-size:13px;color:var(--gray-800);">Show Chevrons</span>
+                </div>
+                <div id="chevronOptions" style="display:none;">
+                  <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Position</label>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-secondary btn-small chevron-pos-btn active" data-pos="top-left" onclick="setChevronPos('top-left')">Top-Left</button>
+                      <button class="btn btn-secondary btn-small chevron-pos-btn" data-pos="top-right" onclick="setChevronPos('top-right')">Top-Right</button>
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Size</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <input type="range" id="chevronSize" min="1" max="3" value="2" style="flex:1;accent-color:#3052FF;" oninput="updateLivePreview()">
+                      <span id="chevronSizeLabel" style="font-size:12px;color:var(--gray-400);min-width:50px;">Medium</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Layer Order</label>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-secondary btn-small chevron-layer-btn active" data-layer="behind" onclick="setChevronLayer('behind')">Behind Person</button>
+                      <button class="btn btn-secondary btn-small chevron-layer-btn" data-layer="front" onclick="setChevronLayer('front')">In Front</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Future: more shapes can be added here -->
+              <div class="controls-section">
+                <h4>More Shapes <span style="font-size:10px;font-weight:400;color:var(--gray-400);">(coming soon)</span></h4>
+                <p style="font-size:12px;color:var(--gray-400);">Additional decorative elements like diagonal cuts, gradient overlays, and accent bars will be available here.</p>
+              </div>
+            </div>
+
+            <!-- Nav -->
+            <div class="step-nav">
+              <button class="btn btn-secondary" onclick="goToStep(2)">&larr; Back</button>
+              <button class="btn btn-primary" onclick="goToStep(4)">Next: Text &amp; CTA &rarr;</button>
             </div>
           </div>
 
-          <!-- Right: Logo Controls -->
+          <!-- Right: Live Preview -->
+          <div>
+            <div class="controls-panel" style="padding:12px;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Live Preview</h4>
+              <div id="livePreview3" class="live-preview-mirror" style="position:relative;width:100%;aspect-ratio:1200/628;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#F2F4F9;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STEP 4: TEXT & CTA ============ -->
+      <div class="step-panel" id="step4">
+        <div class="step-split">
+          <!-- Left: Controls -->
+          <div>
+            <!-- Ad Copy V2 Generator -->
+            <div class="copy-v2-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <h4 style="margin:0;font-size:14px;font-weight:700;color:var(--gray-800);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  AI Ad Copy
+                </h4>
+                <span style="font-size:11px;color:var(--gray-400);">Generate headline, subheadline &amp; CTA with AI</span>
+              </div>
+              <div style="display:flex;gap:10px;margin-bottom:10px;">
+                <div style="flex:1;">
+                  <label class="pb-label">Topic / Angle</label>
+                  <input type="text" id="copyV2Topic" class="form-input" placeholder="e.g. 'MCA debt stress', 'fresh start', 'save 80%'..." style="font-size:13px;">
+                </div>
+                <div style="flex-shrink:0;align-self:flex-end;">
+                  <button class="btn btn-primary" id="generateCopyV2Btn" onclick="generateCopyV2()" style="font-size:13px;padding:8px 18px;">Generate Copy</button>
+                </div>
+              </div>
+              <div id="copyV2Fields">
+                <div class="copy-v2-fields">
+                  <div class="form-group">
+                    <label>Headline</label>
+                    <input type="text" id="copyV2Headline" class="form-input" placeholder="Main headline..." oninput="updateLivePreview()">
+                  </div>
+                  <div class="form-group">
+                    <label>Highlight Words <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(comma-separated)</span></label>
+                    <input type="text" id="copyV2Highlights" class="form-input" placeholder="e.g. FREE, 80%, Relief" oninput="updateLivePreview()">
+                  </div>
+                  <div class="form-group">
+                    <label>Subheadline</label>
+                    <input type="text" id="copyV2Subheadline" class="form-input" placeholder="Supporting text..." oninput="updateLivePreview()">
+                  </div>
+                  <div class="form-group">
+                    <label>CTA Text</label>
+                    <input type="text" id="copyV2Cta" class="form-input" placeholder="e.g. Get Free Consultation" oninput="updateLivePreview()">
+                  </div>
+                  <div class="form-group">
+                    <label>CTA Button Text</label>
+                    <input type="text" id="copyV2CtaButton" class="form-input" placeholder="e.g. Learn More" oninput="updateLivePreview()">
+                  </div>
+                  <div class="form-group">
+                    <label>CTA Button URL</label>
+                    <input type="text" id="copyV2CtaUrl" class="form-input" value="CoastalDebt.com" readonly style="background:var(--gray-50);color:var(--gray-400);">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Font Size Controls -->
+            <div class="controls-panel" style="margin-top:12px;">
+              <div class="controls-section">
+                <h4>Font Sizes</h4>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                  <div style="flex:1;min-width:140px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px;">Headline Size</label>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <input type="range" id="headlineFontSize" min="24" max="120" value="48" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('headlineFsVal').textContent=this.value+'px';updateLivePreview()">
+                      <span id="headlineFsVal" style="font-size:11px;color:var(--gray-400);min-width:36px;">48px</span>
+                    </div>
+                  </div>
+                  <div style="flex:1;min-width:140px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px;">Subheadline Size</label>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <input type="range" id="subheadlineFontSize" min="12" max="60" value="24" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('subFsVal').textContent=this.value+'px';updateLivePreview()">
+                      <span id="subFsVal" style="font-size:11px;color:var(--gray-400);min-width:36px;">24px</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="controls-section">
+                <h4>Text Position</h4>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="btn btn-secondary btn-small text-pos-btn active" data-pos="auto" onclick="setTextPosition('auto')">Auto (AI)</button>
+                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="left" onclick="setTextPosition('left')">Left</button>
+                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="center" onclick="setTextPosition('center')">Center</button>
+                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="right" onclick="setTextPosition('right')">Right</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nav -->
+            <div class="step-nav">
+              <button class="btn btn-secondary" onclick="goToStep(3)">&larr; Back</button>
+              <button class="btn btn-primary" onclick="goToStep(5)">Next: Logo &amp; Export &rarr;</button>
+            </div>
+          </div>
+
+          <!-- Right: Live Preview -->
+          <div>
+            <div class="controls-panel" style="padding:12px;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Live Preview</h4>
+              <div id="livePreview4" class="live-preview-mirror" style="position:relative;width:100%;aspect-ratio:1200/628;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#F2F4F9;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STEP 5: LOGO, ICONS & BADGES + EXPORT ============ -->
+      <div class="step-panel" id="step5">
+        <div class="step-split">
+          <!-- Left: Controls -->
           <div>
             <div class="controls-panel">
-              <!-- Selected object -->
-              <div class="selected-info" id="selectedInfo3">
-                <span style="font-size:13px;font-weight:600;color:#92400e;">Object selected</span>
-                <button class="btn btn-secondary btn-small" onclick="deleteSelected()" style="color:#dc2626;font-size:11px;">Delete</button>
-              </div>
-
               <div class="controls-section">
                 <h4>Brand Logos</h4>
                 <div class="brand-logos-grid">
@@ -1135,18 +1144,45 @@
               </div>
 
               <div class="controls-section">
+                <h4>Logo Position</h4>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-secondary btn-small logo-pos-btn active" data-pos="top-left" onclick="setLogoPosition('top-left')">Top-Left</button>
+                  <button class="btn btn-secondary btn-small logo-pos-btn" data-pos="top-right" onclick="setLogoPosition('top-right')">Top-Right</button>
+                </div>
+              </div>
+
+              <div class="controls-section">
                 <h4>Custom Logo</h4>
                 <img id="logoPreview" class="logo-preview-img" src="" alt="No logo" style="display:none;">
                 <div id="logoUploadArea">
                   <input type="file" id="logoFileInput" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadLogo(this)">
                   <button class="btn btn-secondary" onclick="document.getElementById('logoFileInput').click()" style="width:100%;font-size:13px;">Upload Custom Logo</button>
                 </div>
-                <button class="btn btn-primary" id="addLogoBtn" onclick="addLogoToCanvas()" style="width:100%;margin-top:8px;display:none;">Add to Canvas</button>
-                <div class="pos-btns" id="logoPosButtons" style="display:none;">
-                  <button class="btn btn-secondary" onclick="positionLogo('tl')">Top-Left</button>
-                  <button class="btn btn-secondary" onclick="positionLogo('tr')">Top-Right</button>
-                  <button class="btn btn-secondary" onclick="positionLogo('bl')">Bot-Left</button>
-                  <button class="btn btn-secondary" onclick="positionLogo('br')">Bot-Right</button>
+              </div>
+
+              <div class="controls-section">
+                <h4>Trust Badges</h4>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div class="brand-toggle-bar" style="margin:0;">
+                    <label class="switch"><input type="checkbox" id="badgeTrustpilot" onchange="updateLivePreview()"><span class="slider"></span></label>
+                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">Trustpilot</span>
+                  </div>
+                  <div class="brand-toggle-bar" style="margin:0;">
+                    <label class="switch"><input type="checkbox" id="badgeISO" onchange="updateLivePreview()"><span class="slider"></span></label>
+                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">ISO Certified</span>
+                  </div>
+                  <div class="brand-toggle-bar" style="margin:0;">
+                    <label class="switch"><input type="checkbox" id="badgeBBB" onchange="updateLivePreview()"><span class="slider"></span></label>
+                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">BBB Accredited</span>
+                  </div>
+                </div>
+                <div style="margin-top:8px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Badge Position</label>
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-secondary btn-small badge-pos-btn active" data-pos="bottom-center" onclick="setBadgePosition('bottom-center')">Bottom Center</button>
+                    <button class="btn btn-secondary btn-small badge-pos-btn" data-pos="bottom-left" onclick="setBadgePosition('bottom-left')">Bottom Left</button>
+                    <button class="btn btn-secondary btn-small badge-pos-btn" data-pos="bottom-right" onclick="setBadgePosition('bottom-right')">Bottom Right</button>
+                  </div>
                 </div>
               </div>
 
@@ -1175,130 +1211,118 @@
               </div>
             </div>
 
-            <!-- Actions -->
-            <div class="step-nav" style="flex-direction:column;gap:10px;">
-              <div style="display:flex;gap:10px;width:100%;">
-                <button class="btn btn-secondary" onclick="goToStep(2)" style="flex:1;">&larr; Back</button>
-                <button class="btn btn-primary" onclick="downloadPNG()" style="flex:2;">Download PNG</button>
-              </div>
-            </div>
-
-            <!-- Download All Sizes -->
-            <div class="controls-panel" style="margin-top:12px;">
-              <div class="controls-section" style="margin-bottom:0;">
-                <h4>Download All Sizes</h4>
-                <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">Export your design scaled to every ad size</p>
-                <div class="download-all-grid">
-                  <button class="btn btn-secondary download-size-btn" onclick="downloadAsSize('feed_landscape')">
-                    <span class="dl-size-name">Feed / Landscape</span>
-                    <span class="dl-size-dims">1200 x 628</span>
-                  </button>
-                  <button class="btn btn-secondary download-size-btn" onclick="downloadAsSize('square')">
-                    <span class="dl-size-name">Square</span>
-                    <span class="dl-size-dims">1080 x 1080</span>
-                  </button>
-                  <button class="btn btn-secondary download-size-btn" onclick="downloadAsSize('story_reel')">
-                    <span class="dl-size-name">Story / Reel</span>
-                    <span class="dl-size-dims">1080 x 1920</span>
-                  </button>
-                  <button class="btn btn-secondary download-size-btn" onclick="downloadAsSize('carousel_square')">
-                    <span class="dl-size-name">Carousel Square</span>
-                    <span class="dl-size-dims">1200 x 1200</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button class="btn btn-secondary" onclick="startOver()" style="width:100%;color:var(--gray-500);margin-top:10px;">Start Over</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ STEP 4: COMPOSE & EXPORT ============ -->
-      <div class="step-panel" id="step4">
-        <!-- Compose & Export Section -->
-        <div class="compose-section" style="max-width:960px;margin:0 auto 20px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <div>
-              <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--gray-800);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-3px;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-                Compose &amp; Export
-              </h3>
-              <p style="font-size:12px;color:var(--gray-400);margin:4px 0 0;">Render final ads with person image + copy + brand assets in all sizes</p>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <div style="display:flex;align-items:center;gap:8px;margin-right:12px;">
-                <label style="font-size:12px;font-weight:600;color:var(--gray-500);white-space:nowrap;">Person Position</label>
-                <input type="range" id="personPositionSlider" min="-30" max="30" value="0" style="width:120px;accent-color:#3052FF;" oninput="document.getElementById('personPosVal').textContent=this.value+'%'">
-                <span id="personPosVal" style="font-size:11px;color:var(--gray-400);min-width:32px;">0%</span>
-              </div>
-              <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="font-size:13px;padding:8px 20px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <!-- Compose Button -->
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#3052FF 0%,#7FB2FF 100%);border-radius:12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
                 Compose All Sizes
               </button>
-              <button class="btn btn-secondary" id="downloadAllComposedBtn" onclick="downloadAllComposed()" style="font-size:13px;padding:8px 16px;display:none;">
+            </div>
+
+            <!-- Nav -->
+            <div class="step-nav">
+              <button class="btn btn-secondary" onclick="goToStep(4)">&larr; Back</button>
+              <button class="btn btn-secondary" id="downloadAllComposedBtn" onclick="downloadAllComposed()" style="display:none;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Download All
               </button>
             </div>
           </div>
-          <div id="composeStatus" style="display:none;"></div>
-          <div id="composeResults" class="compose-results-grid"></div>
-        </div>
 
-        <!-- Meta Ad Copy Generator (existing) -->
-        <div class="card" style="padding:28px;max-width:960px;margin:0 auto;">
-          <div style="text-align:center;margin-bottom:24px;">
-            <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1877F2,#42b883);color:#fff;padding:10px 24px;border-radius:50px;font-weight:700;font-size:15px;margin-bottom:12px;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-              Meta Ad Copy Generator
+          <!-- Right: Live Preview + Results -->
+          <div>
+            <div class="controls-panel" style="padding:12px;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Live Preview</h4>
+              <div id="livePreview5" class="live-preview-mirror" style="position:relative;width:100%;aspect-ratio:1200/628;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#F2F4F9;"></div>
             </div>
-            <p style="color:var(--gray-500);font-size:14px;margin:0;">Generate multiple variations of Facebook &amp; Instagram ad copy</p>
-          </div>
 
-          <!-- Input Section -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-            <div class="form-group" style="margin:0;">
-              <label style="font-weight:600;font-size:13px;">Ad Angle / Topic</label>
-              <select id="metaAdAngle" class="form-input" style="font-size:13px;">
-                <option value="general">General — MCA Debt Relief</option>
-                <option value="urgency">Urgency — Act Now / Limited Time</option>
-                <option value="savings">Savings — Save Up To 80%</option>
-                <option value="pain">Pain Point — Drowning in Payments</option>
-                <option value="trust">Trust — Proven Results / Testimonials</option>
-                <option value="fresh_start">Fresh Start — New Beginning</option>
-                <option value="comparison">Comparison — Why Us vs Others</option>
-                <option value="educational">Educational — What is MCA Debt?</option>
-              </select>
+            <!-- Compose Results -->
+            <div id="composeResultsPanel" style="margin-top:12px;display:none;">
+              <div class="controls-panel" style="padding:16px;">
+                <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Composed Results</h4>
+                <div id="composeStatus" style="display:none;"></div>
+                <div id="composeResults" class="compose-results-grid"></div>
+              </div>
             </div>
-            <div class="form-group" style="margin:0;">
-              <label style="font-weight:600;font-size:13px;">Number of Variations</label>
-              <select id="metaAdCount" class="form-input" style="font-size:13px;">
-                <option value="3" selected>3 variations</option>
-                <option value="5">5 variations</option>
-                <option value="8">8 variations</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom:20px;">
-            <label style="font-weight:600;font-size:13px;">Custom Instructions <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
-            <textarea id="metaAdCustom" class="form-input" rows="2" placeholder="e.g. 'Focus on restaurant owners', 'Use a question hook', 'Mention free consultation'..." style="font-size:13px;resize:vertical;"></textarea>
-          </div>
-
-          <button class="btn btn-primary" id="generateMetaCopyBtn" onclick="generateMetaCopy()" style="width:100%;padding:14px;font-size:15px;font-weight:700;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            Generate Ad Copy
-          </button>
-
-          <!-- Results -->
-          <div id="metaCopyResults" style="margin-top:24px;display:none;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-              <h3 style="margin:0;font-size:16px;">Generated Copy</h3>
-              <button class="btn btn-secondary btn-small" onclick="copyAllMetaAds()" style="font-size:12px;">Copy All to Clipboard</button>
-            </div>
-            <div id="metaCopyCards"></div>
           </div>
         </div>
+      </div>
+
+      <!-- ============ ADVANCED: META AD COPY GENERATOR ============ -->
+      <div class="card" style="padding:28px;max-width:960px;margin:24px auto 0;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1877F2,#42b883);color:#fff;padding:10px 24px;border-radius:50px;font-weight:700;font-size:15px;margin-bottom:12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            Meta Ad Copy Generator
+          </div>
+          <p style="color:var(--gray-500);font-size:14px;margin:0;">Generate multiple variations of Facebook &amp; Instagram ad copy</p>
+        </div>
+
+        <!-- Input Section -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-weight:600;font-size:13px;">Ad Angle / Topic</label>
+            <select id="metaAdAngle" class="form-input" style="font-size:13px;">
+              <option value="general">General — MCA Debt Relief</option>
+              <option value="urgency">Urgency — Act Now / Limited Time</option>
+              <option value="savings">Savings — Save Up To 80%</option>
+              <option value="pain">Pain Point — Drowning in Payments</option>
+              <option value="trust">Trust — Proven Results / Testimonials</option>
+              <option value="fresh_start">Fresh Start — New Beginning</option>
+              <option value="comparison">Comparison — Why Us vs Others</option>
+              <option value="educational">Educational — What is MCA Debt?</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-weight:600;font-size:13px;">Number of Variations</label>
+            <select id="metaAdCount" class="form-input" style="font-size:13px;">
+              <option value="3" selected>3 variations</option>
+              <option value="5">5 variations</option>
+              <option value="8">8 variations</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:20px;">
+          <label style="font-weight:600;font-size:13px;">Custom Instructions <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
+          <textarea id="metaAdCustom" class="form-input" rows="2" placeholder="e.g. 'Focus on restaurant owners', 'Use a question hook', 'Mention free consultation'..." style="font-size:13px;resize:vertical;"></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="generateMetaCopyBtn" onclick="generateMetaCopy()" style="width:100%;padding:14px;font-size:15px;font-weight:700;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Generate Ad Copy
+        </button>
+
+        <!-- Results -->
+        <div id="metaCopyResults" style="margin-top:24px;display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="margin:0;font-size:16px;">Generated Copy</h3>
+            <button class="btn btn-secondary btn-small" onclick="copyAllMetaAds()" style="font-size:12px;">Copy All to Clipboard</button>
+          </div>
+          <div id="metaCopyCards"></div>
+        </div>
+      </div>
+
+      <!-- Hidden Fabric.js Canvas (used for canvas editor) -->
+      <div style="display:none;">
+        <div id="canvasWrapper">
+          <div id="canvasScaleWrapper" class="canvas-scale-wrapper">
+            <canvas id="wizardCanvas"></canvas>
+          </div>
+        </div>
+        <div id="canvasWrapper3"></div>
+        <!-- Hidden elements for backward compatibility -->
+        <div class="selected-info" id="selectedInfo"></div>
+        <div class="selected-info" id="selectedInfo3"></div>
+        <div id="textEditControls" style="display:none;"></div>
+        <select id="fontFamily" style="display:none;"><option value="'Inter', sans-serif" selected>Inter</option></select>
+        <select id="fontSize" style="display:none;"><option value="48" selected>48px</option></select>
+        <select id="fontWeight" style="display:none;"><option value="bold" selected>Bold</option></select>
+        <input type="color" id="textColor" value="#ffffff" style="display:none;">
+        <input type="color" id="textBgColor" value="#3052FF" style="display:none;">
+        <input type="checkbox" id="textBgEnabled" style="display:none;">
+        <input type="color" id="shapeColor" value="#3052FF" style="display:none;">
+        <input type="range" id="shapeOpacity" value="1" style="display:none;">
+        <input type="text" id="textInput" style="display:none;">
       </div>
 
       <!-- ============ GALLERY ============ -->
@@ -1383,24 +1407,31 @@
       carousel_square: { name: 'Carousel Square', width: 1200, height: 1200 }
     };
 
+    // ============ NEW 5-STEP WIZARD STATE ============
+    let wizardState = {
+      personImageUrl: null,
+      personImageNoBg: null,
+      bgColor: '#F2F4F9',
+      bgImageUrl: null,
+      bgImageDataUrl: null,
+      chevrons: { visible: false, position: 'top-left', size: 'medium', behindPerson: true },
+      textPosition: 'auto',
+      logoPosition: 'top-left',
+      badgePosition: 'bottom-center',
+      badges: { trustpilot: false, iso: false, bbb: false }
+    };
+
     // ============ WIZARD NAVIGATION ============
 
     function goToStep(step) {
-      // Step 4 (Ad Copy) is always accessible
-      if (step === 4) { /* allow */ }
-      else if (step > maxStepReached + 1) return;
-      else if (step > 1 && !generatedImageUrl) return; // need image first
+      // Step 5 allows access if step 1 done (for meta copy generator)
+      if (step > maxStepReached + 1) return;
+      if (step > 1 && !generatedImageUrl && !wizardState.personImageUrl) return; // need image first
       if (step === currentStep) return;
 
       const prev = currentStep;
       currentStep = step;
       if (step > maxStepReached) maxStepReached = step;
-
-      // Move canvas between step 2 and step 3
-      if (step === 2 || step === 3) {
-        ensureCanvas();
-        moveCanvasToStep(step);
-      }
 
       // Update panels
       document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
@@ -1414,14 +1445,13 @@
         else if (s < step) el.classList.add('completed');
       });
 
-      // Refit canvas on step transitions
-      if (step === 2 || step === 3) {
-        requestAnimationFrame(() => fitCanvas());
+      // Update live preview for steps 2-5
+      if (step >= 2 && step <= 5) {
+        updateLivePreview();
       }
 
-      // Highlight the current size in the download-all grid
-      if (step === 3) {
-        highlightCurrentSize();
+      // Load brand assets on step 5
+      if (step === 5) {
         loadBrandAssets();
       }
     }
@@ -2491,14 +2521,14 @@
       var savedUrl = saveData.edited_image_url || finalDataUrl;
       bulkResults.push({ url: savedUrl, dataUrl: finalDataUrl, headline: copy.headline, size: sizeLabel, genId: genId, bgImageUrl: imageUrl, copy: copy, blueprint: blueprint });
 
-      cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" id="bulk-img-' + idx + '" onclick="window.open(this.src)">' +
+      cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" id="bulk-img-' + idx + '" onclick="selectPersonImage(\'' + escapeHtml(imageUrl) + '\', this)" style="cursor:pointer;" title="Click to select this person">' +
         '<div class="bulk-card-info">' +
           '<div class="bulk-headline">' + escapeHtml(copy.headline || '') + '</div>' +
           '<div class="bulk-meta">' + escapeHtml(meta.name) + ' &middot; ' + meta.width + 'x' + meta.height + '</div>' +
         '</div>' +
         '<div class="bulk-card-actions">' +
+          '<button class="btn btn-primary" onclick="selectPersonImage(\'' + escapeHtml(imageUrl) + '\', this)" style="background:#10b981;">Select</button>' +
           '<button class="btn btn-secondary" onclick="downloadBulkAd(' + (bulkResults.length - 1) + ')">Download</button>' +
-          '<button class="btn btn-primary" onclick="editBulkAd(' + genId + ',\'' + escapeHtml(imageUrl) + '\',\'' + sizeLabel + '\',' + (bulkResults.length - 1) + ')">Edit</button>' +
           '<button class="removebg-btn" onclick="removeBg(\'' + escapeHtml(imageUrl) + '\', this, \'bulk-img-' + idx + '\')">Remove BG</button>' +
         '</div>';
     }
@@ -3457,7 +3487,7 @@
     // ============ START OVER ============
 
     function startOver() {
-      if (!confirm('Start over? All text and logo edits will be lost.')) return;
+      if (!confirm('Start over? All edits will be lost.')) return;
 
       stopPolling();
       if (resizeHandler) { window.removeEventListener('resize', resizeHandler); resizeHandler = null; }
@@ -3469,19 +3499,24 @@
       promptText = '';
       maxStepReached = 1;
 
-      // Reset preview
-      const meta = SIZE_META[selectedSize];
-      const preview = document.getElementById('previewArea');
-      preview.classList.remove('has-image');
-      preview.innerHTML = `<div class="preview-placeholder"><div class="dims" id="previewDims">${meta.width} x ${meta.height}</div><div class="label">Select a size and generate an image</div></div>`;
+      // Reset wizard state
+      wizardState.personImageUrl = null;
+      wizardState.personImageNoBg = null;
+      wizardState.bgColor = '#F2F4F9';
+      wizardState.bgImageUrl = null;
+      wizardState.bgImageDataUrl = null;
+      wizardState.chevrons = { visible: false, position: 'top-left', size: 'medium', behindPerson: true };
+      wizardState.textPosition = 'auto';
+
+      // Reset UI elements safely
       document.getElementById('step1Nav').style.display = 'none';
       document.getElementById('genError').innerHTML = '';
-      document.getElementById('promptInput').value = '';
+      var promptInput = document.getElementById('promptInput');
+      if (promptInput) promptInput.value = '';
       document.getElementById('refThumbs').innerHTML = '';
-      document.getElementById('generateBtn').disabled = false;
-      document.getElementById('generateBtn').textContent = 'Generate Image';
+      document.getElementById('personPositionStep1').style.display = 'none';
 
-      // Move canvas wrapper back to step 2 container
+      // Move canvas wrapper back
       const scaleWrapper = document.getElementById('canvasScaleWrapper');
       if (scaleWrapper) {
         document.getElementById('canvasWrapper').appendChild(scaleWrapper);
@@ -3729,8 +3764,11 @@
         headline: document.getElementById('copyV2Headline').value.trim(),
         highlight_words: document.getElementById('copyV2Highlights').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
         subheadline: document.getElementById('copyV2Subheadline').value.trim(),
-        cta: document.getElementById('copyV2Cta').value.trim(),
-        cta_url: document.getElementById('copyV2CtaUrl').value.trim()
+        cta_text: document.getElementById('copyV2Cta').value.trim(),
+        cta_button: (document.getElementById('copyV2CtaButton') || {}).value ? document.getElementById('copyV2CtaButton').value.trim() : '',
+        cta_url: document.getElementById('copyV2CtaUrl').value.trim(),
+        // Legacy compat
+        cta: document.getElementById('copyV2Cta').value.trim()
       };
     }
 
@@ -3820,72 +3858,7 @@
       return null;
     }
 
-    async function composeAd() {
-      var personImage = getSelectedPersonImage();
-      if (!personImage) {
-        alert('No person image found. Please generate images in Step 1 first.');
-        return;
-      }
-
-      var copyConfig = getCopyConfig();
-      if (!copyConfig.headline) {
-        alert('Please generate or enter ad copy in Step 2 first.');
-        return;
-      }
-
-      var btn = document.getElementById('composeAllBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></span> Composing...';
-
-      var statusEl = document.getElementById('composeStatus');
-      statusEl.style.display = 'flex';
-      statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ads in all 4 sizes...';
-
-      var resultsEl = document.getElementById('composeResults');
-      resultsEl.innerHTML = '';
-      composedResults = [];
-
-      var sizeLabels = ['feed_landscape', 'square', 'story_reel', 'carousel_square'];
-
-      try {
-        for (var i = 0; i < sizeLabels.length; i++) {
-          var sizeLabel = sizeLabels[i];
-          var meta = SIZE_META[sizeLabel];
-          statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + ' (' + (i + 1) + '/' + sizeLabels.length + ')...';
-
-          var personOffset = parseInt(document.getElementById('personPositionSlider').value) || 0;
-          var res = await fetch('/api/ad-generator/compose', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              person_image_url: personImage,
-              copy: copyConfig,
-              size_label: sizeLabel,
-              asset_ids: Array.from(selectedAssetIds),
-              person_info: { framing: (document.getElementById('pb-framing') || {}).value || 'Half body', offset_x_percent: personOffset }
-            })
-          });
-
-          if (!res.ok) {
-            var errData = await res.json().catch(function() { return { error: 'Compose failed' }; });
-            throw new Error(errData.error || 'Compose failed for ' + meta.name);
-          }
-
-          var data = await res.json();
-          composedResults.push({ sizeLabel: sizeLabel, meta: meta, url: data.image_url, dataUrl: data.image_data_url });
-        }
-
-        renderComposedResults();
-        statusEl.style.display = 'none';
-        document.getElementById('downloadAllComposedBtn').style.display = '';
-      } catch (err) {
-        statusEl.innerHTML = '<span style="color:#dc2626;">Composition failed: ' + escapeHtml(err.message) + '</span>';
-        console.error('Compose error:', err);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Compose All Sizes';
-      }
-    }
+    // Old composeAd removed — new version is in the 5-step wizard section above
 
     function renderComposedResults() {
       var el = document.getElementById('composeResults');
@@ -3986,6 +3959,308 @@
         alert('Background removal failed: ' + err.message);
         btn.textContent = origText;
         btn.disabled = false;
+      }
+    }
+
+    // ============ LIVE PREVIEW ============
+
+    function updateLivePreview() {
+      // Update the main live preview in step 2
+      var previewEl = document.getElementById('livePreview');
+      if (!previewEl) return;
+
+      // Background color
+      var bgColor = wizardState.bgColor || '#F2F4F9';
+      previewEl.style.background = bgColor;
+      document.getElementById('bgColorPicker').value = bgColor;
+      document.getElementById('bgColorHex').textContent = bgColor;
+
+      // Background image
+      var bgImgEl = document.getElementById('livePreviewBgImg');
+      if (wizardState.bgImageDataUrl || wizardState.bgImageUrl) {
+        bgImgEl.src = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
+        bgImgEl.style.display = 'block';
+      } else {
+        bgImgEl.style.display = 'none';
+      }
+
+      // Person image
+      var personEl = document.getElementById('livePreviewPerson');
+      var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl;
+      if (personUrl) {
+        personEl.src = personUrl;
+        personEl.style.display = 'block';
+        var offset = parseInt(document.getElementById('personPositionSlider').value) || 0;
+        personEl.style.left = 'calc(50% + ' + offset + '% - 25%)';
+      } else {
+        personEl.style.display = 'none';
+      }
+
+      // Chevron toggle
+      var chevronsVisible = document.getElementById('chevronsVisible');
+      if (chevronsVisible) {
+        var opts = document.getElementById('chevronOptions');
+        if (opts) opts.style.display = chevronsVisible.checked ? 'block' : 'none';
+        wizardState.chevrons.visible = chevronsVisible.checked;
+
+        // Size label
+        var sizeSlider = document.getElementById('chevronSize');
+        if (sizeSlider) {
+          var sizeLabels = { '1': 'Small', '2': 'Medium', '3': 'Large' };
+          var label = document.getElementById('chevronSizeLabel');
+          if (label) label.textContent = sizeLabels[sizeSlider.value] || 'Medium';
+          wizardState.chevrons.size = sizeLabels[sizeSlider.value] ? sizeLabels[sizeSlider.value].toLowerCase() : 'medium';
+        }
+      }
+
+      // Text fields
+      var headline = (document.getElementById('copyV2Headline') || {}).value || '';
+      var subheadline = (document.getElementById('copyV2Subheadline') || {}).value || '';
+      var ctaText = (document.getElementById('copyV2Cta') || {}).value || '';
+
+      // Sync mirrors for steps 3, 4, 5
+      syncLivePreviewMirrors(bgColor, personUrl, headline, subheadline, ctaText);
+    }
+
+    function syncLivePreviewMirrors(bgColor, personUrl, headline, subheadline, ctaText) {
+      var mirrors = document.querySelectorAll('.live-preview-mirror');
+      mirrors.forEach(function(mirror) {
+        mirror.style.background = bgColor;
+        if (wizardState.bgImageDataUrl || wizardState.bgImageUrl) {
+          mirror.style.backgroundImage = 'url(' + (wizardState.bgImageDataUrl || wizardState.bgImageUrl) + ')';
+          mirror.style.backgroundSize = 'cover';
+          mirror.style.backgroundPosition = 'center';
+        } else {
+          mirror.style.backgroundImage = 'none';
+        }
+
+        var offset = parseInt(document.getElementById('personPositionSlider').value) || 0;
+        var chevronHtml = '';
+        if (wizardState.chevrons.visible) {
+          var sizeMap = { small: '40px', medium: '60px', large: '80px' };
+          var sz = sizeMap[wizardState.chevrons.size] || '60px';
+          var pos = wizardState.chevrons.position === 'top-right' ? 'right:8%;top:8%;' : 'left:8%;top:8%;';
+          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + (wizardState.chevrons.behindPerson ? '1' : '3') + ';"><svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="#3052FF" opacity="0.3"><polyline points="9 18 15 12 9 6" stroke="#3052FF" stroke-width="3" fill="none"/></svg></div>';
+        }
+
+        var textHtml = '';
+        if (headline || subheadline || ctaText) {
+          var isDark = isColorDark(bgColor);
+          var tc = isDark ? '#fff' : '#1a1a2e';
+          var pos = wizardState.textPosition;
+          var align = pos === 'center' ? 'text-align:center;left:10%;right:10%;' : (pos === 'right' ? 'text-align:right;right:5%;left:auto;width:45%;' : 'text-align:left;left:5%;width:45%;');
+          textHtml = '<div style="position:absolute;bottom:15%;' + align + 'z-index:4;">';
+          if (headline) textHtml += '<div style="font-size:14px;font-weight:700;color:' + tc + ';margin-bottom:4px;line-height:1.2;">' + escapeHtml(headline) + '</div>';
+          if (subheadline) textHtml += '<div style="font-size:10px;color:' + tc + ';opacity:0.7;margin-bottom:6px;">' + escapeHtml(subheadline) + '</div>';
+          if (ctaText) textHtml += '<div style="display:inline-block;background:#3052FF;color:#fff;font-size:9px;font-weight:700;padding:4px 10px;border-radius:4px;">' + escapeHtml(ctaText) + '</div>';
+          textHtml += '</div>';
+        }
+
+        var personHtml = '';
+        if (personUrl) {
+          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:0;height:90%;object-fit:contain;left:calc(50% + ' + offset + '% - 25%);z-index:2;">';
+        }
+
+        mirror.innerHTML = chevronHtml + personHtml + textHtml;
+      });
+    }
+
+    function isColorDark(hex) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+      var r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+      return (r * 0.299 + g * 0.587 + b * 0.114) < 128;
+    }
+
+    // ============ BACKGROUND CONTROLS ============
+
+    function updateBgColor(color) {
+      wizardState.bgColor = color;
+      document.getElementById('bgColorPicker').value = color;
+      document.getElementById('bgColorHex').textContent = color;
+      var previewEl = document.getElementById('livePreview');
+      if (previewEl) previewEl.style.background = color;
+      updateLivePreview();
+    }
+
+    function handleBgImageUpload(input) {
+      if (!input.files.length) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        wizardState.bgImageDataUrl = e.target.result;
+        document.getElementById('bgImageThumb').src = e.target.result;
+        document.getElementById('bgImagePreviewThumb').style.display = 'block';
+        updateLivePreview();
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    function clearBgImage() {
+      wizardState.bgImageDataUrl = null;
+      wizardState.bgImageUrl = null;
+      document.getElementById('bgImagePreviewThumb').style.display = 'none';
+      document.getElementById('bgImageUpload').value = '';
+      updateLivePreview();
+    }
+
+    // ============ CHEVRON CONTROLS ============
+
+    function setChevronPos(pos) {
+      wizardState.chevrons.position = pos;
+      document.querySelectorAll('.chevron-pos-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.pos === pos);
+        if (b.dataset.pos === pos) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
+        else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+      });
+      updateLivePreview();
+    }
+
+    function setChevronLayer(layer) {
+      wizardState.chevrons.behindPerson = (layer === 'behind');
+      document.querySelectorAll('.chevron-layer-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.layer === layer);
+        if (b.dataset.layer === layer) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
+        else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+      });
+      updateLivePreview();
+    }
+
+    // ============ TEXT POSITION ============
+
+    function setTextPosition(pos) {
+      wizardState.textPosition = pos;
+      document.querySelectorAll('.text-pos-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.pos === pos);
+        if (b.dataset.pos === pos) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
+        else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+      });
+      updateLivePreview();
+    }
+
+    // ============ LOGO POSITION ============
+
+    function setLogoPosition(pos) {
+      wizardState.logoPosition = pos;
+      document.querySelectorAll('.logo-pos-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.pos === pos);
+        if (b.dataset.pos === pos) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
+        else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+      });
+      updateLivePreview();
+    }
+
+    // ============ BADGE POSITION ============
+
+    function setBadgePosition(pos) {
+      wizardState.badgePosition = pos;
+      document.querySelectorAll('.badge-pos-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.pos === pos);
+        if (b.dataset.pos === pos) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
+        else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
+      });
+      updateLivePreview();
+    }
+
+    // ============ PERSON SELECTION FROM BULK RESULTS ============
+
+    function selectPersonImage(imageUrl, imgElement) {
+      wizardState.personImageUrl = imageUrl;
+      wizardState.personImageNoBg = null; // reset
+      generatedImageUrl = imageUrl;
+
+      // Visual feedback
+      document.querySelectorAll('#bulkResultsGrid .bulk-card').forEach(function(card) {
+        card.style.outline = '';
+      });
+      if (imgElement) {
+        var card = imgElement.closest('.bulk-card');
+        if (card) card.style.outline = '3px solid #3052FF';
+      }
+
+      // Show person position controls & nav
+      document.getElementById('personPositionStep1').style.display = 'block';
+      document.getElementById('step1Nav').style.display = 'flex';
+      document.getElementById('selectedPersonPreview').style.display = 'block';
+      document.getElementById('selectedPersonImg').src = imageUrl;
+
+      maxStepReached = Math.max(maxStepReached, 1);
+    }
+
+    // ============ COMPOSE AD (UPDATED FOR 5-STEP) ============
+
+    async function composeAd() {
+      var personImage = wizardState.personImageUrl || getSelectedPersonImage();
+      if (!personImage) {
+        alert('No person image found. Please generate and select an image in Step 1 first.');
+        return;
+      }
+
+      var copyConfig = getCopyConfig();
+      if (!copyConfig.headline) {
+        alert('Please generate or enter ad copy in Step 4 first.');
+        return;
+      }
+
+      var btn = document.getElementById('composeAllBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Composing all sizes...';
+
+      var statusEl = document.getElementById('composeStatus');
+      statusEl.style.display = 'flex';
+      statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ads in all 4 sizes...';
+      document.getElementById('composeResultsPanel').style.display = 'block';
+
+      var resultsEl = document.getElementById('composeResults');
+      resultsEl.innerHTML = '';
+      composedResults = [];
+
+      var sizeLabels = ['feed_landscape', 'square', 'story_reel', 'carousel_square'];
+      var personOffset = parseInt(document.getElementById('personPositionSlider').value) || 0;
+
+      try {
+        for (var i = 0; i < sizeLabels.length; i++) {
+          var sizeLabel = sizeLabels[i];
+          var meta = SIZE_META[sizeLabel];
+          statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + ' (' + (i + 1) + '/' + sizeLabels.length + ')...';
+
+          var res = await fetch('/api/ad-generator/compose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              person_image_url: personImage,
+              copy: copyConfig,
+              size_label: sizeLabel,
+              asset_ids: Array.from(selectedAssetIds),
+              person_info: { framing: (document.getElementById('pbFraming') || {}).value || 'Half body', offset_x_percent: personOffset },
+              background_color: wizardState.bgColor,
+              chevrons: {
+                visible: wizardState.chevrons.visible,
+                position: wizardState.chevrons.position,
+                behind_person: wizardState.chevrons.behindPerson,
+                size: wizardState.chevrons.size
+              },
+              text_position: wizardState.textPosition
+            })
+          });
+
+          if (!res.ok) {
+            var errData = await res.json().catch(function() { return { error: 'Compose failed' }; });
+            throw new Error(errData.error || 'Compose failed for ' + meta.name);
+          }
+
+          var data = await res.json();
+          composedResults.push({ sizeLabel: sizeLabel, meta: meta, url: data.image_url, dataUrl: data.image_data_url });
+        }
+
+        renderComposedResults();
+        statusEl.style.display = 'none';
+        document.getElementById('downloadAllComposedBtn').style.display = '';
+      } catch (err) {
+        statusEl.innerHTML = '<span style="color:#dc2626;">Composition failed: ' + escapeHtml(err.message) + '</span>';
+        console.error('Compose error:', err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Compose All Sizes';
       }
     }
 
