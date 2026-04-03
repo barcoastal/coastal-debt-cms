@@ -88,9 +88,16 @@ Respond with ONLY valid JSON:
 
   const text = message.content[0].text.trim();
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return getDefaultLayout(sizeLabel);
+  if (!match) return applyPersonOffset(getDefaultLayout(sizeLabel), personImageInfo);
 
-  return JSON.parse(match[0]);
+  return applyPersonOffset(JSON.parse(match[0]), personImageInfo);
+}
+
+function applyPersonOffset(layout, personImageInfo) {
+  if (personImageInfo && personImageInfo.offset_x_percent != null && layout.person) {
+    layout.person.offset_x_percent = personImageInfo.offset_x_percent;
+  }
+  return layout;
 }
 
 function getDefaultLayout(sizeLabel) {

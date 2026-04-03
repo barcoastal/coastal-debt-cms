@@ -803,21 +803,35 @@ Respond with ONLY valid JSON:
 // ============ COMPOSE AD (V2) ============
 
 router.post('/compose', authenticateToken, async (req, res) => {
-  const { person_image_url, copy_config, selected_asset_ids, person_info } = req.body;
+  const { person_image_url, person_info, size_label } = req.body;
+  const copyConfig = req.body.copy_config || req.body.copy;
+  const assetIds = req.body.selected_asset_ids || req.body.asset_ids;
 
   if (!person_image_url) return res.status(400).json({ error: 'person_image_url is required' });
-  if (!copy_config || !copy_config.headline) return res.status(400).json({ error: 'copy_config with headline is required' });
+  if (!copyConfig || !copyConfig.headline) return res.status(400).json({ error: 'copy/copy_config with headline is required' });
 
   try {
     // Fetch selected brand assets from DB
     let selectedAssets = [];
-    if (Array.isArray(selected_asset_ids) && selected_asset_ids.length > 0) {
-      const placeholders = selected_asset_ids.map(() => '?').join(',');
-      selectedAssets = db.prepare(`SELECT * FROM brand_assets WHERE id IN (${placeholders})`).all(...selected_asset_ids);
+    if (Array.isArray(assetIds) && assetIds.length > 0) {
+      const placeholders = assetIds.map(() => '?').join(',');
+      selectedAssets = db.prepare(`SELECT * FROM brand_assets WHERE id IN (${placeholders})`).all(...assetIds);
     }
 
-    const results = await composeAd(person_image_url, copy_config, selectedAssets, person_info);
+    // Pass person offset through person_info
+    const personInfoWithOffset = { ...person_info };
+    if (personInfoWithOffset.offset_x_percent != null) {
+      // Will be used by layout engine
+    }
 
+    // Single size or all sizes
+    if (size_label) {
+      const result = await recomposeAd(person_image_url, copyConfig, selectedAssets, personInfoWithOffset, size_label);
+      if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_composition', null, `Composed ad (${size_label})`, req.ip);
+      return res.json(result);
+    }
+
+    const results = await composeAd(person_image_url, copyConfig, selectedAssets, personInfoWithOffset);
     if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_composition', null, `Composed ad in ${results.length} sizes`, req.ip);
     res.json({ compositions: results });
   } catch (err) {
@@ -1169,20 +1183,39 @@ function sleep(ms) {
 // ============ SEED DEFAULT BRAND ASSETS ============
 (function seedDefaultAssets() {
   const count = db.prepare('SELECT COUNT(*) as c FROM brand_assets').get().c;
-  if (count > 0) return; // already seeded
+  if (count > 0) {
+    // Ensure real trust badges exist (upgrade from placeholder icons)
+    const hasTrustpilot = db.prepare("SELECT id FROM brand_assets WHERE name = 'Trustpilot 4.8'").get();
+    if (!hasTrustpilot) {
+      const insert = db.prepare('INSERT INTO brand_assets (category, name, file_path) VALUES (?, ?, ?)');
+      insert.run('badge', 'Trustpilot 4.8', '/assets/trust-logos/trustpilot.webp');
+      insert.run('badge', 'ISO 9001:2015', '/assets/trust-logos/bsi.webp');
+      insert.run('badge', 'BBB Torch Awards', '/assets/trust-logos/bbb-torch-awards.png');
+      insert.run('logo', 'Coastal Debt Logo (Dark)', '/assets/logos/logo-dark-text.svg');
+      insert.run('logo', 'Coastal Debt Logo (White)', '/assets/logos/logo-white-text.svg');
+      insert.run('decorative', 'Chevron Arrows', '/assets/brand-assets/chevron-arrows.svg');
+      console.log('[Ad Generator] Added real trust badges and logos to brand assets');
+    }
+    return;
+  }
 
   const defaultAssets = [
-    { category: 'decorative', name: 'Blue Chevrons', filename: 'chevron-blue.svg' },
-    { category: 'icon', name: 'Dollar Hand', filename: 'icon-dollar-hand.svg' },
-    { category: 'icon', name: 'Phone', filename: 'icon-phone.svg' },
-    { category: 'icon', name: 'Shield', filename: 'icon-shield.svg' },
-    { category: 'icon', name: 'Checkmark', filename: 'icon-checkmark.svg' }
+    { category: 'decorative', name: 'Blue Chevrons', file_path: '/assets/brand-assets/chevron-blue.svg' },
+    { category: 'decorative', name: 'Chevron Arrows', file_path: '/assets/brand-assets/chevron-arrows.svg' },
+    { category: 'icon', name: 'Dollar Hand', file_path: '/assets/brand-assets/icon-dollar-hand.svg' },
+    { category: 'icon', name: 'Phone', file_path: '/assets/brand-assets/icon-phone.svg' },
+    { category: 'icon', name: 'Shield', file_path: '/assets/brand-assets/icon-shield.svg' },
+    { category: 'icon', name: 'Checkmark', file_path: '/assets/brand-assets/icon-checkmark.svg' },
+    { category: 'badge', name: 'Trustpilot 4.8', file_path: '/assets/trust-logos/trustpilot.webp' },
+    { category: 'badge', name: 'ISO 9001:2015', file_path: '/assets/trust-logos/bsi.webp' },
+    { category: 'badge', name: 'BBB Torch Awards', file_path: '/assets/trust-logos/bbb-torch-awards.png' },
+    { category: 'logo', name: 'Coastal Debt Logo (Dark)', file_path: '/assets/logos/logo-dark-text.svg' },
+    { category: 'logo', name: 'Coastal Debt Logo (White)', file_path: '/assets/logos/logo-white-text.svg' }
   ];
 
   const insert = db.prepare('INSERT INTO brand_assets (category, name, file_path) VALUES (?, ?, ?)');
   for (const asset of defaultAssets) {
-    const assetPath = `/assets/brand-assets/${asset.filename}`;
-    insert.run(asset.category, asset.name, assetPath);
+    insert.run(asset.category, asset.name, asset.file_path);
   }
   console.log('[Ad Generator] Seeded default brand assets');
 })();

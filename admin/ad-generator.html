@@ -1226,7 +1226,12 @@
               </h3>
               <p style="font-size:12px;color:var(--gray-400);margin:4px 0 0;">Render final ads with person image + copy + brand assets in all sizes</p>
             </div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="display:flex;align-items:center;gap:8px;margin-right:12px;">
+                <label style="font-size:12px;font-weight:600;color:var(--gray-500);white-space:nowrap;">Person Position</label>
+                <input type="range" id="personPositionSlider" min="-30" max="30" value="0" style="width:120px;accent-color:#3052FF;" oninput="document.getElementById('personPosVal').textContent=this.value+'%'">
+                <span id="personPosVal" style="font-size:11px;color:var(--gray-400);min-width:32px;">0%</span>
+              </div>
               <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="font-size:13px;padding:8px 20px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                 Compose All Sizes
@@ -3848,6 +3853,7 @@
           var meta = SIZE_META[sizeLabel];
           statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + ' (' + (i + 1) + '/' + sizeLabels.length + ')...';
 
+          var personOffset = parseInt(document.getElementById('personPositionSlider').value) || 0;
           var res = await fetch('/api/ad-generator/compose', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3855,7 +3861,8 @@
               person_image_url: personImage,
               copy: copyConfig,
               size_label: sizeLabel,
-              asset_ids: Array.from(selectedAssetIds)
+              asset_ids: Array.from(selectedAssetIds),
+              person_info: { framing: (document.getElementById('pb-framing') || {}).value || 'Half body', offset_x_percent: personOffset }
             })
           });
 

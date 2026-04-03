@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 300" fill="none">
+  <!-- Back arrow -->
+  <path d="M10 0 L110 0 L170 150 L110 300 L10 300 L70 150 Z" fill="#3052FF" opacity="0.55"/>
+  <!-- Front arrow -->
+  <path d="M40 30 L130 30 L180 150 L130 270 L40 270 L90 150 Z" fill="#3052FF"/>
+</svg>
