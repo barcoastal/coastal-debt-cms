@@ -348,6 +348,85 @@
       width: 24px; height: 24px; border: 3px solid var(--gray-200);
       border-top-color: #3052FF; border-radius: 50%; animation: spin 0.8s linear infinite;
     }
+
+    /* ============ PROMPT BUILDER ============ */
+    .pb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .pb-select {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--gray-300); border-radius: 8px;
+      font-size: 13px; font-family: inherit; background: #fff; color: var(--gray-700);
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .pb-select:focus { outline: none; border-color: #3052FF; box-shadow: 0 0 0 3px rgba(48,82,255,0.1); }
+    .pb-label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 3px; display: block; }
+    .pb-preview {
+      background: #f0f3ff; border: 1px solid #e0e7ff; border-radius: 8px; padding: 10px 14px;
+      font-size: 12px; color: var(--gray-600); line-height: 1.5; min-height: 40px;
+      margin-top: 8px; white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ============ AD COPY V2 ============ */
+    .copy-v2-section {
+      background: #fff; border: 1px solid var(--gray-200); border-radius: 12px;
+      padding: 20px; margin-bottom: 16px;
+    }
+    .copy-v2-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .copy-v2-fields .form-group { margin: 0; }
+    .copy-v2-fields .form-group label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 3px; display: block; }
+    .copy-v2-fields .form-group input { font-size: 13px; }
+
+    /* ============ BRAND ASSETS ============ */
+    .brand-assets-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;
+      margin-top: 10px;
+    }
+    .brand-asset-card {
+      border: 2px solid var(--gray-200); border-radius: 8px; padding: 8px;
+      text-align: center; cursor: pointer; transition: all 0.15s; position: relative;
+    }
+    .brand-asset-card:hover { border-color: #93a3f8; background: #f8f9ff; }
+    .brand-asset-card.selected { border-color: #3052FF; background: #eef1ff; box-shadow: 0 0 0 2px rgba(48,82,255,0.2); }
+    .brand-asset-card img { max-width: 100%; max-height: 48px; object-fit: contain; display: block; margin: 0 auto 4px; }
+    .brand-asset-card .asset-name { font-size: 10px; color: var(--gray-500); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .brand-asset-card .asset-check {
+      position: absolute; top: 4px; right: 4px; width: 18px; height: 18px;
+      border-radius: 50%; background: #3052FF; color: #fff; font-size: 11px;
+      display: none; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .brand-asset-card.selected .asset-check { display: flex; }
+    .brand-asset-upload { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gray-200); }
+
+    /* ============ COMPOSE & EXPORT ============ */
+    .compose-section {
+      background: #fff; border: 1px solid var(--gray-200); border-radius: 12px;
+      padding: 20px; margin-bottom: 20px;
+    }
+    .compose-results-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px; margin-top: 14px;
+    }
+    .compose-result-card {
+      border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden; background: #fff;
+    }
+    .compose-result-card img { width: 100%; display: block; cursor: pointer; }
+    .compose-result-card .compose-card-info { padding: 8px 12px; font-size: 12px; color: var(--gray-500); }
+    .compose-result-card .compose-card-actions { display: flex; gap: 6px; padding: 0 12px 10px; }
+    .compose-result-card .compose-card-actions .btn { flex: 1; font-size: 11px; padding: 5px 8px; }
+    .compose-status {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      background: #f8f9ff; border: 1px solid #e0e7ff; border-radius: 8px;
+      margin-top: 12px; font-size: 13px; color: var(--gray-600);
+    }
+    .compose-status .spinner-ring {
+      width: 16px; height: 16px; border-width: 2px;
+    }
+
+    /* ============ REMOVE BG BUTTON ============ */
+    .removebg-btn {
+      font-size: 10px; padding: 4px 8px; background: #fef3c7; border: 1px solid #fde68a;
+      color: #92400e; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .removebg-btn:hover { background: #fde68a; }
+    .removebg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.4.0/dist/fabric.min.js"></script>
 </head>
@@ -494,7 +573,7 @@
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="4" onclick="goToStep(4)">
-          <span class="wizard-step-num">4</span> Ad Copy
+          <span class="wizard-step-num">4</span> Compose &amp; Export
         </div>
       </div>
 
@@ -579,6 +658,119 @@
             </div>
           </div>
 
+          <!-- Prompt Builder -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;" onclick="document.getElementById('promptBuilderPanel').style.display = document.getElementById('promptBuilderPanel').style.display === 'none' ? 'block' : 'none'">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span style="font-size:13px;font-weight:600;color:var(--gray-500);">Prompt Builder</span>
+              <span style="font-size:11px;color:var(--gray-400);">(build a person prompt from dropdowns)</span>
+            </div>
+            <div id="promptBuilderPanel" style="display:none;">
+              <div class="pb-grid">
+                <div>
+                  <label class="pb-label">Gender</label>
+                  <select id="pbGender" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Age Range</label>
+                  <select id="pbAge" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="young adult (20s)">Young Adult (20s)</option>
+                    <option value="30s">30s</option>
+                    <option value="middle-aged (40s-50s)" selected>Middle-aged (40s-50s)</option>
+                    <option value="senior (60+)">Senior (60+)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Ethnicity</label>
+                  <select id="pbEthnicity" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="Caucasian">Caucasian</option>
+                    <option value="African American">African American</option>
+                    <option value="Hispanic/Latino">Hispanic/Latino</option>
+                    <option value="Asian">Asian</option>
+                    <option value="Middle Eastern">Middle Eastern</option>
+                    <option value="South Asian">South Asian</option>
+                    <option value="Mixed ethnicity">Mixed</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Pose</label>
+                  <select id="pbPose" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="sitting at a desk">Sitting at desk</option>
+                    <option value="standing with arms crossed">Standing, arms crossed</option>
+                    <option value="looking at camera">Looking at camera</option>
+                    <option value="on the phone">On the phone</option>
+                    <option value="holding paperwork">Holding paperwork</option>
+                    <option value="leaning forward">Leaning forward</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Expression</label>
+                  <select id="pbExpression" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="worried and stressed">Worried / Stressed</option>
+                    <option value="relieved and hopeful">Relieved / Hopeful</option>
+                    <option value="confident and smiling">Confident / Smiling</option>
+                    <option value="serious and determined">Serious / Determined</option>
+                    <option value="frustrated">Frustrated</option>
+                    <option value="neutral professional">Neutral Professional</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Attire</label>
+                  <select id="pbAttire" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="business suit">Business Suit</option>
+                    <option value="business casual">Business Casual</option>
+                    <option value="casual clothes">Casual</option>
+                    <option value="restaurant uniform / apron">Restaurant Uniform</option>
+                    <option value="construction workwear">Construction Workwear</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Framing</label>
+                  <select id="pbFraming" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="close-up portrait">Close-up Portrait</option>
+                    <option value="upper body shot">Upper Body</option>
+                    <option value="half body shot">Half Body</option>
+                    <option value="full body shot">Full Body</option>
+                    <option value="environmental portrait">Environmental Portrait</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pb-label">Background</label>
+                  <select id="pbBackground" class="pb-select" onchange="updatePromptPreview()">
+                    <option value="">-- Any --</option>
+                    <option value="modern office">Modern Office</option>
+                    <option value="home office">Home Office</option>
+                    <option value="restaurant interior">Restaurant</option>
+                    <option value="construction site">Construction Site</option>
+                    <option value="clean gradient studio backdrop">Studio Gradient</option>
+                    <option value="city street">City Street</option>
+                    <option value="blurred bokeh background">Blurred Bokeh</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label class="pb-label">Extra Details</label>
+                <input type="text" id="pbExtra" class="form-input" placeholder="e.g. 'dramatic lighting', 'stacks of bills on desk'..." oninput="updatePromptPreview()" style="font-size:13px;">
+              </div>
+              <div>
+                <label class="pb-label">Generated Prompt Preview</label>
+                <div class="pb-preview" id="pbPreview">Select options above to build a prompt...</div>
+              </div>
+              <button class="btn btn-secondary btn-small" onclick="applyPromptBuilder()" style="margin-top:8px;">Apply to Prompt</button>
+            </div>
+          </div>
+
           <!-- Optional prompt override (collapsed) -->
           <div style="margin-bottom:20px;">
             <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="document.getElementById('advancedOptions').style.display = document.getElementById('advancedOptions').style.display === 'none' ? 'block' : 'none'">
@@ -656,6 +848,50 @@
 
       <!-- ============ STEP 2: ADD TEXT ============ -->
       <div class="step-panel" id="step2">
+        <!-- Ad Copy V2 Generator -->
+        <div class="copy-v2-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <h4 style="margin:0;font-size:14px;font-weight:700;color:var(--gray-800);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              AI Ad Copy
+            </h4>
+            <span style="font-size:11px;color:var(--gray-400);">Generate headline, subheadline &amp; CTA with AI</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <div style="flex:1;">
+              <label class="pb-label">Topic / Angle</label>
+              <input type="text" id="copyV2Topic" class="form-input" placeholder="e.g. 'MCA debt stress', 'fresh start', 'save 80%'..." style="font-size:13px;">
+            </div>
+            <div style="flex-shrink:0;align-self:flex-end;">
+              <button class="btn btn-primary" id="generateCopyV2Btn" onclick="generateCopyV2()" style="font-size:13px;padding:8px 18px;">Generate Copy</button>
+            </div>
+          </div>
+          <div id="copyV2Fields" style="display:none;">
+            <div class="copy-v2-fields">
+              <div class="form-group">
+                <label>Headline</label>
+                <input type="text" id="copyV2Headline" class="form-input" placeholder="Main headline...">
+              </div>
+              <div class="form-group">
+                <label>Highlight Words <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(comma-separated)</span></label>
+                <input type="text" id="copyV2Highlights" class="form-input" placeholder="e.g. FREE, 80%, Relief">
+              </div>
+              <div class="form-group">
+                <label>Subheadline</label>
+                <input type="text" id="copyV2Subheadline" class="form-input" placeholder="Supporting text...">
+              </div>
+              <div class="form-group">
+                <label>CTA Text</label>
+                <input type="text" id="copyV2Cta" class="form-input" placeholder="e.g. Get Free Consultation">
+              </div>
+              <div class="form-group" style="grid-column:1/-1;">
+                <label>CTA Button URL</label>
+                <input type="text" id="copyV2CtaUrl" class="form-input" value="CoastalDebt.com" readonly style="background:var(--gray-50);color:var(--gray-400);">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="step-split canvas-layout">
           <!-- Left: Canvas -->
           <div>
@@ -913,6 +1149,30 @@
                   <button class="btn btn-secondary" onclick="positionLogo('br')">Bot-Right</button>
                 </div>
               </div>
+
+              <!-- Brand Assets Library -->
+              <div class="controls-section">
+                <h4>Brand Assets</h4>
+                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Toggle assets to include in compositions</p>
+                <div id="brandAssetsGrid" class="brand-assets-grid">
+                  <div style="color:var(--gray-400);font-size:12px;text-align:center;grid-column:1/-1;padding:12px;">Loading assets...</div>
+                </div>
+                <div class="brand-asset-upload">
+                  <h4 style="font-size:11px;margin-bottom:8px;">Upload New Asset</h4>
+                  <div style="display:flex;gap:8px;margin-bottom:6px;">
+                    <select id="assetCategory" class="pb-select" style="flex:1;">
+                      <option value="logo">Logo</option>
+                      <option value="badge">Badge</option>
+                      <option value="icon">Icon</option>
+                      <option value="watermark">Watermark</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <input type="text" id="assetName" class="form-input" placeholder="Asset name..." style="flex:1;font-size:12px;">
+                  </div>
+                  <input type="file" id="assetFileInput" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadBrandAsset()">
+                  <button class="btn btn-secondary" onclick="document.getElementById('assetFileInput').click()" style="width:100%;font-size:12px;">Choose File &amp; Upload</button>
+                </div>
+              </div>
             </div>
 
             <!-- Actions -->
@@ -954,8 +1214,34 @@
         </div>
       </div>
 
-      <!-- ============ STEP 4: META AD COPY GENERATOR ============ -->
+      <!-- ============ STEP 4: COMPOSE & EXPORT ============ -->
       <div class="step-panel" id="step4">
+        <!-- Compose & Export Section -->
+        <div class="compose-section" style="max-width:960px;margin:0 auto 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--gray-800);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-3px;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                Compose &amp; Export
+              </h3>
+              <p style="font-size:12px;color:var(--gray-400);margin:4px 0 0;">Render final ads with person image + copy + brand assets in all sizes</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="font-size:13px;padding:8px 20px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Compose All Sizes
+              </button>
+              <button class="btn btn-secondary" id="downloadAllComposedBtn" onclick="downloadAllComposed()" style="font-size:13px;padding:8px 16px;display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download All
+              </button>
+            </div>
+          </div>
+          <div id="composeStatus" style="display:none;"></div>
+          <div id="composeResults" class="compose-results-grid"></div>
+        </div>
+
+        <!-- Meta Ad Copy Generator (existing) -->
         <div class="card" style="padding:28px;max-width:960px;margin:0 auto;">
           <div style="text-align:center;margin-bottom:24px;">
             <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1877F2,#42b883);color:#fff;padding:10px 24px;border-radius:50px;font-weight:700;font-size:15px;margin-bottom:12px;">
@@ -1131,6 +1417,7 @@
       // Highlight the current size in the download-all grid
       if (step === 3) {
         highlightCurrentSize();
+        loadBrandAssets();
       }
     }
 
@@ -2199,7 +2486,7 @@
       var savedUrl = saveData.edited_image_url || finalDataUrl;
       bulkResults.push({ url: savedUrl, dataUrl: finalDataUrl, headline: copy.headline, size: sizeLabel, genId: genId, bgImageUrl: imageUrl, copy: copy, blueprint: blueprint });
 
-      cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" onclick="window.open(this.src)">' +
+      cardEl.innerHTML = '<img src="' + escapeHtml(savedUrl) + '" alt="Ad" id="bulk-img-' + idx + '" onclick="window.open(this.src)">' +
         '<div class="bulk-card-info">' +
           '<div class="bulk-headline">' + escapeHtml(copy.headline || '') + '</div>' +
           '<div class="bulk-meta">' + escapeHtml(meta.name) + ' &middot; ' + meta.width + 'x' + meta.height + '</div>' +
@@ -2207,6 +2494,7 @@
         '<div class="bulk-card-actions">' +
           '<button class="btn btn-secondary" onclick="downloadBulkAd(' + (bulkResults.length - 1) + ')">Download</button>' +
           '<button class="btn btn-primary" onclick="editBulkAd(' + genId + ',\'' + escapeHtml(imageUrl) + '\',\'' + sizeLabel + '\',' + (bulkResults.length - 1) + ')">Edit</button>' +
+          '<button class="removebg-btn" onclick="removeBg(\'' + escapeHtml(imageUrl) + '\', this, \'bulk-img-' + idx + '\')">Remove BG</button>' +
         '</div>';
     }
 
@@ -3289,6 +3577,7 @@
             <div class="gallery-item-actions">
               <a class="btn btn-secondary" href="${escapeHtml(displayUrl)}" download style="text-decoration:none;text-align:center;">Save</a>
               <button class="btn btn-primary" onclick="useGalleryImage('${escapeHtml(g.image_url)}', ${g.width || 1200}, ${g.height || 628}, '${escapeHtml(g.size_label)}', ${g.id})">Use</button>
+              <button class="removebg-btn" onclick="removeBg('${escapeHtml(g.image_url)}', this, null)">Remove BG</button>
             </div>
           </div>`;
         }).join('');
@@ -3336,6 +3625,361 @@
       // Go to step 1 to show the preview, user can click Next
       goToStep(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============ PROMPT BUILDER ============
+
+    function getPromptBuilderConfig() {
+      return {
+        gender: document.getElementById('pbGender').value,
+        age: document.getElementById('pbAge').value,
+        ethnicity: document.getElementById('pbEthnicity').value,
+        pose: document.getElementById('pbPose').value,
+        expression: document.getElementById('pbExpression').value,
+        attire: document.getElementById('pbAttire').value,
+        framing: document.getElementById('pbFraming').value,
+        background: document.getElementById('pbBackground').value,
+        extra: document.getElementById('pbExtra').value.trim()
+      };
+    }
+
+    function updatePromptPreview() {
+      var c = getPromptBuilderConfig();
+      var parts = [];
+
+      // Build natural language prompt
+      var subject = '';
+      if (c.framing) subject += c.framing + ' of ';
+      subject += 'a ';
+      if (c.age) subject += c.age + ' ';
+      if (c.ethnicity) subject += c.ethnicity + ' ';
+      if (c.gender) subject += c.gender;
+      else subject += 'person';
+
+      parts.push(subject.trim());
+
+      if (c.attire) parts.push('wearing ' + c.attire);
+      if (c.pose) parts.push(c.pose);
+      if (c.expression) parts.push('with a ' + c.expression + ' expression');
+      if (c.background) parts.push('in a ' + c.background);
+      if (c.extra) parts.push(c.extra);
+
+      var prompt = parts.join(', ') + '. Professional advertising photography, studio lighting, high resolution.';
+
+      var preview = document.getElementById('pbPreview');
+      if (parts.length <= 1 && !c.gender) {
+        preview.textContent = 'Select options above to build a prompt...';
+      } else {
+        preview.textContent = prompt;
+      }
+      return prompt;
+    }
+
+    function applyPromptBuilder() {
+      var prompt = updatePromptPreview();
+      if (prompt && !prompt.startsWith('Select options')) {
+        // Show advanced options and set the prompt
+        document.getElementById('advancedOptions').style.display = 'block';
+        document.getElementById('promptInput').value = prompt;
+      }
+    }
+
+    // ============ AD COPY V2 ============
+
+    async function generateCopyV2() {
+      var topic = document.getElementById('copyV2Topic').value.trim();
+      var btn = document.getElementById('generateCopyV2Btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></span> Generating...';
+
+      try {
+        var res = await fetch('/api/ad-generator/generate-copy-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: topic || 'MCA debt relief', size_label: selectedSize })
+        });
+        if (!res.ok) {
+          var errText = await res.text();
+          throw new Error(errText.substring(0, 200));
+        }
+        var data = await res.json();
+
+        // Populate fields
+        document.getElementById('copyV2Headline').value = data.headline || '';
+        document.getElementById('copyV2Highlights').value = (data.highlight_words || []).join(', ');
+        document.getElementById('copyV2Subheadline').value = data.subheadline || '';
+        document.getElementById('copyV2Cta').value = data.cta || 'Get Free Consultation';
+        document.getElementById('copyV2Fields').style.display = 'block';
+      } catch (err) {
+        alert('Failed to generate copy: ' + err.message);
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Generate Copy';
+      }
+    }
+
+    function getCopyConfig() {
+      return {
+        headline: document.getElementById('copyV2Headline').value.trim(),
+        highlight_words: document.getElementById('copyV2Highlights').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+        subheadline: document.getElementById('copyV2Subheadline').value.trim(),
+        cta: document.getElementById('copyV2Cta').value.trim(),
+        cta_url: document.getElementById('copyV2CtaUrl').value.trim()
+      };
+    }
+
+    // ============ BRAND ASSETS ============
+
+    var brandAssets = [];
+    var selectedAssetIds = new Set();
+
+    async function loadBrandAssets() {
+      try {
+        var res = await fetch('/api/ad-generator/brand-assets');
+        if (!res.ok) throw new Error('Failed to load');
+        var data = await res.json();
+        brandAssets = data.assets || [];
+        renderBrandAssetsGrid();
+      } catch (err) {
+        console.error('Load brand assets error:', err);
+        document.getElementById('brandAssetsGrid').innerHTML = '<div style="color:var(--gray-400);font-size:12px;text-align:center;grid-column:1/-1;padding:12px;">No assets found</div>';
+      }
+    }
+
+    function renderBrandAssetsGrid() {
+      var grid = document.getElementById('brandAssetsGrid');
+      if (!brandAssets.length) {
+        grid.innerHTML = '<div style="color:var(--gray-400);font-size:12px;text-align:center;grid-column:1/-1;padding:12px;">No brand assets uploaded yet</div>';
+        return;
+      }
+      grid.innerHTML = brandAssets.filter(function(a) { return a.is_active; }).map(function(asset) {
+        var isSelected = selectedAssetIds.has(asset.id);
+        return '<div class="brand-asset-card' + (isSelected ? ' selected' : '') + '" onclick="toggleAsset(' + asset.id + ')">' +
+          '<span class="asset-check">&#10003;</span>' +
+          '<img src="' + escapeHtml(asset.file_url) + '" alt="' + escapeHtml(asset.name) + '">' +
+          '<div class="asset-name">' + escapeHtml(asset.name) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function toggleAsset(id) {
+      if (selectedAssetIds.has(id)) {
+        selectedAssetIds.delete(id);
+      } else {
+        selectedAssetIds.add(id);
+      }
+      renderBrandAssetsGrid();
+    }
+
+    async function uploadBrandAsset() {
+      var fileInput = document.getElementById('assetFileInput');
+      if (!fileInput.files.length) return;
+
+      var category = document.getElementById('assetCategory').value;
+      var name = document.getElementById('assetName').value.trim() || fileInput.files[0].name.replace(/\.[^.]+$/, '');
+
+      var form = new FormData();
+      form.append('file', fileInput.files[0]);
+      form.append('category', category);
+      form.append('name', name);
+
+      try {
+        var res = await fetch('/api/ad-generator/brand-assets', {
+          method: 'POST',
+          body: form
+        });
+        if (!res.ok) {
+          var errData = await res.json();
+          throw new Error(errData.error || 'Upload failed');
+        }
+        document.getElementById('assetName').value = '';
+        fileInput.value = '';
+        await loadBrandAssets();
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+      }
+    }
+
+    // ============ COMPOSE & EXPORT ============
+
+    var composedResults = [];
+
+    function getSelectedPersonImage() {
+      // Try to find a completed generation image from step 1 bulk results
+      if (bulkResults.length > 0 && bulkResults[0].bgImageUrl) {
+        return bulkResults[0].bgImageUrl;
+      }
+      // Fallback to the single generation image
+      if (generatedImageUrl) return generatedImageUrl;
+      return null;
+    }
+
+    async function composeAd() {
+      var personImage = getSelectedPersonImage();
+      if (!personImage) {
+        alert('No person image found. Please generate images in Step 1 first.');
+        return;
+      }
+
+      var copyConfig = getCopyConfig();
+      if (!copyConfig.headline) {
+        alert('Please generate or enter ad copy in Step 2 first.');
+        return;
+      }
+
+      var btn = document.getElementById('composeAllBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></span> Composing...';
+
+      var statusEl = document.getElementById('composeStatus');
+      statusEl.style.display = 'flex';
+      statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ads in all 4 sizes...';
+
+      var resultsEl = document.getElementById('composeResults');
+      resultsEl.innerHTML = '';
+      composedResults = [];
+
+      var sizeLabels = ['feed_landscape', 'square', 'story_reel', 'carousel_square'];
+
+      try {
+        for (var i = 0; i < sizeLabels.length; i++) {
+          var sizeLabel = sizeLabels[i];
+          var meta = SIZE_META[sizeLabel];
+          statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + ' (' + (i + 1) + '/' + sizeLabels.length + ')...';
+
+          var res = await fetch('/api/ad-generator/compose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              person_image_url: personImage,
+              copy: copyConfig,
+              size_label: sizeLabel,
+              asset_ids: Array.from(selectedAssetIds)
+            })
+          });
+
+          if (!res.ok) {
+            var errData = await res.json().catch(function() { return { error: 'Compose failed' }; });
+            throw new Error(errData.error || 'Compose failed for ' + meta.name);
+          }
+
+          var data = await res.json();
+          composedResults.push({ sizeLabel: sizeLabel, meta: meta, url: data.image_url, dataUrl: data.image_data_url });
+        }
+
+        renderComposedResults();
+        statusEl.style.display = 'none';
+        document.getElementById('downloadAllComposedBtn').style.display = '';
+      } catch (err) {
+        statusEl.innerHTML = '<span style="color:#dc2626;">Composition failed: ' + escapeHtml(err.message) + '</span>';
+        console.error('Compose error:', err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Compose All Sizes';
+      }
+    }
+
+    function renderComposedResults() {
+      var el = document.getElementById('composeResults');
+      el.innerHTML = composedResults.map(function(r, i) {
+        var imgSrc = r.url || r.dataUrl || '';
+        return '<div class="compose-result-card">' +
+          '<img src="' + escapeHtml(imgSrc) + '" alt="' + escapeHtml(r.meta.name) + '" onclick="window.open(this.src)">' +
+          '<div class="compose-card-info">' + escapeHtml(r.meta.name) + ' &middot; ' + r.meta.width + 'x' + r.meta.height + '</div>' +
+          '<div class="compose-card-actions">' +
+            '<button class="btn btn-secondary" onclick="downloadComposedResult(' + i + ')">Download</button>' +
+            '<button class="btn btn-primary" onclick="recomposeSize(\'' + r.sizeLabel + '\', ' + i + ')">Re-compose</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function recomposeSize(sizeLabel, index) {
+      var personImage = getSelectedPersonImage();
+      var copyConfig = getCopyConfig();
+      var meta = SIZE_META[sizeLabel];
+
+      try {
+        var res = await fetch('/api/ad-generator/compose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            person_image_url: personImage,
+            copy: copyConfig,
+            size_label: sizeLabel,
+            asset_ids: Array.from(selectedAssetIds)
+          })
+        });
+        if (!res.ok) throw new Error('Re-compose failed');
+        var data = await res.json();
+        composedResults[index] = { sizeLabel: sizeLabel, meta: meta, url: data.image_url, dataUrl: data.image_data_url };
+        renderComposedResults();
+      } catch (err) {
+        alert('Re-compose failed: ' + err.message);
+      }
+    }
+
+    function downloadComposedResult(index) {
+      var r = composedResults[index];
+      if (!r) return;
+      var link = document.createElement('a');
+      link.download = 'composed-' + r.sizeLabel + '-' + Date.now() + '.png';
+      link.href = r.dataUrl || r.url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function downloadAllComposed() {
+      composedResults.forEach(function(r, i) {
+        setTimeout(function() { downloadComposedResult(i); }, i * 300);
+      });
+    }
+
+    // ============ BACKGROUND REMOVAL ============
+
+    async function removeBg(imageUrl, btn, imgElId) {
+      if (!imageUrl) return;
+      btn.disabled = true;
+      var origText = btn.textContent;
+      btn.textContent = 'Removing...';
+
+      try {
+        var res = await fetch('/api/ad-generator/remove-background', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: imageUrl })
+        });
+        if (!res.ok) {
+          var errData = await res.json().catch(function() { return { error: 'Failed' }; });
+          throw new Error(errData.error || 'Background removal failed');
+        }
+        var data = await res.json();
+        var transparentUrl = data.transparent_url || data.image_url;
+
+        // Update the image element
+        if (imgElId) {
+          var imgEl = document.getElementById(imgElId);
+          if (imgEl) imgEl.src = transparentUrl;
+        }
+
+        btn.textContent = 'Done!';
+        btn.style.background = '#d1fae5';
+        btn.style.color = '#065f46';
+        btn.style.borderColor = '#a7f3d0';
+        setTimeout(function() {
+          btn.textContent = origText;
+          btn.style.background = '';
+          btn.style.color = '';
+          btn.style.borderColor = '';
+          btn.disabled = false;
+        }, 2000);
+      } catch (err) {
+        alert('Background removal failed: ' + err.message);
+        btn.textContent = origText;
+        btn.disabled = false;
+      }
     }
 
     // ============ INIT ============
