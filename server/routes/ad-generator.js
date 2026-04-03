@@ -9,6 +9,8 @@ const { authenticateToken } = require('./auth');
 const midjourneyAdapter = require('../ai-adapters/midjourney');
 const fluxAdapter = require('../ai-adapters/flux');
 const geminiAdapter = require('../ai-adapters/gemini');
+const { buildPrompt, validateConfig, PROMPT_OPTIONS } = require('../services/prompt-builder');
+const backgroundRemover = require('../services/background-remover');
 
 const router = express.Router();
 
@@ -693,6 +695,108 @@ router.delete('/brand-assets/:id', authenticateToken, (req, res) => {
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'brand_asset', asset.id, `Deleted brand asset: ${asset.name}`, req.ip);
   res.json({ message: 'Asset deleted' });
+});
+
+// ============ PROMPT BUILDER ============
+
+router.get('/prompt-options', authenticateToken, (req, res) => {
+  res.json(PROMPT_OPTIONS);
+});
+
+router.post('/build-prompt', authenticateToken, (req, res) => {
+  const errors = validateConfig(req.body);
+  if (errors.length > 0) return res.status(400).json({ errors });
+  const prompt = buildPrompt(req.body);
+  res.json({ prompt });
+});
+
+router.post('/remove-background', authenticateToken, async (req, res) => {
+  const { image_url } = req.body;
+  if (!image_url) return res.status(400).json({ error: 'image_url is required' });
+
+  try {
+    const filename = image_url.split('/').pop();
+    const result = await backgroundRemover.removeBackground(filename);
+    res.json({ original_url: image_url, transparent_url: result.url });
+  } catch (err) {
+    console.error('Background removal error:', err.message);
+    res.status(500).json({ error: 'Background removal failed: ' + err.message });
+  }
+});
+
+// ============ AD COPY V2 (structured for composition) ============
+
+router.post('/generate-copy-v2', authenticateToken, async (req, res) => {
+  const { topic, angle } = req.body;
+
+  const fallback = {
+    headline: 'Understanding Your MCA Debt Matters!',
+    highlight_words: ['MCA Debt'],
+    subheadline: 'You need a solution tailored to your business challenges.',
+    subheadline_bold: ['solution'],
+    cta_text: 'Explore your options with a free consultation:',
+    cta_text_bold: ['a free consultation:'],
+    cta_button: 'CoastalDebt.com'
+  };
+
+  try {
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) return res.json(fallback);
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const angleHint = angle ? `\nAngle/tone: ${angle}` : '';
+    const topicHint = topic ? `\nTopic/concept: ${topic}` : '';
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: `You are an expert ad copywriter for Coastal Debt Resolve — a company that ONLY handles MCA (Merchant Cash Advance) debt settlement for business owners.
+
+Generate structured ad copy for a display ad. The copy must be punchy, emotional, and drive clicks.${topicHint}${angleHint}
+
+RULES:
+- ONLY MCA / business debt. NEVER mention credit cards, personal debt, student loans.
+- Headline: 3-6 words, powerful, scroll-stopping
+- Pick 1-2 words in the headline to highlight in blue (the key MCA/debt terms)
+- Subheadline: 8-15 words, one bold keyword
+- CTA text: short line leading to the button
+- CTA button is always "CoastalDebt.com"
+
+Respond with ONLY valid JSON:
+{
+  "headline": "Understanding Your MCA Debt Matters!",
+  "highlight_words": ["MCA Debt"],
+  "subheadline": "You need a solution tailored to your business challenges.",
+  "subheadline_bold": ["solution"],
+  "cta_text": "Explore your options with a free consultation:",
+  "cta_text_bold": ["a free consultation:"],
+  "cta_button": "CoastalDebt.com"
+}`
+      }]
+    });
+
+    const text = message.content[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return res.json(fallback);
+
+    const parsed = JSON.parse(match[0]);
+    res.json({
+      headline: parsed.headline || fallback.headline,
+      highlight_words: Array.isArray(parsed.highlight_words) ? parsed.highlight_words : fallback.highlight_words,
+      subheadline: parsed.subheadline || fallback.subheadline,
+      subheadline_bold: Array.isArray(parsed.subheadline_bold) ? parsed.subheadline_bold : fallback.subheadline_bold,
+      cta_text: parsed.cta_text || fallback.cta_text,
+      cta_text_bold: Array.isArray(parsed.cta_text_bold) ? parsed.cta_text_bold : fallback.cta_text_bold,
+      cta_button: 'CoastalDebt.com'
+    });
+  } catch (err) {
+    console.error('Ad copy v2 error:', err.message);
+    res.json(fallback);
+  }
 });
 
 // ============ SAVE EDIT ============
