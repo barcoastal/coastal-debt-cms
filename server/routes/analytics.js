@@ -1149,9 +1149,11 @@ router.get('/google-ads/auction-insights', authenticateToken, async (req, res) =
       for (let r = 0; r < Math.min(rows.length, 5); r++) {
         for (let c = 0; c < (rows[r] || []).length; c++) {
           const cell = (rows[r][c] || '').trim();
-          const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
-          if (m) {
-            const d = new Date(m[1] + ' 12:00:00');
+          // Match ALL dates in cell, use the last one (end of range)
+          const matches = [...cell.matchAll(/(\w+ \d{1,2},? \d{4})/g)];
+          if (matches.length > 0) {
+            const lastMatch = matches[matches.length - 1][1];
+            const d = new Date(lastMatch + ' 12:00:00');
             if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
           }
         }
@@ -1290,12 +1292,12 @@ router.get('/google-ads/auction-insights/debug', authenticateToken, async (req, 
           entry.rows = rows ? rows.length : 0;
         } else {
           entry.rows = rows.length;
-          // Check first 5 rows for date
+          // Check first 5 rows for date (use last date in range)
           for (let r = 0; r < Math.min(rows.length, 5); r++) {
             const cell = (rows[r][0] || '').trim();
-            const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
-            if (m) {
-              const d = new Date(m[1]);
+            const matches = [...cell.matchAll(/(\w+ \d{1,2},? \d{4})/g)];
+            if (matches.length > 0) {
+              const d = new Date(matches[matches.length - 1][1]);
               if (!isNaN(d.getTime())) { entry.date = d.toISOString().split('T')[0]; break; }
             }
           }
