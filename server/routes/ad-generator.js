@@ -595,6 +595,28 @@ const logoUpload = multer({
   }
 });
 
+// Brand asset uploads
+const brandAssetStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = path.basename(file.originalname, ext).replace(/[^a-z0-9-_]/gi, '-');
+    cb(null, `brand-asset-${name}-${Date.now()}${ext}`);
+  }
+});
+const brandAssetUpload = multer({
+  storage: brandAssetStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.png', '.jpg', '.jpeg', '.webp', '.svg'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .png, .jpg, .jpeg, .webp, .svg files are allowed'));
+    }
+  }
+});
+
 // Get stored logo URL
 router.get('/logo', authenticateToken, (req, res) => {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('ad_generator_logo_url');
@@ -619,6 +641,58 @@ router.post('/logo', authenticateToken, (req, res) => {
     if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'ad_generator_logo', null, 'Uploaded ad generator logo', req.ip);
     res.json({ logo_url: logoUrl, message: 'Logo uploaded' });
   });
+});
+
+// ============ BRAND ASSETS ============
+
+router.get('/brand-assets', authenticateToken, (req, res) => {
+  const assets = db.prepare('SELECT * FROM brand_assets ORDER BY category, name').all();
+  const grouped = { logo: [], decorative: [], badge: [], icon: [] };
+  for (const asset of assets) {
+    if (grouped[asset.category]) grouped[asset.category].push(asset);
+  }
+  res.json(grouped);
+});
+
+router.post('/brand-assets', authenticateToken, (req, res) => {
+  brandAssetUpload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 5MB)' : err.message });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const { category, name } = req.body;
+    if (!category || !['logo', 'decorative', 'badge', 'icon'].includes(category)) {
+      return res.status(400).json({ error: 'category must be one of: logo, decorative, badge, icon' });
+    }
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    const filePath = `/lp/uploads/${req.file.filename}`;
+    const result = db.prepare('INSERT INTO brand_assets (category, name, file_path) VALUES (?, ?, ?)').run(category, name.trim(), filePath);
+
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'brand_asset', result.lastInsertRowid, `Uploaded brand asset: ${name}`, req.ip);
+    res.json({ id: result.lastInsertRowid, category, name: name.trim(), file_path: filePath });
+  });
+});
+
+router.delete('/brand-assets/:id', authenticateToken, (req, res) => {
+  const asset = db.prepare('SELECT * FROM brand_assets WHERE id = ?').get(req.params.id);
+  if (!asset) return res.status(404).json({ error: 'Asset not found' });
+
+  db.prepare('DELETE FROM brand_assets WHERE id = ?').run(req.params.id);
+
+  // Delete file from disk
+  const filename = asset.file_path.split('/').pop();
+  const filePath = path.join(uploadsDir, filename);
+  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) {}
+
+  if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'deleted', 'brand_asset', asset.id, `Deleted brand asset: ${asset.name}`, req.ip);
+  res.json({ message: 'Asset deleted' });
 });
 
 // ============ SAVE EDIT ============
