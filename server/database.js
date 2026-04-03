@@ -1488,7 +1488,28 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_ad_gen_project ON ad_generations(project_id);
   CREATE INDEX IF NOT EXISTS idx_ad_gen_status ON ad_generations(status);
+
+  -- Brand assets library
+  CREATE TABLE IF NOT EXISTS brand_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL CHECK(category IN ('logo', 'decorative', 'badge', 'icon')),
+    name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Ad generator v2 columns
+const adGenV2Cols = [
+  { name: 'prompt_builder_config', type: 'TEXT DEFAULT NULL' },
+  { name: 'copy_config', type: 'TEXT DEFAULT NULL' },
+  { name: 'selected_assets', type: 'TEXT DEFAULT NULL' },
+  { name: 'layout_json', type: 'TEXT DEFAULT NULL' },
+  { name: 'composed_urls', type: 'TEXT DEFAULT NULL' }
+];
+for (const col of adGenV2Cols) {
+  try { db.exec(`ALTER TABLE ad_generations ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+}
 
 // Add edited_image_url column to ad_generations (for design editor)
 try { db.exec(`ALTER TABLE ad_generations ADD COLUMN edited_image_url TEXT`); } catch (e) {}
