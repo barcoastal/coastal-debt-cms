@@ -1,0 +1,144 @@
+<h2>Step 1: Person Image — Prompt Builder</h2>
+<p class="subtitle">Dropdowns that build the AI prompt automatically. No writing needed.</p>
+
+<div style="max-width: 680px; margin: 24px auto;">
+
+  <!-- Mockup of the prompt builder UI -->
+  <div style="background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+      <!-- Gender -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Gender</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Male / Female</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Age Range -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Age Range</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>25-35 / 35-45 / 45-55</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Ethnicity -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Ethnicity</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Diverse options</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Pose / Position -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Pose</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Standing / Sitting / Arms crossed / ...</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Expression -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Expression</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Smiling / Confident / Serious / Friendly</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Attire -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Attire</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Business formal / Business casual / Casual</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Framing -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Framing</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Half body / Full body / Head & shoulders</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+      <!-- Background -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Background</label>
+        <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 15px; color: #1a1a2e; display: flex; justify-content: space-between; align-items: center;">
+          <span>Transparent / Office / Outdoor / Studio</span>
+          <span style="color: #999;">▼</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Generated Prompt Preview -->
+    <div style="margin-top: 24px; background: #F2F4F9; border-radius: 10px; padding: 16px;">
+      <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Generated Prompt (auto-built)</label>
+      <p style="margin: 0; font-size: 14px; color: #1a1a2e; line-height: 1.6; font-style: italic;">"Professional photo of a <strong>female</strong>, age <strong>45-55</strong>, <strong>African American</strong>, <strong>standing with hands clasped</strong>, <strong>warm smile</strong>, wearing <strong>business casual</strong> attire, <strong>half body</strong> shot, <strong>transparent background</strong>, studio lighting, high quality"</p>
+    </div>
+
+    <!-- Optional custom addition -->
+    <div style="margin-top: 16px;">
+      <label style="display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Extra Details (optional)</label>
+      <div style="background: #F2F4F9; border: 2px solid #e0e4ed; border-radius: 10px; padding: 12px 16px; font-size: 14px; color: #999; min-height: 44px;">
+        Add any extra details here... e.g. "wearing glasses" or "holding a tablet"
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <div style="margin-top: 24px; text-align: center;">
+      <div style="background: #3052FF; color: white; display: inline-block; padding: 14px 40px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;">Generate 3 Variations</div>
+    </div>
+
+  </div>
+
+</div>
+
+<div style="max-width: 680px; margin: 20px auto 0;">
+  <h3 style="margin-bottom: 12px;">Dropdown Options</h3>
+  <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+    <tr style="background: #F2F4F9;">
+      <td style="padding: 10px 14px; font-weight: 600; border-radius: 8px 0 0 0;">Gender</td>
+      <td style="padding: 10px 14px; border-radius: 0 8px 0 0;">Male, Female</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; font-weight: 600;">Age Range</td>
+      <td style="padding: 10px 14px;">25-35, 35-45, 45-55</td>
+    </tr>
+    <tr style="background: #F2F4F9;">
+      <td style="padding: 10px 14px; font-weight: 600;">Ethnicity</td>
+      <td style="padding: 10px 14px;">Caucasian, African American, Hispanic/Latino, Asian, Middle Eastern, South Asian</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; font-weight: 600;">Pose</td>
+      <td style="padding: 10px 14px;">Standing confident, Arms crossed, Hands clasped, Leaning casual, Pointing, Thumbs up</td>
+    </tr>
+    <tr style="background: #F2F4F9;">
+      <td style="padding: 10px 14px; font-weight: 600;">Expression</td>
+      <td style="padding: 10px 14px;">Warm smile, Confident, Serious/professional, Friendly, Relieved/hopeful</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; font-weight: 600;">Attire</td>
+      <td style="padding: 10px 14px;">Business formal (suit), Business casual, Casual, Trade/work uniform</td>
+    </tr>
+    <tr style="background: #F2F4F9;">
+      <td style="padding: 10px 14px; font-weight: 600;">Framing</td>
+      <td style="padding: 10px 14px;">Half body, Full body, Head & shoulders</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 14px; font-weight: 600;">Background</td>
+      <td style="padding: 10px 14px; border-radius: 0 0 8px 0;">Transparent (for compositing), Office, Outdoor, Studio plain</td>
+    </tr>
+  </table>
+</div>

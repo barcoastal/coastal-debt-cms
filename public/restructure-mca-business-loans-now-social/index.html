@@ -607,7 +607,7 @@
 
     // Mobile sticky CTA: switch between call and form scroll
     (function() {
-      var mobileCta = '{{mobileCta}}';
+      var mobileCta = 'call';
       var ctaLink = document.getElementById('mobileStickyCtaLink');
       var ctaBar = document.getElementById('mobileStickyCtaBar');
       if (!ctaLink || !ctaBar) return;
@@ -906,7 +906,7 @@
     }
 
     // Populate dynamic content
-    const bulletPoints = ["Increase cashflow immediately — comfortable weekly payments","Get up to 80% off your MCA debt in 6-8 months","Dedicated expert Debt Settlement Advisor & legal team","No upfront fees — pay only when we settle"];
+    const bulletPoints = ["Increase cashflow immediately - comfortable weekly payments","Get up to 80% off your MCA debt in 6-8 months","Dedicated expert Debt Settlement Advisor & legal team","No upfront fees - pay only when we settle"];
     const bulletPointsHtml = bulletPoints.map(point => `
       <li>
         <span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
@@ -925,7 +925,7 @@
     `).join('');
     document.getElementById('stepsGrid').innerHTML = stepsHtml;
 
-    const empathyText = ["You took out an MCA to keep your business running. Then another. And another. Now the daily ACH withdrawals are eating your revenue alive, and you feel like there's no way out.","But here's what we want you to know: there IS a way out. Every day, we help business owners just like you break free from the MCA debt cycle — settling for a fraction of what they owe.","Let us take this weight off your shoulders. Your first consultation is completely free and confidential."];
+    const empathyText = ["You took out an MCA to keep your business running. Then another. And another. Now the daily ACH withdrawals are eating your revenue alive, and you feel like there\'s no way out.","But here\'s what we want you to know: there IS a way out. Every day, we help business owners just like you break free from the MCA debt cycle - settling for a fraction of what they owe.","Let us take this weight off your shoulders. Your first consultation is completely free and confidential."];
     const empathyHtml = empathyText.map((text, i) => {
       if (i === empathyText.length - 1) return `<p>${text}</p>`;
       if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;
@@ -933,7 +933,7 @@
     }).join('');
     document.getElementById('empathyText').innerHTML = empathyHtml;
 
-    const comparisonRows = [{"label":"Daily ACH Payments","bad":"30-50% of revenue withdrawn daily","good":"One comfortable weekly payment"},{"label":"Debt Reduction","bad":"Pay full amount + high factor rates","good":"Settle for up to 80% less"},{"label":"MCA Cycle","bad":"Taking new MCAs to pay old ones","good":"Break the cycle for good"},{"label":"Legal Protection","bad":"Risk of lawsuits & UCC liens","good":"Legal team on your side"},{"label":"Time to Resolve","bad":"Trapped for years","good":"6-8 months average"},{"label":"Your Business","bad":"Bleeding cash, can't grow","good":"Keep operating & growing"}];
+    const comparisonRows = [{"label":"Daily ACH Payments","bad":"30-50% of revenue withdrawn daily","good":"One comfortable weekly payment"},{"label":"Debt Reduction","bad":"Pay full amount + high factor rates","good":"Settle for up to 80% less"},{"label":"MCA Cycle","bad":"Taking new MCAs to pay old ones","good":"Break the cycle for good"},{"label":"Legal Protection","bad":"Risk of lawsuits & UCC liens","good":"Legal team on your side"},{"label":"Time to Resolve","bad":"Trapped for years","good":"6-8 months average"},{"label":"Your Business","bad":"Bleeding cash, can\'t grow","good":"Keep operating & growing"}];
     const comparisonHtml = comparisonRows.map(row => `
       <tr>
         <td>${row.label}</td>
@@ -943,7 +943,7 @@
     `).join('');
     document.getElementById('comparisonBody').innerHTML = comparisonHtml;
 
-    const faqItems = [{"question":"What types of MCA debt can you help with?","answer":"We help with all types of Merchant Cash Advances, including daily and weekly ACH payment MCAs, revenue-based financing, and business cash advances from any funder."},{"question":"How much can I actually save?","answer":"Our clients typically save 30-80% of their total MCA debt. Recent settlements include 73% savings ($23K debt settled for $6,110) and 61% savings ($12.8K debt settled for $5,000)."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once you enroll in our program, we work to stop the daily ACH withdrawals and replace them with one comfortable weekly or monthly payment you can afford."},{"question":"How long does the process take?","answer":"Most MCA debt cases are resolved in 6-8 months. This is significantly faster than continuing to make minimum payments or taking out new MCAs."},{"question":"Do I need $20,000+ in MCA debt to qualify?","answer":"Yes, our program is designed for businesses with at least $20,000 in MCA debt. If you have multiple MCAs, we can help consolidate and settle them all."},{"question":"Is there any upfront cost?","answer":"No. We don't charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}];
+    const faqItems = [{"question":"What types of MCA debt can you help with?","answer":"We help with all types of Merchant Cash Advances, including daily and weekly ACH payment MCAs, revenue-based financing, and business cash advances from any funder."},{"question":"How much can I actually save?","answer":"Our clients typically save 30-80% of their total MCA debt. Recent settlements include 73% savings ($23K debt settled for $6,110) and 61% savings ($12.8K debt settled for $5,000)."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once you enroll in our program, we work to stop the daily ACH withdrawals and replace them with one comfortable weekly or monthly payment you can afford."},{"question":"How long does the process take?","answer":"Most MCA debt cases are resolved in 6-8 months. This is significantly faster than continuing to make minimum payments or taking out new MCAs."},{"question":"Do I need $20,000+ in MCA debt to qualify?","answer":"Yes, our program is designed for businesses with at least $20,000 in MCA debt. If you have multiple MCAs, we can help consolidate and settle them all."},{"question":"Is there any upfront cost?","answer":"No. We don\'t charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}];
     const faqHtml = faqItems.map(item => `
       <div class="faq-item">
         <div class="faq-question">${item.question}</div>

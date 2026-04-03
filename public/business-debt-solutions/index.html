@@ -307,7 +307,7 @@
       <div class="hero-content">
         <div class="hero-badge">Business Debt Relief</div>
         <h1>Drowning in Business Debt?<br>We Help You <span>Resolve It for Less.</span></h1>
-        <p class="hero-sub">Our expert negotiators work directly with your creditors to reduce what you owe — so you can get back to running your business.</p>
+        <p class="hero-sub">Our expert negotiators work directly with your creditors to reduce what you owe - so you can get back to running your business.</p>
         <ul class="hero-points" id="bulletPoints"></ul>
       </div>
 
@@ -607,7 +607,7 @@
 
     // Mobile sticky CTA: switch between call and form scroll
     (function() {
-      var mobileCta = '{{mobileCta}}';
+      var mobileCta = 'call';
       var ctaLink = document.getElementById('mobileStickyCtaLink');
       var ctaBar = document.getElementById('mobileStickyCtaBar');
       if (!ctaLink || !ctaBar) return;
@@ -906,7 +906,7 @@
     }
 
     // Populate dynamic content
-    const bulletPoints = ["Reduce your total debt by 50-80%","Stop creditor harassment & collection calls","One affordable monthly payment","No upfront fees — pay only when we settle"];
+    const bulletPoints = ["Reduce your total debt by 50-80%","Stop creditor harassment & collection calls","One affordable monthly payment","No upfront fees - pay only when we settle"];
     const bulletPointsHtml = bulletPoints.map(point => `
       <li>
         <span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
@@ -915,7 +915,7 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
-    const steps = [{"title":"Free Debt Analysis","description":"Tell us about your business debt. We'll review your situation and show you exactly how much you could save."},{"title":"We Negotiate for You","description":"Our team contacts your creditors directly and negotiates to reduce what you owe — often by 50-80%."},{"title":"Debt Resolved","description":"Pay a fraction of what you owed. Get back to focusing on what matters — your business."}];
+    const steps = [{"title":"Free Debt Analysis","description":"Tell us about your business debt. We\'ll review your situation and show you exactly how much you could save."},{"title":"We Negotiate for You","description":"Our team contacts your creditors directly and negotiates to reduce what you owe - often by 50-80%."},{"title":"Debt Resolved","description":"Pay a fraction of what you owed. Get back to focusing on what matters - your business."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">
         <div class="step-num">${i + 1}</div>
@@ -925,7 +925,7 @@
     `).join('');
     document.getElementById('stepsGrid').innerHTML = stepsHtml;
 
-    const empathyText = ["When you started your business, you never imagined debt would become this heavy. The daily stress of creditor calls, the anxiety of not knowing if you can make payroll, the fear of losing what you've worked so hard to build.","But here's what we want you to know: there is another way. You don't have to drain your savings, close your doors, or file bankruptcy. Every day, we help business owners just like you negotiate their way out of debt.","Let us take this weight off your shoulders. Your first consultation is completely free."];
+    const empathyText = ["When you started your business, you never imagined debt would become this heavy. The daily stress of creditor calls, the anxiety of not knowing if you can make payroll, the fear of losing what you\'ve worked so hard to build.","But here\'s what we want you to know: there is another way. You don\'t have to drain your savings, close your doors, or file bankruptcy. Every day, we help business owners just like you negotiate their way out of debt.","Let us take this weight off your shoulders. Your first consultation is completely free."];
     const empathyHtml = empathyText.map((text, i) => {
       if (i === empathyText.length - 1) return `<p>${text}</p>`;
       if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;
@@ -943,7 +943,7 @@
     `).join('');
     document.getElementById('comparisonBody').innerHTML = comparisonHtml;
 
-    const faqItems = [{"question":"What types of business debt can you help with?","answer":"We help with merchant cash advances (MCAs), business loans, lines of credit, equipment financing, and most unsecured business debts. If creditors are calling, we can likely help."},{"question":"How much can I actually save?","answer":"Most of our clients settle their debt for 50-80% less than what they owe. The exact amount depends on your specific situation, which is why we offer a free analysis."},{"question":"Will this affect my credit score?","answer":"There may be a temporary impact, but most clients see their scores recover within 12-24 months. Compare this to the years of damage from defaulting or filing bankruptcy."},{"question":"How long does the process take?","answer":"Most cases are resolved in 3-6 months. This is significantly faster than trying to pay off debt on your own or going through bankruptcy proceedings."},{"question":"Do I have to stop paying my creditors?","answer":"We'll work with you to develop the best strategy for your situation. Our goal is to negotiate the lowest possible settlement while protecting your business."},{"question":"Is there any upfront cost?","answer":"No. We don't charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}];
+    const faqItems = [{"question":"What types of business debt can you help with?","answer":"We help with merchant cash advances (MCAs), business loans, lines of credit, equipment financing, and most unsecured business debts. If creditors are calling, we can likely help."},{"question":"How much can I actually save?","answer":"Most of our clients settle their debt for 50-80% less than what they owe. The exact amount depends on your specific situation, which is why we offer a free analysis."},{"question":"Will this affect my credit score?","answer":"There may be a temporary impact, but most clients see their scores recover within 12-24 months. Compare this to the years of damage from defaulting or filing bankruptcy."},{"question":"How long does the process take?","answer":"Most cases are resolved in 3-6 months. This is significantly faster than trying to pay off debt on your own or going through bankruptcy proceedings."},{"question":"Do I have to stop paying my creditors?","answer":"We\'ll work with you to develop the best strategy for your situation. Our goal is to negotiate the lowest possible settlement while protecting your business."},{"question":"Is there any upfront cost?","answer":"No. We don\'t charge any upfront fees. You only pay when we successfully negotiate a settlement on your behalf."}];
     const faqHtml = faqItems.map(item => `
       <div class="faq-item">
         <div class="faq-question">${item.question}</div>

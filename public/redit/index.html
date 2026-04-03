@@ -602,7 +602,7 @@
 
     // Mobile sticky CTA: switch between call and form scroll
     (function() {
-      var mobileCta = '{{mobileCta}}';
+      var mobileCta = 'call';
       var ctaLink = document.getElementById('mobileStickyCtaLink');
       var ctaBar = document.getElementById('mobileStickyCtaBar');
       if (!ctaLink || !ctaBar) return;
@@ -910,7 +910,7 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
-    const steps = [{"title":"Free MCA Debt Analysis","description":"Tell us about your MCA debt. We review your agreements and show you exactly how much you could save — no cost, no obligation."},{"title":"We Negotiate With Your MCA Lenders","description":"Our team contacts your MCA companies directly. We negotiate to reduce your total balance by 50-80%. No lawyers or courts needed."},{"title":"MCA Debt Resolved","description":"Pay a fraction of what you owed. ACH withdrawals stop. Your business keeps running with cash flow restored."}];
+    const steps = [{"title":"Free MCA Debt Analysis","description":"Tell us about your MCA debt. We review your agreements and show you exactly how much you could save - no cost, no obligation."},{"title":"We Negotiate With Your MCA Lenders","description":"Our team contacts your MCA companies directly. We negotiate to reduce your total balance by 50-80%. No lawyers or courts needed."},{"title":"MCA Debt Resolved","description":"Pay a fraction of what you owed. ACH withdrawals stop. Your business keeps running with cash flow restored."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">
         <div class="step-num">${i + 1}</div>
@@ -920,7 +920,7 @@
     `).join('');
     document.getElementById('stepsGrid').innerHTML = stepsHtml;
 
-    const empathyText = ["Merchant Cash Advances seemed like a lifeline for your business. But the daily withdrawals, the stacking, the factor rates — it becomes a trap that drains your cash flow dry.","You are not alone. Thousands of business owners are stuck in the same cycle. The good news: you do not have to pay back every dollar. MCA debt can be settled for a fraction of what you owe.","Let us help you break free and get your business back on track."];
+    const empathyText = ["Merchant Cash Advances seemed like a lifeline for your business. But the daily withdrawals, the stacking, the factor rates - it becomes a trap that drains your cash flow dry.","You are not alone. Thousands of business owners are stuck in the same cycle. The good news: you do not have to pay back every dollar. MCA debt can be settled for a fraction of what you owe.","Let us help you break free and get your business back on track."];
     const empathyHtml = empathyText.map((text, i) => {
       if (i === empathyText.length - 1) return `<p>${text}</p>`;
       if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;

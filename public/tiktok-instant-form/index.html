@@ -602,7 +602,7 @@
 
     // Mobile sticky CTA: switch between call and form scroll
     (function() {
-      var mobileCta = '{{mobileCta}}';
+      var mobileCta = 'call';
       var ctaLink = document.getElementById('mobileStickyCtaLink');
       var ctaBar = document.getElementById('mobileStickyCtaBar');
       if (!ctaLink || !ctaBar) return;
@@ -910,7 +910,7 @@
     `).join('');
     document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
 
-    const steps = [{"title":"Free MCA Debt Analysis","description":"Tell us about your MCA debt. We'll review your advances and show you exactly how much you could save through settlement."},{"title":"We Negotiate With Your MCA Lenders","description":"Our team contacts your MCA companies directly. We negotiate to reduce your total debt by 50-80% and stop the daily withdrawals."},{"title":"Debt Resolved, Business Saved","description":"Pay a fraction of what you owed. Your daily ACH payments stop. Your cash flow recovers and your business keeps running."}];
+    const steps = [{"title":"Free MCA Debt Analysis","description":"Tell us about your MCA debt. We\'ll review your advances and show you exactly how much you could save through settlement."},{"title":"We Negotiate With Your MCA Lenders","description":"Our team contacts your MCA companies directly. We negotiate to reduce your total debt by 50-80% and stop the daily withdrawals."},{"title":"Debt Resolved, Business Saved","description":"Pay a fraction of what you owed. Your daily ACH payments stop. Your cash flow recovers and your business keeps running."}];
     const stepsHtml = steps.map((step, i) => `
       <div class="step-card">
         <div class="step-num">${i + 1}</div>
@@ -920,7 +920,7 @@
     `).join('');
     document.getElementById('stepsGrid').innerHTML = stepsHtml;
 
-    const empathyText = ["When MCA companies are draining your bank account every single day, it feels like there's no way out. The stacked advances, the confusing factor rates, the aggressive collections — we understand what you're going through.","But here's what we want you to know: MCA debt can be settled for a fraction of what you owe. Every day, we help business owners just like you break free from the MCA debt cycle.","You don't have to face this alone. Let us fight for you."];
+    const empathyText = ["When MCA companies are draining your bank account every single day, it feels like there\'s no way out. The stacked advances, the confusing factor rates, the aggressive collections — we understand what you\'re going through.","But here\'s what we want you to know: MCA debt can be settled for a fraction of what you owe. Every day, we help business owners just like you break free from the MCA debt cycle.","You don\'t have to face this alone. Let us fight for you."];
     const empathyHtml = empathyText.map((text, i) => {
       if (i === empathyText.length - 1) return `<p>${text}</p>`;
       if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;
@@ -938,7 +938,7 @@
     `).join('');
     document.getElementById('comparisonBody').innerHTML = comparisonHtml;
 
-    const faqItems = [{"question":"Can MCA debt really be settled for less?","answer":"Yes. MCA companies often accept 20-50 cents on the dollar through negotiated settlements. We've helped thousands of businesses reduce their MCA debt by 50-80%."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once we begin negotiating on your behalf, we work to stop the daily or weekly ACH withdrawals from your bank account so your cash flow can recover."},{"question":"I have multiple stacked MCAs — can you help?","answer":"Absolutely. Stacked MCAs are our specialty. We negotiate with all of your MCA lenders simultaneously to resolve all your advances at once."},{"question":"How long does MCA debt settlement take?","answer":"Most MCA settlements are completed in 3-6 months, depending on the number of advances and the lenders involved."},{"question":"Will this affect my credit score?","answer":"MCA debt is typically not reported to credit bureaus, so settlement usually has no impact on your personal credit score."},{"question":"What if an MCA company is threatening legal action?","answer":"Don't panic. Many MCA companies threaten lawsuits as a collection tactic. We deal with MCA lenders every day and know how to negotiate even in aggressive situations. Contact us immediately so we can help."}];
+    const faqItems = [{"question":"Can MCA debt really be settled for less?","answer":"Yes. MCA companies often accept 20-50 cents on the dollar through negotiated settlements. We\'ve helped thousands of businesses reduce their MCA debt by 50-80%."},{"question":"Will the daily ACH withdrawals stop?","answer":"Yes. Once we begin negotiating on your behalf, we work to stop the daily or weekly ACH withdrawals from your bank account so your cash flow can recover."},{"question":"I have multiple stacked MCAs — can you help?","answer":"Absolutely. Stacked MCAs are our specialty. We negotiate with all of your MCA lenders simultaneously to resolve all your advances at once."},{"question":"How long does MCA debt settlement take?","answer":"Most MCA settlements are completed in 3-6 months, depending on the number of advances and the lenders involved."},{"question":"Will this affect my credit score?","answer":"MCA debt is typically not reported to credit bureaus, so settlement usually has no impact on your personal credit score."},{"question":"What if an MCA company is threatening legal action?","answer":"Don\'t panic. Many MCA companies threaten lawsuits as a collection tactic. We deal with MCA lenders every day and know how to negotiate even in aggressive situations. Contact us immediately so we can help."}];
     const faqHtml = faqItems.map(item => `
       <div class="faq-item">
         <div class="faq-question">${item.question}</div>
