@@ -3066,9 +3066,11 @@ async function syncAuctionInsights() {
       for (let r = 0; r < Math.min(rows.length, 5); r++) {
         for (let c = 0; c < (rows[r] || []).length; c++) {
           const cell = (rows[r][c] || '').trim();
-          const m = cell.match(/(\w+ \d{1,2},? \d{4})/);
-          if (m) {
-            const d = new Date(m[1] + ' 12:00:00');
+          // Match ALL dates in cell, use the last one (end of range)
+          const matches = [...cell.matchAll(/(\w+ \d{1,2},? \d{4})/g)];
+          if (matches.length > 0) {
+            const lastMatch = matches[matches.length - 1][1];
+            const d = new Date(lastMatch + ' 12:00:00');
             if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
           }
         }

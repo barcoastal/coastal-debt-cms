@@ -104,9 +104,9 @@ function syncReport(searchName, targetSheetId) {
   const sourceData = sourceSheet.getSheets()[0]; // first tab
   const targetData = targetSheet.getSheets()[0]; // first tab
 
-  // Get all data from source
+  // Get all data from source (use getDisplayValues to preserve "10%" format instead of raw 0.10)
   const range = sourceData.getDataRange();
-  const values = range.getValues();
+  const values = range.getDisplayValues();
 
   if (values.length === 0) {
     return "SKIP: " + searchName + " — source sheet is empty";
