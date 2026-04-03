@@ -11,6 +11,7 @@ const fluxAdapter = require('../ai-adapters/flux');
 const geminiAdapter = require('../ai-adapters/gemini');
 const { buildPrompt, validateConfig, PROMPT_OPTIONS } = require('../services/prompt-builder');
 const backgroundRemover = require('../services/background-remover');
+const { composeAd, recomposeAd } = require('../services/ad-compositor');
 
 const router = express.Router();
 
@@ -796,6 +797,55 @@ Respond with ONLY valid JSON:
   } catch (err) {
     console.error('Ad copy v2 error:', err.message);
     res.json(fallback);
+  }
+});
+
+// ============ COMPOSE AD (V2) ============
+
+router.post('/compose', authenticateToken, async (req, res) => {
+  const { person_image_url, copy_config, selected_asset_ids, person_info } = req.body;
+
+  if (!person_image_url) return res.status(400).json({ error: 'person_image_url is required' });
+  if (!copy_config || !copy_config.headline) return res.status(400).json({ error: 'copy_config with headline is required' });
+
+  try {
+    // Fetch selected brand assets from DB
+    let selectedAssets = [];
+    if (Array.isArray(selected_asset_ids) && selected_asset_ids.length > 0) {
+      const placeholders = selected_asset_ids.map(() => '?').join(',');
+      selectedAssets = db.prepare(`SELECT * FROM brand_assets WHERE id IN (${placeholders})`).all(...selected_asset_ids);
+    }
+
+    const results = await composeAd(person_image_url, copy_config, selectedAssets, person_info);
+
+    if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_composition', null, `Composed ad in ${results.length} sizes`, req.ip);
+    res.json({ compositions: results });
+  } catch (err) {
+    console.error('Compose error:', err);
+    res.status(500).json({ error: 'Composition failed: ' + err.message });
+  }
+});
+
+router.post('/recompose', authenticateToken, async (req, res) => {
+  const { person_image_url, copy_config, selected_asset_ids, person_info, size_label } = req.body;
+
+  if (!person_image_url || !copy_config || !size_label) {
+    return res.status(400).json({ error: 'person_image_url, copy_config, and size_label are required' });
+  }
+
+  try {
+    let selectedAssets = [];
+    if (Array.isArray(selected_asset_ids) && selected_asset_ids.length > 0) {
+      const placeholders = selected_asset_ids.map(() => '?').join(',');
+      selectedAssets = db.prepare(`SELECT * FROM brand_assets WHERE id IN (${placeholders})`).all(...selected_asset_ids);
+    }
+
+    const result = await recomposeAd(person_image_url, copy_config, selectedAssets, person_info, size_label);
+
+    res.json(result);
+  } catch (err) {
+    console.error('Recompose error:', err);
+    res.status(500).json({ error: 'Recomposition failed: ' + err.message });
   }
 });
 
