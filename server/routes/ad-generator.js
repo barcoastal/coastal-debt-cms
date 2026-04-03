@@ -1166,4 +1166,25 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// ============ SEED DEFAULT BRAND ASSETS ============
+(function seedDefaultAssets() {
+  const count = db.prepare('SELECT COUNT(*) as c FROM brand_assets').get().c;
+  if (count > 0) return; // already seeded
+
+  const defaultAssets = [
+    { category: 'decorative', name: 'Blue Chevrons', filename: 'chevron-blue.svg' },
+    { category: 'icon', name: 'Dollar Hand', filename: 'icon-dollar-hand.svg' },
+    { category: 'icon', name: 'Phone', filename: 'icon-phone.svg' },
+    { category: 'icon', name: 'Shield', filename: 'icon-shield.svg' },
+    { category: 'icon', name: 'Checkmark', filename: 'icon-checkmark.svg' }
+  ];
+
+  const insert = db.prepare('INSERT INTO brand_assets (category, name, file_path) VALUES (?, ?, ?)');
+  for (const asset of defaultAssets) {
+    const assetPath = `/assets/brand-assets/${asset.filename}`;
+    insert.run(asset.category, asset.name, assetPath);
+  }
+  console.log('[Ad Generator] Seeded default brand assets');
+})();
+
 module.exports = router;
