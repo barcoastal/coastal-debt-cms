@@ -163,9 +163,9 @@ app.use('/lp', (req, res, next) => {
 // Serve generated landing pages with cache headers
 app.use('/lp', (req, res, next) => {
   if (isProduction) {
-    // Production: cache for Cloudflare CDN
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
-    res.setHeader('CDN-Cache-Control', 'max-age=86400');
+    // Short cache so template changes reflect quickly
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('CDN-Cache-Control', 'max-age=60');
   } else {
     // Development: no caching
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
