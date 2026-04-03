@@ -11,11 +11,20 @@ const AD_SIZES = [
   { label: 'carousel_square', name: 'Carousel Square', width: 1200, height: 1200 }
 ];
 
-async function composeAd(personImageUrl, copyConfig, selectedAssets, personInfo) {
+function applyOverrides(layout, overrides) {
+  if (!overrides) return layout;
+  if (overrides.background_color) layout.background_color = overrides.background_color;
+  if (overrides.chevrons) layout.chevrons = { ...layout.chevrons, ...overrides.chevrons };
+  if (overrides.text_position && overrides.text_position !== 'auto') {
+    layout.headline = { ...layout.headline, area: `top-${overrides.text_position}` };
+  }
+  return layout;
+}
+
+async function composeAd(personImageUrl, copyConfig, selectedAssets, personInfo, layoutOverrides) {
   const results = [];
 
   for (const size of AD_SIZES) {
-    // 1. Get layout from Claude
     const layout = await generateLayout(
       personInfo || {},
       copyConfig,
@@ -25,10 +34,9 @@ async function composeAd(personImageUrl, copyConfig, selectedAssets, personInfo)
       size.height
     );
 
-    // 2. Build HTML
-    const html = renderAdHtml(layout, copyConfig, personImageUrl, selectedAssets, size.width, size.height);
+    applyOverrides(layout, layoutOverrides);
 
-    // 3. Render to PNG
+    const html = renderAdHtml(layout, copyConfig, personImageUrl, selectedAssets, size.width, size.height);
     const filename = `ad-composed-${size.label}-${Date.now()}.png`;
     const rendered = await renderHtmlToPng(html, size.width, size.height, filename);
 
@@ -45,10 +53,12 @@ async function composeAd(personImageUrl, copyConfig, selectedAssets, personInfo)
   return results;
 }
 
-async function recomposeAd(personImageUrl, copyConfig, selectedAssets, personInfo, sizeLabel) {
+async function recomposeAd(personImageUrl, copyConfig, selectedAssets, personInfo, sizeLabel, layoutOverrides) {
   const size = AD_SIZES.find(s => s.label === sizeLabel) || AD_SIZES[0];
 
   const layout = await generateLayout(personInfo || {}, copyConfig, selectedAssets, size.label, size.width, size.height);
+  applyOverrides(layout, layoutOverrides);
+
   const html = renderAdHtml(layout, copyConfig, personImageUrl, selectedAssets, size.width, size.height);
   const filename = `ad-composed-${size.label}-${Date.now()}.png`;
   const rendered = await renderHtmlToPng(html, size.width, size.height, filename);

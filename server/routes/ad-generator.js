@@ -803,7 +803,7 @@ Respond with ONLY valid JSON:
 // ============ COMPOSE AD (V2) ============
 
 router.post('/compose', authenticateToken, async (req, res) => {
-  const { person_image_url, person_info, size_label } = req.body;
+  const { person_image_url, person_info, size_label, background_color, chevrons, text_position } = req.body;
   const copyConfig = req.body.copy_config || req.body.copy;
   const assetIds = req.body.selected_asset_ids || req.body.asset_ids;
 
@@ -818,20 +818,23 @@ router.post('/compose', authenticateToken, async (req, res) => {
       selectedAssets = db.prepare(`SELECT * FROM brand_assets WHERE id IN (${placeholders})`).all(...assetIds);
     }
 
-    // Pass person offset through person_info
-    const personInfoWithOffset = { ...person_info };
-    if (personInfoWithOffset.offset_x_percent != null) {
-      // Will be used by layout engine
-    }
+    // Build person info with offset and overrides
+    const personInfoMerged = { ...person_info };
+
+    // Build layout overrides from frontend controls
+    const layoutOverrides = {};
+    if (background_color) layoutOverrides.background_color = background_color;
+    if (chevrons) layoutOverrides.chevrons = chevrons;
+    if (text_position && text_position !== 'auto') layoutOverrides.text_position = text_position;
 
     // Single size or all sizes
     if (size_label) {
-      const result = await recomposeAd(person_image_url, copyConfig, selectedAssets, personInfoWithOffset, size_label);
+      const result = await recomposeAd(person_image_url, copyConfig, selectedAssets, personInfoMerged, size_label, layoutOverrides);
       if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_composition', null, `Composed ad (${size_label})`, req.ip);
       return res.json(result);
     }
 
-    const results = await composeAd(person_image_url, copyConfig, selectedAssets, personInfoWithOffset);
+    const results = await composeAd(person_image_url, copyConfig, selectedAssets, personInfoMerged, layoutOverrides);
     if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'created', 'ad_composition', null, `Composed ad in ${results.length} sizes`, req.ip);
     res.json({ compositions: results });
   } catch (err) {
