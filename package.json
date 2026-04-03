@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@imgly/background-removal-node": "^1.4.5",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^9.4.3",
     "compression": "^1.7.4",
@@ -21,7 +22,8 @@
     "googleapis": "^171.4.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^8.0.1"
+    "nodemailer": "^8.0.1",
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
     "playwright": "^1.58.2"
