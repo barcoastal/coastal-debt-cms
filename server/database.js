@@ -1489,6 +1489,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ad_gen_project ON ad_generations(project_id);
   CREATE INDEX IF NOT EXISTS idx_ad_gen_status ON ad_generations(status);
 
+  -- AI Redesign / user-saved layout templates
+  CREATE TABLE IF NOT EXISTS ad_layout_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    size_label TEXT NOT NULL,
+    layout_json TEXT NOT NULL,
+    thumbnail_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Brand assets library
   CREATE TABLE IF NOT EXISTS brand_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

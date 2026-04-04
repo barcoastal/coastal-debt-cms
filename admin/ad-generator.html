@@ -1227,6 +1227,9 @@
               <button onclick="addBadgeToCanvas('bbb')" title="Add BBB badge" style="font-size:11px;">BBB</button>
               <span class="toolbar-sep"></span>
               <button onclick="aiRedesign()" id="aiRedesignBtn" style="background:linear-gradient(135deg,#3052FF,#7FB2FF);color:#fff;border:none;font-weight:700;padding:4px 14px;" title="AI rearranges all elements into a professional layout">&#10024; AI Redesign</button>
+              <span class="toolbar-sep"></span>
+              <button onclick="saveCurrentAsTemplate()" title="Save current layout as template" style="font-weight:600;">&#128190; Save Template</button>
+              <button onclick="showTemplatesModal()" title="Load a saved template">&#128203; Templates</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -1522,6 +1525,20 @@
       <div class="form-actions" style="margin-top:16px;">
         <button class="btn btn-secondary" onclick="hideModal('settingsModal')">Cancel</button>
         <button class="btn btn-primary" onclick="saveSettings()">Save API Keys</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout Templates Modal -->
+  <div class="modal-overlay" id="templatesModal">
+    <div class="modal" style="max-width:760px;">
+      <div class="modal-header">
+        <h2>Saved Layout Templates</h2>
+        <button class="modal-close" onclick="hideModal('templatesModal')">&times;</button>
+      </div>
+      <div style="padding:16px;">
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Click a template to apply it to the current canvas. Templates are filtered to the current ad size.</div>
+        <div id="templatesGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"></div>
       </div>
     </div>
   </div>
@@ -5061,13 +5078,20 @@
 
       var btn = document.getElementById('aiRedesignBtn');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Redesigning...';
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Analyzing layout...';
 
       var w = adCanvas.width;
       var h = adCanvas.height;
-      var meta = SIZE_META[selectedSize];
 
-      // Collect all elements on canvas
+      // Deselect so selection handles do not end up in the screenshot
+      adCanvas.discardActiveObject();
+      adCanvas.renderAll();
+
+      // Get screenshot of current canvas (scaled down to stay under image size limits)
+      var screenshot = adCanvas.toDataURL({ format: 'png', multiplier: 0.5 });
+      var screenshotBase64 = screenshot.split(',')[1];
+
+      // Collect elements with full metadata
       var elements = objects.map(function(obj, i) {
         var info = {
           index: i,
@@ -5075,7 +5099,7 @@
           left: Math.round(obj.left),
           top: Math.round(obj.top),
           width: Math.round(obj.getScaledWidth()),
-          height: Math.round(obj.getScaledHeight()),
+          height: Math.round(obj.getScaledHeight())
         };
         if (obj.type === 'i-text' || obj.type === 'text') {
           info.text = obj.text;
@@ -5083,47 +5107,31 @@
         }
         if (obj.type === 'group' && obj.name === 'cta') {
           info.type = 'cta_button';
-          obj._objects.forEach(function(child) {
-            if (child.type === 'text') info.text = child.text;
-          });
+          if (obj._objects) {
+            obj._objects.forEach(function(child) {
+              if (child.type === 'text') info.text = child.text;
+            });
+          }
         }
         return info;
       });
 
-      var prompt = 'You are a professional ad designer. Redesign this ' + meta.width + 'x' + meta.height + ' (' + selectedSize + ') ad layout.\n\n' +
-        'Canvas size: ' + w + 'x' + h + ' pixels\n\n' +
-        'Elements on canvas:\n' + JSON.stringify(elements, null, 2) + '\n\n' +
-        'Rearrange these elements into a professional, clean ad layout following these rules:\n' +
-        '- Person image should be prominent (left or right side, about 40-50% of canvas width)\n' +
-        '- Headline should be large and attention-grabbing, placed where there is space (opposite side of person)\n' +
-        '- Subheadline below headline, smaller\n' +
-        '- CTA button near the bottom, centered or aligned with text\n' +
-        '- Chevrons behind the person as decorative accents\n' +
-        '- Logo in top-right or top-left corner, small\n' +
-        '- Trust badges in a row at the very bottom, small\n' +
-        '- Leave breathing room, dont overlap text on person face\n' +
-        '- This is for Coastal Debt Resolve (MCA debt settlement company)\n\n' +
-        'Respond with ONLY a JSON array of objects with index, left, top, scaleX, scaleY for each element. Example:\n' +
-        '[{"index":0,"left":10,"top":20,"scaleX":0.5,"scaleY":0.5},...]';
-
       try {
-        var res = await fetch('/api/ad-generator/generate-copy-v2', {
+        var res = await fetch('/api/ad-generator/ai-redesign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic: prompt, _raw: true })
+          body: JSON.stringify({
+            elements: elements,
+            canvasWidth: w,
+            canvasHeight: h,
+            selectedSize: selectedSize,
+            screenshot: screenshotBase64
+          })
         });
 
-        // Fallback: use the layout engine endpoint if copy-v2 doesn't work for this
-        // Try calling Claude directly via a simple proxy
-        var layoutRes = await fetch('/api/ad-generator/ai-redesign', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ elements: elements, canvasWidth: w, canvasHeight: h, selectedSize: selectedSize })
-        });
-
-        if (!layoutRes.ok) throw new Error('AI redesign failed');
-        var layoutData = await layoutRes.json();
-        var positions = layoutData.positions;
+        if (!res.ok) throw new Error('AI redesign failed');
+        var data = await res.json();
+        var positions = data.positions;
 
         if (Array.isArray(positions)) {
           positions.forEach(function(pos) {
@@ -5147,6 +5155,114 @@
         btn.innerHTML = '&#10024; AI Redesign';
         alert('Redesign failed: ' + e.message);
       }
+    }
+
+    // ============ LAYOUT TEMPLATES ============
+
+    async function saveCurrentAsTemplate() {
+      if (!adCanvas) return;
+      var objects = adCanvas.getObjects();
+      if (objects.length === 0) { alert('Add some elements first'); return; }
+
+      var name = prompt('Template name:');
+      if (!name) return;
+
+      var layout = objects.map(function(obj) {
+        return {
+          type: obj.name || obj.type,
+          left: Math.round(obj.left),
+          top: Math.round(obj.top),
+          scaleX: obj.scaleX,
+          scaleY: obj.scaleY,
+          width: Math.round(obj.getScaledWidth()),
+          height: Math.round(obj.getScaledHeight())
+        };
+      });
+
+      adCanvas.discardActiveObject();
+      adCanvas.renderAll();
+      var thumbnail = adCanvas.toDataURL({ format: 'png', multiplier: 0.25 });
+
+      try {
+        var res = await fetch('/api/ad-generator/layout-templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            size_label: selectedSize,
+            layout_json: layout,
+            thumbnail_url: thumbnail
+          })
+        });
+        if (res.ok) alert('Template saved!');
+        else alert('Save failed');
+      } catch(e) {
+        alert('Save failed: ' + e.message);
+      }
+    }
+
+    var _loadedTemplates = [];
+
+    async function showTemplatesModal() {
+      var grid = document.getElementById('templatesGrid');
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray-400);padding:40px;">Loading...</div>';
+      showModal('templatesModal');
+
+      try {
+        var res = await fetch('/api/ad-generator/layout-templates?size_label=' + encodeURIComponent(selectedSize));
+        var templates = await res.json();
+        _loadedTemplates = templates || [];
+        if (!_loadedTemplates.length) {
+          grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray-400);padding:40px;">No templates saved yet for this size. Save your current layout first!</div>';
+          return;
+        }
+        grid.innerHTML = _loadedTemplates.map(function(t) {
+          return '<div style="position:relative;cursor:pointer;border:2px solid var(--gray-200);border-radius:8px;overflow:hidden;background:#fff;" onclick="applyTemplate(' + t.id + ')" onmouseover="this.style.borderColor=\'#3052FF\'" onmouseout="this.style.borderColor=\'var(--gray-200)\'">' +
+            '<img src="' + escapeHtml(t.thumbnail_url || '') + '" style="width:100%;height:auto;display:block;background:#F2F4F9;">' +
+            '<div style="padding:8px;font-size:12px;font-weight:600;">' + escapeHtml(t.name) + '</div>' +
+            '<button onclick="event.stopPropagation();deleteTemplate(' + t.id + ')" style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.9);color:#fff;border:none;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;">X</button>' +
+            '</div>';
+        }).join('');
+      } catch(e) {
+        grid.innerHTML = '<div style="color:red;padding:20px;">Failed to load templates</div>';
+      }
+    }
+
+    function applyTemplate(templateId) {
+      var template = _loadedTemplates.find(function(t) { return t.id === templateId; });
+      if (!template || !template.layout_json) return;
+      if (!adCanvas) return;
+
+      var objects = adCanvas.getObjects();
+      var usedIndices = {};
+      template.layout_json.forEach(function(tmpl) {
+        // Match template element to first unused canvas object with same type
+        for (var i = 0; i < objects.length; i++) {
+          if (usedIndices[i]) continue;
+          var o = objects[i];
+          var objType = o.name || o.type;
+          if (objType === tmpl.type) {
+            o.set('left', tmpl.left);
+            o.set('top', tmpl.top);
+            if (tmpl.scaleX !== undefined) o.set('scaleX', tmpl.scaleX);
+            if (tmpl.scaleY !== undefined) o.set('scaleY', tmpl.scaleY);
+            o.setCoords();
+            usedIndices[i] = true;
+            break;
+          }
+        }
+      });
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+      hideModal('templatesModal');
+    }
+
+    async function deleteTemplate(id) {
+      if (!confirm('Delete this template?')) return;
+      try {
+        await fetch('/api/ad-generator/layout-templates/' + id, { method: 'DELETE' });
+      } catch(e) {}
+      showTemplatesModal();
     }
 
     // ============ CHEVRON SHAPES ON CANVAS ============

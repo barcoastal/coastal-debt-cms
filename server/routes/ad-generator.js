@@ -955,9 +955,60 @@ router.post('/recompose', authenticateToken, async (req, res) => {
 
 // ============ SAVE EDIT ============
 
-// AI Redesign — rearrange canvas elements into professional layout
+// AI Redesign — rearrange canvas elements into professional layout (with vision + brand rules)
+const AI_REDESIGN_SYSTEM_PROMPT = `You are a senior art director for Coastal Debt Resolve, an MCA (Merchant Cash Advance) debt settlement company serving business owners. You redesign ad layouts into clean, professional, on-brand compositions.
+
+BRAND GUIDELINES — Coastal Debt Resolve:
+- Colors: Primary Blue #3052FF, Light BG #F2F4F9, Orange accent #FF9000, Black #000000, White #FFFFFF
+- Typography: Sora (headings), Inter (body)
+- Style: Clean, professional, lots of white space, corporate but warm
+- Industry: MCA debt settlement for business owners
+
+LAYOUT RULES:
+- Person image: 35-45% of canvas width, aligned to bottom-left OR bottom-right (never center unless story format)
+- Headline: 6-10% of canvas height, placed opposite the person, top 30% of canvas
+- Subheadline: 4-6% of canvas height, directly below headline, same side
+- CTA button: bottom 30% of canvas, prominent, ~15% height
+- Chevrons: behind person at 30-50% opacity, top corner opposite to headline
+- Logo: top-right corner, ~15-20% width, always visible
+- Trust badges: bottom row, all 3 evenly spaced, ~10% height
+- Safe zone: 5% margin from all edges
+- Text should never overlap person's face
+- Use golden ratio for visual hierarchy
+
+GOLDEN REFERENCE LAYOUTS (follow these patterns):
+
+Layout A - "Classic Left Person" (for square/feed):
+- Person: left 5%, bottom 0, width 45%
+- Chevrons: top-left 5%, behind person, 35% width
+- Headline: right 55%, top 15%, width 40%
+- Subheadline: right 55%, top 40%, width 40%
+- CTA button: right 55%, top 60%, width 35%
+- Logo: top-right 5%, width 18%
+- Badges: bottom-center, row, width 60%
+
+Layout B - "Classic Right Person" (mirror of A):
+- Person: right 5%, bottom 0, width 45%
+- Chevrons: top-right 5%, behind person, 35% width
+- Headline: left 5%, top 15%, width 40%
+- Subheadline: left 5%, top 40%, width 40%
+- CTA button: left 5%, top 60%, width 35%
+- Logo: top-right 5%, width 18%
+- Badges: bottom-center, row, width 60%
+
+Layout C - "Story Full Person" (for story/reel 9:16):
+- Person: center, bottom 0, width 85%, height 75%
+- Chevrons: top-left, 40% width, behind person
+- Headline: top 5%, center, width 90%, large
+- Subheadline: top 15%, center, width 90%
+- CTA: bottom 10%, center, width 70%
+- Logo: top-right, width 25%
+- Badges: NOT shown in story
+
+Analyze the provided screenshot and element data. Pick the layout pattern that best fits the canvas orientation and existing content. Return positions that match the chosen pattern exactly.`;
+
 router.post('/ai-redesign', authenticateToken, async (req, res) => {
-  const { elements, canvasWidth, canvasHeight, selectedSize } = req.body;
+  const { elements, canvasWidth, canvasHeight, selectedSize, screenshot } = req.body;
   if (!elements || !canvasWidth || !canvasHeight) {
     return res.status(400).json({ error: 'elements, canvasWidth, canvasHeight required' });
   }
@@ -969,33 +1020,35 @@ router.post('/ai-redesign', authenticateToken, async (req, res) => {
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey });
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: `You are a professional ad designer for Coastal Debt Resolve (MCA debt settlement). Redesign this ${selectedSize} ad layout.
+    const instructionText = `${AI_REDESIGN_SYSTEM_PROMPT}
 
-Canvas: ${canvasWidth}x${canvasHeight} pixels.
-
-Elements:
+Current elements on canvas:
 ${JSON.stringify(elements, null, 2)}
 
-Rules:
-- Person image: prominent, on the left side (~30-45% width), aligned to bottom
-- Headline: large, bold, on the right side opposite the person, near the top
-- Subheadline: below headline, smaller
-- CTA button: below subheadline or near bottom-right
-- Chevrons: behind the person as decorative accent, top-left area
-- Logo: top-right corner, small (~15% width)
-- Trust badges: row at very bottom, evenly spaced, small
-- Background image: fill entire canvas, send to back
-- Don't overlap text on person's face
-- Clean, professional, lots of white space
+Canvas: ${canvasWidth}x${canvasHeight} (${selectedSize || 'unknown'})
 
-Return ONLY a JSON array. Each object must have: index (matching the element index), left (pixels), top (pixels), scaleX (number), scaleY (number).
-Example: [{"index":0,"left":0,"top":0,"scaleX":1,"scaleY":1}]`
-      }]
+Analyze the screenshot and elements. Return ONLY a JSON array with new positions. Each object must have: index, left, top, scaleX, scaleY. No explanation.`;
+
+    // Build content: include vision screenshot if provided
+    const userContent = [];
+    if (screenshot) {
+      // Accept either raw base64 or data URI
+      const b64 = String(screenshot).replace(/^data:image\/\w+;base64,/, '');
+      userContent.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: 'image/png',
+          data: b64
+        }
+      });
+    }
+    userContent.push({ type: 'text', text: instructionText });
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: userContent }]
     });
 
     const text = message.content[0].text.trim();
@@ -1007,6 +1060,49 @@ Example: [{"index":0,"left":0,"top":0,"scaleX":1,"scaleY":1}]`
   } catch (err) {
     console.error('AI Redesign error:', err.message);
     res.status(500).json({ error: 'Redesign failed: ' + err.message });
+  }
+});
+
+// ============ LAYOUT TEMPLATES (user-saved) ============
+
+// Save current layout as template
+router.post('/layout-templates', authenticateToken, (req, res) => {
+  const { name, size_label, layout_json, thumbnail_url } = req.body;
+  if (!name || !size_label || !layout_json) {
+    return res.status(400).json({ error: 'name, size_label, layout_json required' });
+  }
+  try {
+    const result = db.prepare(`
+      INSERT INTO ad_layout_templates (name, size_label, layout_json, thumbnail_url)
+      VALUES (?, ?, ?, ?)
+    `).run(name, size_label, JSON.stringify(layout_json), thumbnail_url || null);
+    res.json({ id: result.lastInsertRowid });
+  } catch (err) {
+    console.error('Save layout template error:', err.message);
+    res.status(500).json({ error: 'Failed to save template' });
+  }
+});
+
+// List templates (optionally filtered by size)
+router.get('/layout-templates', authenticateToken, (req, res) => {
+  const { size_label } = req.query;
+  let templates;
+  if (size_label) {
+    templates = db.prepare('SELECT * FROM ad_layout_templates WHERE size_label = ? ORDER BY created_at DESC').all(size_label);
+  } else {
+    templates = db.prepare('SELECT * FROM ad_layout_templates ORDER BY created_at DESC').all();
+  }
+  templates.forEach(t => { try { t.layout_json = JSON.parse(t.layout_json); } catch (e) {} });
+  res.json(templates);
+});
+
+// Delete template
+router.delete('/layout-templates/:id', authenticateToken, (req, res) => {
+  try {
+    db.prepare('DELETE FROM ad_layout_templates WHERE id = ?').run(req.params.id);
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete template' });
   }
 });
 
