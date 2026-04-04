@@ -4,11 +4,10 @@
 const fs = require('fs');
 const path = require('path');
 
-// Try models in order — best quality first
+// Try models in order
 const MODELS = [
-  'imagen-4.0-generate-001',
-  'gemini-2.5-flash-preview-image-generation',
-  'gemini-2.0-flash-exp'
+  'gemini-2.0-flash',
+  'imagen-4.0-generate-001'
 ];
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
