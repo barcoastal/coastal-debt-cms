@@ -1020,29 +1020,64 @@ router.post('/ai-redesign', authenticateToken, async (req, res) => {
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey });
 
+    // Load reference ad image (the target style)
+    const refImagePath = path.join(__dirname, '..', '..', 'public', 'assets', 'ad-references', 'reference-square.png');
+    let referenceBase64 = null;
+    try {
+      if (fs.existsSync(refImagePath)) {
+        referenceBase64 = fs.readFileSync(refImagePath).toString('base64');
+      }
+    } catch (e) { console.warn('Could not load reference ad:', e.message); }
+
     const instructionText = `${AI_REDESIGN_SYSTEM_PROMPT}
 
-Current elements on canvas:
+You are given TWO images:
+1. FIRST image = REFERENCE (the target style — this is what a GREAT Coastal Debt ad looks like)
+2. SECOND image = CURRENT canvas state (what the user has built so far)
+
+Your job: Rearrange the elements in the CURRENT canvas to match the STYLE and LAYOUT of the REFERENCE.
+
+Look at the reference and note:
+- Person position (left side, bottom aligned, ~40% width)
+- Chevrons behind person at top-left, in brand blue
+- Headline on the right side, large, bold
+- Subheadline below headline, smaller
+- CTA button (blue pill) below subheadline on right
+- Icon (circle with dollar) near bottom of person area
+- Trust badges in a clean row at the bottom
+- Logo in top-right corner
+- Lots of white space, no overlapping text on face
+- Clean, professional spacing
+
+Current elements on canvas (with their current positions):
 ${JSON.stringify(elements, null, 2)}
 
-Canvas: ${canvasWidth}x${canvasHeight} (${selectedSize || 'unknown'})
+Canvas size: ${canvasWidth}x${canvasHeight} (${selectedSize || 'unknown'})
 
-Analyze the screenshot and elements. Return ONLY a JSON array with new positions. Each object must have: index, left, top, scaleX, scaleY. No explanation.`;
+Match each element from the current canvas to its role and place it where the reference shows that element type. Return positions (in pixels) that fill the canvas properly.
 
-    // Build content: include vision screenshot if provided
+Return ONLY a JSON array. Each object must have: index, left, top, scaleX, scaleY. No explanation, no markdown, just the JSON array.`;
+
+    // Build content: reference image first, then current canvas, then text
     const userContent = [];
+
+    // 1. Reference image (if available)
+    if (referenceBase64) {
+      userContent.push({
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/png', data: referenceBase64 }
+      });
+    }
+
+    // 2. Current canvas screenshot
     if (screenshot) {
-      // Accept either raw base64 or data URI
       const b64 = String(screenshot).replace(/^data:image\/\w+;base64,/, '');
       userContent.push({
         type: 'image',
-        source: {
-          type: 'base64',
-          media_type: 'image/png',
-          data: b64
-        }
+        source: { type: 'base64', media_type: 'image/png', data: b64 }
       });
     }
+
     userContent.push({ type: 'text', text: instructionText });
 
     const message = await client.messages.create({
