@@ -1560,11 +1560,11 @@
           }
         };
 
-        // Save the content to the page
+        // Save the content and template type to the page
         const pageId = _kwPendingPageId;
         await api(`/api/pages/${pageId}`, {
           method: 'PUT',
-          body: JSON.stringify({ content })
+          body: JSON.stringify({ content, template_type: 'authority' })
         });
 
         status.textContent = 'Content generated and saved! Opening editor...';
@@ -1586,9 +1586,15 @@
       }
     }
 
-    function skipKeywordsAndEdit() {
+    async function skipKeywordsAndEdit() {
       hideKeywordsModal();
       if (_kwPendingPageId) {
+        // Save template_type change to authority
+        await api(`/api/pages/${_kwPendingPageId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ template_type: 'authority' })
+        });
+        await loadPages();
         _skipKwCheck = true;
         editPage(_kwPendingPageId);
       }
