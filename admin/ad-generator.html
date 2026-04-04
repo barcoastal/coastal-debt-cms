@@ -241,7 +241,7 @@
     .step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 12px; }
     .step-nav .btn { min-width: 120px; }
 
-    /* ============ CANVAS AREA (Steps 2 & 3) ============ */
+    /* ============ CANVAS AREA (Step 2) ============ */
     .canvas-container-wrapper {
       background: #1a1a2e; border-radius: 12px; overflow: hidden;
       position: relative; width: 100%; min-height: 200px;
@@ -874,19 +874,7 @@
         </div>
         <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <div class="wizard-step" data-step="2" onclick="goToStep(2)">
-          <span class="wizard-step-num">2</span> Background
-        </div>
-        <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        <div class="wizard-step" data-step="3" onclick="goToStep(3)">
-          <span class="wizard-step-num">3</span> Shapes
-        </div>
-        <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        <div class="wizard-step" data-step="4" onclick="goToStep(4)">
-          <span class="wizard-step-num">4</span> Text &amp; CTA
-        </div>
-        <svg class="wizard-step-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        <div class="wizard-step" data-step="5" onclick="goToStep(5)">
-          <span class="wizard-step-num">5</span> Logo &amp; Export
+          <span class="wizard-step-num">2</span> Design
         </div>
       </div>
 
@@ -1200,7 +1188,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                   Separate Person from Background
                 </button>
-                <button class="btn btn-primary" onclick="goToStep(2)" style="width:100%;">Next: Background &rarr;</button>
+                <button class="btn btn-primary" onclick="goToStep(2)" style="width:100%;">Next: Design &rarr;</button>
               </div>
             </div>
           </div>
@@ -1232,6 +1220,11 @@
               <button onclick="addTextToCanvas('subheadline')" title="Add subheadline text">T Sub</button>
               <button onclick="addTextToCanvas('cta')" style="color:#fff;background:#3052FF;border-color:#3052FF;" title="Add CTA button">CTA</button>
               <button onclick="generateAndAddCopy()" style="color:#3052FF;font-weight:600;" title="AI generates headline + sub + CTA">&#9733; AI Copy</button>
+              <span class="toolbar-sep"></span>
+              <button onclick="addLogoToCanvas()" title="Add Coastal Debt logo">Logo</button>
+              <button onclick="addBadgeToCanvas('trustpilot')" title="Add Trustpilot badge" style="font-size:11px;">&#9733;TP</button>
+              <button onclick="addBadgeToCanvas('iso')" title="Add ISO badge" style="font-size:11px;">ISO</button>
+              <button onclick="addBadgeToCanvas('bbb')" title="Add BBB badge" style="font-size:11px;">BBB</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -1350,11 +1343,69 @@
               </div>
             </details>
 
+            <!-- Export -->
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-primary" onclick="exportCanvas()" style="flex:1;padding:12px;font-size:15px;font-weight:700;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Ad
+              </button>
+              <button class="btn btn-secondary" onclick="exportCanvasAllSizes()" style="padding:12px;" title="Export for all ad sizes">
+                All Sizes
+              </button>
+            </div>
+
             <!-- Nav -->
             <div class="step-nav">
-              <button class="btn btn-secondary" onclick="goToStep(1)">&larr; Back</button>
-              <button class="btn btn-primary" onclick="goToStep(3)">Next: Shapes &rarr;</button>
+              <button class="btn btn-secondary" onclick="goToStep(1)">&larr; Back to Person</button>
             </div>
+
+            <!-- Meta Ad Copy Generator (collapsible) -->
+            <details style="margin-top:16px;">
+              <summary style="cursor:pointer;font-weight:700;font-size:14px;color:var(--gray-700);padding:10px 0;display:flex;align-items:center;gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                Meta Ad Copy Generator
+              </summary>
+              <div id="metaCopyCollapsible" style="padding:16px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;">
+                <p style="color:var(--gray-500);font-size:13px;margin:0 0 16px;">Generate multiple variations of Facebook &amp; Instagram ad copy</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                  <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;font-size:12px;">Ad Angle / Topic</label>
+                    <select id="metaAdAngle2" class="form-input" style="font-size:13px;">
+                      <option value="general">General -- MCA Debt Relief</option>
+                      <option value="urgency">Urgency -- Act Now / Limited Time</option>
+                      <option value="savings">Savings -- Save Up To 80%</option>
+                      <option value="pain">Pain Point -- Drowning in Payments</option>
+                      <option value="trust">Trust -- Proven Results</option>
+                      <option value="fresh_start">Fresh Start -- New Beginning</option>
+                      <option value="comparison">Comparison -- Why Us vs Others</option>
+                      <option value="educational">Educational -- What is MCA Debt?</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;font-size:12px;">Variations</label>
+                    <select id="metaAdCount2" class="form-input" style="font-size:13px;">
+                      <option value="3" selected>3</option>
+                      <option value="5">5</option>
+                      <option value="8">8</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label style="font-weight:600;font-size:12px;">Custom Instructions <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
+                  <textarea id="metaAdCustom2" class="form-input" rows="2" placeholder="e.g. 'Focus on restaurant owners'..." style="font-size:13px;resize:vertical;"></textarea>
+                </div>
+                <button class="btn btn-primary" id="generateMetaCopyBtn2" onclick="generateMetaCopy2()" style="width:100%;padding:12px;font-size:14px;font-weight:700;">
+                  Generate Ad Copy
+                </button>
+                <div id="metaCopyResults2" style="margin-top:16px;display:none;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h4 style="margin:0;font-size:14px;">Generated Copy</h4>
+                    <button class="btn btn-secondary btn-small" onclick="copyAllMetaAds2()" style="font-size:11px;">Copy All</button>
+                  </div>
+                  <div id="metaCopyCards2"></div>
+                </div>
+              </div>
+            </details>
           </div>
 
           <!-- Right: iPhone Preview -->
@@ -1373,419 +1424,7 @@
         </div>
       </div>
 
-      <!-- ============ STEP 3: SHAPES & DECORATIVE ELEMENTS ============ -->
-      <div class="step-panel" id="step3">
-        <div class="step-split">
-          <!-- Left: Controls -->
-          <div>
-            <div class="controls-panel">
-              <div class="controls-section">
-                <h4>Decorative Shapes</h4>
-                <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Select a shape style or generate custom ones with AI</p>
-
-                <!-- Shape Style Gallery -->
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
-                  <div class="shape-option" data-shape="none" onclick="selectShape('none',this)" style="border:2px solid #3052FF;border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:#eef1ff;">
-                    <div style="height:50px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:20px;">&#x2715;</div>
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">None</div>
-                  </div>
-                  <div class="shape-option" data-shape="style-1" onclick="selectShape('style-1',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
-                    <img src="/assets/brand-assets/chevron-style-1.svg" style="height:50px;width:auto;">
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Double Arrow</div>
-                  </div>
-                  <div class="shape-option" data-shape="style-2" onclick="selectShape('style-2',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
-                    <img src="/assets/brand-assets/chevron-style-2.svg" style="height:50px;width:auto;">
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Triple Stack</div>
-                  </div>
-                  <div class="shape-option" data-shape="style-3" onclick="selectShape('style-3',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
-                    <img src="/assets/brand-assets/chevron-style-3.svg" style="height:50px;width:auto;">
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Angular Bars</div>
-                  </div>
-                  <div class="shape-option" data-shape="style-4" onclick="selectShape('style-4',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
-                    <img src="/assets/brand-assets/chevron-style-4.svg" style="height:50px;width:auto;">
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Wave</div>
-                  </div>
-                  <div class="shape-option" data-shape="style-5" onclick="selectShape('style-5',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
-                    <img src="/assets/brand-assets/chevron-style-5.svg" style="height:50px;width:auto;">
-                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Corner</div>
-                  </div>
-                </div>
-
-                <!-- AI Custom Shapes (hidden by default, shown in gallery) -->
-                <div id="aiShapeResults" style="display:none;margin-bottom:14px;"></div>
-
-                <!-- Shape Controls (shown when a shape is selected) -->
-                <div id="chevronOptions" style="display:none;">
-                  <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Position</label>
-                    <div style="display:flex;gap:6px;">
-                      <button class="btn btn-secondary btn-small chevron-pos-btn active" data-pos="top-left" onclick="setChevronPos('top-left')">Top-Left</button>
-                      <button class="btn btn-secondary btn-small chevron-pos-btn" data-pos="top-right" onclick="setChevronPos('top-right')">Top-Right</button>
-                    </div>
-                  </div>
-                  <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Size</label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <input type="range" id="chevronSize" min="10" max="60" value="30" step="5" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('chevronSizeLabel').textContent=this.value+'%';updateLivePreview()">
-                      <span id="chevronSizeLabel" style="font-size:12px;color:var(--gray-400);min-width:40px;">30%</span>
-                    </div>
-                  </div>
-                  <div class="form-group" style="margin-bottom:10px;">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Layer Order</label>
-                    <div style="display:flex;gap:6px;">
-                      <button class="btn btn-secondary btn-small chevron-layer-btn active" data-layer="behind" onclick="setChevronLayer('behind')">Behind Person</button>
-                      <button class="btn btn-secondary btn-small chevron-layer-btn" data-layer="front" onclick="setChevronLayer('front')">In Front</button>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Color</label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <input type="color" id="shapeColor" value="#3052FF" style="width:36px;height:30px;border:none;cursor:pointer;" onchange="updateLivePreview()">
-                      <span style="font-size:12px;color:var(--gray-400);">Shape color</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- AI Shape Generation -->
-              <div class="controls-section">
-                <h4>AI Custom Shapes</h4>
-                <p style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">Describe a decorative element and AI will generate it</p>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                  <input type="text" id="shapePrompt" placeholder="e.g. blue abstract geometric accent, modern arrow pattern..." style="flex:1;padding:8px 12px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
-                  <button onclick="generateAiShape()" id="shapeGenBtn" style="padding:8px 16px;background:#3052FF;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Generate</button>
-                </div>
-                <div id="shapeGenStatus" style="display:none;"></div>
-              </div>
-            </div>
-
-            <!-- Nav -->
-            <div class="step-nav">
-              <button class="btn btn-secondary" onclick="goToStep(2)">&larr; Back</button>
-              <button class="btn btn-primary" onclick="goToStep(4)">Next: Text &amp; CTA &rarr;</button>
-            </div>
-          </div>
-
-          <!-- Right: iPhone 17 Pro Mockup Preview -->
-          <div>
-            <div style="padding:12px;text-align:center;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
-              <div class="platform-toggle">
-                <button class="platform-btn active" onclick="setPlatform('instagram',3)">Instagram</button>
-                <button class="platform-btn" onclick="setPlatform('facebook',3)">Facebook</button>
-              </div>
-              <div class="iphone-17" id="phone3">
-                <!-- Phone renders here via JS -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ STEP 4: TEXT & CTA ============ -->
-      <div class="step-panel" id="step4">
-        <div class="step-split">
-          <!-- Left: Controls -->
-          <div>
-            <!-- Ad Copy V2 Generator -->
-            <div class="copy-v2-section">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <h4 style="margin:0;font-size:14px;font-weight:700;color:var(--gray-800);">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                  AI Ad Copy
-                </h4>
-                <span style="font-size:11px;color:var(--gray-400);">Generate headline, subheadline &amp; CTA with AI</span>
-              </div>
-              <div style="display:flex;gap:10px;margin-bottom:10px;">
-                <div style="flex:1;">
-                  <label class="pb-label">Topic / Angle</label>
-                  <input type="text" id="copyV2Topic" class="form-input" placeholder="e.g. 'MCA debt stress', 'fresh start', 'save 80%'..." style="font-size:13px;">
-                </div>
-                <div style="flex-shrink:0;align-self:flex-end;">
-                  <button class="btn btn-primary" id="generateCopyV2Btn" onclick="generateCopyV2()" style="font-size:13px;padding:8px 18px;">Generate Copy</button>
-                </div>
-              </div>
-              <div id="copyV2Fields">
-                <div class="copy-v2-fields">
-                  <div class="form-group">
-                    <label>Headline</label>
-                    <input type="text" id="copyV2Headline" class="form-input" placeholder="Main headline..." oninput="updateLivePreview()">
-                  </div>
-                  <div class="form-group">
-                    <label>Highlight Words <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(comma-separated)</span></label>
-                    <input type="text" id="copyV2Highlights" class="form-input" placeholder="e.g. FREE, 80%, Relief" oninput="updateLivePreview()">
-                  </div>
-                  <div class="form-group">
-                    <label>Subheadline</label>
-                    <input type="text" id="copyV2Subheadline" class="form-input" placeholder="Supporting text..." oninput="updateLivePreview()">
-                  </div>
-                  <div class="form-group">
-                    <label>CTA Text</label>
-                    <input type="text" id="copyV2Cta" class="form-input" placeholder="e.g. Get Free Consultation" oninput="updateLivePreview()">
-                  </div>
-                  <div class="form-group">
-                    <label>CTA Button Text</label>
-                    <input type="text" id="copyV2CtaButton" class="form-input" placeholder="e.g. Learn More" oninput="updateLivePreview()">
-                  </div>
-                  <div class="form-group">
-                    <label>CTA Button URL</label>
-                    <input type="text" id="copyV2CtaUrl" class="form-input" value="CoastalDebt.com" readonly style="background:var(--gray-50);color:var(--gray-400);">
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Font Size Controls -->
-            <div class="controls-panel" style="margin-top:12px;">
-              <div class="controls-section">
-                <h4>Font Sizes</h4>
-                <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                  <div style="flex:1;min-width:140px;">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px;">Headline Size</label>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      <input type="range" id="headlineFontSize" min="24" max="120" value="48" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('headlineFsVal').textContent=this.value+'px';updateLivePreview()">
-                      <span id="headlineFsVal" style="font-size:11px;color:var(--gray-400);min-width:36px;">48px</span>
-                    </div>
-                  </div>
-                  <div style="flex:1;min-width:140px;">
-                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px;">Subheadline Size</label>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      <input type="range" id="subheadlineFontSize" min="12" max="60" value="24" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('subFsVal').textContent=this.value+'px';updateLivePreview()">
-                      <span id="subFsVal" style="font-size:11px;color:var(--gray-400);min-width:36px;">24px</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="controls-section">
-                <h4>Text Position</h4>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                  <button class="btn btn-secondary btn-small text-pos-btn active" data-pos="auto" onclick="setTextPosition('auto')">Auto (AI)</button>
-                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="left" onclick="setTextPosition('left')">Left</button>
-                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="center" onclick="setTextPosition('center')">Center</button>
-                  <button class="btn btn-secondary btn-small text-pos-btn" data-pos="right" onclick="setTextPosition('right')">Right</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Nav -->
-            <div class="step-nav">
-              <button class="btn btn-secondary" onclick="goToStep(3)">&larr; Back</button>
-              <button class="btn btn-primary" onclick="goToStep(5)">Next: Logo &amp; Export &rarr;</button>
-            </div>
-          </div>
-
-          <!-- Right: iPhone 17 Pro Mockup Preview -->
-          <div>
-            <div style="padding:12px;text-align:center;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
-              <div class="platform-toggle">
-                <button class="platform-btn active" onclick="setPlatform('instagram',4)">Instagram</button>
-                <button class="platform-btn" onclick="setPlatform('facebook',4)">Facebook</button>
-              </div>
-              <div class="iphone-17" id="phone4">
-                <!-- Phone renders here via JS -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ STEP 5: LOGO, ICONS & BADGES + EXPORT ============ -->
-      <div class="step-panel" id="step5">
-        <div class="step-split">
-          <!-- Left: Controls -->
-          <div>
-            <div class="controls-panel">
-              <div class="controls-section">
-                <h4>Brand Logos</h4>
-                <div class="brand-logos-grid">
-                  <div class="brand-logo-card" onclick="selectBrandLogo('dark-text')" id="brandLogo-dark-text">
-                    <img src="/assets/logos/logo-dark-text.svg" alt="Full Logo (Dark)">
-                    <span class="logo-label">Full Logo<br>(Light BG)</span>
-                  </div>
-                  <div class="brand-logo-card dark-bg" onclick="selectBrandLogo('white-text')" id="brandLogo-white-text">
-                    <img src="/assets/logos/logo-white-text.svg" alt="Full Logo (White)">
-                    <span class="logo-label">Full Logo<br>(Dark BG)</span>
-                  </div>
-                  <div class="brand-logo-card" onclick="selectBrandLogo('chevron-blue')" id="brandLogo-chevron-blue">
-                    <img src="/assets/logos/chevron-only.svg" alt="Chevron Blue" style="max-height:28px;">
-                    <span class="logo-label">Chevron<br>(Blue)</span>
-                  </div>
-                  <div class="brand-logo-card dark-bg" onclick="selectBrandLogo('chevron-white')" id="brandLogo-chevron-white">
-                    <img src="/assets/logos/chevron-white.svg" alt="Chevron White" style="max-height:28px;">
-                    <span class="logo-label">Chevron<br>(White)</span>
-                  </div>
-                  <div class="brand-logo-card" onclick="selectBrandLogo('chevron-jpeg')" id="brandLogo-chevron-jpeg">
-                    <img src="/assets/logos/chevron-blue.jpeg" alt="Chevron Icon" style="max-height:28px;border-radius:4px;">
-                    <span class="logo-label">Icon<br>(Original)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="controls-section">
-                <h4>Logo Position</h4>
-                <div style="display:flex;gap:6px;">
-                  <button class="btn btn-secondary btn-small logo-pos-btn active" data-pos="top-left" onclick="setLogoPosition('top-left')">Top-Left</button>
-                  <button class="btn btn-secondary btn-small logo-pos-btn" data-pos="top-right" onclick="setLogoPosition('top-right')">Top-Right</button>
-                </div>
-              </div>
-
-              <div class="controls-section">
-                <h4>Custom Logo</h4>
-                <img id="logoPreview" class="logo-preview-img" src="" alt="No logo" style="display:none;">
-                <div id="logoUploadArea">
-                  <input type="file" id="logoFileInput" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadLogo(this)">
-                  <button class="btn btn-secondary" onclick="document.getElementById('logoFileInput').click()" style="width:100%;font-size:13px;">Upload Custom Logo</button>
-                </div>
-              </div>
-
-              <div class="controls-section">
-                <h4>Trust Badges</h4>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  <div class="brand-toggle-bar" style="margin:0;">
-                    <label class="switch"><input type="checkbox" id="badgeTrustpilot" onchange="updateLivePreview()"><span class="slider"></span></label>
-                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">Trustpilot</span>
-                  </div>
-                  <div class="brand-toggle-bar" style="margin:0;">
-                    <label class="switch"><input type="checkbox" id="badgeISO" onchange="updateLivePreview()"><span class="slider"></span></label>
-                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">ISO Certified</span>
-                  </div>
-                  <div class="brand-toggle-bar" style="margin:0;">
-                    <label class="switch"><input type="checkbox" id="badgeBBB" onchange="updateLivePreview()"><span class="slider"></span></label>
-                    <span style="font-size:13px;font-weight:600;color:var(--gray-700);">BBB Accredited</span>
-                  </div>
-                </div>
-                <div style="margin-top:8px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Badge Position</label>
-                  <div style="display:flex;gap:6px;">
-                    <button class="btn btn-secondary btn-small badge-pos-btn active" data-pos="bottom-center" onclick="setBadgePosition('bottom-center')">Bottom Center</button>
-                    <button class="btn btn-secondary btn-small badge-pos-btn" data-pos="bottom-left" onclick="setBadgePosition('bottom-left')">Bottom Left</button>
-                    <button class="btn btn-secondary btn-small badge-pos-btn" data-pos="bottom-right" onclick="setBadgePosition('bottom-right')">Bottom Right</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Brand Assets Library -->
-              <div class="controls-section">
-                <h4>Brand Assets</h4>
-                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Toggle assets to include in compositions</p>
-                <div id="brandAssetsGrid" class="brand-assets-grid">
-                  <div style="color:var(--gray-400);font-size:12px;text-align:center;grid-column:1/-1;padding:12px;">Loading assets...</div>
-                </div>
-                <div class="brand-asset-upload">
-                  <h4 style="font-size:11px;margin-bottom:8px;">Upload New Asset</h4>
-                  <div style="display:flex;gap:8px;margin-bottom:6px;">
-                    <select id="assetCategory" class="pb-select" style="flex:1;">
-                      <option value="logo">Logo</option>
-                      <option value="badge">Badge</option>
-                      <option value="icon">Icon</option>
-                      <option value="watermark">Watermark</option>
-                      <option value="other">Other</option>
-                    </select>
-                    <input type="text" id="assetName" class="form-input" placeholder="Asset name..." style="flex:1;font-size:12px;">
-                  </div>
-                  <input type="file" id="assetFileInput" accept=".png,.jpg,.jpeg,.webp,.svg" style="display:none;" onchange="uploadBrandAsset()">
-                  <button class="btn btn-secondary" onclick="document.getElementById('assetFileInput').click()" style="width:100%;font-size:12px;">Choose File &amp; Upload</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Compose Button -->
-            <div style="margin-top:16px;">
-              <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#3052FF 0%,#7FB2FF 100%);border-radius:12px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-                Compose Ad
-              </button>
-            </div>
-
-            <!-- Nav -->
-            <div class="step-nav">
-              <button class="btn btn-secondary" onclick="goToStep(4)">&larr; Back</button>
-              <button class="btn btn-secondary" id="downloadAllComposedBtn" onclick="downloadAllComposed()" style="display:none;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download
-              </button>
-            </div>
-          </div>
-
-          <!-- Right: iPhone 17 Pro Mockup Preview + Results -->
-          <div>
-            <div style="padding:12px;text-align:center;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
-              <div class="platform-toggle">
-                <button class="platform-btn active" onclick="setPlatform('instagram',5)">Instagram</button>
-                <button class="platform-btn" onclick="setPlatform('facebook',5)">Facebook</button>
-              </div>
-              <div class="iphone-17" id="phone5">
-                <!-- Phone renders here via JS -->
-              </div>
-            </div>
-
-            <!-- Compose Results -->
-            <div id="composeResultsPanel" style="margin-top:12px;display:none;">
-              <div class="controls-panel" style="padding:16px;">
-                <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Composed Results</h4>
-                <div id="composeStatus" style="display:none;"></div>
-                <div id="composeResults" class="compose-results-grid"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ ADVANCED: META AD COPY GENERATOR ============ -->
-      <div class="card" style="padding:28px;max-width:960px;margin:24px auto 0;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1877F2,#42b883);color:#fff;padding:10px 24px;border-radius:50px;font-weight:700;font-size:15px;margin-bottom:12px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            Meta Ad Copy Generator
-          </div>
-          <p style="color:var(--gray-500);font-size:14px;margin:0;">Generate multiple variations of Facebook &amp; Instagram ad copy</p>
-        </div>
-
-        <!-- Input Section -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-          <div class="form-group" style="margin:0;">
-            <label style="font-weight:600;font-size:13px;">Ad Angle / Topic</label>
-            <select id="metaAdAngle" class="form-input" style="font-size:13px;">
-              <option value="general">General — MCA Debt Relief</option>
-              <option value="urgency">Urgency — Act Now / Limited Time</option>
-              <option value="savings">Savings — Save Up To 80%</option>
-              <option value="pain">Pain Point — Drowning in Payments</option>
-              <option value="trust">Trust — Proven Results / Testimonials</option>
-              <option value="fresh_start">Fresh Start — New Beginning</option>
-              <option value="comparison">Comparison — Why Us vs Others</option>
-              <option value="educational">Educational — What is MCA Debt?</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label style="font-weight:600;font-size:13px;">Number of Variations</label>
-            <select id="metaAdCount" class="form-input" style="font-size:13px;">
-              <option value="3" selected>3 variations</option>
-              <option value="5">5 variations</option>
-              <option value="8">8 variations</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:20px;">
-          <label style="font-weight:600;font-size:13px;">Custom Instructions <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
-          <textarea id="metaAdCustom" class="form-input" rows="2" placeholder="e.g. 'Focus on restaurant owners', 'Use a question hook', 'Mention free consultation'..." style="font-size:13px;resize:vertical;"></textarea>
-        </div>
-
-        <button class="btn btn-primary" id="generateMetaCopyBtn" onclick="generateMetaCopy()" style="width:100%;padding:14px;font-size:15px;font-weight:700;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          Generate Ad Copy
-        </button>
-
-        <!-- Results -->
-        <div id="metaCopyResults" style="margin-top:24px;display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h3 style="margin:0;font-size:16px;">Generated Copy</h3>
-            <button class="btn btn-secondary btn-small" onclick="copyAllMetaAds()" style="font-size:12px;">Copy All to Clipboard</button>
-          </div>
-          <div id="metaCopyCards"></div>
-        </div>
-      </div>
+      <!-- Steps 3-5 removed: all tools merged into Step 2 toolbar -->
 
       <!-- Hidden Fabric.js Canvas (used for canvas editor) -->
       <div style="display:none;">
@@ -1892,7 +1531,7 @@
       carousel_square: { name: 'Carousel Square', width: 1200, height: 1200 }
     };
 
-    // ============ NEW 5-STEP WIZARD STATE ============
+    // ============ 2-STEP WIZARD STATE ============
     let wizardState = {
       personImageUrl: null,
       personImageNoBg: null,
@@ -2144,7 +1783,7 @@
     }
 
     function initAllPhones() {
-      [2,3,4,5].forEach(function(step) { renderPhoneMockup(step); });
+      [2].forEach(function(step) { renderPhoneMockup(step); });
     }
 
     // Init preview aspect ratio on load
@@ -2153,7 +1792,7 @@
     // ============ WIZARD NAVIGATION ============
 
     function goToStep(step) {
-      // Step 5 allows access if step 1 done (for meta copy generator)
+      if (step < 1 || step > 2) return;
       if (step > maxStepReached + 1) return;
       if (step > 1 && !generatedImageUrl && !wizardState.personImageUrl) return; // need image first
       if (step === currentStep) return;
@@ -2174,35 +1813,15 @@
         else if (s < step) el.classList.add('completed');
       });
 
-      // Update live preview for steps 2-5
-      if (step >= 2 && step <= 5) {
-        updateLivePreview();
-      }
-
-      // Initialize Fabric.js canvas editor on Step 2
+      // Update live preview for step 2
       if (step === 2) {
+        updateLivePreview();
         setTimeout(initAdCanvas, 100);
-      }
-
-      // Load brand assets on step 5
-      if (step === 5) {
-        loadBrandAssets();
       }
     }
 
     function moveCanvasToStep(step) {
-      const canvasEl = document.getElementById('wizardCanvas');
-      const wrapperEl = document.getElementById('canvasScaleWrapper');
-      if (!canvasEl || !wrapperEl) return;
-
-      const targetContainer = step === 3
-        ? document.getElementById('canvasWrapper3')
-        : document.getElementById('canvasWrapper');
-
-      // Move the scale wrapper (which contains the canvas) into the target
-      if (wrapperEl.parentElement !== targetContainer) {
-        targetContainer.appendChild(wrapperEl);
-      }
+      // No-op: canvas stays in step 2 now
     }
 
     // ============ SIZE & MODEL SELECTION ============
@@ -2657,9 +2276,7 @@
 
     function fitCanvas() {
       if (!canvas) return;
-      const wrapper = currentStep === 3
-        ? document.getElementById('canvasWrapper3')
-        : document.getElementById('canvasWrapper');
+      const wrapper = document.getElementById('canvasWrapper');
       if (!wrapper) return;
 
       const pad = 8;
@@ -4342,7 +3959,7 @@
 
     document.addEventListener('keydown', function(e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      if (currentStep === 2 || currentStep === 3) {
+      if (currentStep === 2) {
         if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
           deleteSelected();
@@ -5574,7 +5191,24 @@
       }
 
       if (hasSeparatedLayers) {
-        // SEPARATED: Person cutout only (no background duplication)
+        // SEPARATED: Load original image as background layer (orange handles)
+        var origUrl = wizardState.backgroundLayerUrl || wizardState.personImageUrl;
+        if (origUrl) {
+          addImageToCanvas(origUrl, {
+            left: 0, top: 0,
+            hasControls: true, hasBorders: true,
+            cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
+            transparentCorners: false, borderColor: '#FF9000',
+            name: 'bgOriginal'
+          }, function(bgImg) {
+            var bgScale = Math.max(w / bgImg.width, h / bgImg.height);
+            bgImg.set({ scaleX: bgScale, scaleY: bgScale });
+            adCanvas.sendToBack(bgImg);
+            // If there was also a custom bg image, send that even further back
+            if (bgImageObj) adCanvas.sendToBack(bgImageObj);
+          });
+        }
+        // Person cutout on top (blue handles)
         addImageToCanvas(wizardState.personImageNoBg, {
           left: w * 0.25, top: 0,
           hasControls: true, hasBorders: true,
@@ -5645,6 +5279,123 @@
         if (panYVal) panYVal.textContent = wizardState.imagePanY + '%';
       }
       updateLivePreview();
+    }
+
+    // ============ EXPORT CANVAS ============
+
+    function exportCanvas() {
+      if (!adCanvas) return;
+      var meta = SIZE_META[selectedSize];
+      var multiplier = meta.width / adCanvas.width;
+      var dataUrl = adCanvas.toDataURL({
+        format: 'png',
+        multiplier: multiplier
+      });
+      var link = document.createElement('a');
+      link.download = 'ad-' + selectedSize + '-' + Date.now() + '.png';
+      link.href = dataUrl;
+      link.click();
+    }
+
+    function exportCanvasAllSizes() {
+      if (!adCanvas) return;
+      var sizes = Object.keys(SIZE_META);
+      var currentSize = selectedSize;
+      // Export current size immediately
+      exportCanvas();
+      // Show a note about other sizes
+      alert('Current size exported. To export other sizes, change the ad size in Step 1 and re-export.');
+    }
+
+    // ============ LOGO & BADGE FUNCTIONS ============
+
+    function addLogoToCanvas() {
+      if (!adCanvas) return;
+      fabric.Image.fromURL('/assets/logos/logo-dark-text.svg', function(img) {
+        var w = adCanvas.width;
+        img.set({
+          left: w * 0.65,
+          top: w * 0.05,
+          scaleX: (w * 0.3) / img.width,
+          scaleY: (w * 0.3) / img.width,
+          name: 'logo'
+        });
+        adCanvas.add(img);
+        adCanvas.setActiveObject(img);
+        adCanvas.renderAll();
+      }, { crossOrigin: 'anonymous' });
+    }
+
+    function addBadgeToCanvas(type) {
+      if (!adCanvas) return;
+      var badges = {
+        trustpilot: '/assets/trust-logos/trustpilot.webp',
+        iso: '/assets/trust-logos/bsi.webp',
+        bbb: '/assets/trust-logos/bbb-torch-awards.png'
+      };
+      var url = badges[type];
+      if (!url) return;
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+      fabric.Image.fromURL(url, function(img) {
+        var badgeScale = (w * 0.12) / img.width;
+        img.set({
+          left: w * 0.1 + (type === 'iso' ? w * 0.15 : type === 'bbb' ? w * 0.3 : 0),
+          top: h * 0.88,
+          scaleX: badgeScale,
+          scaleY: badgeScale,
+          name: 'badge-' + type
+        });
+        adCanvas.add(img);
+        adCanvas.setActiveObject(img);
+        adCanvas.renderAll();
+      }, { crossOrigin: 'anonymous' });
+    }
+
+    // ============ META COPY GENERATOR (COLLAPSIBLE IN STEP 2) ============
+
+    async function generateMetaCopy2() {
+      var angle = document.getElementById('metaAdAngle2').value;
+      var count = parseInt(document.getElementById('metaAdCount2').value);
+      var custom = document.getElementById('metaAdCustom2').value.trim();
+      var btn = document.getElementById('generateMetaCopyBtn2');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        var res = await fetch('/api/ad-generator/generate-meta-copy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ angle: angle, count: count, custom_instructions: custom })
+        });
+        var data = await res.json();
+        if (data.copies && data.copies.length > 0) {
+          var resultsEl = document.getElementById('metaCopyResults2');
+          var cardsEl = document.getElementById('metaCopyCards2');
+          resultsEl.style.display = 'block';
+          cardsEl.innerHTML = data.copies.map(function(c, i) {
+            return '<div class="meta-copy-card">' +
+              '<div class="copy-number">Ad ' + (i+1) + '</div>' +
+              '<button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest(\'.meta-copy-card\').innerText)">Copy</button>' +
+              '<div class="meta-copy-field"><div class="meta-copy-label">Primary Text</div><div class="meta-copy-primary">' + escapeHtml(c.primary_text || '') + '</div></div>' +
+              '<div class="meta-copy-field"><div class="meta-copy-label">Headline</div><div class="meta-copy-headline">' + escapeHtml(c.headline || '') + '</div></div>' +
+              '<div class="meta-copy-field"><div class="meta-copy-label">Description</div><div class="meta-copy-description">' + escapeHtml(c.description || '') + '</div></div>' +
+              '<div class="meta-copy-field"><div class="meta-copy-label">CTA</div><div class="meta-copy-cta-tag">' + escapeHtml(c.cta || 'Learn More') + '</div></div>' +
+              '</div>';
+          }).join('');
+        }
+      } catch(e) {
+        alert('Failed to generate copy: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Ad Copy';
+      }
+    }
+
+    function copyAllMetaAds2() {
+      var cards = document.querySelectorAll('#metaCopyCards2 .meta-copy-card');
+      var text = Array.from(cards).map(function(c) { return c.innerText; }).join('\n\n---\n\n');
+      navigator.clipboard.writeText(text);
     }
 
     function showCanvasProps(e) {
