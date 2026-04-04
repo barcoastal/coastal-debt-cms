@@ -5290,32 +5290,14 @@
       }
 
       if (hasSeparatedLayers) {
-        // SEPARATED: Load original image as background layer (orange handles)
-        var origUrl = wizardState.backgroundLayerUrl || wizardState.personImageUrl;
-        if (origUrl) {
-          addImageToCanvas(origUrl, {
-            left: 0, top: 0,
-            hasControls: true, hasBorders: true,
-            cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
-            transparentCorners: false, borderColor: '#FF9000',
-            name: 'bgOriginal'
-          }, function(bgImg) {
-            var bgScale = Math.max(w / bgImg.width, h / bgImg.height);
-            bgImg.set({ scaleX: bgScale, scaleY: bgScale });
-            adCanvas.sendToBack(bgImg);
-            // If there was also a custom bg image, send that even further back
-            if (bgImageObj) adCanvas.sendToBack(bgImageObj);
-          });
-        }
-        // Person cutout on top (blue handles)
+        // SEPARATED: just the person cutout on the background color
+        // No original image — it had the person baked in which causes duplicates
+        // Use toolbar to add chevrons, background images, etc. separately
         addImageToCanvas(wizardState.personImageNoBg, {
-          left: w * 0.25, top: 0,
-          hasControls: true, hasBorders: true,
-          cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
-          transparentCorners: false, borderColor: '#3052FF',
+          left: w * 0.15, top: 0,
           name: 'person'
         }, function(img) {
-          var pScale = (h * 0.7) / img.height;
+          var pScale = (h * 0.8) / img.height;
           img.set({ scaleX: pScale, scaleY: pScale, top: h - (img.height * pScale) });
           personObj = img;
           adCanvas.setActiveObject(img);
