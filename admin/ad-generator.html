@@ -1212,6 +1212,8 @@
           <div>
             <!-- Toolbar -->
             <div class="canvas-toolbar">
+              <button id="separateLayersBtn" onclick="separateLayersFromCanvas()" title="Separate person from background into two layers" style="background:#3052FF;color:#fff;border-color:#3052FF;font-weight:600;">&#9998; Separate Layers</button>
+              <span class="toolbar-sep"></span>
               <button onclick="canvasBringForward()" title="Bring Forward">&#8593; Forward</button>
               <button onclick="canvasSendBackward()" title="Send Backward">&#8595; Backward</button>
               <button onclick="canvasDelete()" title="Delete Selected">&#128465; Delete</button>
@@ -5092,6 +5094,42 @@
       }).catch(function(e) {
         btn.disabled = false;
         btn.innerHTML = 'Separate Layers (failed - retry)';
+      });
+    }
+
+    // ============ SEPARATE LAYERS (from canvas toolbar) ============
+
+    function separateLayersFromCanvas() {
+      var url = wizardState.personImageUrl;
+      if (!url) { alert('No image to separate'); return; }
+      if (wizardState.personImageNoBg) { alert('Already separated!'); return; }
+
+      var btn = document.getElementById('separateLayersBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Separating...';
+
+      fetch('/api/ad-generator/remove-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: url })
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.transparent_url) {
+          wizardState.personImageNoBg = data.transparent_url;
+          wizardState.backgroundLayerUrl = wizardState.personImageUrl;
+          btn.innerHTML = '&#10003; Separated';
+          btn.style.background = '#10b981';
+          btn.style.borderColor = '#10b981';
+          // Reinitialize canvas with two layers
+          initAdCanvas();
+        } else {
+          throw new Error('No result');
+        }
+      }).catch(function(e) {
+        btn.disabled = false;
+        btn.innerHTML = '&#9998; Separate Layers';
+        btn.style.background = '#3052FF';
+        btn.style.borderColor = '#3052FF';
+        alert('Separation failed: ' + e.message);
       });
     }
 
