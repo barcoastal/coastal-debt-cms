@@ -1196,7 +1196,7 @@
                 </div>
                 <button id="removeBgBtn" class="btn btn-secondary" onclick="removeBgSelected()" style="width:100%;margin-bottom:8px;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-                  Remove Background
+                  Separate Person from Background
                 </button>
                 <button class="btn btn-primary" onclick="goToStep(2)" style="width:100%;">Next: Background &rarr;</button>
               </div>
@@ -1863,6 +1863,7 @@
       imagePanX: 0,
       imagePanY: 0,
       imageZoom: 100,
+      backgroundLayerUrl: null,
       bgColor: '#F2F4F9',
       bgImageUrl: null,
       bgImageDataUrl: null,
@@ -5071,16 +5072,18 @@
       if (!url) return;
       var btn = document.getElementById('removeBgBtn');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Removing...';
+      btn.innerHTML = '<div class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Separating layers...';
       fetch('/api/ad-generator/remove-background', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_url: url })
       }).then(function(r) { return r.json(); }).then(function(data) {
         if (data.transparent_url) {
+          // Store person (no BG) and original as background layer
           wizardState.personImageNoBg = data.transparent_url;
+          wizardState.backgroundLayerUrl = wizardState.personImageUrl; // original becomes BG layer
           document.getElementById('selectedPersonImg').src = data.transparent_url;
-          btn.innerHTML = '&#10003; Background Removed';
+          btn.innerHTML = '&#10003; Layers Separated';
           btn.style.background = '#d1fae5';
           btn.style.color = '#065f46';
           btn.style.borderColor = '#065f46';
@@ -5088,7 +5091,7 @@
         }
       }).catch(function(e) {
         btn.disabled = false;
-        btn.innerHTML = 'Remove Background (failed - retry)';
+        btn.innerHTML = 'Separate Layers (failed - retry)';
       });
     }
 
@@ -5212,53 +5215,89 @@
       var tbColor = document.getElementById('canvasBgColor');
       if (tbColor) tbColor.value = wizardState.bgColor || '#F2F4F9';
 
-      // Add background image if available
-      var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
-      if (bgUrl) {
-        fabric.Image.fromURL(bgUrl, function(img) {
-          var imgScale = Math.max(w / img.width, h / img.height);
-          img.set({
-            left: 0, top: 0,
-            scaleX: imgScale, scaleY: imgScale,
-            selectable: true, hasControls: true, hasBorders: true,
-            cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
-            transparentCorners: false, borderColor: '#3052FF',
-            name: 'bgImage'
-          });
-          bgImageObj = img;
-          adCanvas.add(img);
-          adCanvas.sendToBack(img);
-          adCanvas.renderAll();
-          syncCanvasToPreview();
-        }, { crossOrigin: 'anonymous' });
-      }
+      var hasSeparatedLayers = wizardState.personImageNoBg && wizardState.backgroundLayerUrl;
 
-      // Add person image if available
-      var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl;
-      if (personUrl) {
-        fabric.Image.fromURL(personUrl, function(img) {
-          // Scale to fit 70% of canvas height
-          var imgScale = (h * 0.7) / img.height;
-          img.set({
-            left: w * 0.3,
-            top: h - (img.height * imgScale),
-            scaleX: imgScale,
-            scaleY: imgScale,
-            hasControls: true,
-            hasBorders: true,
-            cornerStyle: 'circle',
-            cornerColor: '#3052FF',
-            cornerSize: 10,
-            transparentCorners: false,
-            borderColor: '#3052FF',
-            name: 'person'
+      if (hasSeparatedLayers) {
+        // TWO SEPARATE LAYERS: background image + person cutout
+        // Layer 1: Original image as background (movable, resizable)
+        fabric.Image.fromURL(wizardState.backgroundLayerUrl, function(bgImg) {
+          var bgScale = Math.max(w / bgImg.width, h / bgImg.height);
+          bgImg.set({
+            left: 0, top: 0,
+            scaleX: bgScale, scaleY: bgScale,
+            hasControls: true, hasBorders: true,
+            cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
+            transparentCorners: false, borderColor: '#FF9000',
+            name: 'background'
           });
-          personObj = img;
-          adCanvas.add(img);
-          adCanvas.setActiveObject(img);
+          bgImageObj = bgImg;
+          adCanvas.add(bgImg);
+          adCanvas.sendToBack(bgImg);
+
+          // Layer 2: Person cutout (movable, resizable, on top)
+          fabric.Image.fromURL(wizardState.personImageNoBg, function(personImg) {
+            var pScale = (h * 0.7) / personImg.height;
+            personImg.set({
+              left: w * 0.25,
+              top: h - (personImg.height * pScale),
+              scaleX: pScale, scaleY: pScale,
+              hasControls: true, hasBorders: true,
+              cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+              transparentCorners: false, borderColor: '#3052FF',
+              name: 'person'
+            });
+            personObj = personImg;
+            adCanvas.add(personImg);
+            adCanvas.setActiveObject(personImg);
+            adCanvas.renderAll();
+            syncCanvasToPreview();
+          }, { crossOrigin: 'anonymous' });
+
           adCanvas.renderAll();
-          syncCanvasToPreview();
         }, { crossOrigin: 'anonymous' });
+
+      } else {
+        // SINGLE IMAGE: no separation — show as one layer covering the canvas
+        var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
+        if (bgUrl) {
+          fabric.Image.fromURL(bgUrl, function(img) {
+            var imgScale = Math.max(w / img.width, h / img.height);
+            img.set({
+              left: 0, top: 0,
+              scaleX: imgScale, scaleY: imgScale,
+              hasControls: true, hasBorders: true,
+              cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
+              transparentCorners: false, borderColor: '#FF9000',
+              name: 'bgImage'
+            });
+            bgImageObj = img;
+            adCanvas.add(img);
+            adCanvas.sendToBack(img);
+            adCanvas.renderAll();
+            syncCanvasToPreview();
+          }, { crossOrigin: 'anonymous' });
+        }
+
+        // Person as single full-cover image
+        var personUrl = wizardState.personImageUrl || generatedImageUrl;
+        if (personUrl) {
+          fabric.Image.fromURL(personUrl, function(img) {
+            var imgScale = Math.max(w / img.width, h / img.height);
+            img.set({
+              left: 0, top: 0,
+              scaleX: imgScale, scaleY: imgScale,
+              hasControls: true, hasBorders: true,
+              cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+              transparentCorners: false, borderColor: '#3052FF',
+              name: 'person'
+            });
+            personObj = img;
+            adCanvas.add(img);
+            adCanvas.setActiveObject(img);
+            adCanvas.renderAll();
+            syncCanvasToPreview();
+          }, { crossOrigin: 'anonymous' });
+        }
       }
 
       // Selection events
