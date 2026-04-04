@@ -428,63 +428,190 @@
     .removebg-btn:hover { background: #fde68a; }
     .removebg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* ============ IPHONE MOCKUP ============ */
-    .iphone-frame {
-      position: relative;
-      width: 280px;
-      margin: 0 auto;
+    /* ============ iPHONE 17 PRO MOCKUP ============ */
+    .iphone-17 {
+      width: 320px;
+      height: 693px;
       background: #1a1a1a;
-      border-radius: 40px;
-      padding: 12px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.15), inset 0 0 0 2px #333;
+      border-radius: 45px;
+      padding: 8px;
+      position: relative;
+      margin: 0 auto;
+      box-shadow:
+        0 0 0 2px #8A8A8D,
+        0 12px 48px rgba(0,0,0,0.25),
+        inset 0 0 0 1px rgba(255,255,255,0.05);
     }
-    .iphone-notch {
+    .iphone-17-screen {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border-radius: 38px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .iphone-17-island {
       position: absolute;
-      top: 8px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
       width: 90px;
-      height: 22px;
-      background: #1a1a1a;
-      border-radius: 0 0 14px 14px;
-      z-index: 20;
+      height: 25px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 30;
     }
-    .iphone-screen {
-      position: relative;
-      width: 100%;
-      border-radius: 28px;
-      overflow: hidden;
-      background: #F2F4F9;
-    }
-    .iphone-home-bar {
+    .iphone-17-home-bar {
       position: absolute;
-      bottom: 6px;
+      bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
-      width: 100px;
+      width: 110px;
       height: 4px;
-      background: rgba(255,255,255,0.3);
+      background: #000;
       border-radius: 2px;
-      z-index: 20;
+      z-index: 30;
     }
-    .iphone-status-bar {
+    .iphone-17-status-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 20px 4px;
-      font-size: 10px;
+      padding: 14px 24px 6px;
+      font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+      font-size: 12px;
       font-weight: 600;
       color: #000;
-      background: transparent;
+      background: #fff;
       position: relative;
       z-index: 15;
+      flex-shrink: 0;
     }
-    .iphone-status-bar .time { font-size: 11px; font-weight: 700; }
-    .iphone-status-bar .icons { display: flex; gap: 3px; align-items: center; }
-    .iphone-status-bar .icons svg { width: 12px; height: 12px; }
+    .iphone-17-status-bar .sb-time { font-size: 13px; font-weight: 700; letter-spacing: 0.2px; }
+    .iphone-17-status-bar .sb-icons { display: flex; gap: 4px; align-items: center; }
+    .iphone-17-status-bar .sb-icons svg { width: 14px; height: 14px; }
 
-    /* Ad inside iPhone */
-    .iphone-ad-area {
+    /* Social UI wrapper */
+    .social-ui { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
+
+    /* --- Instagram Feed Layout --- */
+    .ig-feed-header {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      font-family: -apple-system, system-ui, sans-serif; border-bottom: 1px solid #efefef;
+    }
+    .ig-feed-header .ig-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ig-feed-header .ig-avatar-inner {
+      width: 24px; height: 24px; border-radius: 50%; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #262626;
+    }
+    .ig-feed-header .ig-name { font-size: 11px; font-weight: 600; color: #262626; flex: 1; }
+    .ig-feed-header .ig-name span { font-size: 10px; font-weight: 400; color: #8e8e8e; }
+    .ig-feed-header .ig-dots { font-size: 16px; color: #262626; letter-spacing: 1px; cursor: default; }
+    .ig-feed-ad-area-wrap { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+    .ig-feed-actions {
+      display: flex; align-items: center; gap: 12px; padding: 8px 12px 4px;
+      border-top: 1px solid #efefef;
+    }
+    .ig-feed-actions svg { width: 20px; height: 20px; cursor: pointer; }
+    .ig-feed-actions .ig-bookmark { margin-left: auto; }
+    .ig-feed-cta {
+      padding: 4px 12px 8px; font-family: -apple-system, system-ui, sans-serif;
+    }
+    .ig-feed-cta .ig-cta-link {
+      font-size: 10px; color: #00376b; font-weight: 600; display: flex;
+      align-items: center; gap: 2px;
+    }
+    .ig-feed-cta .ig-cta-url { font-size: 9px; color: #8e8e8e; }
+    .ig-feed-nav {
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 8px 0; border-top: 1px solid #efefef; flex-shrink: 0;
+    }
+    .ig-feed-nav svg { width: 22px; height: 22px; color: #262626; }
+
+    /* --- Instagram Story Layout --- */
+    .ig-story-wrap { flex: 1; display: flex; flex-direction: column; position: relative; background: #000; }
+    .ig-story-bars {
+      display: flex; gap: 3px; padding: 8px 10px 0; position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    }
+    .ig-story-bars span {
+      flex: 1; height: 2px; background: rgba(255,255,255,0.35); border-radius: 1px;
+    }
+    .ig-story-bars span.active { background: #fff; }
+    .ig-story-header {
+      display: flex; align-items: center; gap: 8px; padding: 16px 12px 6px;
+      position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    }
+    .ig-story-header .ig-avatar {
+      width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff;
+      background: #ccc; display: flex; align-items: center; justify-content: center;
+    }
+    .ig-story-header .ig-avatar-inner {
+      font-size: 9px; font-weight: 700; color: #fff;
+    }
+    .ig-story-header .ig-name { font-size: 11px; font-weight: 600; color: #fff; }
+    .ig-story-header .ig-name span { font-size: 10px; font-weight: 400; color: rgba(255,255,255,0.7); }
+    .ig-story-ad-area-wrap { flex: 1; position: relative; overflow: hidden; }
+    .ig-story-cta {
+      position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+      z-index: 5; background: #fff; color: #262626; font-size: 12px; font-weight: 600;
+      padding: 8px 28px; border-radius: 20px;
+      font-family: -apple-system, system-ui, sans-serif;
+    }
+    .ig-story-actions {
+      display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+      justify-content: flex-end; position: absolute; bottom: 8px; right: 0; z-index: 5;
+    }
+    .ig-story-actions svg { width: 22px; height: 22px; color: #fff; }
+
+    /* --- Facebook Feed Layout --- */
+    .fb-feed-top {
+      display: flex; align-items: center; padding: 8px 12px;
+      font-family: -apple-system, system-ui, sans-serif; border-bottom: 1px solid #e4e6eb;
+    }
+    .fb-feed-top .fb-logo { font-size: 18px; font-weight: 700; color: #1877f2; letter-spacing: -0.5px; }
+    .fb-feed-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px;
+      font-family: -apple-system, system-ui, sans-serif;
+    }
+    .fb-feed-header .fb-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #1877f2;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+    }
+    .fb-feed-header .fb-name { font-size: 12px; font-weight: 600; color: #050505; }
+    .fb-feed-header .fb-sponsor { font-size: 10px; color: #65676b; display: flex; align-items: center; gap: 3px; }
+    .fb-feed-header .fb-sponsor svg { width: 10px; height: 10px; }
+    .fb-feed-ad-area-wrap { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+    .fb-feed-cta-bar {
+      padding: 8px 12px; background: #f0f2f5; border-top: 1px solid #e4e6eb;
+      font-family: -apple-system, system-ui, sans-serif;
+    }
+    .fb-feed-cta-bar .fb-cta-url { font-size: 10px; color: #65676b; text-transform: uppercase; }
+    .fb-feed-cta-bar .fb-cta-headline { font-size: 12px; font-weight: 600; color: #050505; margin-top: 1px; }
+    .fb-feed-cta-bar .fb-cta-btn {
+      float: right; font-size: 11px; font-weight: 600; color: #050505;
+      background: #e4e6eb; padding: 5px 14px; border-radius: 6px; margin-top: -20px;
+    }
+    .fb-feed-reactions {
+      display: flex; align-items: center; gap: 12px; padding: 6px 12px;
+      border-top: 1px solid #e4e6eb; font-family: -apple-system, system-ui, sans-serif;
+    }
+    .fb-feed-reactions svg { width: 18px; height: 18px; color: #65676b; }
+    .fb-feed-reactions span { font-size: 11px; color: #65676b; font-weight: 500; }
+    .fb-feed-nav {
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 6px 0; border-top: 1px solid #e4e6eb; flex-shrink: 0;
+    }
+    .fb-feed-nav svg { width: 22px; height: 22px; color: #65676b; }
+
+    /* Ad inside phone */
+    .phone-ad-area {
       position: relative;
       width: 100%;
       overflow: hidden;
@@ -496,6 +623,21 @@
       background: #F2F4F9;
       transition: background 0.2s;
     }
+
+    /* ============ PLATFORM TOGGLE ============ */
+    .platform-toggle {
+      display: inline-flex; background: #f1f3f5; border-radius: 8px; padding: 3px;
+      gap: 2px; margin-bottom: 12px;
+    }
+    .platform-btn {
+      font-size: 12px; font-weight: 600; padding: 6px 16px; border: none;
+      border-radius: 6px; cursor: pointer; background: transparent;
+      color: #666; transition: all 0.15s; font-family: inherit;
+    }
+    .platform-btn.active {
+      background: #fff; color: #1a1a2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .platform-btn:hover:not(.active) { color: #333; }
 
     /* ============ ACTIVE TOGGLE BUTTONS ============ */
     .chevron-pos-btn.active,
@@ -1025,39 +1167,16 @@
             </div>
           </div>
 
-          <!-- Right: iPhone Mockup Preview -->
+          <!-- Right: iPhone 17 Pro Mockup Preview -->
           <div>
-            <div style="padding:12px;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;text-align:center;">Live Preview</h4>
-              <div class="iphone-frame">
-                <div class="iphone-notch"></div>
-                <div class="iphone-screen">
-                  <div class="iphone-status-bar">
-                    <span class="time">9:41</span>
-                    <span class="icons">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
-                    </span>
-                  </div>
-                  <div class="iphone-ad-area" id="livePreview" style="position:relative;width:100%;aspect-ratio:1/1;background:#F2F4F9;">
-                    <img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
-                    <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:70%;object-fit:contain;display:none;cursor:grab;">
-                    <div id="livePreviewChevrons" style="position:absolute;display:none;"></div>
-                    <div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>
-                    <div id="livePreviewLogo" style="position:absolute;display:none;"></div>
-                  </div>
-                  <!-- Fake social media UI below ad -->
-                  <div style="padding:8px 12px;background:#fff;">
-                    <div style="display:flex;gap:12px;margin-bottom:6px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </div>
-                    <div style="font-size:9px;font-weight:700;color:#262626;">Sponsored</div>
-                    <div style="font-size:8px;color:#8e8e8e;margin-top:2px;">coastaldebt.com</div>
-                  </div>
-                </div>
-                <div class="iphone-home-bar"></div>
+            <div style="padding:12px;text-align:center;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
+              <div class="platform-toggle">
+                <button class="platform-btn active" onclick="setPlatform('instagram',2)">Instagram</button>
+                <button class="platform-btn" onclick="setPlatform('facebook',2)">Facebook</button>
+              </div>
+              <div class="iphone-17" id="phone2">
+                <!-- Phone renders here via JS -->
               </div>
             </div>
           </div>
@@ -1157,18 +1276,16 @@
             </div>
           </div>
 
-          <!-- Right: iPhone Mockup Preview -->
+          <!-- Right: iPhone 17 Pro Mockup Preview -->
           <div>
-            <div style="padding:12px;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;text-align:center;">Live Preview</h4>
-              <div class="iphone-frame">
-                <div class="iphone-notch"></div>
-                <div class="iphone-screen">
-                  <div class="iphone-status-bar"><span class="time">9:41</span><span class="icons"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg></span></div>
-                  <div id="livePreview3" class="live-preview-mirror iphone-ad-area" style="position:relative;width:100%;aspect-ratio:1/1;background:#F2F4F9;"></div>
-                  <div style="padding:8px 12px;background:#fff;"><div style="display:flex;gap:12px;margin-bottom:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div style="font-size:9px;font-weight:700;color:#262626;">Sponsored</div><div style="font-size:8px;color:#8e8e8e;margin-top:2px;">coastaldebt.com</div></div>
-                </div>
-                <div class="iphone-home-bar"></div>
+            <div style="padding:12px;text-align:center;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
+              <div class="platform-toggle">
+                <button class="platform-btn active" onclick="setPlatform('instagram',3)">Instagram</button>
+                <button class="platform-btn" onclick="setPlatform('facebook',3)">Facebook</button>
+              </div>
+              <div class="iphone-17" id="phone3">
+                <!-- Phone renders here via JS -->
               </div>
             </div>
           </div>
@@ -1267,18 +1384,16 @@
             </div>
           </div>
 
-          <!-- Right: Live Preview -->
+          <!-- Right: iPhone 17 Pro Mockup Preview -->
           <div>
-            <div style="padding:12px;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;text-align:center;">Live Preview</h4>
-              <div class="iphone-frame">
-                <div class="iphone-notch"></div>
-                <div class="iphone-screen">
-                  <div class="iphone-status-bar"><span class="time">9:41</span><span class="icons"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg></span></div>
-                  <div id="livePreview4" class="live-preview-mirror iphone-ad-area" style="position:relative;width:100%;aspect-ratio:1/1;background:#F2F4F9;"></div>
-                  <div style="padding:8px 12px;background:#fff;"><div style="display:flex;gap:12px;margin-bottom:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div style="font-size:9px;font-weight:700;color:#262626;">Sponsored</div><div style="font-size:8px;color:#8e8e8e;margin-top:2px;">coastaldebt.com</div></div>
-                </div>
-                <div class="iphone-home-bar"></div>
+            <div style="padding:12px;text-align:center;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
+              <div class="platform-toggle">
+                <button class="platform-btn active" onclick="setPlatform('instagram',4)">Instagram</button>
+                <button class="platform-btn" onclick="setPlatform('facebook',4)">Facebook</button>
+              </div>
+              <div class="iphone-17" id="phone4">
+                <!-- Phone renders here via JS -->
               </div>
             </div>
           </div>
@@ -1403,18 +1518,16 @@
             </div>
           </div>
 
-          <!-- Right: iPhone Mockup Preview + Results -->
+          <!-- Right: iPhone 17 Pro Mockup Preview + Results -->
           <div>
-            <div style="padding:12px;">
-              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;text-align:center;">Live Preview</h4>
-              <div class="iphone-frame">
-                <div class="iphone-notch"></div>
-                <div class="iphone-screen">
-                  <div class="iphone-status-bar"><span class="time">9:41</span><span class="icons"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg></span></div>
-                  <div id="livePreview5" class="live-preview-mirror iphone-ad-area" style="position:relative;width:100%;aspect-ratio:1/1;background:#F2F4F9;"></div>
-                  <div style="padding:8px 12px;background:#fff;"><div style="display:flex;gap:12px;margin-bottom:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div style="font-size:9px;font-weight:700;color:#262626;">Sponsored</div><div style="font-size:8px;color:#8e8e8e;margin-top:2px;">coastaldebt.com</div></div>
-                </div>
-                <div class="iphone-home-bar"></div>
+            <div style="padding:12px;text-align:center;">
+              <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
+              <div class="platform-toggle">
+                <button class="platform-btn active" onclick="setPlatform('instagram',5)">Instagram</button>
+                <button class="platform-btn" onclick="setPlatform('facebook',5)">Facebook</button>
+              </div>
+              <div class="iphone-17" id="phone5">
+                <!-- Phone renders here via JS -->
               </div>
             </div>
 
@@ -1609,8 +1722,239 @@
     // SVG shape cache for inline rendering with color control
     var shapeCache = {};
 
+    // ============ PHONE MOCKUP PLATFORM STATE ============
+    var phonePlatforms = { 2: 'instagram', 3: 'instagram', 4: 'instagram', 5: 'instagram' };
+
+    // Status bar SVG icons
+    var statusBarHTML = '<div class="iphone-17-status-bar">' +
+      '<span class="sb-time">9:41</span>' +
+      '<span class="sb-icons">' +
+        '<svg viewBox="0 0 18 12" fill="#000"><path d="M1 8.5L3.5 11 6 8.5C4.3 6.9 2.7 6.9 1 8.5zM4.5 5L7 7.5C5.9 6.4 5.6 6.4 4.5 5zM0 5.5L2.5 8C3.9 6.6 5.1 6.6 6.5 8L9 5.5C6.5 3 2.5 3 0 5.5z" transform="translate(0,0.5)"/></svg>' +
+        '<svg viewBox="0 0 17 12" fill="#000"><rect x="0" y="3" width="3" height="9" rx="0.5"/><rect x="4.5" y="2" width="3" height="10" rx="0.5"/><rect x="9" y="1" width="3" height="11" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5"/></svg>' +
+        '<svg viewBox="0 0 25 12" fill="#000"><rect x="0" y="1" width="21" height="10" rx="2" fill="none" stroke="#000" stroke-width="1"/><rect x="1.5" y="2.5" width="16" height="7" rx="1" fill="#000"/><path d="M23 4.5v3a1.5 1.5 0 000-3z"/></svg>' +
+      '</span></div>';
+
+    // Instagram icons (SVG strings)
+    var IG_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>';
+    var IG_COMMENT = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="20" height="20"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>';
+    var IG_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+    var IG_BOOKMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="20" height="20"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>';
+    // IG nav icons
+    var IG_NAV_HOME = '<svg viewBox="0 0 24 24" fill="#262626" width="22" height="22"><path d="M9.005 16.545a2.997 2.997 0 012.997-2.997h0A2.997 2.997 0 0115 16.545V22h7V11.543L12 2 2 11.543V22h7.005z"/></svg>';
+    var IG_NAV_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    var IG_NAV_REELS = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="22" height="22"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M10 8l6 4-6 4z"/></svg>';
+    var IG_NAV_SHOP = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="22" height="22"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>';
+    var IG_NAV_PROFILE = '<svg viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2" width="22" height="22"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    // Facebook icons
+    var FB_LIKE = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="18" height="18"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>';
+    var FB_COMMENT2 = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>';
+    var FB_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="18" height="18"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+    var FB_NAV_HOME = '<svg viewBox="0 0 24 24" fill="#1877f2" width="22" height="22"><path d="M9.005 16.545a2.997 2.997 0 012.997-2.997h0A2.997 2.997 0 0115 16.545V22h7V11.543L12 2 2 11.543V22h7.005z"/></svg>';
+    var FB_NAV_FRIENDS = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="22" height="22"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>';
+    var FB_NAV_VIDEO = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="22" height="22"><rect x="2" y="3" width="20" height="14" rx="2"/><polygon points="10 8 16 10 10 12"/><line x1="2" y1="20" x2="22" y2="20"/></svg>';
+    var FB_NAV_MARKET = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="22" height="22"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>';
+    var FB_NAV_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="#65676b" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+
+    function getAdAreaId(step) {
+      return step === 2 ? 'livePreview' : 'livePreview' + step;
+    }
+
+    function getSocialLayout() {
+      if (selectedSize === 'story_reel') return 'ig_story';
+      if (selectedSize === 'feed_landscape') return 'fb_feed';
+      return 'ig_feed'; // square, carousel_square
+    }
+
+    function getDefaultPlatform() {
+      if (selectedSize === 'feed_landscape') return 'facebook';
+      return 'instagram';
+    }
+
+    function renderPhoneMockup(step) {
+      var container = document.getElementById('phone' + step);
+      if (!container) return;
+      var platform = phonePlatforms[step] || 'instagram';
+      var adId = getAdAreaId(step);
+      var meta = SIZE_META[selectedSize];
+      var ratio = meta.width + '/' + meta.height;
+      var isStory = selectedSize === 'story_reel';
+      var isLandscape = selectedSize === 'feed_landscape';
+
+      var html = '<div class="iphone-17-screen">';
+      html += '<div class="iphone-17-island"></div>';
+      html += '<div class="iphone-17-home-bar"></div>';
+
+      if (platform === 'facebook') {
+        html += renderFacebookFeed(adId, ratio, step);
+      } else if (isStory) {
+        html += renderInstagramStory(adId, step);
+      } else {
+        html += renderInstagramFeed(adId, ratio, step);
+      }
+
+      html += '</div>'; // screen
+      container.innerHTML = html;
+    }
+
+    function renderInstagramFeed(adId, ratio, step) {
+      var isMirror = step !== 2;
+      var mirrorClass = isMirror ? ' live-preview-mirror' : '';
+      var adContent = '';
+      if (step === 2) {
+        adContent = '<img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">' +
+          '<img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:70%;object-fit:contain;display:none;cursor:grab;">' +
+          '<div id="livePreviewChevrons" style="position:absolute;display:none;"></div>' +
+          '<div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>' +
+          '<div id="livePreviewLogo" style="position:absolute;display:none;"></div>';
+      }
+
+      return statusBarHTML +
+        '<div class="social-ui">' +
+          '<div class="ig-feed-header">' +
+            '<div class="ig-avatar"><div class="ig-avatar-inner">CD</div></div>' +
+            '<div class="ig-name">coastal_debt <span>&#183; Sponsored</span></div>' +
+            '<div class="ig-dots">&#183;&#183;&#183;</div>' +
+          '</div>' +
+          '<div class="ig-feed-ad-area-wrap">' +
+            '<div class="phone-ad-area' + mirrorClass + '" id="' + adId + '" style="position:relative;width:100%;aspect-ratio:' + ratio + ';background:#F2F4F9;">' + adContent + '</div>' +
+          '</div>' +
+          '<div class="ig-feed-actions">' +
+            IG_HEART + IG_COMMENT + IG_SHARE +
+            '<span class="ig-bookmark" style="margin-left:auto;">' + IG_BOOKMARK + '</span>' +
+          '</div>' +
+          '<div class="ig-feed-cta">' +
+            '<div class="ig-cta-url">coastaldebt.com</div>' +
+            '<div class="ig-cta-link">Learn More <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00376b" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+          '</div>' +
+          '<div class="ig-feed-nav">' +
+            IG_NAV_HOME + IG_NAV_SEARCH + IG_NAV_REELS + IG_NAV_SHOP + IG_NAV_PROFILE +
+          '</div>' +
+        '</div>';
+    }
+
+    function renderInstagramStory(adId, step) {
+      var isMirror = step !== 2;
+      var mirrorClass = isMirror ? ' live-preview-mirror' : '';
+      var adContent = '';
+      if (step === 2) {
+        adContent = '<img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">' +
+          '<img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:70%;object-fit:contain;display:none;cursor:grab;">' +
+          '<div id="livePreviewChevrons" style="position:absolute;display:none;"></div>' +
+          '<div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>' +
+          '<div id="livePreviewLogo" style="position:absolute;display:none;"></div>';
+      }
+
+      return '<div class="social-ui">' +
+        '<div class="ig-story-wrap">' +
+          '<div class="ig-story-bars"><span class="active"></span><span></span><span></span><span></span></div>' +
+          '<div class="ig-story-header" style="top:14px;">' +
+            '<div class="ig-avatar"><div class="ig-avatar-inner">CD</div></div>' +
+            '<div class="ig-name">coastal_debt <span>Sponsored</span></div>' +
+          '</div>' +
+          '<div class="ig-story-ad-area-wrap">' +
+            '<div class="phone-ad-area' + mirrorClass + '" id="' + adId + '" style="position:relative;width:100%;height:100%;background:#F2F4F9;">' + adContent + '</div>' +
+          '</div>' +
+          '<div class="ig-story-cta">Learn More</div>' +
+          '<div class="ig-story-actions">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="22" height="22"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="22" height="22"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="22" height="22"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderFacebookFeed(adId, ratio, step) {
+      var isMirror = step !== 2;
+      var mirrorClass = isMirror ? ' live-preview-mirror' : '';
+      var adContent = '';
+      if (step === 2) {
+        adContent = '<img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">' +
+          '<img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:70%;object-fit:contain;display:none;cursor:grab;">' +
+          '<div id="livePreviewChevrons" style="position:absolute;display:none;"></div>' +
+          '<div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>' +
+          '<div id="livePreviewLogo" style="position:absolute;display:none;"></div>';
+      }
+
+      return statusBarHTML +
+        '<div class="social-ui">' +
+          '<div class="fb-feed-top"><span class="fb-logo">facebook</span></div>' +
+          '<div class="fb-feed-header">' +
+            '<div class="fb-avatar">CD</div>' +
+            '<div style="flex:1;">' +
+              '<div class="fb-name">Coastal Debt Resolve</div>' +
+              '<div class="fb-sponsor">Sponsored &#183; <svg viewBox="0 0 16 16" fill="#65676b"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"/><circle cx="8" cy="8" r="2"/></svg></div>' +
+            '</div>' +
+            '<div style="color:#65676b;font-size:16px;cursor:default;">&#183;&#183;&#183;</div>' +
+          '</div>' +
+          '<div class="fb-feed-ad-area-wrap">' +
+            '<div class="phone-ad-area' + mirrorClass + '" id="' + adId + '" style="position:relative;width:100%;aspect-ratio:' + ratio + ';background:#F2F4F9;">' + adContent + '</div>' +
+          '</div>' +
+          '<div class="fb-feed-cta-bar">' +
+            '<div class="fb-cta-url">coastaldebt.com</div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+              '<div class="fb-cta-headline">Get Debt Relief Today</div>' +
+              '<div class="fb-cta-btn">Learn More</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="fb-feed-reactions">' +
+            FB_LIKE + '<span>Like</span>' +
+            FB_COMMENT2 + '<span>Comment</span>' +
+            FB_SHARE + '<span>Share</span>' +
+          '</div>' +
+          '<div class="fb-feed-nav">' +
+            FB_NAV_HOME + FB_NAV_FRIENDS + FB_NAV_VIDEO + FB_NAV_MARKET + FB_NAV_MENU +
+          '</div>' +
+        '</div>';
+    }
+
+    function setPlatform(platform, step) {
+      phonePlatforms[step] = platform;
+      // Update toggle buttons
+      var phone = document.getElementById('phone' + step);
+      if (!phone) return;
+      var toggle = phone.closest('div[style*="text-align"]') || phone.parentElement;
+      if (toggle) {
+        toggle.querySelectorAll('.platform-btn').forEach(function(b) {
+          b.classList.toggle('active', b.textContent.toLowerCase() === platform);
+        });
+      }
+      renderPhoneMockup(step);
+      // Re-apply content
+      if (step === 2) {
+        updateLivePreview();
+      } else {
+        var bgColor = wizardState.bgColor || '#F2F4F9';
+        var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl;
+        var headline = (document.getElementById('copyV2Headline') || {}).value || '';
+        var subheadline = (document.getElementById('copyV2Subheadline') || {}).value || '';
+        var ctaText = (document.getElementById('copyV2Cta') || {}).value || '';
+        syncSingleMirror(step, bgColor, personUrl, headline, subheadline, ctaText);
+      }
+    }
+
+    function autoSetPlatforms() {
+      var defaultP = getDefaultPlatform();
+      [2,3,4,5].forEach(function(step) {
+        phonePlatforms[step] = defaultP;
+        var toggle = document.getElementById('phone' + step);
+        if (toggle) {
+          var parent = toggle.closest('div[style*="text-align"]') || toggle.parentElement;
+          if (parent) {
+            parent.querySelectorAll('.platform-btn').forEach(function(b) {
+              b.classList.toggle('active', b.textContent.toLowerCase() === defaultP);
+            });
+          }
+        }
+      });
+    }
+
+    function initAllPhones() {
+      [2,3,4,5].forEach(function(step) { renderPhoneMockup(step); });
+    }
+
     // Init preview aspect ratio on load
-    setTimeout(function() { updatePreviewAspectRatio(); }, 100);
+    setTimeout(function() { initAllPhones(); updatePreviewAspectRatio(); }, 100);
 
     // ============ WIZARD NAVIGATION ============
 
@@ -1678,15 +2022,15 @@
     }
 
     function updatePreviewAspectRatio() {
-      var meta = SIZE_META[selectedSize];
-      var ratio = meta.width + '/' + meta.height;
-      ['livePreview', 'livePreview3', 'livePreview4', 'livePreview5'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.style.aspectRatio = ratio;
-      });
+      // Re-render all phones with new aspect ratio and auto-set platforms
+      autoSetPlatforms();
+      initAllPhones();
       // Also update person preview box in Step 1
       var personBox = document.getElementById('personPreviewBox');
-      if (personBox) personBox.style.aspectRatio = ratio;
+      if (personBox) {
+        var meta = SIZE_META[selectedSize];
+        personBox.style.aspectRatio = meta.width + '/' + meta.height;
+      }
       updateLivePreview();
     }
 
@@ -4324,6 +4668,60 @@
 
         mirror.innerHTML = chevronHtml + personHtml + textHtml;
       });
+    }
+
+    function syncSingleMirror(step, bgColor, personUrl, headline, subheadline, ctaText) {
+      var adId = getAdAreaId(step);
+      var mirror = document.getElementById(adId);
+      if (!mirror || !mirror.classList.contains('live-preview-mirror')) return;
+
+      mirror.style.background = bgColor;
+      if (wizardState.bgImageDataUrl || wizardState.bgImageUrl) {
+        mirror.style.backgroundImage = 'url(' + (wizardState.bgImageDataUrl || wizardState.bgImageUrl) + ')';
+        mirror.style.backgroundSize = 'cover';
+        mirror.style.backgroundPosition = 'center';
+      } else {
+        mirror.style.backgroundImage = 'none';
+      }
+
+      var offsetX = wizardState.personOffsetX || 0;
+      var offsetY = wizardState.personOffsetY || 0;
+      var chevronHtml = '';
+      if (wizardState.chevrons.visible) {
+        var chevSizeSlider2 = document.getElementById('chevronSize');
+        var sz = (chevSizeSlider2 ? chevSizeSlider2.value : 30) + '%';
+        var pos = wizardState.chevrons.position === 'top-right' ? 'right:3%;top:3%;' : 'left:3%;top:3%;';
+        var zIdx = wizardState.chevrons.behindPerson ? '1' : '3';
+        var shapeUrl = wizardState.chevrons.shapeUrl || '/assets/brand-assets/chevron-style-1.svg';
+        var shapeColor = (document.getElementById('shapeColor') || {}).value || '#3052FF';
+        var cachedSvg = shapeCache[shapeUrl];
+        if (cachedSvg) {
+          var coloredSvg = cachedSvg.replace(/currentColor/g, shapeColor);
+          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;">' + coloredSvg + '</div>';
+        } else {
+          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;"><img src="' + escapeHtml(shapeUrl) + '" style="width:100%;height:auto;"></div>';
+        }
+      }
+
+      var textHtml = '';
+      if (headline || subheadline || ctaText) {
+        var isDark = isColorDark(bgColor);
+        var tc = isDark ? '#fff' : '#1a1a2e';
+        var tpos = wizardState.textPosition;
+        var align = tpos === 'center' ? 'text-align:center;left:10%;right:10%;' : (tpos === 'right' ? 'text-align:right;right:5%;left:auto;width:45%;' : 'text-align:left;left:5%;width:45%;');
+        textHtml = '<div style="position:absolute;bottom:15%;' + align + 'z-index:4;">';
+        if (headline) textHtml += '<div style="font-size:14px;font-weight:700;color:' + tc + ';margin-bottom:4px;line-height:1.2;">' + escapeHtml(headline) + '</div>';
+        if (subheadline) textHtml += '<div style="font-size:10px;color:' + tc + ';opacity:0.7;margin-bottom:6px;">' + escapeHtml(subheadline) + '</div>';
+        if (ctaText) textHtml += '<div style="display:inline-block;background:#3052FF;color:#fff;font-size:9px;font-weight:700;padding:4px 10px;border-radius:4px;">' + escapeHtml(ctaText) + '</div>';
+        textHtml += '</div>';
+      }
+
+      var personHtml = '';
+      if (personUrl) {
+        personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;cursor:grab;">';
+      }
+
+      mirror.innerHTML = chevronHtml + personHtml + textHtml;
     }
 
     function isColorDark(hex) {
