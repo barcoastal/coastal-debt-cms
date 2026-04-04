@@ -1,14 +1,14 @@
-// Google Gemini Flash image generation adapter (free tier)
+// Google Gemini image generation adapter (paid tier)
 // Docs: https://ai.google.dev/gemini-api/docs/image-generation
 
 const fs = require('fs');
 const path = require('path');
 
-// Try models in order — first available one wins
+// Try models in order — best quality first
 const MODELS = [
-  'gemini-2.5-flash-image',
-  'gemini-2.0-flash',
-  'imagen-4.0-generate-001'
+  'imagen-4.0-generate-001',
+  'gemini-2.5-flash-preview-image-generation',
+  'gemini-2.0-flash-exp'
 ];
 
 async function generate(apiKey, prompt, referenceImageUrls, size) {
