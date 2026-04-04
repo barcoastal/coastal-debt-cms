@@ -5257,33 +5257,16 @@
         }, { crossOrigin: 'anonymous' });
 
       } else {
-        // SINGLE IMAGE: no separation — show as one layer covering the canvas
-        var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
-        if (bgUrl) {
-          fabric.Image.fromURL(bgUrl, function(img) {
-            var imgScale = Math.max(w / img.width, h / img.height);
-            img.set({
-              left: 0, top: 0,
-              scaleX: imgScale, scaleY: imgScale,
-              hasControls: true, hasBorders: true,
-              cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
-              transparentCorners: false, borderColor: '#FF9000',
-              name: 'bgImage'
-            });
-            bgImageObj = img;
-            adCanvas.add(img);
-            adCanvas.sendToBack(img);
-            adCanvas.renderAll();
-            syncCanvasToPreview();
-          }, { crossOrigin: 'anonymous' });
-        }
-
-        // Person as single full-cover image
-        var personUrl = wizardState.personImageUrl || generatedImageUrl;
-        if (personUrl) {
-          fabric.Image.fromURL(personUrl, function(img) {
-            var imgScale = Math.max(w / img.width, h / img.height);
-            img.set({
+        // SINGLE IMAGE: no separation — load the generated image as one draggable layer
+        var singleUrl = wizardState.personImageUrl || generatedImageUrl;
+        if (singleUrl) {
+          // Use Image element to bypass CORS issues
+          var imgEl = new Image();
+          imgEl.crossOrigin = 'anonymous';
+          imgEl.onload = function() {
+            var fImg = new fabric.Image(imgEl);
+            var imgScale = Math.max(w / fImg.width, h / fImg.height);
+            fImg.set({
               left: 0, top: 0,
               scaleX: imgScale, scaleY: imgScale,
               hasControls: true, hasBorders: true,
@@ -5291,11 +5274,45 @@
               transparentCorners: false, borderColor: '#3052FF',
               name: 'person'
             });
-            personObj = img;
-            adCanvas.add(img);
-            adCanvas.setActiveObject(img);
+            personObj = fImg;
+            adCanvas.add(fImg);
+            adCanvas.setActiveObject(fImg);
             adCanvas.renderAll();
             syncCanvasToPreview();
+          };
+          imgEl.onerror = function() {
+            // Retry without CORS
+            var imgEl2 = new Image();
+            imgEl2.onload = function() {
+              var fImg = new fabric.Image(imgEl2);
+              var imgScale = Math.max(w / fImg.width, h / fImg.height);
+              fImg.set({ left: 0, top: 0, scaleX: imgScale, scaleY: imgScale,
+                hasControls: true, hasBorders: true, cornerStyle: 'circle',
+                cornerColor: '#3052FF', cornerSize: 10, transparentCorners: false,
+                borderColor: '#3052FF', name: 'person' });
+              personObj = fImg;
+              adCanvas.add(fImg);
+              adCanvas.setActiveObject(fImg);
+              adCanvas.renderAll();
+            };
+            imgEl2.src = singleUrl;
+          };
+          imgEl.src = singleUrl;
+        }
+
+        // Also add background image if uploaded separately
+        var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
+        if (bgUrl && bgUrl !== singleUrl) {
+          fabric.Image.fromURL(bgUrl, function(img) {
+            var imgScale = Math.max(w / img.width, h / img.height);
+            img.set({ left: 0, top: 0, scaleX: imgScale, scaleY: imgScale,
+              hasControls: true, hasBorders: true, cornerStyle: 'circle',
+              cornerColor: '#FF9000', cornerSize: 10, transparentCorners: false,
+              borderColor: '#FF9000', name: 'bgImage' });
+            bgImageObj = img;
+            adCanvas.add(img);
+            adCanvas.sendToBack(img);
+            adCanvas.renderAll();
           }, { crossOrigin: 'anonymous' });
         }
       }
