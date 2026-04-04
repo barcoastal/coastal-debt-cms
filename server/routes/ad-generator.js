@@ -868,6 +868,61 @@ router.post('/recompose', authenticateToken, async (req, res) => {
 
 // ============ SAVE EDIT ============
 
+// AI Redesign — rearrange canvas elements into professional layout
+router.post('/ai-redesign', authenticateToken, async (req, res) => {
+  const { elements, canvasWidth, canvasHeight, selectedSize } = req.body;
+  if (!elements || !canvasWidth || !canvasHeight) {
+    return res.status(400).json({ error: 'elements, canvasWidth, canvasHeight required' });
+  }
+
+  try {
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) return res.status(500).json({ error: 'No API key' });
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `You are a professional ad designer for Coastal Debt Resolve (MCA debt settlement). Redesign this ${selectedSize} ad layout.
+
+Canvas: ${canvasWidth}x${canvasHeight} pixels.
+
+Elements:
+${JSON.stringify(elements, null, 2)}
+
+Rules:
+- Person image: prominent, on the left side (~30-45% width), aligned to bottom
+- Headline: large, bold, on the right side opposite the person, near the top
+- Subheadline: below headline, smaller
+- CTA button: below subheadline or near bottom-right
+- Chevrons: behind the person as decorative accent, top-left area
+- Logo: top-right corner, small (~15% width)
+- Trust badges: row at very bottom, evenly spaced, small
+- Background image: fill entire canvas, send to back
+- Don't overlap text on person's face
+- Clean, professional, lots of white space
+
+Return ONLY a JSON array. Each object must have: index (matching the element index), left (pixels), top (pixels), scaleX (number), scaleY (number).
+Example: [{"index":0,"left":0,"top":0,"scaleX":1,"scaleY":1}]`
+      }]
+    });
+
+    const text = message.content[0].text.trim();
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) return res.status(500).json({ error: 'AI returned invalid layout' });
+
+    const positions = JSON.parse(match[0]);
+    res.json({ positions });
+  } catch (err) {
+    console.error('AI Redesign error:', err.message);
+    res.status(500).json({ error: 'Redesign failed: ' + err.message });
+  }
+});
+
 router.post('/generations/:id/save-edit', authenticateToken, async (req, res) => {
   const { image_base64 } = req.body;
   if (!image_base64) return res.status(400).json({ error: 'image_base64 is required' });

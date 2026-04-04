@@ -1225,6 +1225,8 @@
               <button onclick="addBadgeToCanvas('trustpilot')" title="Add Trustpilot badge" style="font-size:11px;">&#9733;TP</button>
               <button onclick="addBadgeToCanvas('iso')" title="Add ISO badge" style="font-size:11px;">ISO</button>
               <button onclick="addBadgeToCanvas('bbb')" title="Add BBB badge" style="font-size:11px;">BBB</button>
+              <span class="toolbar-sep"></span>
+              <button onclick="aiRedesign()" id="aiRedesignBtn" style="background:linear-gradient(135deg,#3052FF,#7FB2FF);color:#fff;border:none;font-weight:700;padding:4px 14px;" title="AI rearranges all elements into a professional layout">&#10024; AI Redesign</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -4911,6 +4913,103 @@
         document.getElementById('textFontSize').value = Math.round(obj.fontSize || 32);
         document.getElementById('textColorPicker').value = obj.fill || '#000000';
         document.getElementById('textAlign').value = obj.textAlign || 'left';
+      }
+    }
+
+    // ============ AI REDESIGN ============
+
+    async function aiRedesign() {
+      if (!adCanvas) return;
+      var objects = adCanvas.getObjects();
+      if (objects.length === 0) { alert('Add some elements first'); return; }
+
+      var btn = document.getElementById('aiRedesignBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Redesigning...';
+
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+      var meta = SIZE_META[selectedSize];
+
+      // Collect all elements on canvas
+      var elements = objects.map(function(obj, i) {
+        var info = {
+          index: i,
+          type: obj.name || obj.type,
+          left: Math.round(obj.left),
+          top: Math.round(obj.top),
+          width: Math.round(obj.getScaledWidth()),
+          height: Math.round(obj.getScaledHeight()),
+        };
+        if (obj.type === 'i-text' || obj.type === 'text') {
+          info.text = obj.text;
+          info.fontSize = obj.fontSize;
+        }
+        if (obj.type === 'group' && obj.name === 'cta') {
+          info.type = 'cta_button';
+          obj._objects.forEach(function(child) {
+            if (child.type === 'text') info.text = child.text;
+          });
+        }
+        return info;
+      });
+
+      var prompt = 'You are a professional ad designer. Redesign this ' + meta.width + 'x' + meta.height + ' (' + selectedSize + ') ad layout.\n\n' +
+        'Canvas size: ' + w + 'x' + h + ' pixels\n\n' +
+        'Elements on canvas:\n' + JSON.stringify(elements, null, 2) + '\n\n' +
+        'Rearrange these elements into a professional, clean ad layout following these rules:\n' +
+        '- Person image should be prominent (left or right side, about 40-50% of canvas width)\n' +
+        '- Headline should be large and attention-grabbing, placed where there is space (opposite side of person)\n' +
+        '- Subheadline below headline, smaller\n' +
+        '- CTA button near the bottom, centered or aligned with text\n' +
+        '- Chevrons behind the person as decorative accents\n' +
+        '- Logo in top-right or top-left corner, small\n' +
+        '- Trust badges in a row at the very bottom, small\n' +
+        '- Leave breathing room, dont overlap text on person face\n' +
+        '- This is for Coastal Debt Resolve (MCA debt settlement company)\n\n' +
+        'Respond with ONLY a JSON array of objects with index, left, top, scaleX, scaleY for each element. Example:\n' +
+        '[{"index":0,"left":10,"top":20,"scaleX":0.5,"scaleY":0.5},...]';
+
+      try {
+        var res = await fetch('/api/ad-generator/generate-copy-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: prompt, _raw: true })
+        });
+
+        // Fallback: use the layout engine endpoint if copy-v2 doesn't work for this
+        // Try calling Claude directly via a simple proxy
+        var layoutRes = await fetch('/api/ad-generator/ai-redesign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ elements: elements, canvasWidth: w, canvasHeight: h, selectedSize: selectedSize })
+        });
+
+        if (!layoutRes.ok) throw new Error('AI redesign failed');
+        var layoutData = await layoutRes.json();
+        var positions = layoutData.positions;
+
+        if (Array.isArray(positions)) {
+          positions.forEach(function(pos) {
+            var obj = objects[pos.index];
+            if (!obj) return;
+            if (pos.left !== undefined) obj.set('left', pos.left);
+            if (pos.top !== undefined) obj.set('top', pos.top);
+            if (pos.scaleX !== undefined) obj.set('scaleX', pos.scaleX);
+            if (pos.scaleY !== undefined) obj.set('scaleY', pos.scaleY);
+            obj.setCoords();
+          });
+          adCanvas.renderAll();
+          syncCanvasToPreview();
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '&#10024; AI Redesign';
+      } catch(e) {
+        console.error('AI Redesign error:', e);
+        btn.disabled = false;
+        btn.innerHTML = '&#10024; AI Redesign';
+        alert('Redesign failed: ' + e.message);
       }
     }
 
