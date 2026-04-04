@@ -4631,6 +4631,14 @@
     function syncLivePreviewMirrors(bgColor, personUrl, headline, subheadline, ctaText) {
       var mirrors = document.querySelectorAll('.live-preview-mirror');
       mirrors.forEach(function(mirror) {
+        // Determine which step this mirror belongs to
+        var mirrorStep = 2;
+        if (mirror.id === 'livePreview3') mirrorStep = 3;
+        else if (mirror.id === 'livePreview4') mirrorStep = 4;
+        else if (mirror.id === 'livePreview5') mirrorStep = 5;
+        // Also check data attribute
+        if (mirror.dataset.step) mirrorStep = parseInt(mirror.dataset.step);
+
         mirror.style.background = bgColor;
         if (wizardState.bgImageDataUrl || wizardState.bgImageUrl) {
           mirror.style.backgroundImage = 'url(' + (wizardState.bgImageDataUrl || wizardState.bgImageUrl) + ')';
@@ -4643,7 +4651,8 @@
         var offsetX = wizardState.personOffsetX || 0;
         var offsetY = wizardState.personOffsetY || 0;
         var chevronHtml = '';
-        if (wizardState.chevrons.visible) {
+        // Only show chevrons from Step 3 onward
+        if (wizardState.chevrons.visible && mirrorStep >= 3) {
           var chevSizeSlider2 = document.getElementById('chevronSize');
           var sz = (chevSizeSlider2 ? chevSizeSlider2.value : 30) + '%';
           var pos = wizardState.chevrons.position === 'top-right' ? 'right:3%;top:3%;' : 'left:3%;top:3%;';
@@ -4671,7 +4680,8 @@
         }
 
         var textHtml = '';
-        if (headline || subheadline || ctaText) {
+        // Only show text from Step 4 onward
+        if ((headline || subheadline || ctaText) && mirrorStep >= 4) {
           var isDark = isColorDark(bgColor);
           var tc = isDark ? '#fff' : '#1a1a2e';
           var pos = wizardState.textPosition;
@@ -4685,7 +4695,7 @@
 
         var personHtml = '';
         if (personUrl) {
-          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;cursor:grab;">';
+          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;max-width:90%;object-fit:contain;left:' + (50 + offsetX) + '%;transform:translateX(-50%);z-index:2;cursor:grab;">';
         }
 
         mirror.innerHTML = chevronHtml + personHtml + textHtml;
