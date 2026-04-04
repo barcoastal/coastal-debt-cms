@@ -85,6 +85,83 @@
       .step-split, .step-split.canvas-layout { grid-template-columns: 1fr; }
     }
 
+    /* ============ FABRIC CANVAS EDITOR ============ */
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px 8px 0 0;
+      border-bottom: none;
+      flex-wrap: wrap;
+    }
+    .canvas-toolbar button {
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .canvas-toolbar button:hover { background: var(--gray-100); }
+    .canvas-toolbar .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--gray-200);
+      margin: 0 4px;
+    }
+    .canvas-toolbar label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .canvas-editor-area {
+      background: #e5e5e5;
+      background-image:
+        linear-gradient(45deg, #d5d5d5 25%, transparent 25%),
+        linear-gradient(-45deg, #d5d5d5 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d5d5d5 75%),
+        linear-gradient(-45deg, transparent 75%, #d5d5d5 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      border-radius: 0 0 8px 8px;
+      border: 1px solid var(--gray-200);
+      border-top: none;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+    }
+    .canvas-editor-area canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    #canvasProps {
+      margin-top: 8px;
+      padding: 12px 16px;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+    }
+    #canvasProps h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray-700);
+    }
+    #canvasProps label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-500);
+      display: block;
+      margin-bottom: 2px;
+    }
+    #canvasProps .prop-row {
+      margin-bottom: 8px;
+    }
+    #canvasProps .prop-row:last-child { margin-bottom: 0; }
+
     /* ============ SIZE CARDS ============ */
     .size-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px; }
     .size-card {
@@ -1130,74 +1207,109 @@
 
       <!-- ============ STEP 2: BACKGROUND ============ -->
       <div class="step-panel" id="step2">
-        <div class="step-split">
-          <!-- Left: Controls -->
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+          <!-- Left: Canvas Editor -->
           <div>
-            <div class="controls-panel">
-              <!-- Image Position (pan/crop) -->
-              <div class="controls-section">
-                <h4>Image Position</h4>
-                <p style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">Shift the image to make room for text</p>
-                <div style="margin-bottom:10px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Pan Left / Right</label>
-                  <input type="range" id="imagePanX" min="-50" max="50" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imagePanX=parseInt(this.value);document.getElementById('imagePanXVal').textContent=this.value+'%';updateLivePreview()">
-                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Left</span><span id="imagePanXVal">0%</span><span>Right</span></div>
+            <!-- Toolbar -->
+            <div class="canvas-toolbar">
+              <button onclick="canvasBringForward()" title="Bring Forward">&#8593; Forward</button>
+              <button onclick="canvasSendBackward()" title="Send Backward">&#8595; Backward</button>
+              <button onclick="canvasDelete()" title="Delete Selected">&#128465; Delete</button>
+              <span class="toolbar-sep"></span>
+              <label>Background:</label>
+              <input type="color" id="canvasBgColor" value="#F2F4F9" onchange="setCanvasBgColor(this.value)" style="width:32px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
+              <button onclick="document.getElementById('bgImageUpload').click()">Upload BG</button>
+              <button onclick="generateCanvasBg()">AI Background</button>
+            </div>
+            <!-- Canvas -->
+            <div class="canvas-editor-area">
+              <canvas id="adFabricCanvas"></canvas>
+            </div>
+            <!-- Properties Panel -->
+            <div id="canvasProps" style="display:none;">
+              <h4>Properties</h4>
+              <div class="prop-row">
+                <label>Opacity</label>
+                <input type="range" id="propOpacity" min="0" max="100" value="100" style="width:100%;accent-color:#3052FF;" oninput="setSelectedOpacity(this.value)">
+              </div>
+              <div class="prop-row">
+                <label>Scale</label>
+                <input type="range" id="propScale" min="10" max="200" value="100" style="width:100%;accent-color:#3052FF;" oninput="setSelectedScale(this.value)">
+              </div>
+              <div class="prop-row" id="propColorRow" style="display:none;">
+                <label>Color</label>
+                <input type="color" id="propColor" onchange="setSelectedColor(this.value)" style="width:32px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
+              </div>
+            </div>
+
+            <!-- Background Options (collapsible) -->
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--gray-700);padding:8px 0;">Background Options</summary>
+              <div style="padding:12px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;">
+                <!-- Background Color -->
+                <div style="margin-bottom:14px;">
+                  <h4 style="font-size:13px;font-weight:600;margin:0 0 8px;">Background Color</h4>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <input type="color" id="bgColorPicker" value="#F2F4F9" onchange="updateBgColor(this.value)" style="width:40px;height:40px;border:1px solid var(--gray-300);border-radius:6px;padding:2px;cursor:pointer;">
+                    <span id="bgColorHex" style="font-size:13px;font-weight:600;color:var(--gray-600);">#F2F4F9</span>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button onclick="updateBgColor('#F2F4F9')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#F2F4F9;cursor:pointer;" title="Brand Light"></button>
+                    <button onclick="updateBgColor('#FFFFFF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#FFFFFF;cursor:pointer;" title="White"></button>
+                    <button onclick="updateBgColor('#1a1a2e')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#1a1a2e;cursor:pointer;" title="Dark Navy"></button>
+                    <button onclick="updateBgColor('#000000')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#000000;cursor:pointer;" title="Black"></button>
+                    <button onclick="updateBgColor('#3052FF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#3052FF;cursor:pointer;" title="Brand Blue"></button>
+                  </div>
                 </div>
-                <div style="margin-bottom:10px;">
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Pan Up / Down</label>
-                  <input type="range" id="imagePanY" min="-50" max="50" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imagePanY=parseInt(this.value);document.getElementById('imagePanYVal').textContent=this.value+'%';updateLivePreview()">
-                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Up</span><span id="imagePanYVal">0%</span><span>Down</span></div>
+                <!-- Custom Background Image -->
+                <div style="margin-bottom:14px;">
+                  <h4 style="font-size:13px;font-weight:600;margin:0 0 6px;">Custom Background Image</h4>
+                  <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Upload a background image instead of a solid color</p>
+                  <input type="file" id="bgImageUpload" accept=".png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleBgImageUpload(this)">
+                  <button class="btn btn-secondary" onclick="document.getElementById('bgImageUpload').click()" style="width:100%;font-size:13px;">Upload Background Image</button>
+                  <div id="bgImagePreviewThumb" style="display:none;margin-top:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <img id="bgImageThumb" src="" style="height:48px;border-radius:6px;border:1px solid var(--gray-300);">
+                      <button class="btn btn-secondary btn-small" onclick="clearBgImage()" style="font-size:11px;color:#dc2626;">Remove</button>
+                    </div>
+                  </div>
                 </div>
+                <!-- AI Background Generation -->
                 <div>
-                  <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Zoom</label>
-                  <input type="range" id="imageZoom" min="100" max="200" value="100" step="5" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imageZoom=parseInt(this.value);document.getElementById('imageZoomVal').textContent=this.value+'%';updateLivePreview()">
-                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>100%</span><span id="imageZoomVal">100%</span><span>200%</span></div>
+                  <h4 style="font-size:13px;font-weight:600;margin:0 0 8px;">AI Generated Background</h4>
+                  <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="bgPrompt" placeholder="e.g. modern office, city skyline, abstract blue gradient..." style="flex:1;padding:8px 12px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
+                    <select id="bgModel" style="padding:8px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
+                      <option value="gemini">Gemini</option>
+                      <option value="flux">Flux</option>
+                      <option value="midjourney">Midjourney</option>
+                    </select>
+                    <button onclick="generateAiBackground()" id="bgGenBtn" style="padding:8px 16px;background:#3052FF;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Generate</button>
+                  </div>
+                  <div id="bgGenResults" style="display:none;"></div>
                 </div>
-              </div>
-
-              <div class="controls-section">
-                <h4>Background Color</h4>
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                  <input type="color" id="bgColorPicker" value="#F2F4F9" onchange="updateBgColor(this.value)" style="width:40px;height:40px;border:1px solid var(--gray-300);border-radius:6px;padding:2px;cursor:pointer;">
-                  <span id="bgColorHex" style="font-size:13px;font-weight:600;color:var(--gray-600);">#F2F4F9</span>
-                </div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                  <button onclick="updateBgColor('#F2F4F9')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#F2F4F9;cursor:pointer;" title="Brand Light"></button>
-                  <button onclick="updateBgColor('#FFFFFF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#FFFFFF;cursor:pointer;" title="White"></button>
-                  <button onclick="updateBgColor('#1a1a2e')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#1a1a2e;cursor:pointer;" title="Dark Navy"></button>
-                  <button onclick="updateBgColor('#000000')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#000000;cursor:pointer;" title="Black"></button>
-                  <button onclick="updateBgColor('#3052FF')" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--gray-300);background:#3052FF;cursor:pointer;" title="Brand Blue"></button>
-                </div>
-              </div>
-
-              <div class="controls-section">
-                <h4>Custom Background Image</h4>
-                <p style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Upload a background image instead of a solid color</p>
-                <input type="file" id="bgImageUpload" accept=".png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleBgImageUpload(this)">
-                <button class="btn btn-secondary" onclick="document.getElementById('bgImageUpload').click()" style="width:100%;font-size:13px;">Upload Background Image</button>
-                <div id="bgImagePreviewThumb" style="display:none;margin-top:8px;">
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <img id="bgImageThumb" src="" style="height:48px;border-radius:6px;border:1px solid var(--gray-300);">
-                    <button class="btn btn-secondary btn-small" onclick="clearBgImage()" style="font-size:11px;color:#dc2626;">Remove</button>
+                <!-- Image Position (pan/crop) — fallback controls -->
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-200);">
+                  <h4 style="font-size:13px;font-weight:600;margin:0 0 4px;">Image Position (Preview)</h4>
+                  <p style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">Fine-tune the image in the phone preview</p>
+                  <div style="margin-bottom:10px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Pan Left / Right</label>
+                    <input type="range" id="imagePanX" min="-50" max="50" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imagePanX=parseInt(this.value);document.getElementById('imagePanXVal').textContent=this.value+'%';updateLivePreview()">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Left</span><span id="imagePanXVal">0%</span><span>Right</span></div>
+                  </div>
+                  <div style="margin-bottom:10px;">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Pan Up / Down</label>
+                    <input type="range" id="imagePanY" min="-50" max="50" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imagePanY=parseInt(this.value);document.getElementById('imagePanYVal').textContent=this.value+'%';updateLivePreview()">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Up</span><span id="imagePanYVal">0%</span><span>Down</span></div>
+                  </div>
+                  <div>
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Zoom</label>
+                    <input type="range" id="imageZoom" min="100" max="200" value="100" step="5" style="width:100%;accent-color:#3052FF;" oninput="wizardState.imageZoom=parseInt(this.value);document.getElementById('imageZoomVal').textContent=this.value+'%';updateLivePreview()">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>100%</span><span id="imageZoomVal">100%</span><span>200%</span></div>
                   </div>
                 </div>
               </div>
-
-              <!-- AI Background Generation -->
-              <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200);">
-                <label style="font-size:13px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:8px;">AI Generated Background</label>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                  <input type="text" id="bgPrompt" placeholder="e.g. modern office, city skyline, abstract blue gradient..." style="flex:1;padding:8px 12px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
-                  <select id="bgModel" style="padding:8px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
-                    <option value="gemini">Gemini</option>
-                    <option value="flux">Flux</option>
-                    <option value="midjourney">Midjourney</option>
-                  </select>
-                  <button onclick="generateAiBackground()" id="bgGenBtn" style="padding:8px 16px;background:#3052FF;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Generate</button>
-                </div>
-                <div id="bgGenResults" style="display:none;"></div>
-              </div>
-            </div>
+            </details>
 
             <!-- Nav -->
             <div class="step-nav">
@@ -1206,7 +1318,7 @@
             </div>
           </div>
 
-          <!-- Right: iPhone 17 Pro Mockup Preview -->
+          <!-- Right: iPhone Preview -->
           <div>
             <div style="padding:12px;text-align:center;">
               <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;text-align:center;">Live Preview</h4>
@@ -2025,6 +2137,11 @@
       // Update live preview for steps 2-5
       if (step >= 2 && step <= 5) {
         updateLivePreview();
+      }
+
+      // Initialize Fabric.js canvas editor on Step 2
+      if (step === 2) {
+        setTimeout(initAdCanvas, 100);
       }
 
       // Load brand assets on step 5
@@ -5055,17 +5172,253 @@
       wizardState.bgImageUrl = imageUrl;
       wizardState.bgImageDataUrl = null;
       wizardState.bgColor = null;
+      // Add to Fabric canvas
+      addBgImageToCanvas(imageUrl);
       updateLivePreview();
+    }
+
+    // ============ FABRIC.JS CANVAS EDITOR (STEP 2) ============
+
+    var adCanvas = null;   // Fabric.Canvas instance for Step 2 editor
+    var personObj = null;  // Fabric.Image for person on adCanvas
+    var bgImageObj = null; // Fabric.Image for background image on adCanvas
+
+    function initAdCanvas() {
+      var meta = SIZE_META[selectedSize];
+      // Scale to fit max 500px width or height
+      var scale = Math.min(500 / meta.width, 500 / meta.height);
+      var w = Math.round(meta.width * scale);
+      var h = Math.round(meta.height * scale);
+
+      var canvasEl = document.getElementById('adFabricCanvas');
+      if (!canvasEl) return;
+      canvasEl.width = w;
+      canvasEl.height = h;
+
+      if (adCanvas) { try { adCanvas.dispose(); } catch(e) {} }
+      adCanvas = new fabric.Canvas('adFabricCanvas', {
+        width: w,
+        height: h,
+        backgroundColor: wizardState.bgColor || '#F2F4F9',
+        selection: true,
+        preserveObjectStacking: true
+      });
+
+      // Store scale factor for export
+      adCanvas._exportScale = 1 / scale;
+      adCanvas._editorScale = scale;
+
+      // Sync toolbar color picker
+      var tbColor = document.getElementById('canvasBgColor');
+      if (tbColor) tbColor.value = wizardState.bgColor || '#F2F4F9';
+
+      // Add background image if available
+      var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
+      if (bgUrl) {
+        fabric.Image.fromURL(bgUrl, function(img) {
+          var imgScale = Math.max(w / img.width, h / img.height);
+          img.set({
+            left: 0, top: 0,
+            scaleX: imgScale, scaleY: imgScale,
+            selectable: true, hasControls: true, hasBorders: true,
+            cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+            transparentCorners: false, borderColor: '#3052FF',
+            name: 'bgImage'
+          });
+          bgImageObj = img;
+          adCanvas.add(img);
+          adCanvas.sendToBack(img);
+          adCanvas.renderAll();
+          syncCanvasToPreview();
+        }, { crossOrigin: 'anonymous' });
+      }
+
+      // Add person image if available
+      var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl;
+      if (personUrl) {
+        fabric.Image.fromURL(personUrl, function(img) {
+          // Scale to fit 70% of canvas height
+          var imgScale = (h * 0.7) / img.height;
+          img.set({
+            left: w * 0.3,
+            top: h - (img.height * imgScale),
+            scaleX: imgScale,
+            scaleY: imgScale,
+            hasControls: true,
+            hasBorders: true,
+            cornerStyle: 'circle',
+            cornerColor: '#3052FF',
+            cornerSize: 10,
+            transparentCorners: false,
+            borderColor: '#3052FF',
+            name: 'person'
+          });
+          personObj = img;
+          adCanvas.add(img);
+          adCanvas.setActiveObject(img);
+          adCanvas.renderAll();
+          syncCanvasToPreview();
+        }, { crossOrigin: 'anonymous' });
+      }
+
+      // Selection events
+      adCanvas.on('object:modified', syncCanvasToPreview);
+      adCanvas.on('object:moving', syncCanvasToPreview);
+      adCanvas.on('object:scaling', syncCanvasToPreview);
+      adCanvas.on('object:rotating', syncCanvasToPreview);
+      adCanvas.on('selection:created', showCanvasProps);
+      adCanvas.on('selection:updated', showCanvasProps);
+      adCanvas.on('selection:cleared', hideCanvasProps);
+    }
+
+    function syncCanvasToPreview() {
+      // Sync the canvas person position back to wizardState for the iPhone preview
+      if (adCanvas && personObj) {
+        var scale = adCanvas._editorScale;
+        var w = adCanvas.width;
+        var h = adCanvas.height;
+        // Map position to percentage offsets for the preview
+        var centerX = personObj.left + (personObj.width * personObj.scaleX) / 2;
+        var bottom = h - (personObj.top + personObj.height * personObj.scaleY);
+        wizardState.imagePanX = Math.round(((centerX / w) - 0.5) * 100);
+        wizardState.imagePanY = Math.round((bottom / h) * 10 - 5);
+        // Update sliders
+        var panXEl = document.getElementById('imagePanX');
+        var panYEl = document.getElementById('imagePanY');
+        if (panXEl) { panXEl.value = wizardState.imagePanX; }
+        if (panYEl) { panYEl.value = wizardState.imagePanY; }
+        var panXVal = document.getElementById('imagePanXVal');
+        var panYVal = document.getElementById('imagePanYVal');
+        if (panXVal) panXVal.textContent = wizardState.imagePanX + '%';
+        if (panYVal) panYVal.textContent = wizardState.imagePanY + '%';
+      }
+      updateLivePreview();
+    }
+
+    function showCanvasProps(e) {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (!obj) return;
+      var propsEl = document.getElementById('canvasProps');
+      if (propsEl) propsEl.style.display = 'block';
+      var opEl = document.getElementById('propOpacity');
+      if (opEl) opEl.value = Math.round(obj.opacity * 100);
+      var scEl = document.getElementById('propScale');
+      if (scEl) scEl.value = Math.round(obj.scaleX * 100);
+      if (obj.fill && typeof obj.fill === 'string') {
+        var colEl = document.getElementById('propColor');
+        if (colEl) colEl.value = obj.fill;
+        var colRow = document.getElementById('propColorRow');
+        if (colRow) colRow.style.display = 'block';
+      } else {
+        var colRow = document.getElementById('propColorRow');
+        if (colRow) colRow.style.display = 'none';
+      }
+    }
+
+    function hideCanvasProps() {
+      var propsEl = document.getElementById('canvasProps');
+      if (propsEl) propsEl.style.display = 'none';
+    }
+
+    function setSelectedOpacity(val) {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj) { obj.set('opacity', val / 100); adCanvas.renderAll(); syncCanvasToPreview(); }
+    }
+
+    function setSelectedScale(val) {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj) { var s = val / 100; obj.set({ scaleX: s, scaleY: s }); adCanvas.renderAll(); syncCanvasToPreview(); }
+    }
+
+    function setSelectedColor(val) {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj && obj.fill) { obj.set('fill', val); adCanvas.renderAll(); syncCanvasToPreview(); }
+    }
+
+    function setCanvasBgColor(color) {
+      wizardState.bgColor = color;
+      if (adCanvas) {
+        adCanvas.setBackgroundColor(color, adCanvas.renderAll.bind(adCanvas));
+      }
+      var picker = document.getElementById('bgColorPicker');
+      if (picker) picker.value = color;
+      var hex = document.getElementById('bgColorHex');
+      if (hex) hex.textContent = color;
+      updateLivePreview();
+    }
+
+    function canvasBringForward() {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj) { adCanvas.bringForward(obj); adCanvas.renderAll(); }
+    }
+
+    function canvasSendBackward() {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj) { adCanvas.sendBackward(obj); adCanvas.renderAll(); }
+    }
+
+    function canvasDelete() {
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      if (obj) {
+        if (obj === personObj) personObj = null;
+        if (obj === bgImageObj) bgImageObj = null;
+        adCanvas.remove(obj);
+        adCanvas.renderAll();
+        hideCanvasProps();
+        syncCanvasToPreview();
+      }
+    }
+
+    function generateCanvasBg() {
+      // Expand the background options details and focus the prompt
+      var details = document.querySelector('#step2 details');
+      if (details) details.open = true;
+      var prompt = document.getElementById('bgPrompt');
+      if (prompt) { prompt.focus(); prompt.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+
+    function addBgImageToCanvas(imageUrl) {
+      if (!adCanvas) return;
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+      fabric.Image.fromURL(imageUrl, function(img) {
+        var imgScale = Math.max(w / img.width, h / img.height);
+        img.set({
+          left: 0, top: 0,
+          scaleX: imgScale, scaleY: imgScale,
+          selectable: true, hasControls: true, hasBorders: true,
+          cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+          transparentCorners: false, borderColor: '#3052FF',
+          name: 'bgImage'
+        });
+        // Remove old bg image if exists
+        if (bgImageObj) adCanvas.remove(bgImageObj);
+        bgImageObj = img;
+        adCanvas.add(img);
+        adCanvas.sendToBack(img);
+        // Move person to front
+        if (personObj) adCanvas.bringToFront(personObj);
+        adCanvas.renderAll();
+        syncCanvasToPreview();
+      }, { crossOrigin: 'anonymous' });
     }
 
     // ============ BACKGROUND CONTROLS ============
 
     function updateBgColor(color) {
       wizardState.bgColor = color;
-      document.getElementById('bgColorPicker').value = color;
-      document.getElementById('bgColorHex').textContent = color;
+      var picker = document.getElementById('bgColorPicker');
+      if (picker) picker.value = color;
+      var hex = document.getElementById('bgColorHex');
+      if (hex) hex.textContent = color;
       var previewEl = document.getElementById('livePreview');
       if (previewEl) previewEl.style.background = color;
+      // Sync to Fabric canvas
+      if (adCanvas) {
+        adCanvas.setBackgroundColor(color, adCanvas.renderAll.bind(adCanvas));
+        var tbColor = document.getElementById('canvasBgColor');
+        if (tbColor) tbColor.value = color;
+      }
       updateLivePreview();
     }
 
@@ -5074,8 +5427,12 @@
       var reader = new FileReader();
       reader.onload = function(e) {
         wizardState.bgImageDataUrl = e.target.result;
-        document.getElementById('bgImageThumb').src = e.target.result;
-        document.getElementById('bgImagePreviewThumb').style.display = 'block';
+        var thumb = document.getElementById('bgImageThumb');
+        if (thumb) thumb.src = e.target.result;
+        var preview = document.getElementById('bgImagePreviewThumb');
+        if (preview) preview.style.display = 'block';
+        // Add to Fabric canvas
+        addBgImageToCanvas(e.target.result);
         updateLivePreview();
       };
       reader.readAsDataURL(input.files[0]);
@@ -5084,8 +5441,12 @@
     function clearBgImage() {
       wizardState.bgImageDataUrl = null;
       wizardState.bgImageUrl = null;
-      document.getElementById('bgImagePreviewThumb').style.display = 'none';
-      document.getElementById('bgImageUpload').value = '';
+      var preview = document.getElementById('bgImagePreviewThumb');
+      if (preview) preview.style.display = 'none';
+      var upload = document.getElementById('bgImageUpload');
+      if (upload) upload.value = '';
+      // Remove from Fabric canvas
+      if (adCanvas && bgImageObj) { adCanvas.remove(bgImageObj); bgImageObj = null; adCanvas.renderAll(); }
       updateLivePreview();
     }
 
