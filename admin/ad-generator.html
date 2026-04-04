@@ -1222,6 +1222,9 @@
               <input type="color" id="canvasBgColor" value="#F2F4F9" onchange="setCanvasBgColor(this.value)" style="width:32px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
               <button onclick="document.getElementById('bgImageUpload').click()">Upload BG</button>
               <button onclick="generateCanvasBg()">AI Background</button>
+              <span class="toolbar-sep"></span>
+              <button onclick="addChevronToCanvas()" style="color:#3052FF;font-weight:600;" title="Add Coastal brand chevron shape">&#9654;&#9654; Add Chevrons</button>
+              <input type="color" id="chevronColorPicker" value="#3052FF" onchange="updateChevronColor(this.value)" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Chevron color">
             </div>
             <!-- Canvas -->
             <div class="canvas-editor-area">
@@ -5097,6 +5100,68 @@
       });
     }
 
+    // ============ CHEVRON SHAPES ON CANVAS ============
+
+    function addChevronToCanvas() {
+      if (!adCanvas) return;
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+      var color = document.getElementById('chevronColorPicker').value || '#3052FF';
+      var chevronSize = h * 0.5;
+
+      // Create Coastal-style double chevron using fabric.Group
+      var arrow1 = new fabric.Polygon([
+        { x: 0, y: 0 }, { x: 60, y: 0 }, { x: 100, y: 80 },
+        { x: 60, y: 160 }, { x: 0, y: 160 }, { x: 40, y: 80 }
+      ], {
+        fill: color, opacity: 0.4, stroke: null
+      });
+
+      var arrow2 = new fabric.Polygon([
+        { x: 20, y: 15 }, { x: 72, y: 15 }, { x: 105, y: 80 },
+        { x: 72, y: 145 }, { x: 20, y: 145 }, { x: 53, y: 80 }
+      ], {
+        fill: color, opacity: 1, stroke: null
+      });
+
+      var group = new fabric.Group([arrow1, arrow2], {
+        left: w * 0.05,
+        top: h * 0.1,
+        scaleX: chevronSize / 160,
+        scaleY: chevronSize / 160,
+        hasControls: true,
+        hasBorders: true,
+        cornerStyle: 'circle',
+        cornerColor: '#FF9000',
+        cornerSize: 10,
+        transparentCorners: false,
+        borderColor: '#FF9000',
+        name: 'chevron'
+      });
+
+      adCanvas.add(group);
+      // Send behind person but above background
+      if (personObj) {
+        var personIdx = adCanvas.getObjects().indexOf(personObj);
+        adCanvas.moveTo(group, Math.max(0, personIdx));
+      }
+      adCanvas.setActiveObject(group);
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function updateChevronColor(color) {
+      if (!adCanvas) return;
+      var obj = adCanvas.getActiveObject();
+      if (obj && obj.name === 'chevron' && obj._objects) {
+        obj._objects.forEach(function(child) {
+          child.set('fill', color);
+        });
+        adCanvas.renderAll();
+        syncCanvasToPreview();
+      }
+    }
+
     // ============ SEPARATE LAYERS (from canvas toolbar) ============
 
     function separateLayersFromCanvas() {
@@ -5253,105 +5318,88 @@
       var tbColor = document.getElementById('canvasBgColor');
       if (tbColor) tbColor.value = wizardState.bgColor || '#F2F4F9';
 
-      var hasSeparatedLayers = wizardState.personImageNoBg && wizardState.backgroundLayerUrl;
+      var hasSeparatedLayers = !!wizardState.personImageNoBg;
+
+      // Helper to load image onto canvas
+      function addImageToCanvas(url, opts, callback) {
+        var imgEl = new Image();
+        imgEl.crossOrigin = 'anonymous';
+        imgEl.onload = function() {
+          var fImg = new fabric.Image(imgEl);
+          fImg.set(opts);
+          adCanvas.add(fImg);
+          if (callback) callback(fImg);
+          adCanvas.renderAll();
+        };
+        imgEl.onerror = function() {
+          var imgEl2 = new Image();
+          imgEl2.onload = function() {
+            var fImg = new fabric.Image(imgEl2);
+            fImg.set(opts);
+            adCanvas.add(fImg);
+            if (callback) callback(fImg);
+            adCanvas.renderAll();
+          };
+          imgEl2.src = url;
+        };
+        imgEl.src = url;
+      }
+
+      // Add background image if uploaded/generated
+      var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
+      if (bgUrl) {
+        addImageToCanvas(bgUrl, {
+          left: 0, top: 0,
+          scaleX: 1, scaleY: 1,
+          hasControls: true, hasBorders: true,
+          cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
+          transparentCorners: false, borderColor: '#FF9000',
+          name: 'bgImage'
+        }, function(img) {
+          var imgScale = Math.max(w / img.width, h / img.height);
+          img.set({ scaleX: imgScale, scaleY: imgScale });
+          bgImageObj = img;
+          adCanvas.sendToBack(img);
+        });
+      }
 
       if (hasSeparatedLayers) {
-        // TWO SEPARATE LAYERS: background image + person cutout
-        // Layer 1: Original image as background (movable, resizable)
-        fabric.Image.fromURL(wizardState.backgroundLayerUrl, function(bgImg) {
-          var bgScale = Math.max(w / bgImg.width, h / bgImg.height);
-          bgImg.set({
-            left: 0, top: 0,
-            scaleX: bgScale, scaleY: bgScale,
-            hasControls: true, hasBorders: true,
-            cornerStyle: 'circle', cornerColor: '#FF9000', cornerSize: 10,
-            transparentCorners: false, borderColor: '#FF9000',
-            name: 'background'
-          });
-          bgImageObj = bgImg;
-          adCanvas.add(bgImg);
-          adCanvas.sendToBack(bgImg);
+        // SEPARATED: Person cutout only (no background duplication)
+        addImageToCanvas(wizardState.personImageNoBg, {
+          left: w * 0.25, top: 0,
+          hasControls: true, hasBorders: true,
+          cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+          transparentCorners: false, borderColor: '#3052FF',
+          name: 'person'
+        }, function(img) {
+          var pScale = (h * 0.7) / img.height;
+          img.set({ scaleX: pScale, scaleY: pScale, top: h - (img.height * pScale) });
+          personObj = img;
+          adCanvas.setActiveObject(img);
+          syncCanvasToPreview();
+        });
 
-          // Layer 2: Person cutout (movable, resizable, on top)
-          fabric.Image.fromURL(wizardState.personImageNoBg, function(personImg) {
-            var pScale = (h * 0.7) / personImg.height;
-            personImg.set({
-              left: w * 0.25,
-              top: h - (personImg.height * pScale),
-              scaleX: pScale, scaleY: pScale,
-              hasControls: true, hasBorders: true,
-              cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
-              transparentCorners: false, borderColor: '#3052FF',
-              name: 'person'
-            });
-            personObj = personImg;
-            adCanvas.add(personImg);
-            adCanvas.setActiveObject(personImg);
-            adCanvas.renderAll();
-            syncCanvasToPreview();
-          }, { crossOrigin: 'anonymous' });
-
-          adCanvas.renderAll();
-        }, { crossOrigin: 'anonymous' });
+        // Update toolbar button
+        var sepBtn = document.getElementById('separateLayersBtn');
+        if (sepBtn) { sepBtn.innerHTML = '&#10003; Separated'; sepBtn.style.background = '#10b981'; sepBtn.style.borderColor = '#10b981'; sepBtn.disabled = true; }
 
       } else {
-        // SINGLE IMAGE: no separation — load the generated image as one draggable layer
+        // NOT SEPARATED: full generated image as one layer
         var singleUrl = wizardState.personImageUrl || generatedImageUrl;
         if (singleUrl) {
-          // Use Image element to bypass CORS issues
-          var imgEl = new Image();
-          imgEl.crossOrigin = 'anonymous';
-          imgEl.onload = function() {
-            var fImg = new fabric.Image(imgEl);
-            var imgScale = Math.max(w / fImg.width, h / fImg.height);
-            fImg.set({
-              left: 0, top: 0,
-              scaleX: imgScale, scaleY: imgScale,
-              hasControls: true, hasBorders: true,
-              cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
-              transparentCorners: false, borderColor: '#3052FF',
-              name: 'person'
-            });
-            personObj = fImg;
-            adCanvas.add(fImg);
-            adCanvas.setActiveObject(fImg);
-            adCanvas.renderAll();
-            syncCanvasToPreview();
-          };
-          imgEl.onerror = function() {
-            // Retry without CORS
-            var imgEl2 = new Image();
-            imgEl2.onload = function() {
-              var fImg = new fabric.Image(imgEl2);
-              var imgScale = Math.max(w / fImg.width, h / fImg.height);
-              fImg.set({ left: 0, top: 0, scaleX: imgScale, scaleY: imgScale,
-                hasControls: true, hasBorders: true, cornerStyle: 'circle',
-                cornerColor: '#3052FF', cornerSize: 10, transparentCorners: false,
-                borderColor: '#3052FF', name: 'person' });
-              personObj = fImg;
-              adCanvas.add(fImg);
-              adCanvas.setActiveObject(fImg);
-              adCanvas.renderAll();
-            };
-            imgEl2.src = singleUrl;
-          };
-          imgEl.src = singleUrl;
-        }
-
-        // Also add background image if uploaded separately
-        var bgUrl = wizardState.bgImageDataUrl || wizardState.bgImageUrl;
-        if (bgUrl && bgUrl !== singleUrl) {
-          fabric.Image.fromURL(bgUrl, function(img) {
+          addImageToCanvas(singleUrl, {
+            left: 0, top: 0,
+            hasControls: true, hasBorders: true,
+            cornerStyle: 'circle', cornerColor: '#3052FF', cornerSize: 10,
+            transparentCorners: false, borderColor: '#3052FF',
+            name: 'person'
+          }, function(img) {
             var imgScale = Math.max(w / img.width, h / img.height);
-            img.set({ left: 0, top: 0, scaleX: imgScale, scaleY: imgScale,
-              hasControls: true, hasBorders: true, cornerStyle: 'circle',
-              cornerColor: '#FF9000', cornerSize: 10, transparentCorners: false,
-              borderColor: '#FF9000', name: 'bgImage' });
-            bgImageObj = img;
-            adCanvas.add(img);
-            adCanvas.sendToBack(img);
-            adCanvas.renderAll();
-          }, { crossOrigin: 'anonymous' });
+            img.set({ scaleX: imgScale, scaleY: imgScale });
+            personObj = img;
+            adCanvas.setActiveObject(img);
+            syncCanvasToPreview();
+          });
         }
       }
 
