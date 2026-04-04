@@ -725,6 +725,73 @@ router.post('/remove-background', authenticateToken, async (req, res) => {
   }
 });
 
+// Separate layers: returns person cutout AND background with person removed (inpainted)
+router.post('/separate-layers', authenticateToken, async (req, res) => {
+  const { image_url } = req.body;
+  if (!image_url) return res.status(400).json({ error: 'image_url is required' });
+
+  try {
+    // Step 1: Remove background from person (get person cutout)
+    const filename = image_url.split('/').pop();
+    const personResult = await backgroundRemover.removeBackground(filename);
+
+    // Step 2: Inpaint — remove person from original image using Gemini
+    const filePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(filePath)) throw new Error('Original image not found');
+
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+    const apiKey = getApiKey('gemini');
+    if (!apiKey) throw new Error('Gemini API key not configured');
+
+    const inpaintRes = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mimeType, data: base64Image } },
+              { text: 'Remove the person from this image completely. Fill in the area where the person was with the surrounding background pattern, colors, and elements. Keep all decorative elements like arrows, chevrons, icons, and shapes. The result should look like the original background without any person. Output only the image.' }
+            ]
+          }],
+          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+        })
+      }
+    );
+
+    let bgCleanUrl = null;
+    if (inpaintRes.ok) {
+      const inpaintData = await inpaintRes.json();
+      if (inpaintData.candidates && inpaintData.candidates[0] && inpaintData.candidates[0].content) {
+        const parts = inpaintData.candidates[0].content.parts || [];
+        for (const part of parts) {
+          const imgData = part.inline_data || part.inlineData;
+          if (imgData && imgData.data) {
+            const bgFilename = `ad-bg-clean-${Date.now()}.png`;
+            const bgPath = path.join(uploadsDir, bgFilename);
+            fs.writeFileSync(bgPath, Buffer.from(imgData.data, 'base64'));
+            bgCleanUrl = `/lp/uploads/${bgFilename}`;
+            break;
+          }
+        }
+      }
+    }
+
+    res.json({
+      original_url: image_url,
+      person_url: personResult.url,
+      background_url: bgCleanUrl
+    });
+  } catch (err) {
+    console.error('Separate layers error:', err.message);
+    res.status(500).json({ error: 'Layer separation failed: ' + err.message });
+  }
+});
+
 // ============ AD COPY V2 (structured for composition) ============
 
 router.post('/generate-copy-v2', authenticateToken, async (req, res) => {

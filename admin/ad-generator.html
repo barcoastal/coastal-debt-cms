@@ -5084,23 +5084,22 @@
 
       var btn = document.getElementById('separateLayersBtn');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Separating...';
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Separating (this takes ~15s)...';
 
-      fetch('/api/ad-generator/remove-background', {
+      fetch('/api/ad-generator/separate-layers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_url: url })
       }).then(function(r) { return r.json(); }).then(function(data) {
-        if (data.transparent_url) {
-          wizardState.personImageNoBg = data.transparent_url;
-          wizardState.backgroundLayerUrl = wizardState.personImageUrl;
+        if (data.person_url) {
+          wizardState.personImageNoBg = data.person_url;
+          wizardState.backgroundLayerUrl = data.background_url || null;
           btn.innerHTML = '&#10003; Separated';
           btn.style.background = '#10b981';
           btn.style.borderColor = '#10b981';
-          // Reinitialize canvas with two layers
           initAdCanvas();
         } else {
-          throw new Error('No result');
+          throw new Error(data.error || 'No result');
         }
       }).catch(function(e) {
         btn.disabled = false;
@@ -5290,9 +5289,24 @@
       }
 
       if (hasSeparatedLayers) {
-        // SEPARATED: just the person cutout on the background color
-        // No original image — it had the person baked in which causes duplicates
-        // Use toolbar to add chevrons, background images, etc. separately
+        // SEPARATED: background (person removed) + person cutout as two layers
+
+        // Layer 1: Clean background (person inpainted out) — if available
+        if (wizardState.backgroundLayerUrl) {
+          addImageToCanvas(wizardState.backgroundLayerUrl, {
+            left: 0, top: 0,
+            cornerColor: '#FF9000', borderColor: '#FF9000',
+            name: 'background'
+          }, function(bgImg) {
+            var bgScale = Math.max(w / bgImg.width, h / bgImg.height);
+            bgImg.set({ scaleX: bgScale, scaleY: bgScale });
+            bgImageObj = bgImg;
+            adCanvas.sendToBack(bgImg);
+            adCanvas.renderAll();
+          });
+        }
+
+        // Layer 2: Person cutout on top
         addImageToCanvas(wizardState.personImageNoBg, {
           left: w * 0.15, top: 0,
           name: 'person'
