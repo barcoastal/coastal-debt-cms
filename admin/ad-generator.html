@@ -4842,7 +4842,15 @@
           fill: d.fill,
           lineHeight: 1.15,
           name: type,
-          editable: true
+          editable: true,
+          // Canva-style: only allow corner resize (uniform scale), lock aspect ratio
+          lockUniScaling: true,
+          lockScalingFlip: true
+        });
+        // Disable middle handles (top/bottom/left/right) — only corners allowed
+        textObj.setControlsVisibility({
+          mt: false, mb: false, ml: false, mr: false,
+          tl: true, tr: true, bl: true, br: true, mtr: true
         });
         adCanvas.add(textObj);
         adCanvas.setActiveObject(textObj);
@@ -5134,14 +5142,25 @@
         var positions = data.positions;
 
         if (Array.isArray(positions)) {
+          var canvasW = adCanvas.width;
+          var canvasH = adCanvas.height;
           positions.forEach(function(pos) {
             var obj = objects[pos.index];
             if (!obj) return;
-            // Position and scale
-            if (pos.left !== undefined) obj.set('left', pos.left);
-            if (pos.top !== undefined) obj.set('top', pos.top);
-            if (pos.scaleX !== undefined) obj.set('scaleX', pos.scaleX);
-            if (pos.scaleY !== undefined) obj.set('scaleY', pos.scaleY);
+            // Apply scale first so we can calculate correct bounds
+            if (pos.scaleX !== undefined) obj.set('scaleX', Math.max(0.05, Math.min(5, pos.scaleX)));
+            if (pos.scaleY !== undefined) obj.set('scaleY', Math.max(0.05, Math.min(5, pos.scaleY)));
+            // Clamp position so element stays within canvas (with some margin)
+            var objW = obj.getScaledWidth();
+            var objH = obj.getScaledHeight();
+            if (pos.left !== undefined) {
+              var clampedLeft = Math.max(-objW * 0.1, Math.min(canvasW - objW * 0.9, pos.left));
+              obj.set('left', clampedLeft);
+            }
+            if (pos.top !== undefined) {
+              var clampedTop = Math.max(-objH * 0.1, Math.min(canvasH - objH * 0.9, pos.top));
+              obj.set('top', clampedTop);
+            }
 
             // Text styling for text elements
             if (obj.type === 'i-text' || obj.type === 'text') {
@@ -5619,7 +5638,25 @@
       // Selection events
       adCanvas.on('object:modified', syncCanvasToPreview);
       adCanvas.on('object:moving', syncCanvasToPreview);
-      adCanvas.on('object:scaling', syncCanvasToPreview);
+      adCanvas.on('object:scaling', function(e) {
+        var obj = e.target;
+        if (!obj) return;
+        // Canva-style: resize text by changing fontSize, not stretching
+        if (obj.type === 'i-text' || obj.type === 'text') {
+          var newFontSize = obj.fontSize * obj.scaleX;
+          obj.set({
+            fontSize: Math.max(8, Math.round(newFontSize)),
+            scaleX: 1,
+            scaleY: 1
+          });
+        }
+        // CTA group: scale uniformly but reset after
+        if (obj.type === 'group' && obj.name === 'cta') {
+          var avg = (obj.scaleX + obj.scaleY) / 2;
+          obj.set({ scaleX: avg, scaleY: avg });
+        }
+        syncCanvasToPreview();
+      });
       adCanvas.on('object:rotating', syncCanvasToPreview);
       adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
       adCanvas.on('selection:updated', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });

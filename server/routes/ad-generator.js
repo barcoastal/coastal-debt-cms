@@ -1070,6 +1070,16 @@ REFERENCE TEXT STYLE:
 - CTA text: Sora Regular, font-size ~20, dark gray with bold blue highlight
 - CTA button label: Sora Bold, font-size ~22, white on blue pill
 
+CRITICAL POSITION RULES:
+- ALL elements MUST be FULLY INSIDE the canvas bounds (0 to ${canvasWidth} for left, 0 to ${canvasHeight} for top)
+- left + (width * scaleX) must be <= ${canvasWidth}
+- top + (height * scaleY) must be <= ${canvasHeight}
+- NEVER place elements with left < 0 or top < 0
+- NEVER place elements with left > ${canvasWidth - 50} (they'd be mostly off-canvas)
+- Use appropriate scaleX/scaleY (typically 0.3 to 1.5) to fit elements within canvas
+- Person should fill about 40-50% of canvas height, positioned at bottom-left or bottom-right
+- Text should use scale 1.0 — font size controls text size, not scale
+
 Return ONLY a JSON array. Each object must have: index, left, top, scaleX, scaleY. For text elements also include: fontFamily, fontSize, fontWeight, fill, textAlign. No explanation, no markdown, just the JSON array.`;
 
     // Build content: reference image first, then current canvas, then text
