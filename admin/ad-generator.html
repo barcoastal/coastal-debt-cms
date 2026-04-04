@@ -3089,7 +3089,9 @@
           reference_image_urls: referenceImageUrls
         })
       });
-      var genData = await genRes.json();
+      var genText = await genRes.text();
+      var genData;
+      try { genData = JSON.parse(genText); } catch(e) { throw new Error('Server error (not JSON): ' + genText.substring(0, 100)); }
       if (!genRes.ok) throw new Error(genData.error || 'Generation failed');
       var genId = genData.generation_ids[0];
 
