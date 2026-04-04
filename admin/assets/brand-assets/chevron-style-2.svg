@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 320" fill="none">
-  <!-- Style 2: Triple stacked arrows - three layered right-pointing arrows -->
-  <path d="M0 20 L90 20 L150 160 L90 300 L0 300 L60 160 Z" fill="#3052FF" opacity="0.25"/>
-  <path d="M25 40 L110 40 L170 160 L110 280 L25 280 L85 160 Z" fill="#3052FF" opacity="0.5"/>
-  <path d="M55 65 L135 65 L190 160 L135 255 L55 255 L110 160 Z" fill="#3052FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 280" fill="none">
+  <!-- Triple Arrow: three layered chevrons -->
+  <path d="M0 0 L80 0 L140 140 L80 280 L0 280 L60 140 Z" fill="currentColor" opacity="0.2"/>
+  <path d="M25 20 L95 20 L150 140 L95 260 L25 260 L80 140 Z" fill="currentColor" opacity="0.5"/>
+  <path d="M50 45 L115 45 L165 140 L115 235 L50 235 L100 140 Z" fill="currentColor"/>
 </svg>

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320" fill="none">
-  <!-- Style 1: Double arrows (reference style) - two overlapping right-pointing arrows -->
-  <path d="M0 0 L120 0 L200 160 L120 320 L0 320 L80 160 Z" fill="#3052FF" opacity="0.45"/>
-  <path d="M30 40 L140 40 L200 160 L140 280 L30 280 L90 160 Z" fill="#3052FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 280" fill="none">
+  <!-- Double Arrow: two overlapping right-pointing chevrons (reference style) -->
+  <path d="M0 0 L90 0 L160 140 L90 280 L0 280 L70 140 Z" fill="currentColor" opacity="0.4"/>
+  <path d="M35 25 L115 25 L160 140 L115 255 L35 255 L80 140 Z" fill="currentColor"/>
 </svg>

@@ -1099,8 +1099,8 @@
                   <div class="form-group" style="margin-bottom:10px;">
                     <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Size</label>
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <input type="range" id="chevronSize" min="1" max="3" value="2" style="flex:1;accent-color:#3052FF;" oninput="updateLivePreview()">
-                      <span id="chevronSizeLabel" style="font-size:12px;color:var(--gray-400);min-width:50px;">Medium</span>
+                      <input type="range" id="chevronSize" min="10" max="60" value="30" step="5" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('chevronSizeLabel').textContent=this.value+'%';updateLivePreview()">
+                      <span id="chevronSizeLabel" style="font-size:12px;color:var(--gray-400);min-width:40px;">30%</span>
                     </div>
                   </div>
                   <div class="form-group" style="margin-bottom:10px;">
@@ -1586,6 +1586,9 @@
       badgePosition: 'bottom-center',
       badges: { trustpilot: false, iso: false, bbb: false }
     };
+
+    // SVG shape cache for inline rendering with color control
+    var shapeCache = {};
 
     // Init preview aspect ratio on load
     setTimeout(function() { updatePreviewAspectRatio(); }, 100);
@@ -4188,13 +4191,10 @@
       if (chevronsVisible) {
         wizardState.chevrons.visible = chevronsVisible.checked;
 
-        // Size label
+        // Size value
         var sizeSlider = document.getElementById('chevronSize');
         if (sizeSlider) {
-          var sizeLabels = { '1': 'Small', '2': 'Medium', '3': 'Large' };
-          var label = document.getElementById('chevronSizeLabel');
-          if (label) label.textContent = sizeLabels[sizeSlider.value] || 'Medium';
-          wizardState.chevrons.size = sizeLabels[sizeSlider.value] ? sizeLabels[sizeSlider.value].toLowerCase() : 'medium';
+          wizardState.chevrons.size = sizeSlider.value + '%';
         }
       }
 
@@ -4202,8 +4202,8 @@
       var chevEl = document.getElementById('livePreviewChevrons');
       if (chevEl) {
         if (wizardState.chevrons.visible && wizardState.chevrons.shapeUrl) {
-          var sizeMap = { 'small': '25%', 'medium': '35%', 'large': '50%' };
-          var sz = sizeMap[wizardState.chevrons.size] || '35%';
+          var chevSizeSlider = document.getElementById('chevronSize');
+          var sz = (chevSizeSlider ? chevSizeSlider.value : 30) + '%';
           var isRight = wizardState.chevrons.position === 'top-right';
           chevEl.style.display = 'block';
           chevEl.style.width = sz;
@@ -4211,7 +4211,19 @@
           chevEl.style.left = isRight ? 'auto' : '3%';
           chevEl.style.right = isRight ? '3%' : 'auto';
           chevEl.style.zIndex = wizardState.chevrons.behindPerson ? '1' : '3';
-          chevEl.innerHTML = '<img src="' + wizardState.chevrons.shapeUrl + '" style="width:100%;height:auto;opacity:0.9;">';
+          var shapeColor = (document.getElementById('shapeColor') || {}).value || '#3052FF';
+          var cachedSvg = shapeCache[wizardState.chevrons.shapeUrl];
+          if (cachedSvg) {
+            chevEl.innerHTML = cachedSvg.replace(/currentColor/g, shapeColor);
+          } else {
+            chevEl.innerHTML = '<img src="' + wizardState.chevrons.shapeUrl + '" style="width:100%;height:auto;">';
+            fetch(wizardState.chevrons.shapeUrl).then(function(r) { return r.text(); }).then(function(svg) {
+              svg = svg.replace(/width="[^"]*"/, '').replace(/height="[^"]*"/, '');
+              if (!svg.includes('style=')) svg = svg.replace('<svg', '<svg style="width:100%;height:auto;"');
+              shapeCache[wizardState.chevrons.shapeUrl] = svg;
+              chevEl.innerHTML = svg.replace(/currentColor/g, shapeColor);
+            });
+          }
         } else {
           chevEl.style.display = 'none';
           chevEl.innerHTML = '';
@@ -4243,13 +4255,30 @@
         var offsetY = wizardState.personOffsetY || 0;
         var chevronHtml = '';
         if (wizardState.chevrons.visible) {
-          var sizeMap = { 1: '25%', 2: '35%', 3: '50%' };
-          var chevSize = document.getElementById('chevronSize');
-          var sz = sizeMap[chevSize ? chevSize.value : 2] || '35%';
+          var chevSizeSlider2 = document.getElementById('chevronSize');
+          var sz = (chevSizeSlider2 ? chevSizeSlider2.value : 30) + '%';
           var pos = wizardState.chevrons.position === 'top-right' ? 'right:3%;top:3%;' : 'left:3%;top:3%;';
           var zIdx = wizardState.chevrons.behindPerson ? '1' : '3';
           var shapeUrl = wizardState.chevrons.shapeUrl || '/assets/brand-assets/chevron-style-1.svg';
-          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;"><img src="' + escapeHtml(shapeUrl) + '" style="width:100%;height:auto;opacity:0.9;"></div>';
+          var shapeColor = (document.getElementById('shapeColor') || {}).value || '#3052FF';
+          // Load SVG inline so currentColor works with our chosen color
+          var cachedSvg = shapeCache[shapeUrl];
+          if (cachedSvg) {
+            var coloredSvg = cachedSvg.replace(/currentColor/g, shapeColor);
+            chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;">' + coloredSvg + '</div>';
+          } else {
+            // Fetch and cache SVG, then re-render
+            chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;"><img src="' + escapeHtml(shapeUrl) + '" style="width:100%;height:auto;"></div>';
+            fetch(shapeUrl).then(function(r) { return r.text(); }).then(function(svg) {
+              // Clean SVG and make it scalable
+              svg = svg.replace(/width="[^"]*"/, '').replace(/height="[^"]*"/, '');
+              if (!svg.includes('width=') && svg.includes('<svg')) {
+                svg = svg.replace('<svg', '<svg style="width:100%;height:auto;"');
+              }
+              shapeCache[shapeUrl] = svg;
+              syncLivePreviewMirrors(bgColor, personUrl, headline, subheadline, ctaText);
+            });
+          }
         }
 
         var textHtml = '';

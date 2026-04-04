@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" fill="none">
-  <!-- Style 5: Corner triangle accent -->
-  <polygon points="0,0 240,0 0,200" fill="#3052FF" opacity="0.35"/>
-  <polygon points="0,0 180,0 0,150" fill="#3052FF" opacity="0.6"/>
-  <polygon points="0,0 120,0 0,100" fill="#3052FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 280" fill="none">
+  <!-- Outline + Fill: outlined chevron behind, solid chevron front -->
+  <path d="M0 0 L90 0 L160 140 L90 280 L0 280 L70 140 Z" fill="none" stroke="currentColor" stroke-width="6" opacity="0.35"/>
+  <path d="M30 35 L100 35 L155 140 L100 245 L30 245 L85 140 Z" fill="currentColor"/>
 </svg>
