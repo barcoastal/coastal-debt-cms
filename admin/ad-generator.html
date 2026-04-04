@@ -5137,10 +5137,32 @@
           positions.forEach(function(pos) {
             var obj = objects[pos.index];
             if (!obj) return;
+            // Position and scale
             if (pos.left !== undefined) obj.set('left', pos.left);
             if (pos.top !== undefined) obj.set('top', pos.top);
             if (pos.scaleX !== undefined) obj.set('scaleX', pos.scaleX);
             if (pos.scaleY !== undefined) obj.set('scaleY', pos.scaleY);
+
+            // Text styling for text elements
+            if (obj.type === 'i-text' || obj.type === 'text') {
+              if (pos.fontFamily) obj.set('fontFamily', pos.fontFamily);
+              if (pos.fontSize) obj.set('fontSize', pos.fontSize);
+              if (pos.fontWeight) obj.set('fontWeight', pos.fontWeight);
+              if (pos.fill) obj.set('fill', pos.fill);
+              if (pos.fontStyle) obj.set('fontStyle', pos.fontStyle);
+              if (pos.textAlign) obj.set('textAlign', pos.textAlign);
+            }
+            // CTA button group — update inner text
+            if (obj.type === 'group' && obj.name === 'cta' && obj._objects) {
+              obj._objects.forEach(function(child) {
+                if (child.type === 'text' || child.type === 'i-text') {
+                  if (pos.fontFamily) child.set('fontFamily', pos.fontFamily);
+                  if (pos.fontSize) child.set('fontSize', pos.fontSize);
+                  if (pos.fontWeight) child.set('fontWeight', pos.fontWeight);
+                  if (pos.fill) child.set('fill', pos.fill);
+                }
+              });
+            }
             obj.setCoords();
           });
           adCanvas.renderAll();

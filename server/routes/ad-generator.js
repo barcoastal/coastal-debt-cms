@@ -1056,7 +1056,21 @@ Canvas size: ${canvasWidth}x${canvasHeight} (${selectedSize || 'unknown'})
 
 Match each element from the current canvas to its role and place it where the reference shows that element type. Return positions (in pixels) that fill the canvas properly.
 
-Return ONLY a JSON array. Each object must have: index, left, top, scaleX, scaleY. No explanation, no markdown, just the JSON array.`;
+FOR TEXT ELEMENTS (headline, subheadline, cta, cta_button), also return styling to match the reference:
+- fontFamily: pick from: Sora, Inter, Montserrat, Poppins, Playfair Display, Bebas Neue, Oswald, DM Sans, Plus Jakarta Sans, Outfit, Space Grotesk, Archivo
+- fontSize: number (pixels)
+- fontWeight: 'normal', '600', 'bold', '800', '900'
+- fill: hex color (use brand colors: #3052FF blue, #FF9000 orange, #000000 black, #333333 dark gray, #FFFFFF white)
+- fontStyle: 'normal' or 'italic'
+- textAlign: 'left', 'center', 'right'
+
+REFERENCE TEXT STYLE:
+- Headline: Sora Bold, font-size ~48, mix of black #000000 and blue #3052FF with some words in orange #FF9000
+- Subheadline: Sora Regular, font-size ~24, dark gray #333333 with some bold words
+- CTA text: Sora Regular, font-size ~20, dark gray with bold blue highlight
+- CTA button label: Sora Bold, font-size ~22, white on blue pill
+
+Return ONLY a JSON array. Each object must have: index, left, top, scaleX, scaleY. For text elements also include: fontFamily, fontSize, fontWeight, fill, textAlign. No explanation, no markdown, just the JSON array.`;
 
     // Build content: reference image first, then current canvas, then text
     const userContent = [];
