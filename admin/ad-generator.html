@@ -950,7 +950,7 @@
               <h4 style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Live Preview</h4>
               <div id="livePreview" style="position:relative;width:100%;aspect-ratio:1200/628;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#F2F4F9;">
                 <img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
-                <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:90%;object-fit:contain;display:none;">
+                <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:65%;object-fit:contain;display:none;cursor:grab;">
                 <div id="livePreviewChevrons" style="position:absolute;display:none;"></div>
                 <div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>
                 <div id="livePreviewLogo" style="position:absolute;display:none;"></div>
@@ -1470,12 +1470,15 @@
       bgColor: '#F2F4F9',
       bgImageUrl: null,
       bgImageDataUrl: null,
-      chevrons: { visible: false, position: 'top-left', size: 'medium', behindPerson: true },
+      chevrons: { visible: false, position: 'top-left', size: 'medium', behindPerson: true, shapeUrl: null },
       textPosition: 'auto',
       logoPosition: 'top-left',
       badgePosition: 'bottom-center',
       badges: { trustpilot: false, iso: false, bbb: false }
     };
+
+    // Init preview aspect ratio on load
+    setTimeout(function() { updatePreviewAspectRatio(); }, 100);
 
     // ============ WIZARD NAVIGATION ============
 
@@ -1532,9 +1535,13 @@
     function selectSize(size) {
       selectedSize = size;
       document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
-      document.querySelector(`.size-card[data-size="${size}"]`).classList.add('selected');
+      var el = document.querySelector('.size-card[data-size="' + size + '"]');
+      if (el) el.classList.add('selected');
       const meta = SIZE_META[size];
-      document.getElementById('previewDims').textContent = meta.width + ' x ' + meta.height;
+      canvasW = meta.width;
+      canvasH = meta.height;
+      var dims = document.getElementById('previewDims');
+      if (dims) dims.textContent = meta.width + ' x ' + meta.height;
       updatePreviewAspectRatio();
     }
 
@@ -4150,7 +4157,7 @@
 
         var personHtml = '';
         if (personUrl) {
-          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:90%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;">';
+          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:65%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;cursor:grab;">';
         }
 
         mirror.innerHTML = chevronHtml + personHtml + textHtml;
