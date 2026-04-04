@@ -1255,6 +1255,26 @@
                 <option value="right">Right</option>
               </select>
             </div>
+            <!-- Background/Image Properties Bar (shown when bg or image is selected) -->
+            <div id="imagePropsBar" style="display:none;padding:8px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;flex-wrap:wrap;gap:10px;align-items:center;">
+              <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Color Tint:</label>
+              <input type="color" id="imgTintColor" value="#3052FF" onchange="applyImageTint()" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Tint color">
+              <input type="range" id="imgTintAmount" min="0" max="100" value="0" style="width:80px;accent-color:#3052FF;" oninput="applyImageTint()" title="Tint intensity">
+              <span id="imgTintLabel" style="font-size:11px;color:var(--gray-400);min-width:24px;">0%</span>
+              <span class="toolbar-sep" style="height:20px;width:1px;background:var(--gray-200);"></span>
+              <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Hue Shift:</label>
+              <input type="range" id="imgHueShift" min="-180" max="180" value="0" style="width:100px;accent-color:#3052FF;" oninput="applyHueShift()" title="Shift all colors">
+              <span id="imgHueLabel" style="font-size:11px;color:var(--gray-400);min-width:24px;">0°</span>
+              <span class="toolbar-sep" style="height:20px;width:1px;background:var(--gray-200);"></span>
+              <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Brightness:</label>
+              <input type="range" id="imgBrightness" min="-50" max="50" value="0" style="width:80px;accent-color:#3052FF;" oninput="applyImageFilters()" title="Brightness">
+              <span id="imgBrightnessLabel" style="font-size:11px;color:var(--gray-400);min-width:24px;">0</span>
+              <span class="toolbar-sep" style="height:20px;width:1px;background:var(--gray-200);"></span>
+              <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Contrast:</label>
+              <input type="range" id="imgContrast" min="-50" max="50" value="0" style="width:80px;accent-color:#3052FF;" oninput="applyImageFilters()" title="Contrast">
+              <span id="imgContrastLabel" style="font-size:11px;color:var(--gray-400);min-width:24px;">0</span>
+              <button onclick="resetImageFilters()" style="font-size:11px;padding:2px 8px;border:1px solid var(--gray-200);border-radius:4px;background:#fff;cursor:pointer;margin-left:4px;">Reset</button>
+            </div>
             <!-- Canvas -->
             <div class="canvas-editor-area">
               <canvas id="adFabricCanvas"></canvas>
@@ -4916,6 +4936,122 @@
       }
     }
 
+    // ============ IMAGE COLOR CONTROLS ============
+
+    function getSelectedImage() {
+      if (!adCanvas) return null;
+      var obj = adCanvas.getActiveObject();
+      if (obj && obj.type === 'image') return obj;
+      return null;
+    }
+
+    function applyImageTint() {
+      var obj = getSelectedImage();
+      if (!obj) return;
+      var color = document.getElementById('imgTintColor').value;
+      var amount = parseInt(document.getElementById('imgTintAmount').value) / 100;
+      document.getElementById('imgTintLabel').textContent = Math.round(amount * 100) + '%';
+
+      // Remove existing tint filter
+      obj.filters = (obj.filters || []).filter(function(f) { return !(f instanceof fabric.Image.filters.BlendColor); });
+
+      if (amount > 0) {
+        obj.filters.push(new fabric.Image.filters.BlendColor({
+          color: color,
+          mode: 'tint',
+          alpha: amount
+        }));
+      }
+      obj.applyFilters();
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function applyHueShift() {
+      var obj = getSelectedImage();
+      if (!obj) return;
+      var shift = parseInt(document.getElementById('imgHueShift').value);
+      document.getElementById('imgHueLabel').textContent = shift + '°';
+
+      // Remove existing hue filter
+      obj.filters = (obj.filters || []).filter(function(f) { return !(f instanceof fabric.Image.filters.HueRotation); });
+
+      if (shift !== 0) {
+        obj.filters.push(new fabric.Image.filters.HueRotation({
+          rotation: shift / 180
+        }));
+      }
+      obj.applyFilters();
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function applyImageFilters() {
+      var obj = getSelectedImage();
+      if (!obj) return;
+      var brightness = parseInt(document.getElementById('imgBrightness').value) / 100;
+      var contrast = parseInt(document.getElementById('imgContrast').value) / 100;
+      document.getElementById('imgBrightnessLabel').textContent = Math.round(brightness * 100);
+      document.getElementById('imgContrastLabel').textContent = Math.round(contrast * 100);
+
+      // Remove existing brightness/contrast filters
+      obj.filters = (obj.filters || []).filter(function(f) {
+        return !(f instanceof fabric.Image.filters.Brightness) && !(f instanceof fabric.Image.filters.Contrast);
+      });
+
+      if (brightness !== 0) {
+        obj.filters.push(new fabric.Image.filters.Brightness({ brightness: brightness }));
+      }
+      if (contrast !== 0) {
+        obj.filters.push(new fabric.Image.filters.Contrast({ contrast: contrast }));
+      }
+      obj.applyFilters();
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function resetImageFilters() {
+      var obj = getSelectedImage();
+      if (!obj) return;
+      obj.filters = [];
+      obj.applyFilters();
+      document.getElementById('imgTintAmount').value = 0;
+      document.getElementById('imgTintLabel').textContent = '0%';
+      document.getElementById('imgHueShift').value = 0;
+      document.getElementById('imgHueLabel').textContent = '0°';
+      document.getElementById('imgBrightness').value = 0;
+      document.getElementById('imgBrightnessLabel').textContent = '0';
+      document.getElementById('imgContrast').value = 0;
+      document.getElementById('imgContrastLabel').textContent = '0';
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function showImagePropsBar() {
+      var bar = document.getElementById('imagePropsBar');
+      if (!bar) return;
+      var obj = getSelectedImage();
+      bar.style.display = obj ? 'flex' : 'none';
+
+      if (obj) {
+        // Read current filter values
+        var tintFilter = (obj.filters || []).find(function(f) { return f instanceof fabric.Image.filters.BlendColor; });
+        var hueFilter = (obj.filters || []).find(function(f) { return f instanceof fabric.Image.filters.HueRotation; });
+        var brightFilter = (obj.filters || []).find(function(f) { return f instanceof fabric.Image.filters.Brightness; });
+        var contrastFilter = (obj.filters || []).find(function(f) { return f instanceof fabric.Image.filters.Contrast; });
+
+        document.getElementById('imgTintAmount').value = tintFilter ? Math.round(tintFilter.alpha * 100) : 0;
+        document.getElementById('imgTintLabel').textContent = (tintFilter ? Math.round(tintFilter.alpha * 100) : 0) + '%';
+        if (tintFilter) document.getElementById('imgTintColor').value = tintFilter.color || '#3052FF';
+        document.getElementById('imgHueShift').value = hueFilter ? Math.round(hueFilter.rotation * 180) : 0;
+        document.getElementById('imgHueLabel').textContent = (hueFilter ? Math.round(hueFilter.rotation * 180) : 0) + '°';
+        document.getElementById('imgBrightness').value = brightFilter ? Math.round(brightFilter.brightness * 100) : 0;
+        document.getElementById('imgBrightnessLabel').textContent = brightFilter ? Math.round(brightFilter.brightness * 100) : 0;
+        document.getElementById('imgContrast').value = contrastFilter ? Math.round(contrastFilter.contrast * 100) : 0;
+        document.getElementById('imgContrastLabel').textContent = contrastFilter ? Math.round(contrastFilter.contrast * 100) : 0;
+      }
+    }
+
     // ============ AI REDESIGN ============
 
     async function aiRedesign() {
@@ -5347,9 +5483,9 @@
       adCanvas.on('object:moving', syncCanvasToPreview);
       adCanvas.on('object:scaling', syncCanvasToPreview);
       adCanvas.on('object:rotating', syncCanvasToPreview);
-      adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); });
-      adCanvas.on('selection:updated', function() { showCanvasProps(); updateTextPropsBar(); });
-      adCanvas.on('selection:cleared', function() { hideCanvasProps(); updateTextPropsBar(); });
+      adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
+      adCanvas.on('selection:updated', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
+      adCanvas.on('selection:cleared', function() { hideCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
     }
 
     function syncCanvasToPreview() {
