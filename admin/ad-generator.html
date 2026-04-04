@@ -1225,8 +1225,40 @@
               <button onclick="document.getElementById('bgImageUpload').click()">Upload BG</button>
               <button onclick="generateCanvasBg()">AI Background</button>
               <span class="toolbar-sep"></span>
-              <button onclick="addChevronToCanvas()" style="color:#3052FF;font-weight:600;" title="Add Coastal brand chevron shape">&#9654;&#9654; Add Chevrons</button>
+              <button onclick="addChevronToCanvas()" style="color:#3052FF;font-weight:600;" title="Add Coastal brand chevron shape">&#9654;&#9654; Chevrons</button>
               <input type="color" id="chevronColorPicker" value="#3052FF" onchange="updateChevronColor(this.value)" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Chevron color">
+              <span class="toolbar-sep"></span>
+              <button onclick="addTextToCanvas('headline')" style="font-weight:700;" title="Add headline text">T Headline</button>
+              <button onclick="addTextToCanvas('subheadline')" title="Add subheadline text">T Sub</button>
+              <button onclick="addTextToCanvas('cta')" style="color:#fff;background:#3052FF;border-color:#3052FF;" title="Add CTA button">CTA</button>
+              <button onclick="generateAndAddCopy()" style="color:#3052FF;font-weight:600;" title="AI generates headline + sub + CTA">&#9733; AI Copy</button>
+            </div>
+            <!-- Text Properties Bar (shown when text is selected) -->
+            <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
+              <select id="textFontFamily" onchange="setTextProp('fontFamily',this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;max-width:140px;">
+                <option value="Sora">Sora</option>
+                <option value="Inter">Inter</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Oswald">Oswald</option>
+                <option value="DM Sans">DM Sans</option>
+                <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Space Grotesk">Space Grotesk</option>
+                <option value="Archivo">Archivo</option>
+              </select>
+              <input type="number" id="textFontSize" value="32" min="8" max="120" step="1" onchange="setTextProp('fontSize',parseInt(this.value))" style="width:50px;padding:4px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;" title="Font size">
+              <button onclick="setTextProp('fontWeight',getActiveText()?.fontWeight==='bold'?'normal':'bold')" style="font-weight:900;font-size:14px;width:28px;" title="Bold">B</button>
+              <button onclick="setTextProp('fontStyle',getActiveText()?.fontStyle==='italic'?'normal':'italic')" style="font-style:italic;font-size:14px;width:28px;" title="Italic">I</button>
+              <button onclick="setTextProp('underline',!getActiveText()?.underline)" style="text-decoration:underline;font-size:14px;width:28px;" title="Underline">U</button>
+              <input type="color" id="textColorPicker" value="#000000" onchange="setTextProp('fill',this.value)" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Text color">
+              <select id="textAlign" onchange="setTextProp('textAlign',this.value)" style="padding:4px;border:1px solid var(--gray-200);border-radius:6px;font-size:11px;">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
             </div>
             <!-- Canvas -->
             <div class="canvas-editor-area">
@@ -5102,6 +5134,169 @@
       });
     }
 
+    // ============ TEXT ON CANVAS ============
+
+    function addTextToCanvas(type) {
+      if (!adCanvas) return;
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+
+      var defaults = {
+        headline: { text: 'Your MCA Debt\nMatters!', fontSize: 38, fontWeight: 'bold', fill: '#000000', top: h * 0.1 },
+        subheadline: { text: 'You need a solution tailored\nto your business challenges.', fontSize: 18, fontWeight: 'normal', fill: '#333333', top: h * 0.45 },
+        cta: { text: 'CoastalDebt.com', fontSize: 18, fontWeight: '600', fill: '#FFFFFF', top: h * 0.75, bg: true }
+      };
+
+      var d = defaults[type] || defaults.headline;
+
+      if (type === 'cta') {
+        // CTA button: rounded rect + text group
+        var btnText = new fabric.Text(d.text, {
+          fontSize: d.fontSize,
+          fontFamily: 'Sora',
+          fontWeight: d.fontWeight,
+          fill: '#FFFFFF',
+          originX: 'center',
+          originY: 'center'
+        });
+        var btnBg = new fabric.Rect({
+          width: btnText.width + 40,
+          height: btnText.height + 20,
+          rx: 25,
+          ry: 25,
+          fill: '#3052FF',
+          originX: 'center',
+          originY: 'center'
+        });
+        var ctaGroup = new fabric.Group([btnBg, btnText], {
+          left: w * 0.5,
+          top: d.top,
+          originX: 'center',
+          name: 'cta'
+        });
+        adCanvas.add(ctaGroup);
+        adCanvas.setActiveObject(ctaGroup);
+      } else {
+        var textObj = new fabric.IText(d.text, {
+          left: w * 0.45,
+          top: d.top,
+          fontSize: d.fontSize,
+          fontFamily: 'Sora',
+          fontWeight: d.fontWeight,
+          fill: d.fill,
+          lineHeight: 1.15,
+          name: type,
+          editable: true
+        });
+        adCanvas.add(textObj);
+        adCanvas.setActiveObject(textObj);
+      }
+
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    function generateAndAddCopy() {
+      if (!adCanvas) return;
+      var btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      fetch('/api/ad-generator/generate-copy-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: 'MCA debt settlement' })
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        var w = adCanvas.width;
+        var h = adCanvas.height;
+
+        // Headline
+        var hlText = data.headline || 'Settle Your MCA Debt';
+        var headline = new fabric.IText(hlText, {
+          left: w * 0.45, top: h * 0.08,
+          fontSize: 36, fontFamily: 'Sora', fontWeight: 'bold',
+          fill: '#000000', lineHeight: 1.15, name: 'headline', editable: true
+        });
+
+        // Subheadline
+        var subText = data.subheadline || 'Reduce your debt by up to 80%';
+        var sub = new fabric.IText(subText, {
+          left: w * 0.45, top: h * 0.4,
+          fontSize: 16, fontFamily: 'Sora', fontWeight: 'normal',
+          fill: '#333333', lineHeight: 1.4, name: 'subheadline', editable: true
+        });
+
+        // CTA
+        var ctaLabel = data.cta_button || 'CoastalDebt.com';
+        var ctaText = new fabric.Text(ctaLabel, {
+          fontSize: 16, fontFamily: 'Sora', fontWeight: '600',
+          fill: '#FFFFFF', originX: 'center', originY: 'center'
+        });
+        var ctaBg = new fabric.Rect({
+          width: ctaText.width + 40, height: ctaText.height + 20,
+          rx: 25, ry: 25, fill: '#3052FF', originX: 'center', originY: 'center'
+        });
+        var ctaGroup = new fabric.Group([ctaBg, ctaText], {
+          left: w * 0.5, top: h * 0.7, originX: 'center', name: 'cta'
+        });
+
+        adCanvas.add(headline);
+        adCanvas.add(sub);
+        adCanvas.add(ctaGroup);
+        adCanvas.renderAll();
+        syncCanvasToPreview();
+
+        btn.disabled = false;
+        btn.innerHTML = '&#9733; AI Copy';
+      }).catch(function(e) {
+        btn.disabled = false;
+        btn.innerHTML = '&#9733; AI Copy';
+        alert('Failed: ' + e.message);
+      });
+    }
+
+    function getActiveText() {
+      if (!adCanvas) return null;
+      var obj = adCanvas.getActiveObject();
+      if (obj && (obj.type === 'i-text' || obj.type === 'text')) return obj;
+      return null;
+    }
+
+    function setTextProp(prop, value) {
+      var obj = adCanvas.getActiveObject();
+      if (!obj) return;
+      if (obj.type === 'i-text' || obj.type === 'text') {
+        obj.set(prop, value);
+      } else if (obj.type === 'group' && obj.name === 'cta') {
+        // CTA group: update text inside
+        obj._objects.forEach(function(child) {
+          if (child.type === 'text' || child.type === 'i-text') {
+            child.set(prop, value);
+          }
+          if (prop === 'fill' && child.type === 'rect') {
+            // Don't change rect fill via text color
+          }
+        });
+      }
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+    }
+
+    // Show/hide text properties bar based on selection
+    function updateTextPropsBar() {
+      var bar = document.getElementById('textPropsBar');
+      if (!bar) return;
+      var obj = adCanvas ? adCanvas.getActiveObject() : null;
+      var isText = obj && (obj.type === 'i-text' || obj.type === 'text' || (obj.type === 'group' && obj.name === 'cta'));
+      bar.style.display = isText ? 'flex' : 'none';
+      if (isText && obj.type !== 'group') {
+        document.getElementById('textFontFamily').value = obj.fontFamily || 'Sora';
+        document.getElementById('textFontSize').value = Math.round(obj.fontSize || 32);
+        document.getElementById('textColorPicker').value = obj.fill || '#000000';
+        document.getElementById('textAlign').value = obj.textAlign || 'left';
+      }
+    }
+
     // ============ CHEVRON SHAPES ON CANVAS ============
 
     function addChevronToCanvas() {
@@ -5423,9 +5618,9 @@
       adCanvas.on('object:moving', syncCanvasToPreview);
       adCanvas.on('object:scaling', syncCanvasToPreview);
       adCanvas.on('object:rotating', syncCanvasToPreview);
-      adCanvas.on('selection:created', showCanvasProps);
-      adCanvas.on('selection:updated', showCanvasProps);
-      adCanvas.on('selection:cleared', hideCanvasProps);
+      adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); });
+      adCanvas.on('selection:updated', function() { showCanvasProps(); updateTextPropsBar(); });
+      adCanvas.on('selection:cleared', function() { hideCanvasProps(); updateTextPropsBar(); });
     }
 
     function syncCanvasToPreview() {
