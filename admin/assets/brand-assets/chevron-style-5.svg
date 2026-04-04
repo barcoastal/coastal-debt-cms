@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" fill="none">
+  <!-- Style 5: Corner triangle accent -->
+  <polygon points="0,0 240,0 0,200" fill="#3052FF" opacity="0.35"/>
+  <polygon points="0,0 180,0 0,150" fill="#3052FF" opacity="0.6"/>
+  <polygon points="0,0 120,0 0,100" fill="#3052FF"/>
+</svg>

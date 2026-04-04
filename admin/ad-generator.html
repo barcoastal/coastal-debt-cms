@@ -967,14 +967,41 @@
           <div>
             <div class="controls-panel">
               <div class="controls-section">
-                <h4>Chevron Arrows</h4>
-                <div class="brand-toggle-bar" style="margin-bottom:10px;">
-                  <label class="switch">
-                    <input type="checkbox" id="chevronsVisible" onchange="updateLivePreview()">
-                    <span class="slider"></span>
-                  </label>
-                  <span style="font-weight:600;font-size:13px;color:var(--gray-800);">Show Chevrons</span>
+                <h4>Decorative Shapes</h4>
+                <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Select a shape style or generate custom ones with AI</p>
+
+                <!-- Shape Style Gallery -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+                  <div class="shape-option" data-shape="none" onclick="selectShape('none',this)" style="border:2px solid #3052FF;border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:#eef1ff;">
+                    <div style="height:50px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:20px;">&#x2715;</div>
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">None</div>
+                  </div>
+                  <div class="shape-option" data-shape="style-1" onclick="selectShape('style-1',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
+                    <img src="/assets/brand-assets/chevron-style-1.svg" style="height:50px;width:auto;">
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Double Arrow</div>
+                  </div>
+                  <div class="shape-option" data-shape="style-2" onclick="selectShape('style-2',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
+                    <img src="/assets/brand-assets/chevron-style-2.svg" style="height:50px;width:auto;">
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Triple Stack</div>
+                  </div>
+                  <div class="shape-option" data-shape="style-3" onclick="selectShape('style-3',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
+                    <img src="/assets/brand-assets/chevron-style-3.svg" style="height:50px;width:auto;">
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Angular Bars</div>
+                  </div>
+                  <div class="shape-option" data-shape="style-4" onclick="selectShape('style-4',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
+                    <img src="/assets/brand-assets/chevron-style-4.svg" style="height:50px;width:auto;">
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Wave</div>
+                  </div>
+                  <div class="shape-option" data-shape="style-5" onclick="selectShape('style-5',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">
+                    <img src="/assets/brand-assets/chevron-style-5.svg" style="height:50px;width:auto;">
+                    <div style="font-size:10px;font-weight:600;color:var(--gray-600);">Corner</div>
+                  </div>
                 </div>
+
+                <!-- AI Custom Shapes (hidden by default, shown in gallery) -->
+                <div id="aiShapeResults" style="display:none;margin-bottom:14px;"></div>
+
+                <!-- Shape Controls (shown when a shape is selected) -->
                 <div id="chevronOptions" style="display:none;">
                   <div class="form-group" style="margin-bottom:10px;">
                     <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Position</label>
@@ -990,20 +1017,32 @@
                       <span id="chevronSizeLabel" style="font-size:12px;color:var(--gray-400);min-width:50px;">Medium</span>
                     </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin-bottom:10px;">
                     <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Layer Order</label>
                     <div style="display:flex;gap:6px;">
                       <button class="btn btn-secondary btn-small chevron-layer-btn active" data-layer="behind" onclick="setChevronLayer('behind')">Behind Person</button>
                       <button class="btn btn-secondary btn-small chevron-layer-btn" data-layer="front" onclick="setChevronLayer('front')">In Front</button>
                     </div>
                   </div>
+                  <div class="form-group">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500);">Color</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <input type="color" id="shapeColor" value="#3052FF" style="width:36px;height:30px;border:none;cursor:pointer;" onchange="updateLivePreview()">
+                      <span style="font-size:12px;color:var(--gray-400);">Shape color</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Future: more shapes can be added here -->
+              <!-- AI Shape Generation -->
               <div class="controls-section">
-                <h4>More Shapes <span style="font-size:10px;font-weight:400;color:var(--gray-400);">(coming soon)</span></h4>
-                <p style="font-size:12px;color:var(--gray-400);">Additional decorative elements like diagonal cuts, gradient overlays, and accent bars will be available here.</p>
+                <h4>AI Custom Shapes</h4>
+                <p style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">Describe a decorative element and AI will generate it</p>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                  <input type="text" id="shapePrompt" placeholder="e.g. blue abstract geometric accent, modern arrow pattern..." style="flex:1;padding:8px 12px;border:2px solid var(--gray-200);border-radius:8px;font-size:13px;">
+                  <button onclick="generateAiShape()" id="shapeGenBtn" style="padding:8px 16px;background:#3052FF;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Generate</button>
+                </div>
+                <div id="shapeGenStatus" style="display:none;"></div>
               </div>
             </div>
 
@@ -4027,11 +4066,9 @@
         personEl.style.display = 'none';
       }
 
-      // Chevron toggle
+      // Chevron toggle & shape
       var chevronsVisible = document.getElementById('chevronsVisible');
       if (chevronsVisible) {
-        var opts = document.getElementById('chevronOptions');
-        if (opts) opts.style.display = chevronsVisible.checked ? 'block' : 'none';
         wizardState.chevrons.visible = chevronsVisible.checked;
 
         // Size label
@@ -4041,6 +4078,26 @@
           var label = document.getElementById('chevronSizeLabel');
           if (label) label.textContent = sizeLabels[sizeSlider.value] || 'Medium';
           wizardState.chevrons.size = sizeLabels[sizeSlider.value] ? sizeLabels[sizeSlider.value].toLowerCase() : 'medium';
+        }
+      }
+
+      // Render chevrons in main preview
+      var chevEl = document.getElementById('livePreviewChevrons');
+      if (chevEl) {
+        if (wizardState.chevrons.visible && wizardState.chevrons.shapeUrl) {
+          var sizeMap = { 'small': '25%', 'medium': '35%', 'large': '50%' };
+          var sz = sizeMap[wizardState.chevrons.size] || '35%';
+          var isRight = wizardState.chevrons.position === 'top-right';
+          chevEl.style.display = 'block';
+          chevEl.style.width = sz;
+          chevEl.style.top = '3%';
+          chevEl.style.left = isRight ? 'auto' : '3%';
+          chevEl.style.right = isRight ? '3%' : 'auto';
+          chevEl.style.zIndex = wizardState.chevrons.behindPerson ? '1' : '3';
+          chevEl.innerHTML = '<img src="' + wizardState.chevrons.shapeUrl + '" style="width:100%;height:auto;opacity:0.9;">';
+        } else {
+          chevEl.style.display = 'none';
+          chevEl.innerHTML = '';
         }
       }
 
@@ -4069,10 +4126,13 @@
         var offsetY = wizardState.personOffsetY || 0;
         var chevronHtml = '';
         if (wizardState.chevrons.visible) {
-          var sizeMap = { small: '40px', medium: '60px', large: '80px' };
-          var sz = sizeMap[wizardState.chevrons.size] || '60px';
-          var pos = wizardState.chevrons.position === 'top-right' ? 'right:8%;top:8%;' : 'left:8%;top:8%;';
-          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + (wizardState.chevrons.behindPerson ? '1' : '3') + ';"><svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="#3052FF" opacity="0.3"><polyline points="9 18 15 12 9 6" stroke="#3052FF" stroke-width="3" fill="none"/></svg></div>';
+          var sizeMap = { 1: '25%', 2: '35%', 3: '50%' };
+          var chevSize = document.getElementById('chevronSize');
+          var sz = sizeMap[chevSize ? chevSize.value : 2] || '35%';
+          var pos = wizardState.chevrons.position === 'top-right' ? 'right:3%;top:3%;' : 'left:3%;top:3%;';
+          var zIdx = wizardState.chevrons.behindPerson ? '1' : '3';
+          var shapeUrl = wizardState.chevrons.shapeUrl || '/assets/brand-assets/chevron-style-1.svg';
+          chevronHtml = '<div style="position:absolute;' + pos + 'z-index:' + zIdx + ';width:' + sz + ';height:auto;"><img src="' + escapeHtml(shapeUrl) + '" style="width:100%;height:auto;opacity:0.9;"></div>';
         }
 
         var textHtml = '';
@@ -4328,6 +4388,130 @@
         if (b.dataset.layer === layer) { b.style.background = '#eef1ff'; b.style.borderColor = '#3052FF'; b.style.color = '#3052FF'; }
         else { b.style.background = ''; b.style.borderColor = ''; b.style.color = ''; }
       });
+      updateLivePreview();
+    }
+
+    // ============ SHAPE SELECTION ============
+
+    var SHAPE_URLS = {
+      'none': null,
+      'style-1': '/assets/brand-assets/chevron-style-1.svg',
+      'style-2': '/assets/brand-assets/chevron-style-2.svg',
+      'style-3': '/assets/brand-assets/chevron-style-3.svg',
+      'style-4': '/assets/brand-assets/chevron-style-4.svg',
+      'style-5': '/assets/brand-assets/chevron-style-5.svg'
+    };
+
+    function selectShape(shape, el) {
+      // Visual selection
+      document.querySelectorAll('.shape-option').forEach(function(opt) {
+        opt.style.borderColor = 'var(--gray-200)';
+        opt.style.background = '';
+      });
+      if (el) { el.style.borderColor = '#3052FF'; el.style.background = '#eef1ff'; }
+
+      if (shape === 'none') {
+        wizardState.chevrons.visible = false;
+        wizardState.chevrons.shapeUrl = null;
+        var chkbox = document.getElementById('chevronsVisible');
+        if (chkbox) chkbox.checked = false;
+        document.getElementById('chevronOptions').style.display = 'none';
+      } else {
+        wizardState.chevrons.visible = true;
+        wizardState.chevrons.shapeUrl = SHAPE_URLS[shape] || null;
+        var chkbox = document.getElementById('chevronsVisible');
+        if (chkbox) chkbox.checked = true;
+        document.getElementById('chevronOptions').style.display = 'block';
+      }
+      updateLivePreview();
+    }
+
+    async function generateAiShape() {
+      var prompt = document.getElementById('shapePrompt').value.trim();
+      if (!prompt) { alert('Describe the shape you want'); return; }
+
+      var btn = document.getElementById('shapeGenBtn');
+      var statusEl = document.getElementById('shapeGenStatus');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      statusEl.style.display = 'block';
+      statusEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--gray-400);"><div class="spinner-ring" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:-4px;margin-right:6px;"></div> Generating decorative shape...</div>';
+
+      var fullPrompt = prompt + '. Decorative graphic element for a professional ad, transparent PNG background, no text, no people. Blue color #3052FF. Simple clean shape suitable as a background accent.';
+
+      try {
+        var res = await fetch('/api/ad-generator/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gemini',
+            prompt: fullPrompt,
+            size_label: 'square',
+            use_brand_prompt: false
+          })
+        });
+
+        if (!res.ok) throw new Error('Generation failed');
+        var data = await res.json();
+        var genIds = data.generation_ids || [];
+        if (genIds.length === 0) throw new Error('No generation started');
+
+        var pollInterval = setInterval(async function() {
+          try {
+            var statusRes = await fetch('/api/ad-generator/generations/batch-status?ids=' + genIds.join(','));
+            var statuses = await statusRes.json();
+            var completed = statuses.filter(function(s) { return s.status === 'completed' && s.image_url; });
+            var failed = statuses.filter(function(s) { return s.status === 'failed'; });
+
+            if (completed.length > 0) {
+              clearInterval(pollInterval);
+              var resultsEl = document.getElementById('aiShapeResults');
+              resultsEl.style.display = 'grid';
+              resultsEl.style.gridTemplateColumns = 'repeat(3, 1fr)';
+              resultsEl.style.gap = '8px';
+              resultsEl.innerHTML = completed.map(function(s) {
+                return '<div class="shape-option" data-shape="ai" onclick="selectAiShape(\'' + s.image_url + '\',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:8px;text-align:center;cursor:pointer;">' +
+                  '<img src="' + s.image_url + '" style="height:50px;width:auto;max-width:100%;object-fit:contain;">' +
+                  '<div style="font-size:10px;font-weight:600;color:var(--gray-600);">AI Shape</div>' +
+                  '</div>';
+              }).join('');
+              statusEl.style.display = 'none';
+              btn.disabled = false;
+              btn.textContent = 'Generate';
+            } else if (failed.length === genIds.length) {
+              clearInterval(pollInterval);
+              statusEl.innerHTML = '<div style="color:red;padding:8px;font-size:12px;">Generation failed. Try again.</div>';
+              btn.disabled = false;
+              btn.textContent = 'Generate';
+            }
+          } catch(e) {
+            clearInterval(pollInterval);
+            statusEl.innerHTML = '<div style="color:red;padding:8px;font-size:12px;">' + e.message + '</div>';
+            btn.disabled = false;
+            btn.textContent = 'Generate';
+          }
+        }, 3000);
+
+      } catch(e) {
+        statusEl.innerHTML = '<div style="color:red;padding:8px;font-size:12px;">' + e.message + '</div>';
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+      }
+    }
+
+    function selectAiShape(imageUrl, el) {
+      // Deselect all shapes
+      document.querySelectorAll('.shape-option').forEach(function(opt) {
+        opt.style.borderColor = 'var(--gray-200)';
+        opt.style.background = '';
+      });
+      if (el) { el.style.borderColor = '#3052FF'; el.style.background = '#eef1ff'; }
+
+      wizardState.chevrons.visible = true;
+      wizardState.chevrons.shapeUrl = imageUrl;
+      var chkbox = document.getElementById('chevronsVisible');
+      if (chkbox) chkbox.checked = true;
+      document.getElementById('chevronOptions').style.display = 'block';
       updateLivePreview();
     }
 
