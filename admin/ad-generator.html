@@ -134,9 +134,11 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 400px;
+      min-height: 450px;
     }
-    .canvas-editor-area canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .canvas-editor-area canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.15); cursor: default; }
+    /* Canva-style selection: blue border + white corner circles */
+    .canvas-container { position: relative !important; }
     #canvasProps {
       margin-top: 8px;
       padding: 12px 16px;
@@ -5291,8 +5293,8 @@
 
     function initAdCanvas() {
       var meta = SIZE_META[selectedSize];
-      // Scale to fit max 500px width or height
-      var scale = Math.min(500 / meta.width, 500 / meta.height);
+      // Scale to fit max 600px width or height for bigger canvas
+      var scale = Math.min(600 / meta.width, 600 / meta.height);
       var w = Math.round(meta.width * scale);
       var h = Math.round(meta.height * scale);
 
@@ -5300,6 +5302,19 @@
       if (!canvasEl) return;
       canvasEl.width = w;
       canvasEl.height = h;
+
+      // Set Canva-style global defaults for all Fabric objects
+      fabric.Object.prototype.set({
+        cornerSize: 14,
+        cornerStyle: 'circle',
+        cornerColor: '#3052FF',
+        cornerStrokeColor: '#fff',
+        borderColor: '#3052FF',
+        borderScaleFactor: 2,
+        transparentCorners: false,
+        rotatingPointOffset: 30,
+        padding: 4
+      });
 
       if (adCanvas) { try { adCanvas.dispose(); } catch(e) {} }
       adCanvas = new fabric.Canvas('adFabricCanvas', {
