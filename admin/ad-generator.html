@@ -806,6 +806,38 @@
       <!-- ============ STEP 1: ONE-STEP AD CREATION ============ -->
       <div class="step-panel active" id="step1">
 
+        <!-- Size Selection — FIRST THING -->
+        <div style="margin-bottom:24px;max-width:900px;margin:0 auto 24px;">
+          <h3 style="font-size:18px;font-weight:700;margin:0 0 4px;">Choose Ad Size</h3>
+          <p style="font-size:13px;color:var(--gray-400);margin:0 0 16px;">Everything will be designed for this size</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+            <div class="size-card selected" data-size="square" onclick="selectSize('square')" style="border:2px solid #3052FF;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#eef1ff;">
+              <div style="width:60px;height:60px;background:var(--gray-200);border-radius:6px;margin:0 auto 8px;"></div>
+              <div style="font-weight:700;font-size:14px;color:var(--gray-800);">Square</div>
+              <div style="font-size:11px;color:var(--gray-400);">1080 x 1080</div>
+              <div style="font-size:10px;color:#3052FF;margin-top:4px;">Instagram Feed</div>
+            </div>
+            <div class="size-card" data-size="story_reel" onclick="selectSize('story_reel')" style="border:2px solid var(--gray-200);border-radius:12px;padding:16px;text-align:center;cursor:pointer;">
+              <div style="width:36px;height:64px;background:var(--gray-200);border-radius:6px;margin:0 auto 8px;"></div>
+              <div style="font-weight:700;font-size:14px;color:var(--gray-800);">Story / Reel</div>
+              <div style="font-size:11px;color:var(--gray-400);">1080 x 1920</div>
+              <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">IG/FB Stories, TikTok</div>
+            </div>
+            <div class="size-card" data-size="feed_landscape" onclick="selectSize('feed_landscape')" style="border:2px solid var(--gray-200);border-radius:12px;padding:16px;text-align:center;cursor:pointer;">
+              <div style="width:80px;height:42px;background:var(--gray-200);border-radius:6px;margin:0 auto 8px;"></div>
+              <div style="font-weight:700;font-size:14px;color:var(--gray-800);">Landscape</div>
+              <div style="font-size:11px;color:var(--gray-400);">1200 x 628</div>
+              <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">Facebook Feed</div>
+            </div>
+            <div class="size-card" data-size="carousel_square" onclick="selectSize('carousel_square')" style="border:2px solid var(--gray-200);border-radius:12px;padding:16px;text-align:center;cursor:pointer;">
+              <div style="width:60px;height:60px;background:var(--gray-200);border-radius:6px;margin:0 auto 8px;"></div>
+              <div style="font-weight:700;font-size:14px;color:var(--gray-800);">Carousel</div>
+              <div style="font-size:11px;color:var(--gray-400);">1200 x 1200</div>
+              <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">IG/FB Carousel</div>
+            </div>
+          </div>
+        </div>
+
         <!-- AUTO-PILOT: Main creation UI -->
         <div class="card" style="padding:28px;max-width:900px;margin:0 auto;">
           <div style="text-align:center;margin-bottom:24px;">
@@ -845,10 +877,9 @@
               </select>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Sizes</label>
+              <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Size</label>
               <select id="bulkSizes" class="form-input" style="font-size:14px;">
-                <option value="all" selected>All 4 sizes</option>
-                <option value="current">Current size only</option>
+                <option value="current" selected>Current size</option>
               </select>
             </div>
             <div>
@@ -861,28 +892,7 @@
             </div>
           </div>
 
-          <!-- Optional: Ad Size (for "current" mode) -->
-          <div style="margin-bottom:20px;">
-            <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px;">Primary Size</label>
-            <div class="size-cards">
-              <div class="size-card selected" data-size="feed_landscape" onclick="selectSize('feed_landscape')">
-                <div class="size-name">Feed / Landscape</div>
-                <div class="size-dims">1200 x 628</div>
-              </div>
-              <div class="size-card" data-size="square" onclick="selectSize('square')">
-                <div class="size-name">Square</div>
-                <div class="size-dims">1080 x 1080</div>
-              </div>
-              <div class="size-card" data-size="story_reel" onclick="selectSize('story_reel')">
-                <div class="size-name">Story / Reel</div>
-                <div class="size-dims">1080 x 1920</div>
-              </div>
-              <div class="size-card" data-size="carousel_square" onclick="selectSize('carousel_square')">
-                <div class="size-name">Carousel</div>
-                <div class="size-dims">1200 x 1200</div>
-              </div>
-            </div>
-          </div>
+          <!-- Size is selected at the top of Step 1 -->
 
           <!-- Prompt Builder -->
           <div style="margin-bottom:20px;">
@@ -1504,7 +1514,7 @@
             <div style="margin-top:16px;">
               <button class="btn btn-primary" id="composeAllBtn" onclick="composeAd()" style="width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(135deg,#3052FF 0%,#7FB2FF 100%);border-radius:12px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-                Compose All Sizes
+                Compose Ad
               </button>
             </div>
 
@@ -1513,7 +1523,7 @@
               <button class="btn btn-secondary" onclick="goToStep(4)">&larr; Back</button>
               <button class="btn btn-secondary" id="downloadAllComposedBtn" onclick="downloadAllComposed()" style="display:none;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download All
+                Download
               </button>
             </div>
           </div>
@@ -1680,7 +1690,7 @@
     // ============ STATE ============
     let currentStep = 1;
     let maxStepReached = 1;
-    let selectedSize = 'feed_landscape';
+    let selectedSize = 'square';
     let selectedModel = 'gemini';
     let generatedImageUrl = null;
     let generationId = null;
@@ -1690,8 +1700,8 @@
 
     // Canvas (shared between steps 2 & 3)
     let canvas = null;
-    let canvasW = 1200;
-    let canvasH = 628;
+    let canvasW = 1080;
+    let canvasH = 1080;
     let logoUrl = null;
     let resizeHandler = null;
 
@@ -2010,12 +2020,26 @@
 
     function selectSize(size) {
       selectedSize = size;
-      document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
-      var el = document.querySelector('.size-card[data-size="' + size + '"]');
-      if (el) el.classList.add('selected');
-      const meta = SIZE_META[size];
+      var meta = SIZE_META[size];
       canvasW = meta.width;
       canvasH = meta.height;
+      // Update all size cards — reset styles then highlight selected
+      document.querySelectorAll('.size-card').forEach(function(c) {
+        c.classList.remove('selected');
+        c.style.borderColor = 'var(--gray-200)';
+        c.style.background = '';
+        // Reset platform hint color
+        var hint = c.querySelector('div:last-child');
+        if (hint && hint.style) hint.style.color = 'var(--gray-400)';
+      });
+      var el = document.querySelector('.size-card[data-size="' + size + '"]');
+      if (el) {
+        el.classList.add('selected');
+        el.style.borderColor = '#3052FF';
+        el.style.background = '#eef1ff';
+        var hint = el.querySelector('div:last-child');
+        if (hint && hint.style) hint.style.color = '#3052FF';
+      }
       var dims = document.getElementById('previewDims');
       if (dims) dims.textContent = meta.width + ' x ' + meta.height;
       updatePreviewAspectRatio();
@@ -4197,12 +4221,9 @@
       generationId = genId;
       canvasW = width;
       canvasH = height;
-      selectedSize = sizeLabel;
 
-      // Update size card selection
-      document.querySelectorAll('.size-card').forEach(c => c.classList.remove('selected'));
-      const sizeCard = document.querySelector(`.size-card[data-size="${sizeLabel}"]`);
-      if (sizeCard) sizeCard.classList.add('selected');
+      // Update size card selection via selectSize
+      selectSize(sizeLabel);
 
       // Show in preview
       const preview = document.getElementById('previewArea');
@@ -5234,54 +5255,48 @@
 
       var btn = document.getElementById('composeAllBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-ring" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Composing all sizes...';
+      var meta = SIZE_META[selectedSize];
+      btn.innerHTML = '<span class="spinner-ring" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Composing ' + meta.name + '...';
 
       var statusEl = document.getElementById('composeStatus');
       statusEl.style.display = 'flex';
-      statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ads in all 4 sizes...';
+      statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + '...';
       document.getElementById('composeResultsPanel').style.display = 'block';
 
       var resultsEl = document.getElementById('composeResults');
       resultsEl.innerHTML = '';
       composedResults = [];
 
-      var sizeLabels = ['feed_landscape', 'square', 'story_reel', 'carousel_square'];
       var personOffset = parseInt(document.getElementById('personPositionSlider').value) || 0;
 
       try {
-        for (var i = 0; i < sizeLabels.length; i++) {
-          var sizeLabel = sizeLabels[i];
-          var meta = SIZE_META[sizeLabel];
-          statusEl.innerHTML = '<div class="spinner-ring"></div> Composing ' + meta.name + ' (' + (i + 1) + '/' + sizeLabels.length + ')...';
+        var res = await fetch('/api/ad-generator/compose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            person_image_url: personImage,
+            copy: copyConfig,
+            size_label: selectedSize,
+            asset_ids: Array.from(selectedAssetIds),
+            person_info: { framing: (document.getElementById('pbFraming') || {}).value || 'Half body', offset_x_percent: personOffset },
+            background_color: wizardState.bgColor,
+            chevrons: {
+              visible: wizardState.chevrons.visible,
+              position: wizardState.chevrons.position,
+              behind_person: wizardState.chevrons.behindPerson,
+              size: wizardState.chevrons.size
+            },
+            text_position: wizardState.textPosition
+          })
+        });
 
-          var res = await fetch('/api/ad-generator/compose', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              person_image_url: personImage,
-              copy: copyConfig,
-              size_label: sizeLabel,
-              asset_ids: Array.from(selectedAssetIds),
-              person_info: { framing: (document.getElementById('pbFraming') || {}).value || 'Half body', offset_x_percent: personOffset },
-              background_color: wizardState.bgColor,
-              chevrons: {
-                visible: wizardState.chevrons.visible,
-                position: wizardState.chevrons.position,
-                behind_person: wizardState.chevrons.behindPerson,
-                size: wizardState.chevrons.size
-              },
-              text_position: wizardState.textPosition
-            })
-          });
-
-          if (!res.ok) {
-            var errData = await res.json().catch(function() { return { error: 'Compose failed' }; });
-            throw new Error(errData.error || 'Compose failed for ' + meta.name);
-          }
-
-          var data = await res.json();
-          composedResults.push({ sizeLabel: sizeLabel, meta: meta, url: data.image_url, dataUrl: data.image_data_url });
+        if (!res.ok) {
+          var errData = await res.json().catch(function() { return { error: 'Compose failed' }; });
+          throw new Error(errData.error || 'Compose failed for ' + meta.name);
         }
+
+        var data = await res.json();
+        composedResults.push({ sizeLabel: selectedSize, meta: meta, url: data.image_url, dataUrl: data.image_data_url });
 
         renderComposedResults();
         statusEl.style.display = 'none';
@@ -5291,7 +5306,7 @@
         console.error('Compose error:', err);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Compose All Sizes';
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Compose Ad';
       }
     }
 
