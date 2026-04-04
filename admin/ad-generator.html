@@ -4569,15 +4569,33 @@
       // Person image
       var personEl = document.getElementById('livePreviewPerson');
       var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl;
+      var hasBgRemoved = !!wizardState.personImageNoBg;
       if (personUrl) {
         personEl.src = personUrl;
         personEl.style.display = 'block';
-        var offsetX = wizardState.personOffsetX || 0;
-        var offsetY = wizardState.personOffsetY || 0;
-        personEl.style.height = (wizardState.personScale || 70) + '%';
-        personEl.style.left = 'calc(50% + ' + offsetX + '% - 25%)';
-        personEl.style.bottom = offsetY + '%';
-        personEl.style.cursor = 'grab';
+        if (hasBgRemoved) {
+          // BG removed: position as a layer on top of background
+          var offsetX = wizardState.personOffsetX || 0;
+          var offsetY = wizardState.personOffsetY || 0;
+          personEl.style.height = (wizardState.personScale || 70) + '%';
+          personEl.style.width = 'auto';
+          personEl.style.left = (50 + offsetX) + '%';
+          personEl.style.transform = 'translateX(-50%)';
+          personEl.style.bottom = offsetY + '%';
+          personEl.style.top = 'auto';
+          personEl.style.objectFit = 'contain';
+          personEl.style.cursor = 'grab';
+        } else {
+          // Original image with background: fill the entire ad area
+          personEl.style.width = '100%';
+          personEl.style.height = '100%';
+          personEl.style.left = '0';
+          personEl.style.top = '0';
+          personEl.style.bottom = 'auto';
+          personEl.style.transform = 'none';
+          personEl.style.objectFit = 'cover';
+          personEl.style.cursor = 'default';
+        }
       } else {
         personEl.style.display = 'none';
       }
@@ -4702,7 +4720,11 @@
 
         var personHtml = '';
         if (personUrl) {
-          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;max-width:90%;object-fit:contain;left:' + (50 + offsetX) + '%;transform:translateX(-50%);z-index:2;cursor:grab;">';
+          if (wizardState.personImageNoBg) {
+            personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;max-width:90%;object-fit:contain;left:' + (50 + offsetX) + '%;transform:translateX(-50%);z-index:2;cursor:grab;">';
+          } else {
+            personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;">';
+          }
         }
 
         mirror.innerHTML = chevronHtml + personHtml + textHtml;
