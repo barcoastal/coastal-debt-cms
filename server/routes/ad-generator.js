@@ -746,39 +746,59 @@ router.post('/separate-layers', authenticateToken, async (req, res) => {
     const apiKey = getApiKey('gemini');
     if (!apiKey) throw new Error('Gemini API key not configured');
 
-    const inpaintRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64Image } },
-              { text: 'Remove the person from this image completely. Fill in the area where the person was with the surrounding background pattern, colors, and elements. Keep all decorative elements like arrows, chevrons, icons, and shapes. The result should look like the original background without any person. Output only the image.' }
-            ]
-          }],
-          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-        })
-      }
-    );
-
+    // Try multiple models for inpainting
+    const inpaintModels = ['gemini-2.5-flash-preview-image-generation', 'gemini-2.0-flash-exp', 'gemini-2.0-flash'];
     let bgCleanUrl = null;
-    if (inpaintRes.ok) {
-      const inpaintData = await inpaintRes.json();
-      if (inpaintData.candidates && inpaintData.candidates[0] && inpaintData.candidates[0].content) {
-        const parts = inpaintData.candidates[0].content.parts || [];
-        for (const part of parts) {
-          const imgData = part.inline_data || part.inlineData;
-          if (imgData && imgData.data) {
-            const bgFilename = `ad-bg-clean-${Date.now()}.png`;
-            const bgPath = path.join(uploadsDir, bgFilename);
-            fs.writeFileSync(bgPath, Buffer.from(imgData.data, 'base64'));
-            bgCleanUrl = `/lp/uploads/${bgFilename}`;
-            break;
+
+    for (const inpaintModel of inpaintModels) {
+      try {
+        console.log(`[Separate] Trying inpaint with ${inpaintModel}...`);
+        const inpaintRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${inpaintModel}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inline_data: { mime_type: mimeType, data: base64Image } },
+                  { text: 'Edit this image: Remove the person/human completely from the image. Fill the area where the person was with the surrounding background, matching the colors, patterns, and decorative elements. Keep everything else (arrows, chevrons, icons, shapes, gradients). Output the edited image.' }
+                ]
+              }],
+              generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+            })
+          }
+        );
+
+        if (!inpaintRes.ok) {
+          const errText = await inpaintRes.text();
+          console.warn(`[Separate] ${inpaintModel} failed: ${inpaintRes.status} ${errText.substring(0, 100)}`);
+          continue;
+        }
+
+        const inpaintData = await inpaintRes.json();
+        if (inpaintData.candidates && inpaintData.candidates[0] && inpaintData.candidates[0].content) {
+          const parts = inpaintData.candidates[0].content.parts || [];
+          for (const part of parts) {
+            const imgData = part.inline_data || part.inlineData;
+            if (imgData && imgData.data) {
+              const bgFilename = `ad-bg-clean-${Date.now()}.png`;
+              const bgPath = path.join(uploadsDir, bgFilename);
+              fs.writeFileSync(bgPath, Buffer.from(imgData.data, 'base64'));
+              bgCleanUrl = `/lp/uploads/${bgFilename}`;
+              console.log(`[Separate] Inpaint success with ${inpaintModel}`);
+              break;
+            }
           }
         }
+        if (bgCleanUrl) break;
+      } catch (inpaintErr) {
+        console.warn(`[Separate] ${inpaintModel} error: ${inpaintErr.message}`);
       }
+    }
+
+    if (!bgCleanUrl) {
+      console.warn('[Separate] All inpaint models failed — returning person only');
     }
 
     res.json({
