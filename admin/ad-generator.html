@@ -929,24 +929,42 @@
           <div id="bulkResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
         </div>
 
-        <!-- Person Position Slider -->
-        <div id="personPositionStep1" style="display:none;margin-top:16px;background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);white-space:nowrap;">Person Position (Left/Right)</label>
-              <input type="range" id="personPositionSlider" min="-30" max="30" value="0" style="flex:1;accent-color:#3052FF;" oninput="document.getElementById('personPosVal').textContent=this.value+'%'">
-              <span id="personPosVal" style="font-size:12px;color:var(--gray-400);min-width:36px;">0%</span>
-            </div>
-            <div id="selectedPersonPreview" style="display:none;flex-shrink:0;">
-              <img id="selectedPersonImg" src="" alt="Selected person" style="height:80px;border-radius:8px;border:2px solid #3052FF;">
+        <!-- Selected Person Preview & Controls -->
+        <div id="personPositionStep1" style="display:none;margin-top:16px;">
+          <div style="background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Selected Person</h3>
+            <div style="display:flex;gap:20px;align-items:start;flex-wrap:wrap;">
+              <!-- Preview -->
+              <div style="flex-shrink:0;">
+                <div id="personPreviewBox" style="width:280px;aspect-ratio:1/1;background:#F2F4F9;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--gray-200);">
+                  <img id="selectedPersonImg" src="" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:80%;object-fit:contain;">
+                </div>
+              </div>
+              <!-- Controls -->
+              <div style="flex:1;min-width:200px;">
+                <div style="margin-bottom:16px;">
+                  <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:6px;">Horizontal Position</label>
+                  <input type="range" id="personPositionSlider" min="-40" max="40" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.personOffsetX=parseInt(this.value);document.getElementById('personPosVal').textContent=this.value+'%';updatePersonPreview()">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Left</span><span id="personPosVal">0%</span><span>Right</span></div>
+                </div>
+                <div style="margin-bottom:16px;">
+                  <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:6px;">Vertical Position</label>
+                  <input type="range" id="personPositionSliderY" min="-20" max="20" value="0" style="width:100%;accent-color:#3052FF;" oninput="wizardState.personOffsetY=parseInt(this.value);document.getElementById('personPosValY').textContent=this.value+'%';updatePersonPreview()">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Down</span><span id="personPosValY">0%</span><span>Up</span></div>
+                </div>
+                <div style="margin-bottom:16px;">
+                  <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:6px;">Person Size</label>
+                  <input type="range" id="personSizeSlider" min="40" max="100" value="70" step="5" style="width:100%;accent-color:#3052FF;" oninput="wizardState.personScale=parseInt(this.value);document.getElementById('personSizeVal').textContent=this.value+'%';updatePersonPreview()">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);"><span>Small</span><span id="personSizeVal">70%</span><span>Large</span></div>
+                </div>
+                <button id="removeBgBtn" class="btn btn-secondary" onclick="removeBgSelected()" style="width:100%;margin-bottom:8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                  Remove Background
+                </button>
+                <button class="btn btn-primary" onclick="goToStep(2)" style="width:100%;">Next: Background &rarr;</button>
+              </div>
             </div>
           </div>
-        </div>
-
-        <!-- Step Navigation -->
-        <div class="step-nav" id="step1Nav" style="display:none;margin-top:16px;">
-          <div></div>
-          <button class="btn btn-primary" onclick="goToStep(2)">Next: Background &rarr;</button>
         </div>
       </div>
 
@@ -1023,7 +1041,7 @@
                   </div>
                   <div class="iphone-ad-area" id="livePreview" style="position:relative;width:100%;aspect-ratio:1/1;background:#F2F4F9;">
                     <img id="livePreviewBgImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
-                    <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:65%;object-fit:contain;display:none;cursor:grab;">
+                    <img id="livePreviewPerson" src="" style="position:absolute;bottom:0;height:70%;object-fit:contain;display:none;cursor:grab;">
                     <div id="livePreviewChevrons" style="position:absolute;display:none;"></div>
                     <div id="livePreviewText" style="position:absolute;padding:5%;display:none;"></div>
                     <div id="livePreviewLogo" style="position:absolute;display:none;"></div>
@@ -1577,6 +1595,7 @@
       personImageNoBg: null,
       personOffsetX: 0,
       personOffsetY: 0,
+      personScale: 70,
       bgColor: '#F2F4F9',
       bgImageUrl: null,
       bgImageDataUrl: null,
@@ -1665,6 +1684,9 @@
         var el = document.getElementById(id);
         if (el) el.style.aspectRatio = ratio;
       });
+      // Also update person preview box in Step 1
+      var personBox = document.getElementById('personPreviewBox');
+      if (personBox) personBox.style.aspectRatio = ratio;
       updateLivePreview();
     }
 
@@ -4179,6 +4201,7 @@
         personEl.style.display = 'block';
         var offsetX = wizardState.personOffsetX || 0;
         var offsetY = wizardState.personOffsetY || 0;
+        personEl.style.height = (wizardState.personScale || 70) + '%';
         personEl.style.left = 'calc(50% + ' + offsetX + '% - 25%)';
         personEl.style.bottom = offsetY + '%';
         personEl.style.cursor = 'grab';
@@ -4296,7 +4319,7 @@
 
         var personHtml = '';
         if (personUrl) {
-          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:65%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;cursor:grab;">';
+          personHtml = '<img src="' + escapeHtml(personUrl) + '" style="position:absolute;bottom:' + offsetY + '%;height:' + (wizardState.personScale || 70) + '%;object-fit:contain;left:calc(50% + ' + offsetX + '% - 25%);z-index:2;cursor:grab;">';
         }
 
         mirror.innerHTML = chevronHtml + personHtml + textHtml;
@@ -4338,12 +4361,18 @@
         var dy = -((e.clientY - dragStartY) / rect.height) * 100;
         wizardState.personOffsetX = Math.max(-50, Math.min(50, startOffsetX + dx));
         wizardState.personOffsetY = Math.max(-30, Math.min(30, startOffsetY + dy));
-        // Sync the slider
+        // Sync the sliders
         var slider = document.getElementById('personPositionSlider');
         if (slider) {
           slider.value = Math.round(wizardState.personOffsetX);
           var valEl = document.getElementById('personPosVal');
           if (valEl) valEl.textContent = Math.round(wizardState.personOffsetX) + '%';
+        }
+        var sliderY = document.getElementById('personPositionSliderY');
+        if (sliderY) {
+          sliderY.value = Math.round(wizardState.personOffsetY);
+          var valElY = document.getElementById('personPosValY');
+          if (valElY) valElY.textContent = Math.round(wizardState.personOffsetY) + '%';
         }
         updateLivePreview();
       });
@@ -4383,6 +4412,12 @@
           var valEl = document.getElementById('personPosVal');
           if (valEl) valEl.textContent = Math.round(wizardState.personOffsetX) + '%';
         }
+        var sliderY = document.getElementById('personPositionSliderY');
+        if (sliderY) {
+          sliderY.value = Math.round(wizardState.personOffsetY);
+          var valElY = document.getElementById('personPosValY');
+          if (valElY) valElY.textContent = Math.round(wizardState.personOffsetY) + '%';
+        }
         updateLivePreview();
         e.preventDefault();
       }, { passive: false });
@@ -4396,10 +4431,51 @@
       if (slider) {
         slider.addEventListener('input', function() {
           wizardState.personOffsetX = parseInt(this.value) || 0;
+          updatePersonPreview();
           updateLivePreview();
         });
       }
     })();
+
+    // ============ STEP 1 PERSON PREVIEW ============
+
+    function updatePersonPreview() {
+      var img = document.getElementById('selectedPersonImg');
+      if (!img) return;
+      var scale = (wizardState.personScale || 70);
+      var offX = wizardState.personOffsetX || 0;
+      var offY = wizardState.personOffsetY || 0;
+      img.style.height = scale + '%';
+      img.style.left = 'calc(50% + ' + offX + '%)';
+      img.style.bottom = offY + '%';
+      updateLivePreview();
+    }
+
+    function removeBgSelected() {
+      var url = wizardState.personImageUrl;
+      if (!url) return;
+      var btn = document.getElementById('removeBgBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-ring" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Removing...';
+      fetch('/api/ad-generator/remove-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: url })
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.transparent_url) {
+          wizardState.personImageNoBg = data.transparent_url;
+          document.getElementById('selectedPersonImg').src = data.transparent_url;
+          btn.innerHTML = '&#10003; Background Removed';
+          btn.style.background = '#d1fae5';
+          btn.style.color = '#065f46';
+          btn.style.borderColor = '#065f46';
+          updateLivePreview();
+        }
+      }).catch(function(e) {
+        btn.disabled = false;
+        btn.innerHTML = 'Remove Background (failed - retry)';
+      });
+    }
 
     // ============ AI BACKGROUND GENERATION ============
 
@@ -4713,11 +4789,32 @@
         if (card) card.style.outline = '3px solid #3052FF';
       }
 
-      // Show person position controls & nav
+      // Show person position controls & preview
       document.getElementById('personPositionStep1').style.display = 'block';
-      document.getElementById('step1Nav').style.display = 'flex';
-      document.getElementById('selectedPersonPreview').style.display = 'block';
       document.getElementById('selectedPersonImg').src = imageUrl;
+      // Update aspect ratio of person preview box
+      var meta = SIZE_META[selectedSize];
+      var personBox = document.getElementById('personPreviewBox');
+      if (personBox) personBox.style.aspectRatio = meta.width + '/' + meta.height;
+      // Reset sliders to current state
+      var posSlider = document.getElementById('personPositionSlider');
+      if (posSlider) posSlider.value = wizardState.personOffsetX || 0;
+      var posSliderY = document.getElementById('personPositionSliderY');
+      if (posSliderY) posSliderY.value = wizardState.personOffsetY || 0;
+      var sizeSlider = document.getElementById('personSizeSlider');
+      if (sizeSlider) sizeSlider.value = wizardState.personScale || 70;
+      // Reset remove BG button
+      var removeBgBtn = document.getElementById('removeBgBtn');
+      if (removeBgBtn) {
+        removeBgBtn.disabled = false;
+        removeBgBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg> Remove Background';
+        removeBgBtn.style.background = '';
+        removeBgBtn.style.color = '';
+        removeBgBtn.style.borderColor = '';
+      }
+      updatePersonPreview();
+      // Scroll to the preview card
+      document.getElementById('personPositionStep1').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       maxStepReached = Math.max(maxStepReached, 1);
     }
