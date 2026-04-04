@@ -5488,28 +5488,27 @@
       adCanvas.on('selection:cleared', function() { hideCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
     }
 
+    var _syncTimeout = null;
     function syncCanvasToPreview() {
-      // Sync the canvas person position back to wizardState for the iPhone preview
-      if (adCanvas && personObj) {
-        var scale = adCanvas._editorScale;
-        var w = adCanvas.width;
-        var h = adCanvas.height;
-        // Map position to percentage offsets for the preview
-        var centerX = personObj.left + (personObj.width * personObj.scaleX) / 2;
-        var bottom = h - (personObj.top + personObj.height * personObj.scaleY);
-        wizardState.imagePanX = Math.round(((centerX / w) - 0.5) * 100);
-        wizardState.imagePanY = Math.round((bottom / h) * 10 - 5);
-        // Update sliders
-        var panXEl = document.getElementById('imagePanX');
-        var panYEl = document.getElementById('imagePanY');
-        if (panXEl) { panXEl.value = wizardState.imagePanX; }
-        if (panYEl) { panYEl.value = wizardState.imagePanY; }
-        var panXVal = document.getElementById('imagePanXVal');
-        var panYVal = document.getElementById('imagePanYVal');
-        if (panXVal) panXVal.textContent = wizardState.imagePanX + '%';
-        if (panYVal) panYVal.textContent = wizardState.imagePanY + '%';
-      }
-      updateLivePreview();
+      // Debounce rapid updates during drag
+      if (_syncTimeout) clearTimeout(_syncTimeout);
+      _syncTimeout = setTimeout(function() {
+        if (!adCanvas) return;
+        // Export canvas as data URL and use it as the iPhone preview image
+        try {
+          var dataUrl = adCanvas.toDataURL({ format: 'png', multiplier: 1 });
+          // Set it as the preview's background/image
+          var mirrors = ['livePreview', 'livePreview3', 'livePreview4', 'livePreview5'];
+          mirrors.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;display:block;">';
+            el.style.background = 'transparent';
+          });
+        } catch(e) {
+          console.warn('Canvas sync failed:', e.message);
+        }
+      }, 150);
     }
 
     // ============ EXPORT CANVAS ============
