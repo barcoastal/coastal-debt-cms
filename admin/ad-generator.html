@@ -3148,15 +3148,22 @@
       var maxAttempts = 120;
       for (var i = 0; i < maxAttempts; i++) {
         await new Promise(function(r) { setTimeout(r, 3000); });
-        var res = await fetch('/api/ad-generator/generations/batch-status?ids=' + genId);
-        var statuses = await res.json();
-        if (!statuses.length) continue;
-        var gen = statuses[0];
-        if (gen.status === 'completed' && gen.image_url) return gen.image_url;
-        if (gen.status === 'failed') throw new Error(gen.error_message || 'Image generation failed');
-        if (cardEl) {
-          var loadingText = cardEl.querySelector('.bulk-card-loading div:last-child');
-          if (loadingText) loadingText.textContent = gen.status === 'processing' ? 'Generating image...' : 'Queued...';
+        try {
+          var res = await fetch('/api/ad-generator/generations/batch-status?ids=' + genId);
+          var text = await res.text();
+          var statuses;
+          try { statuses = JSON.parse(text); } catch(e) { console.warn('Poll: non-JSON response, retrying...'); continue; }
+          if (!statuses.length) continue;
+          var gen = statuses[0];
+          if (gen.status === 'completed' && gen.image_url) return gen.image_url;
+          if (gen.status === 'failed') throw new Error(gen.error_message || 'Image generation failed');
+          if (cardEl) {
+            var loadingText = cardEl.querySelector('.bulk-card-loading div:last-child');
+            if (loadingText) loadingText.textContent = gen.status === 'processing' ? 'Generating image...' : 'Queued...';
+          }
+        } catch(pollErr) {
+          if (pollErr.message.includes('generation failed')) throw pollErr;
+          console.warn('Poll error, retrying:', pollErr.message);
         }
       }
       throw new Error('Timed out waiting for image');
