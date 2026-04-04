@@ -4,8 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Try models in order
+// Try models in order — first available one wins
 const MODELS = [
+  'gemini-2.5-flash-image',
   'gemini-2.0-flash',
   'imagen-4.0-generate-001'
 ];
