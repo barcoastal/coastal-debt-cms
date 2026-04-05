@@ -354,15 +354,98 @@ router.get('/', authenticateToken, (req, res) => {
     ORDER BY lp.created_at DESC
   `).all();
 
+  // Count visitors per page (visitors.landing_page stores slug as text)
+  const visitorCountStmt = db.prepare(`
+    SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?
+  `);
+
   pages.forEach(page => {
     try {
       page.content = JSON.parse(page.content || '{}');
       page.sections_visible = JSON.parse(page.sections_visible || '{}');
       page.hidden_fields = JSON.parse(page.hidden_fields || '{}');
     } catch (e) {}
+    // Add visitor count and conversion rate
+    try {
+      const vc = visitorCountStmt.get('%' + page.slug + '%');
+      page.visitor_count = vc ? vc.c : 0;
+      page.conversion_rate = page.visitor_count > 0
+        ? Math.round((page.lead_count / page.visitor_count) * 1000) / 10
+        : 0;
+    } catch (e) {
+      page.visitor_count = 0;
+      page.conversion_rate = 0;
+    }
   });
 
   res.json(pages);
+});
+
+// Get stats for a single landing page (visitors + leads detail)
+router.get('/:id/stats', authenticateToken, (req, res) => {
+  const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+
+  // Leads for this page
+  const leads = db.prepare(`
+    SELECT id, first_name, last_name, email, phone, company_name, debt_amount,
+           has_mca, ab_variant, gclid, fbclid, msclkid, rt_clickid, created_at,
+           cost_cents, cost_currency
+    FROM leads
+    WHERE landing_page_id = ?
+    ORDER BY created_at DESC
+  `).all(req.params.id);
+
+  // Visitors for this page
+  const visitors = db.prepare(`
+    SELECT id, eli_clickid, ip_address, city, region, country, device_type,
+           browser, referrer_url, utm_source, utm_medium, utm_campaign,
+           ab_variant, converted, visit_count, first_visit, last_visit
+    FROM visitors
+    WHERE landing_page LIKE ?
+    ORDER BY first_visit DESC
+    LIMIT 500
+  `).all('%' + page.slug + '%');
+
+  // Aggregate stats
+  const totalVisitors = db.prepare('SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?').get('%' + page.slug + '%').c;
+  const totalLeads = leads.length;
+  const conversionRate = totalVisitors > 0 ? Math.round((totalLeads / totalVisitors) * 1000) / 10 : 0;
+
+  // By UTM source
+  const bySource = db.prepare(`
+    SELECT utm_source, COUNT(*) as visitors, SUM(converted) as leads
+    FROM visitors
+    WHERE landing_page LIKE ? AND utm_source IS NOT NULL
+    GROUP BY utm_source
+    ORDER BY visitors DESC
+  `).all('%' + page.slug + '%');
+
+  // By day (last 30 days)
+  const byDay = db.prepare(`
+    SELECT DATE(first_visit) as day, COUNT(*) as visitors, SUM(converted) as leads
+    FROM visitors
+    WHERE landing_page LIKE ? AND first_visit >= datetime('now', '-30 days')
+    GROUP BY day
+    ORDER BY day DESC
+  `).all('%' + page.slug + '%');
+
+  res.json({
+    page: { id: page.id, name: page.name, slug: page.slug, platform: page.platform },
+    stats: {
+      total_visitors: totalVisitors,
+      total_leads: totalLeads,
+      conversion_rate: conversionRate,
+      ab_split: {
+        A: { visitors: visitors.filter(v => v.ab_variant === 'A').length, leads: leads.filter(l => l.ab_variant === 'A').length },
+        B: { visitors: visitors.filter(v => v.ab_variant === 'B').length, leads: leads.filter(l => l.ab_variant === 'B').length }
+      }
+    },
+    leads,
+    visitors,
+    by_source: bySource,
+    by_day: byDay
+  });
 });
 
 // Get single landing page
