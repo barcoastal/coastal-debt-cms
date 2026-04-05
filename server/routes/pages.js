@@ -346,18 +346,46 @@ const defaultSectionsVisible = {
 
 // Get all landing pages
 router.get('/', authenticateToken, (req, res) => {
-  const pages = db.prepare(`
-    SELECT lp.*, COUNT(l.id) as lead_count
-    FROM landing_pages lp
-    LEFT JOIN leads l ON lp.id = l.landing_page_id
-    GROUP BY lp.id
-    ORDER BY lp.created_at DESC
-  `).all();
+  const { from, to } = req.query;
 
-  // Count visitors per page (visitors.landing_page stores slug as text)
-  const visitorCountStmt = db.prepare(`
-    SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?
-  `);
+  // Build lead count query with optional date filter
+  let leadQuery, leadParams;
+  if (from || to) {
+    const conditions = [];
+    const params = [];
+    if (from) { conditions.push('l.created_at >= ?'); params.push(from); }
+    if (to) { conditions.push('l.created_at <= ?'); params.push(to); }
+    leadQuery = `
+      SELECT lp.*, COUNT(CASE WHEN ${conditions.join(' AND ')} THEN l.id END) as lead_count
+      FROM landing_pages lp
+      LEFT JOIN leads l ON lp.id = l.landing_page_id
+      GROUP BY lp.id
+      ORDER BY lp.created_at DESC
+    `;
+    leadParams = params;
+  } else {
+    leadQuery = `
+      SELECT lp.*, COUNT(l.id) as lead_count
+      FROM landing_pages lp
+      LEFT JOIN leads l ON lp.id = l.landing_page_id
+      GROUP BY lp.id
+      ORDER BY lp.created_at DESC
+    `;
+    leadParams = [];
+  }
+
+  const pages = db.prepare(leadQuery).all(...leadParams);
+
+  // Count visitors per page with optional date filter
+  let visitorCountStmt;
+  if (from || to) {
+    const conditions = ['landing_page LIKE ?'];
+    if (from) conditions.push('first_visit >= ?');
+    if (to) conditions.push('first_visit <= ?');
+    visitorCountStmt = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE ${conditions.join(' AND ')}`);
+  } else {
+    visitorCountStmt = db.prepare('SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?');
+  }
 
   pages.forEach(page => {
     try {
@@ -365,9 +393,11 @@ router.get('/', authenticateToken, (req, res) => {
       page.sections_visible = JSON.parse(page.sections_visible || '{}');
       page.hidden_fields = JSON.parse(page.hidden_fields || '{}');
     } catch (e) {}
-    // Add visitor count and conversion rate
     try {
-      const vc = visitorCountStmt.get('%' + page.slug + '%');
+      const args = ['%' + page.slug + '%'];
+      if (from) args.push(from);
+      if (to) args.push(to);
+      const vc = visitorCountStmt.get(...args);
       page.visitor_count = vc ? vc.c : 0;
       page.conversion_rate = page.visitor_count > 0
         ? Math.round((page.lead_count / page.visitor_count) * 1000) / 10

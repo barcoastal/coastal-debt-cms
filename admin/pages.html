@@ -222,30 +222,51 @@
       </div>
 
       <div class="card">
+        <!-- Date Filter Bar -->
+        <div style="display:flex;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:600;color:#64748b;">Date range:</label>
+          <select id="statsDateRange" onchange="onDateRangeChange()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+            <option value="all" selected>All Time</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="mtd">Month to Date</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          <input type="date" id="statsDateFrom" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;display:none;">
+          <input type="date" id="statsDateTo" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;display:none;">
+          <button onclick="loadPages()" id="applyDateBtn" style="padding:6px 14px;background:#3052FF;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:none;">Apply</button>
+          <span id="statsRangeLabel" style="font-size:11px;color:#94a3b8;margin-left:auto;"></span>
+        </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Platform</th>
-                <th>Template</th>
-                <th>Traffic Source</th>
-                <th>Clicks</th>
-                <th>Leads</th>
-                <th>Conv. Rate</th>
-                <th>Status</th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('name')">Name <span id="sort-name" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('slug')">Slug <span id="sort-slug" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('platform')">Platform <span id="sort-platform" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('template_type')">Template <span id="sort-template_type" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('traffic_source')">Traffic Source <span id="sort-traffic_source" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('visitor_count')">Clicks <span id="sort-visitor_count" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('lead_count')">Leads <span id="sort-lead_count" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('conversion_rate')">Conv. Rate <span id="sort-conversion_rate" class="sort-arrow"></span></th>
+                <th style="cursor:pointer;user-select:none;" onclick="sortPages('is_active')">Status <span id="sort-is_active" class="sort-arrow"></span></th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="pagesTable">
               <tr>
-                <td colspan="7" class="loading"><div class="spinner"></div></td>
+                <td colspan="10" class="loading"><div class="spinner"></div></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+      <style>
+        .sort-arrow { display:inline-block; width:10px; color:#94a3b8; font-size:10px; }
+        .sort-arrow.active { color:#3052FF; font-weight:700; }
+      </style>
     </main>
   </div>
 
@@ -705,13 +726,109 @@
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    async function loadPages() {
-      const res = await fetch('/api/pages');
-      const pages = await res.json();
+    // Pages data cache for sorting
+    var _pagesData = [];
+    var _sortKey = null;
+    var _sortDir = 'asc';
 
+    // Date range helpers
+    function getDateRange() {
+      var range = document.getElementById('statsDateRange').value;
+      var now = new Date();
+      var from = null, to = null;
+      if (range === 'today') {
+        from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      } else if (range === 'yesterday') {
+        from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        to = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+      } else if (range === '7') {
+        from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (range === '30') {
+        from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else if (range === 'mtd') {
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else if (range === 'custom') {
+        var fromEl = document.getElementById('statsDateFrom').value;
+        var toEl = document.getElementById('statsDateTo').value;
+        if (fromEl) from = new Date(fromEl);
+        if (toEl) { to = new Date(toEl); to.setHours(23,59,59); }
+      }
+      return { from: from, to: to, range: range };
+    }
+
+    function onDateRangeChange() {
+      var val = document.getElementById('statsDateRange').value;
+      var show = val === 'custom';
+      document.getElementById('statsDateFrom').style.display = show ? 'inline-block' : 'none';
+      document.getElementById('statsDateTo').style.display = show ? 'inline-block' : 'none';
+      document.getElementById('applyDateBtn').style.display = show ? 'inline-block' : 'none';
+      if (!show) loadPages();
+    }
+
+    function sortPages(key) {
+      if (_sortKey === key) {
+        _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        _sortKey = key;
+        _sortDir = 'asc';
+      }
+      // Update arrows
+      document.querySelectorAll('.sort-arrow').forEach(function(el) {
+        el.textContent = '';
+        el.classList.remove('active');
+      });
+      var arrowEl = document.getElementById('sort-' + key);
+      if (arrowEl) {
+        arrowEl.textContent = _sortDir === 'asc' ? '▲' : '▼';
+        arrowEl.classList.add('active');
+      }
+      // Sort
+      var sorted = _pagesData.slice().sort(function(a, b) {
+        var av = a[key], bv = b[key];
+        if (typeof av === 'string' && typeof bv === 'string') {
+          return _sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+        }
+        av = av || 0; bv = bv || 0;
+        return _sortDir === 'asc' ? av - bv : bv - av;
+      });
+      renderPagesTable(sorted);
+    }
+
+    async function loadPages() {
+      const range = getDateRange();
+      var url = '/api/pages';
+      if (range.from) {
+        url += '?from=' + range.from.toISOString();
+        if (range.to) url += '&to=' + range.to.toISOString();
+      }
+
+      // Update label
+      var labelEl = document.getElementById('statsRangeLabel');
+      if (labelEl) {
+        if (range.range === 'all') labelEl.textContent = 'All time';
+        else if (range.from && range.to) labelEl.textContent = range.from.toLocaleDateString() + ' → ' + range.to.toLocaleDateString();
+        else if (range.from) labelEl.textContent = 'Since ' + range.from.toLocaleDateString();
+      }
+
+      const res = await fetch(url);
+      const pages = await res.json();
+      _pagesData = pages;
+
+      // Re-apply sort if active
+      if (_sortKey) {
+        sortPages(_sortKey);
+        sortPages(_sortKey); // Toggle twice to keep same direction
+        return;
+      }
+
+      renderPagesTable(pages);
+    }
+
+    function renderPagesTable(pages) {
       const tbody = document.getElementById('pagesTable');
       if (pages.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No landing pages yet. Create your first one!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No landing pages yet. Create your first one!</td></tr>';
       } else {
         tbody.innerHTML = pages.map(page => `
           <tr>
