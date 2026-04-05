@@ -324,10 +324,10 @@ Return a JSON object with this EXACT structure (all fields required, no placehol
 
 CRITICAL: Return ONLY valid JSON. No markdown fences, no comments, no extra text. Every string value must be complete content, not a description of what to write.`;
 
-    // Use streaming to avoid timeout on long Claude responses
+    // Use Haiku (3x faster than Sonnet) + streaming to fit in Cloudflare's 100s timeout
     let fullText = '';
     const stream = client.messages.stream({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     });
