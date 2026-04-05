@@ -4806,20 +4806,23 @@
       var d = defaults[type] || defaults.headline;
 
       if (type === 'cta') {
-        // CTA button: rounded rect + text group
+        // CTA button: rounded rect + text group with proper padding
+        var ctaFontSize = Math.round(h * 0.035); // 3.5% of canvas height
         var btnText = new fabric.Text(d.text, {
-          fontSize: d.fontSize,
+          fontSize: ctaFontSize,
           fontFamily: 'Sora',
-          fontWeight: d.fontWeight,
+          fontWeight: 'bold',
           fill: '#FFFFFF',
           originX: 'center',
           originY: 'center'
         });
+        var btnPaddingX = ctaFontSize * 1.8;
+        var btnPaddingY = ctaFontSize * 0.7;
         var btnBg = new fabric.Rect({
-          width: btnText.width + 40,
-          height: btnText.height + 20,
-          rx: 25,
-          ry: 25,
+          width: btnText.width + btnPaddingX * 2,
+          height: btnText.height + btnPaddingY * 2,
+          rx: (btnText.height + btnPaddingY * 2) / 2,
+          ry: (btnText.height + btnPaddingY * 2) / 2,
           fill: '#3052FF',
           originX: 'center',
           originY: 'center'
@@ -4828,7 +4831,13 @@
           left: w * 0.5,
           top: d.top,
           originX: 'center',
-          name: 'cta'
+          name: 'cta',
+          lockUniScaling: true
+        });
+        // Only corner controls for uniform scaling
+        ctaGroup.setControlsVisibility({
+          mt: false, mb: false, ml: false, mr: false,
+          tl: true, tr: true, bl: true, br: true, mtr: true
         });
         adCanvas.add(ctaGroup);
         adCanvas.setActiveObject(ctaGroup);
@@ -5643,17 +5652,23 @@
         if (!obj) return;
         // Canva-style: resize text by changing fontSize, not stretching
         if (obj.type === 'i-text' || obj.type === 'text') {
-          var newFontSize = obj.fontSize * obj.scaleX;
+          // Prevent negative scales (flipping)
+          var absScale = Math.abs(obj.scaleX);
+          var newFontSize = obj.fontSize * absScale;
           obj.set({
             fontSize: Math.max(8, Math.round(newFontSize)),
             scaleX: 1,
-            scaleY: 1
+            scaleY: 1,
+            flipX: false,
+            flipY: false
           });
         }
-        // CTA group: scale uniformly but reset after
+        // CTA group: scale uniformly and prevent flipping
         if (obj.type === 'group' && obj.name === 'cta') {
-          var avg = (obj.scaleX + obj.scaleY) / 2;
-          obj.set({ scaleX: avg, scaleY: avg });
+          var absX = Math.abs(obj.scaleX);
+          var absY = Math.abs(obj.scaleY);
+          var avg = (absX + absY) / 2;
+          obj.set({ scaleX: avg, scaleY: avg, flipX: false, flipY: false });
         }
         syncCanvasToPreview();
       });
