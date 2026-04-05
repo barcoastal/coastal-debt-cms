@@ -313,6 +313,7 @@
               <option value="game">Game (Gamification)</option>
               <option value="article">Article (Editorial + Form)</option>
               <option value="authority">Authority (SEO + Conversion)</option>
+                <option value="join">Join (Form-First Lead Gen)</option>
             </select>
           </div>
           <div class="form-group">
@@ -393,6 +394,7 @@
                   <option value="game">Game (Gamification)</option>
                   <option value="article">Article (Editorial + Form)</option>
                   <option value="authority">Authority (SEO + Conversion)</option>
+                <option value="join">Join (Form-First Lead Gen)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -838,7 +840,7 @@
             </td>
             <td><code>/lp/${page.slug}/</code></td>
             <td><span class="badge badge-blue">${page.platform}</span></td>
-            <td><span class="badge ${{call:'badge-green',game:'badge-orange',article:'badge-purple'}[page.template_type]||'badge-blue'}">${{call:'Call Now',game:'Game',article:'Article'}[page.template_type]||'Form'}</span></td>
+            <td><span class="badge ${{call:'badge-green',game:'badge-orange',article:'badge-purple',authority:'badge-purple',join:'badge-blue'}[page.template_type]||'badge-blue'}">${{call:'Call Now',game:'Game',article:'Article',authority:'Authority',join:'Join'}[page.template_type]||'Form'}</span></td>
             <td>${page.traffic_source || '-'}</td>
             <td><strong>${page.visitor_count || 0}</strong></td>
             <td><strong style="color:#3052FF;">${page.lead_count || 0}</strong></td>
