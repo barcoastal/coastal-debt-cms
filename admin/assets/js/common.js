@@ -81,10 +81,17 @@ async function api(endpoint, options = {}) {
     }
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    // Server returned HTML (502/504/error page) instead of JSON
+    throw new Error('Server error (' + res.status + '). Please try again in a moment.');
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || 'API Error');
+    throw new Error(data.error || 'API Error (' + res.status + ')');
   }
 
   return data;

@@ -324,13 +324,21 @@ Return a JSON object with this EXACT structure (all fields required, no placehol
 
 CRITICAL: Return ONLY valid JSON. No markdown fences, no comments, no extra text. Every string value must be complete content, not a description of what to write.`;
 
-    const message = await client.messages.create({
+    // Use streaming to avoid timeout on long Claude responses
+    let fullText = '';
+    const stream = client.messages.stream({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const text = message.content[0].text.trim();
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta && event.delta.text) {
+        fullText += event.delta.text;
+      }
+    }
+
+    const text = fullText.trim();
     const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     const generated = JSON.parse(jsonStr);
 
