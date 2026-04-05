@@ -328,7 +328,7 @@ CRITICAL: Return ONLY valid JSON. No markdown fences, no comments, no extra text
     let fullText = '';
     const stream = client.messages.stream({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 8192,
+      max_tokens: 16000,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -339,8 +339,40 @@ CRITICAL: Return ONLY valid JSON. No markdown fences, no comments, no extra text
     }
 
     const text = fullText.trim();
-    const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    const generated = JSON.parse(jsonStr);
+    let jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+
+    // Try to salvage truncated JSON by finding the last complete closing brace
+    let generated;
+    try {
+      generated = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.warn('Initial JSON parse failed, attempting salvage...');
+      // Find last complete object by trimming to last valid brace
+      let depth = 0;
+      let lastValidEnd = -1;
+      let inString = false;
+      let escaped = false;
+      for (let i = 0; i < jsonStr.length; i++) {
+        const ch = jsonStr[i];
+        if (escaped) { escaped = false; continue; }
+        if (ch === '\\') { escaped = true; continue; }
+        if (ch === '"' && !escaped) inString = !inString;
+        if (!inString) {
+          if (ch === '{') depth++;
+          else if (ch === '}') { depth--; if (depth === 0) lastValidEnd = i; }
+        }
+      }
+      if (lastValidEnd > 0) {
+        try {
+          generated = JSON.parse(jsonStr.substring(0, lastValidEnd + 1));
+          console.log('Salvaged truncated JSON');
+        } catch (salvageErr) {
+          throw parseErr; // re-throw original if salvage fails
+        }
+      } else {
+        throw parseErr;
+      }
+    }
 
     res.json({ success: true, content: generated });
   } catch (error) {
