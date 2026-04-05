@@ -5645,14 +5645,34 @@
       }
 
       // Selection events
-      adCanvas.on('object:modified', syncCanvasToPreview);
-      adCanvas.on('object:moving', syncCanvasToPreview);
-      adCanvas.on('object:scaling', function(e) {
+      adCanvas.on('object:added', function(e) {
+        // Force text objects to have uniform scaling (no stretching)
         var obj = e.target;
         if (!obj) return;
-        // Canva-style: resize text by changing fontSize, not stretching
         if (obj.type === 'i-text' || obj.type === 'text') {
-          // Prevent negative scales (flipping)
+          obj.set({
+            lockUniScaling: true,
+            lockScalingFlip: true
+          });
+          obj.setControlsVisibility({
+            mt: false, mb: false, ml: false, mr: false,
+            tl: true, tr: true, bl: true, br: true, mtr: true
+          });
+        }
+        if (obj.type === 'group' && obj.name === 'cta') {
+          obj.set({ lockUniScaling: true, lockScalingFlip: true });
+          obj.setControlsVisibility({
+            mt: false, mb: false, ml: false, mr: false,
+            tl: true, tr: true, bl: true, br: true, mtr: true
+          });
+        }
+      });
+
+      adCanvas.on('object:modified', function(e) {
+        var obj = e.target;
+        if (!obj) { syncCanvasToPreview(); return; }
+        // After scaling text, convert scale to fontSize
+        if ((obj.type === 'i-text' || obj.type === 'text') && obj.scaleX !== 1) {
           var absScale = Math.abs(obj.scaleX);
           var newFontSize = obj.fontSize * absScale;
           obj.set({
@@ -5662,15 +5682,20 @@
             flipX: false,
             flipY: false
           });
-        }
-        // CTA group: scale uniformly and prevent flipping
-        if (obj.type === 'group' && obj.name === 'cta') {
-          var absX = Math.abs(obj.scaleX);
-          var absY = Math.abs(obj.scaleY);
-          var avg = (absX + absY) / 2;
-          obj.set({ scaleX: avg, scaleY: avg, flipX: false, flipY: false });
+          adCanvas.renderAll();
         }
         syncCanvasToPreview();
+      });
+      adCanvas.on('object:moving', syncCanvasToPreview);
+      adCanvas.on('object:scaling', function(e) {
+        var obj = e.target;
+        if (!obj) return;
+        // During scale: prevent flipping/stretching by forcing uniform scale
+        if (obj.type === 'i-text' || obj.type === 'text') {
+          // Use scaleX as the source of truth, force scaleY to match
+          var s = Math.max(0.1, Math.abs(obj.scaleX));
+          obj.set({ scaleX: s, scaleY: s, flipX: false, flipY: false });
+        }
       });
       adCanvas.on('object:rotating', syncCanvasToPreview);
       adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
