@@ -1095,27 +1095,42 @@ DESIGN STYLES TO ALTERNATE BETWEEN (pick one randomly):
 5. "Editorial" - Playfair Display italic + DM Sans body, sophisticated
 6. "Tech Forward" - Archivo or Space Grotesk, small caps feel, blue gradient feel
 
+REFERENCE AD STYLES (copy these patterns):
+
+Style 1 - Light BG (#F2F4F9): headline "Understanding Your" in #000000 black bold, "MCA Debt" in #3052FF blue bold, "Matters!" in #FF9000 orange bold. Subheadline in #000000, key word "solution" bold. CTA blue pill.
+
+Style 2 - Blue BG (#3052FF): headline "Eliminate" in #FF9000 orange, "your MCA Debt" in #FFFFFF white. Subheadline "Join our" in #FFFFFF, "Debt Relief Program" in bold #FFFFFF. Logo and badges at bottom.
+
+Style 3 - Light BG: headline all caps "STUCK IN A MERCHANT CASH ADVANCE TRAP?" in #3052FF bold. Logo bottom-left. Website bottom-right.
+
+Style 4 - Light BG (#F2F4F9): "DON'T CONSOLIDATE" in #3052FF blue bold, "MCA DEBT" in #000000 black bold, "Annihilate it!" in italic script #000000. Sub text in #000000 regular.
+
+KEY RULES FROM REFERENCES:
+- Split headline into 2-3 parts with DIFFERENT COLORS (accent words get orange #FF9000 or blue #3052FF)
+- Main headline font: bold, heavy weight (800-900), large (~8% canvas height)
+- Subheadline: regular weight, smaller (~3% canvas height), with individual bold words
+- Keep Sora or Montserrat for sans-serif, Playfair Display for serif accent
+- CTA: always blue (#3052FF) pill with white text OR "CoastalDebt.com"
+
 Return ONLY valid JSON:
 {
-  "designName": "name of the style chosen",
-  "headline": {
-    "text": "Your MCA Debt\\nMatters!",
-    "fontFamily": "Bebas Neue",
-    "fontSize": ${Math.round(canvasHeight * 0.08)},
-    "fontWeight": "bold",
-    "color": "#000000",
-    "textAlign": "left",
-    "charSpacing": 0,
-    "shadow": null,
-    "leftPercent": 0.45,
-    "topPercent": 0.1
-  },
+  "designName": "name",
+  "headlineParts": [
+    { "text": "Eliminate ", "color": "#FF9000", "fontWeight": "900", "fontStyle": "normal" },
+    { "text": "your\\nMCA Debt", "color": "#FFFFFF", "fontWeight": "bold", "fontStyle": "normal" }
+  ],
+  "headlineFont": "Montserrat",
+  "headlineFontSize": ${Math.round(canvasHeight * 0.08)},
+  "headlineLeftPercent": 0.45,
+  "headlineTopPercent": 0.1,
+  "headlineTextAlign": "left",
   "subheadline": {
-    "text": "Settle your business debt\\nfor up to 80% less.",
-    "fontFamily": "DM Sans",
+    "text": "Join our Debt Relief\\nProgram Today!",
+    "boldWords": ["Debt Relief", "Program"],
+    "fontFamily": "Sora",
     "fontSize": ${Math.round(canvasHeight * 0.03)},
     "fontWeight": "normal",
-    "color": "#333333",
+    "color": "#000000",
     "textAlign": "left",
     "leftPercent": 0.45,
     "topPercent": 0.4
@@ -1129,11 +1144,11 @@ Return ONLY valid JSON:
     "bgColor": "#3052FF",
     "borderRadius": 30,
     "leftPercent": 0.55,
-    "topPercent": 0.7
+    "topPercent": 0.65
   }
 }
 
-IMPORTANT: leftPercent and topPercent are 0-1 fractions of canvas size. Place text based on the TEXT PLACEMENT instruction. Be creative with colors and font choices! Ensure HIGH CONTRAST between text and background.`;
+IMPORTANT: headlineParts is an ARRAY of text segments, each with its own color and weight. This creates the multi-color headline effect seen in the reference ads. leftPercent/topPercent are 0-1 fractions. Place text based on TEXT PLACEMENT instruction.`;
 
     const userContent = [];
     if (screenshot) {

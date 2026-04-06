@@ -5058,28 +5058,60 @@
 
         // Remove existing text objects
         adCanvas.getObjects().filter(function(o) {
-          return o.name === 'headline' || o.name === 'subheadline' || o.name === 'cta';
+          return o.name === 'headline' || o.name === 'headline-part' || o.name === 'subheadline' || o.name === 'cta';
         }).forEach(function(o) { adCanvas.remove(o); });
 
-        // Headline
-        var hl = new fabric.IText(style.headline.text, {
-          left: w * (style.headline.leftPercent || 0.45),
-          top: h * (style.headline.topPercent || 0.08),
-          fontSize: style.headline.fontSize || 36,
-          fontFamily: style.headline.fontFamily || 'Sora',
-          fontWeight: style.headline.fontWeight || 'bold',
-          fill: style.headline.color || '#000000',
-          lineHeight: 1.1,
-          name: 'headline',
-          editable: true,
-          lockUniScaling: true,
-          lockScalingFlip: true,
-          shadow: style.headline.shadow || null,
-          textAlign: style.headline.textAlign || 'left',
-          charSpacing: style.headline.charSpacing || 0
-        });
-        hl.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
-        adCanvas.add(hl);
+        // Headline — multi-color parts OR single (backward compat)
+        var hlLeft = w * (style.headlineLeftPercent || (style.headline && style.headline.leftPercent) || 0.45);
+        var hlTop = h * (style.headlineTopPercent || (style.headline && style.headline.topPercent) || 0.08);
+        var hlFont = style.headlineFont || (style.headline && style.headline.fontFamily) || 'Sora';
+        var hlSize = style.headlineFontSize || (style.headline && style.headline.fontSize) || Math.round(h * 0.07);
+        hlSize = Math.max(hlSize, Math.round(h * 0.06));
+        var hlAlign = style.headlineTextAlign || (style.headline && style.headline.textAlign) || 'left';
+
+        if (style.headlineParts && Array.isArray(style.headlineParts) && style.headlineParts.length > 0) {
+          // Multi-color headline: stack parts vertically
+          var curTop = hlTop;
+          style.headlineParts.forEach(function(part, idx) {
+            var partColor = part.color || '#000000';
+            // Enforce brand colors
+            if (!bgInfo2.isDark && getBrightness(partColor) > 150) partColor = '#000000';
+            if (bgInfo2.isDark && getBrightness(partColor) < 100) partColor = '#FFFFFF';
+
+            var partText = new fabric.IText(part.text || '', {
+              left: hlLeft,
+              top: curTop,
+              fontSize: hlSize,
+              fontFamily: hlFont,
+              fontWeight: part.fontWeight || 'bold',
+              fontStyle: part.fontStyle || 'normal',
+              fill: partColor,
+              lineHeight: 1.1,
+              name: idx === 0 ? 'headline' : 'headline-part',
+              editable: true,
+              lockUniScaling: true,
+              lockScalingFlip: true,
+              textAlign: hlAlign
+            });
+            partText.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
+            adCanvas.add(partText);
+            // Stack next part below
+            curTop += partText.getBoundingRect().height + 2;
+          });
+        } else if (style.headline) {
+          // Single color headline (backward compat)
+          var hlColor = style.headline.color || '#000000';
+          if (!bgInfo2.isDark && getBrightness(hlColor) > 150) hlColor = '#000000';
+          if (bgInfo2.isDark && getBrightness(hlColor) < 100) hlColor = '#FFFFFF';
+          var hl = new fabric.IText(style.headline.text || 'Your MCA Debt Matters!', {
+            left: hlLeft, top: hlTop, fontSize: hlSize, fontFamily: hlFont,
+            fontWeight: style.headline.fontWeight || 'bold', fill: hlColor,
+            lineHeight: 1.1, name: 'headline', editable: true,
+            lockUniScaling: true, lockScalingFlip: true, textAlign: hlAlign
+          });
+          hl.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
+          adCanvas.add(hl);
+        }
 
         // Subheadline
         var sub = new fabric.IText(style.subheadline.text, {
