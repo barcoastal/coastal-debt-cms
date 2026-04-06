@@ -1755,11 +1755,15 @@ function sleep(ms) {
   const count = db.prepare('SELECT COUNT(*) as c FROM brand_assets').get().c;
   if (count > 0) {
     // Ensure real trust badges exist (upgrade from placeholder icons)
+    // Migrate existing badges to transparent versions
+    db.prepare("UPDATE brand_assets SET file_path = '/assets/trust-logos/trustpilot-transparent.png' WHERE name LIKE '%Trustpilot%' AND file_path LIKE '%.webp'").run();
+    db.prepare("UPDATE brand_assets SET file_path = '/assets/trust-logos/bsi-transparent.png' WHERE (name LIKE '%ISO%' OR name LIKE '%BSI%') AND file_path LIKE '%.webp'").run();
+
     const hasTrustpilot = db.prepare("SELECT id FROM brand_assets WHERE name = 'Trustpilot 4.8'").get();
     if (!hasTrustpilot) {
       const insert = db.prepare('INSERT INTO brand_assets (category, name, file_path) VALUES (?, ?, ?)');
-      insert.run('badge', 'Trustpilot 4.8', '/assets/trust-logos/trustpilot.webp');
-      insert.run('badge', 'ISO 9001:2015', '/assets/trust-logos/bsi.webp');
+      insert.run('badge', 'Trustpilot 4.8', '/assets/trust-logos/trustpilot-transparent.png');
+      insert.run('badge', 'ISO 9001:2015', '/assets/trust-logos/bsi-transparent.png');
       insert.run('badge', 'BBB Torch Awards', '/assets/trust-logos/bbb-torch-awards.png');
       insert.run('logo', 'Coastal Debt Logo (Dark)', '/assets/logos/logo-dark-text.svg');
       insert.run('logo', 'Coastal Debt Logo (White)', '/assets/logos/logo-white-text.svg');
@@ -1776,8 +1780,8 @@ function sleep(ms) {
     { category: 'icon', name: 'Phone', file_path: '/assets/brand-assets/icon-phone.svg' },
     { category: 'icon', name: 'Shield', file_path: '/assets/brand-assets/icon-shield.svg' },
     { category: 'icon', name: 'Checkmark', file_path: '/assets/brand-assets/icon-checkmark.svg' },
-    { category: 'badge', name: 'Trustpilot 4.8', file_path: '/assets/trust-logos/trustpilot.webp' },
-    { category: 'badge', name: 'ISO 9001:2015', file_path: '/assets/trust-logos/bsi.webp' },
+    { category: 'badge', name: 'Trustpilot 4.8', file_path: '/assets/trust-logos/trustpilot-transparent.png' },
+    { category: 'badge', name: 'ISO 9001:2015', file_path: '/assets/trust-logos/bsi-transparent.png' },
     { category: 'badge', name: 'BBB Torch Awards', file_path: '/assets/trust-logos/bbb-torch-awards.png' },
     { category: 'logo', name: 'Coastal Debt Logo (Dark)', file_path: '/assets/logos/logo-dark-text.svg' },
     { category: 'logo', name: 'Coastal Debt Logo (White)', file_path: '/assets/logos/logo-white-text.svg' }
