@@ -6249,6 +6249,22 @@
       adCanvas.on('selection:created', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
       adCanvas.on('selection:updated', function() { showCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
       adCanvas.on('selection:cleared', function() { hideCanvasProps(); updateTextPropsBar(); showImagePropsBar(); });
+
+      // Keyboard delete — Delete/Backspace removes selected element (unless editing text)
+      document.addEventListener('keydown', function(e) {
+        if (!adCanvas) return;
+        var active = adCanvas.getActiveObject();
+        if (!active) return;
+        // Don't delete if user is editing text inline
+        if (active.isEditing) return;
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          adCanvas.remove(active);
+          adCanvas.discardActiveObject();
+          adCanvas.renderAll();
+          syncCanvasToPreview();
+        }
+      });
     }
 
     var _syncTimeout = null;
