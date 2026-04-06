@@ -1199,7 +1199,7 @@
       <div class="step-panel" id="step2">
         <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
           <!-- Left: Template Editor (new) -->
-          <div id="templateEditorSection">
+          <div id="templateEditorSection" style="display:none;">
             <!-- Template Picker -->
             <div style="margin-bottom:12px;">
               <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:8px;">Choose a base design:</div>
@@ -1314,7 +1314,7 @@
           <!-- END new template editor section -->
 
           <!-- OLD Canvas Editor (hidden — kept for fallback) -->
-          <div id="oldCanvasEditorSection" style="display:none;">
+          <div id="oldCanvasEditorSection">
             <!-- Toolbar -->
             <div class="canvas-toolbar">
               <button id="separateLayersBtn" onclick="separateLayersFromCanvas()" title="Separate person from background into two layers" style="background:#3052FF;color:#fff;border-color:#3052FF;font-weight:600;">&#9998; Separate Layers</button>
