@@ -1235,43 +1235,52 @@
             <!-- Text Properties Bar (shown when text is selected) -->
             <!-- AI Style Prompt Panel -->
             <div id="aiStylePanel" style="display:none;padding:12px 16px;background:linear-gradient(135deg,#FFF7ED,#FFFBF5);border:1px solid #FDBA74;border-top:none;">
-              <div style="display:flex;gap:8px;align-items:start;flex-wrap:wrap;">
-                <div style="flex:1;min-width:200px;">
-                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Describe the ad style you want</label>
-                  <input type="text" id="aiStylePrompt" placeholder="e.g. bold and urgent, elegant professional, modern minimal, playful energetic..." style="width:100%;padding:8px 12px;border:1.5px solid #FDBA74;border-radius:8px;font-size:13px;background:#fff;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;">
+                <div>
+                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Headline Angle</label>
+                  <select id="aiStyleAngle" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
+                    <option value="drowning">Drowning in MCA Debt?</option>
+                    <option value="stop_payments">Stop Daily ACH Payments</option>
+                    <option value="save_80">Save Up to 80%</option>
+                    <option value="free_consultation">Free Consultation</option>
+                    <option value="settle_debt">Settle Your MCA Debt</option>
+                    <option value="business_relief">Business Debt Relief</option>
+                    <option value="no_bankruptcy">No Bankruptcy Needed</option>
+                    <option value="crushing">Crushing MCA Payments?</option>
+                  </select>
                 </div>
-                <div style="min-width:120px;">
-                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Tone</label>
-                  <select id="aiStyleTone" style="width:100%;padding:8px;border:1.5px solid #FDBA74;border-radius:8px;font-size:12px;background:#fff;">
-                    <option value="">Auto</option>
+                <div>
+                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Tone</label>
+                  <select id="aiStyleTone" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
                     <option value="urgent">Urgent / FOMO</option>
                     <option value="trust">Trust / Authority</option>
-                    <option value="empathy">Empathy / Pain Point</option>
+                    <option value="empathy">Empathy / Pain</option>
                     <option value="savings">Savings / Numbers</option>
                     <option value="fresh">Fresh Start</option>
                     <option value="educational">Educational</option>
                   </select>
                 </div>
-                <div style="min-width:120px;">
-                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Visual Style</label>
-                  <select id="aiStyleVisual" style="width:100%;padding:8px;border:1.5px solid #FDBA74;border-radius:8px;font-size:12px;background:#fff;">
-                    <option value="">Random</option>
+                <div>
+                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Visual Style</label>
+                  <select id="aiStyleVisual" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
                     <option value="bold">Bold Impact</option>
-                    <option value="elegant">Elegant Professional</option>
+                    <option value="elegant">Elegant Pro</option>
                     <option value="modern">Modern Clean</option>
                     <option value="energetic">Energetic</option>
                     <option value="editorial">Editorial</option>
                     <option value="tech">Tech Forward</option>
                   </select>
                 </div>
-                <div style="display:flex;flex-direction:column;justify-content:flex-end;">
-                  <label style="font-size:11px;color:transparent;display:block;margin-bottom:4px;">.</label>
-                  <button onclick="generateStyledCopy()" id="aiStyleGenBtn" style="padding:8px 20px;background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Generate</button>
+                <div>
+                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Text Position</label>
+                  <select id="aiStylePosition" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
+                    <option value="right">Right Side</option>
+                    <option value="left">Left Side</option>
+                    <option value="center">Center</option>
+                    <option value="top">Top Area</option>
+                  </select>
                 </div>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
-                <input type="checkbox" id="aiStyleAutoBg" checked style="accent-color:#FF9000;">
-                <label for="aiStyleAutoBg" style="font-size:11px;color:#9A3412;">Auto-detect background and use contrasting text colors</label>
+                <button onclick="generateStyledCopy()" id="aiStyleGenBtn" style="padding:6px 16px;background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Generate</button>
               </div>
             </div>
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -4954,14 +4963,22 @@
       var w = adCanvas.width;
       var h = adCanvas.height;
 
-      // Get prompt builder inputs
-      var stylePrompt = (document.getElementById('aiStylePrompt') || {}).value || '';
-      var tone = (document.getElementById('aiStyleTone') || {}).value || '';
-      var visualStyle = (document.getElementById('aiStyleVisual') || {}).value || '';
-      var autoBg = (document.getElementById('aiStyleAutoBg') || {}).checked !== false;
+      // Get dropdown values
+      var angle = (document.getElementById('aiStyleAngle') || {}).value || 'drowning';
+      var tone = (document.getElementById('aiStyleTone') || {}).value || 'urgent';
+      var visualStyle = (document.getElementById('aiStyleVisual') || {}).value || 'bold';
+      var textPosition = (document.getElementById('aiStylePosition') || {}).value || 'right';
 
-      // Detect background
-      var bgInfo = autoBg ? detectBackgroundInfo() : { isDark: false, dominantColor: '#F2F4F9' };
+      // Detect background by scanning canvas
+      var bgInfo = detectBackgroundInfo();
+
+      // Get canvas screenshot for AI to see the current ad
+      var screenshot = null;
+      try {
+        adCanvas.discardActiveObject();
+        adCanvas.renderAll();
+        screenshot = adCanvas.toDataURL({ format: 'png', multiplier: 0.5 }).split(',')[1];
+      } catch(e) { console.warn('Screenshot failed'); }
 
       try {
         var res = await fetch('/api/ad-generator/generate-styled-copy', {
@@ -4971,7 +4988,9 @@
             canvasWidth: w,
             canvasHeight: h,
             selectedSize: selectedSize,
-            stylePrompt: stylePrompt,
+            headlineAngle: angle,
+            textPosition: textPosition,
+            screenshot: screenshot,
             tone: tone,
             visualStyle: visualStyle,
             backgroundIsDark: bgInfo.isDark,

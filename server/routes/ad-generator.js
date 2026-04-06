@@ -1005,11 +1005,15 @@ Layout C - "Story Full Person" (for story/reel 9:16):
 - Logo: top-right, width 25%
 - Badges: NOT shown in story
 
-Analyze the provided screenshot and element data. Pick the layout pattern that best fits the canvas orientation and existing content. Return positions that match the chosen pattern exactly.`;
+Analyze the provided screenshot and element data. Pick the layout pattern (A, B, or C) that best fits.
+
+CRITICAL: Return ONLY a JSON object with "layout" key set to "A", "B", or "C". Nothing else.
+Example: {"layout":"A"}
+Do NOT return positions. Just pick the layout letter.`;
 
 // Generate ad copy WITH creative text design (fonts, colors, styles)
 router.post('/generate-styled-copy', authenticateToken, async (req, res) => {
-  const { canvasWidth, canvasHeight, selectedSize, stylePrompt, tone, visualStyle, backgroundIsDark, backgroundBrightness, dominantColor } = req.body;
+  const { canvasWidth, canvasHeight, selectedSize, headlineAngle, textPosition, screenshot, tone, visualStyle, backgroundIsDark, backgroundBrightness, dominantColor } = req.body;
 
   try {
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
@@ -1038,18 +1042,28 @@ router.post('/generate-styled-copy', authenticateToken, async (req, res) => {
 
     const toneInstruction = toneGuide[tone] || 'Pick a compelling angle for MCA debt settlement.';
     const styleInstruction = styleGuide[visualStyle] || 'Pick one of these styles randomly: Bold Impact, Elegant Professional, Modern Clean, Energetic, Editorial, or Tech Forward.';
-    const customPrompt = stylePrompt ? `\nUSER DESIGN REQUEST: "${stylePrompt}" - incorporate this into the design.` : '';
+    const angleGuide = {
+      drowning: 'Headline: "Drowning in MCA Debt?" - desperate, urgent feel',
+      stop_payments: 'Headline: "Stop Daily ACH Payments" - action-oriented, relief',
+      save_80: 'Headline: "Save Up to 80%" - numbers, savings focus',
+      free_consultation: 'Headline: "Free Consultation" - low-risk, inviting',
+      settle_debt: 'Headline: "Settle Your MCA Debt" - direct, clear',
+      business_relief: 'Headline: "Business Debt Relief" - professional, broad',
+      no_bankruptcy: 'Headline: "No Bankruptcy Needed" - alternative, hope',
+      crushing: 'Headline: "Crushing MCA Payments?" - empathy, pain point'
+    };
+    const headlineGuide = angleGuide[headlineAngle] || angleGuide.drowning;
+    const positionGuide = textPosition === 'left' ? 'leftPercent 0.05-0.45' : textPosition === 'center' ? 'leftPercent 0.2-0.8, centered' : textPosition === 'top' ? 'topPercent 0.05-0.3' : 'leftPercent 0.45-0.9';
+    const customPrompt = `\nHEADLINE DIRECTION: ${headlineGuide}\nTEXT PLACEMENT: Place text at ${positionGuide}. Avoid placing text where the person image is.`;
 
     const bgContext = backgroundIsDark
       ? `BACKGROUND IS DARK (brightness: ${backgroundBrightness || 'low'}, color: ${dominantColor || 'dark'}). Use LIGHT text colors: white #FFFFFF for headline, light gray #E2E8F0 for subheadline. CTA button should use #FF9000 orange or #FFFFFF white bg with dark text for contrast.`
       : `BACKGROUND IS LIGHT (brightness: ${backgroundBrightness || 'high'}, color: ${dominantColor || '#F2F4F9'}). Use DARK text colors: #000000 or #1E293B for headline, #333333 or #475569 for subheadline. CTA button should use #3052FF blue bg with white text.`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1500,
-      messages: [{
-        role: 'user',
-        content: `You are a creative ad designer for Coastal Debt Resolve (MCA debt settlement). Generate ad copy AND a unique visual text design.
+    // Build content array - include screenshot if provided
+    const promptText = `You are a creative ad designer for Coastal Debt Resolve (MCA debt settlement). Generate ad copy AND a unique visual text design.
+
+${screenshot ? 'I have attached the current canvas screenshot. Look at where the person image is positioned, the background colors, and any existing elements. Place text where it will NOT overlap the person and will be readable against the background.' : ''}
 
 Canvas: ${canvasWidth}x${canvasHeight} (${selectedSize || 'square'})
 
@@ -1119,8 +1133,19 @@ Return ONLY valid JSON:
   }
 }
 
-IMPORTANT: leftPercent and topPercent are 0-1 fractions of canvas size. Keep text on the RIGHT side (0.4-0.95 leftPercent) assuming person is on the left. Be creative with colors and font choices!`
-      }]
+IMPORTANT: leftPercent and topPercent are 0-1 fractions of canvas size. Place text based on the TEXT PLACEMENT instruction. Be creative with colors and font choices! Ensure HIGH CONTRAST between text and background.`;
+
+    const userContent = [];
+    if (screenshot) {
+      const b64 = String(screenshot).replace(/^data:image\/\w+;base64,/, '');
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: b64 } });
+    }
+    userContent.push({ type: 'text', text: promptText });
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: userContent.length > 1 ? userContent : promptText }]
     });
 
     const text = message.content[0].text.trim();
@@ -1239,11 +1264,128 @@ Return ONLY a JSON array. Each object must have: index, left, top, scaleX, scale
     });
 
     const text = message.content[0].text.trim();
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return res.status(500).json({ error: 'AI returned invalid layout' });
 
-    const positions = JSON.parse(match[0]);
-    res.json({ positions });
+    // Claude returns {"layout":"A"} — we compute pixel positions from template
+    const layoutMatch = text.match(/\{[\s\S]*\}/);
+    let layoutChoice = 'A';
+    if (layoutMatch) {
+      try { layoutChoice = JSON.parse(layoutMatch[0]).layout || 'A'; } catch(e) {}
+    }
+
+    const w = canvasWidth;
+    const h = canvasHeight;
+
+    // Deterministic template positions (proven layouts)
+    const templates = {
+      A: { // Classic Left Person
+        person:     { leftPct: 0.02,  topPct: null, bottomAlign: true, widthPct: 0.45, heightPct: 0.85 },
+        background: { leftPct: 0,     topPct: 0,    widthPct: 1,   heightPct: 1 },
+        chevron:    { leftPct: 0.02,  topPct: 0.03, widthPct: 0.30, heightPct: 0.45 },
+        headline:   { leftPct: 0.5,   topPct: 0.1,  widthPct: 0.45 },
+        subheadline:{ leftPct: 0.5,   topPct: 0.38, widthPct: 0.45 },
+        cta:        { leftPct: 0.55,  topPct: 0.62 },
+        logo:       { leftPct: 0.75,  topPct: 0.02, widthPct: 0.22 },
+        badges:     { leftPct: 0.15,  topPct: 0.88, widthPct: 0.12, spacing: 0.2 }
+      },
+      B: { // Classic Right Person
+        person:     { leftPct: 0.53,  topPct: null, bottomAlign: true, widthPct: 0.45, heightPct: 0.85 },
+        background: { leftPct: 0,     topPct: 0,    widthPct: 1,   heightPct: 1 },
+        chevron:    { leftPct: 0.60,  topPct: 0.03, widthPct: 0.30, heightPct: 0.45 },
+        headline:   { leftPct: 0.05,  topPct: 0.1,  widthPct: 0.45 },
+        subheadline:{ leftPct: 0.05,  topPct: 0.38, widthPct: 0.45 },
+        cta:        { leftPct: 0.1,   topPct: 0.62 },
+        logo:       { leftPct: 0.03,  topPct: 0.02, widthPct: 0.22 },
+        badges:     { leftPct: 0.15,  topPct: 0.88, widthPct: 0.12, spacing: 0.2 }
+      },
+      C: { // Story (vertical)
+        person:     { leftPct: 0.1,   topPct: null, bottomAlign: true, widthPct: 0.80, heightPct: 0.65 },
+        background: { leftPct: 0,     topPct: 0,    widthPct: 1,   heightPct: 1 },
+        chevron:    { leftPct: 0.02,  topPct: 0.02, widthPct: 0.35, heightPct: 0.25 },
+        headline:   { leftPct: 0.05,  topPct: 0.03, widthPct: 0.9 },
+        subheadline:{ leftPct: 0.05,  topPct: 0.15, widthPct: 0.9 },
+        cta:        { leftPct: 0.15,  topPct: 0.82 },
+        logo:       { leftPct: 0.7,   topPct: 0.02, widthPct: 0.25 },
+        badges:     { leftPct: 0.1,   topPct: 0.92, widthPct: 0.10, spacing: 0.25 }
+      }
+    };
+
+    const tmpl = templates[layoutChoice] || templates.A;
+
+    // Map each canvas element to its template position
+    const positions = elements.map((el, i) => {
+      const pos = { index: i };
+      const type = el.type || '';
+
+      if (type === 'person' || type === 'image') {
+        const t = tmpl.person;
+        pos.left = Math.round(w * t.leftPct);
+        if (t.bottomAlign) {
+          pos.top = Math.round(h - (h * t.heightPct));
+        } else {
+          pos.top = Math.round(h * (t.topPct || 0));
+        }
+        pos.scaleX = (w * t.widthPct) / (el.width || w);
+        pos.scaleY = pos.scaleX;
+      } else if (type === 'background' || type === 'bgImage' || type === 'bgOriginal') {
+        const t = tmpl.background;
+        pos.left = 0;
+        pos.top = 0;
+        pos.scaleX = w / (el.width || w);
+        pos.scaleY = h / (el.height || h);
+      } else if (type === 'chevron') {
+        const t = tmpl.chevron;
+        pos.left = Math.round(w * t.leftPct);
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = (w * t.widthPct) / (el.width || 100);
+        pos.scaleY = pos.scaleX;
+      } else if (type === 'headline') {
+        const t = tmpl.headline;
+        pos.left = Math.round(w * t.leftPct);
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = 1;
+        pos.scaleY = 1;
+        pos.fontSize = Math.round(h * 0.07);
+      } else if (type === 'subheadline') {
+        const t = tmpl.subheadline;
+        pos.left = Math.round(w * t.leftPct);
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = 1;
+        pos.scaleY = 1;
+        pos.fontSize = Math.round(h * 0.03);
+      } else if (type === 'cta' || type === 'cta_button') {
+        const t = tmpl.cta;
+        pos.left = Math.round(w * t.leftPct);
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = 1;
+        pos.scaleY = 1;
+      } else if (type === 'logo') {
+        const t = tmpl.logo;
+        pos.left = Math.round(w * t.leftPct);
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = (w * t.widthPct) / (el.width || 200);
+        pos.scaleY = pos.scaleX;
+      } else if (type.startsWith('badge')) {
+        const t = tmpl.badges;
+        // Space badges evenly at the bottom
+        const badgeElements = elements.filter(e => (e.type || '').startsWith('badge'));
+        const badgeIdx = badgeElements.indexOf(el);
+        const totalBadges = badgeElements.length || 1;
+        const startLeft = t.leftPct;
+        pos.left = Math.round(w * (startLeft + badgeIdx * t.spacing));
+        pos.top = Math.round(h * t.topPct);
+        pos.scaleX = (w * t.widthPct) / (el.width || 100);
+        pos.scaleY = pos.scaleX;
+      } else {
+        // Unknown element — leave where it is
+        pos.left = el.left;
+        pos.top = el.top;
+        pos.scaleX = 1;
+        pos.scaleY = 1;
+      }
+      return pos;
+    });
+
+    res.json({ positions, layout: layoutChoice });
   } catch (err) {
     console.error('AI Redesign error:', err.message);
     res.status(500).json({ error: 'Redesign failed: ' + err.message });
