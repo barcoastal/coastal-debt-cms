@@ -1382,19 +1382,7 @@
               </div>
             </div>
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
-              <select id="textFontFamily" onchange="setTextProp('fontFamily',this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;max-width:140px;">
-                <option value="Sora">Sora</option>
-                <option value="Inter">Inter</option>
-                <option value="Montserrat">Montserrat</option>
-                <option value="Poppins">Poppins</option>
-                <option value="Playfair Display">Playfair Display</option>
-                <option value="Bebas Neue">Bebas Neue</option>
-                <option value="Oswald">Oswald</option>
-                <option value="DM Sans">DM Sans</option>
-                <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
-                <option value="Outfit">Outfit</option>
-                <option value="Space Grotesk">Space Grotesk</option>
-                <option value="Archivo">Archivo</option>
+              <select id="textFontFamily" onchange="loadAndApplyFont(this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;max-width:160px;">
               </select>
               <input type="number" id="textFontSize" value="32" min="8" max="120" step="1" onchange="setTextProp('fontSize',parseInt(this.value))" style="width:50px;padding:4px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;" title="Font size">
               <button onclick="setTextProp('fontWeight',getActiveText()?.fontWeight==='bold'?'normal':'bold')" style="font-weight:900;font-size:14px;width:28px;" title="Bold">B</button>
@@ -4987,13 +4975,13 @@
         });
         // Only corner controls for uniform scaling
         ctaGroup.setControlsVisibility({
-          mt: false, mb: false, ml: false, mr: false,
+          mt: false, mb: false, ml: true, mr: true,
           tl: true, tr: true, bl: true, br: true, mtr: true
         });
         adCanvas.add(ctaGroup);
         adCanvas.setActiveObject(ctaGroup);
       } else {
-        var textObj = new fabric.IText(d.text, {
+        var textObj = new fabric.Textbox(d.text, {
           left: w * 0.45,
           top: d.top,
           fontSize: d.fontSize,
@@ -5009,7 +4997,7 @@
         });
         // Disable middle handles (top/bottom/left/right) — only corners allowed
         textObj.setControlsVisibility({
-          mt: false, mb: false, ml: false, mr: false,
+          mt: false, mb: false, ml: true, mr: true,
           tl: true, tr: true, bl: true, br: true, mtr: true
         });
         adCanvas.add(textObj);
@@ -5073,10 +5061,10 @@
 
       // Helper to add text
       function addText(text, opts) {
-        var obj = new fabric.IText(text, Object.assign({
+        var obj = new fabric.Textbox(text, Object.assign({
           editable: true, lockUniScaling: true, lockScalingFlip: true, lineHeight: 1.15
         }, opts));
-        obj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        obj.setControlsVisibility({ mt: false, mb: false, ml: true, mr: true });
         adCanvas.add(obj);
         return obj;
       }
@@ -5124,7 +5112,7 @@
           var bt = new fabric.Text(ctaBtn, { fontSize: ctaSz, fontFamily: 'Sora', fontWeight: 'bold', fill: '#fff', originX: 'center', originY: 'center' });
           var bg = new fabric.Rect({ width: bt.width + ctaSz * 3, height: bt.height + ctaSz, rx: (bt.height + ctaSz) / 2, ry: (bt.height + ctaSz) / 2, fill: '#3052FF', originX: 'center', originY: 'center' });
           var cta = new fabric.Group([bg, bt], { left: left, top: h * 0.65, name: 'cta', lockUniScaling: true });
-          cta.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+          cta.setControlsVisibility({ mt: false, mb: false, ml: true, mr: true });
           adCanvas.add(cta);
         },
 
@@ -5321,7 +5309,7 @@
             if (!bgInfo2.isDark && getBrightness(partColor) > 150) partColor = '#000000';
             if (bgInfo2.isDark && getBrightness(partColor) < 100) partColor = '#FFFFFF';
 
-            var partText = new fabric.IText(part.text || '', {
+            var partText = new fabric.Textbox(part.text || '', {
               left: hlLeft,
               top: curTop,
               fontSize: hlSize,
@@ -5346,7 +5334,7 @@
           var hlColor = style.headline.color || '#000000';
           if (!bgInfo2.isDark && getBrightness(hlColor) > 150) hlColor = '#000000';
           if (bgInfo2.isDark && getBrightness(hlColor) < 100) hlColor = '#FFFFFF';
-          var hl = new fabric.IText(style.headline.text || 'Your MCA Debt Matters!', {
+          var hl = new fabric.Textbox(style.headline.text || 'Your MCA Debt Matters!', {
             left: hlLeft, top: hlTop, fontSize: hlSize, fontFamily: hlFont,
             fontWeight: style.headline.fontWeight || 'bold', fill: hlColor,
             lineHeight: 1.1, name: 'headline', editable: true,
@@ -5357,7 +5345,7 @@
         }
 
         // Subheadline
-        var sub = new fabric.IText(style.subheadline.text, {
+        var sub = new fabric.Textbox(style.subheadline.text, {
           left: w * (style.subheadline.leftPercent || 0.45),
           top: h * (style.subheadline.topPercent || 0.4),
           fontSize: style.subheadline.fontSize || 16,
@@ -5433,7 +5421,7 @@
 
         // Headline
         var hlText = data.headline || 'Settle Your MCA Debt';
-        var headline = new fabric.IText(hlText, {
+        var headline = new fabric.Textbox(hlText, {
           left: w * 0.45, top: h * 0.08,
           fontSize: 36, fontFamily: 'Sora', fontWeight: 'bold',
           fill: '#000000', lineHeight: 1.15, name: 'headline', editable: true
@@ -5441,7 +5429,7 @@
 
         // Subheadline
         var subText = data.subheadline || 'Reduce your debt by up to 80%';
-        var sub = new fabric.IText(subText, {
+        var sub = new fabric.Textbox(subText, {
           left: w * 0.45, top: h * 0.4,
           fontSize: 16, fontFamily: 'Sora', fontWeight: 'normal',
           fill: '#333333', lineHeight: 1.4, name: 'subheadline', editable: true
@@ -5475,6 +5463,76 @@
         alert('Failed: ' + e.message);
       });
     }
+
+    // ============ 200 GOOGLE FONTS + ON-DEMAND LOADING ============
+
+    var GOOGLE_FONTS = [
+      'Abel','Abril Fatface','Aclonica','Acme','Advent Pro','Alata','Alegreya','Alegreya Sans',
+      'Alfa Slab One','Alice','Allura','Amatic SC','Amiri','Anton','Architects Daughter','Archivo',
+      'Archivo Black','Archivo Narrow','Arimo','Arvo','Asap','Assistant','Atkinson Hyperlegible',
+      'Bangers','Barlow','Barlow Condensed','Barlow Semi Condensed','Be Vietnam Pro','Bebas Neue',
+      'Bitter','Black Ops One','Bodoni Moda','Bree Serif','Cabin','Cairo','Cantarell','Catamaran',
+      'Caveat','Chakra Petch','Chivo','Cinzel','Cinzel Decorative','Comfortaa','Commissioner',
+      'Concert One','Cormorant','Cormorant Garamond','Courgette','Crimson Text','Cuprum',
+      'DM Sans','DM Serif Display','Dancing Script','Dosis','EB Garamond','Exo','Exo 2',
+      'Fira Sans','Fira Sans Condensed','Fjalla One','Francois One','Frank Ruhl Libre',
+      'Fraunces','Fugaz One','Gelasio','Gloria Hallelujah','Gochi Hand','Gothic A1',
+      'Great Vibes','Gruppo','Heebo','Hind','Hind Siliguri','IBM Plex Sans','IBM Plex Serif',
+      'Inconsolata','Indie Flower','Inter','Josefin Sans','Josefin Slab','Jost','Kalam',
+      'Kanit','Karla','Kaushan Script','Khand','Lato','Lexend','Libre Baskerville',
+      'Libre Franklin','Lilita One','Lobster','Lobster Two','Lora','Luckiest Guy',
+      'Manrope','Marcellus','Maven Pro','Merriweather','Merriweather Sans','Montserrat',
+      'Montserrat Alternates','Mukta','Mulish','Nanum Gothic','Neuton','Newsreader',
+      'Noto Sans','Noto Serif','Nunito','Nunito Sans','Old Standard TT','Open Sans',
+      'Orbitron','Oswald','Outfit','Overpass','Oxygen','PT Sans','PT Sans Caption',
+      'PT Sans Narrow','PT Serif','Pacifico','Passion One','Patua One','Permanent Marker',
+      'Philosopher','Play','Playfair Display','Plus Jakarta Sans','Poppins','Prata',
+      'Press Start 2P','Prompt','Proza Libre','Public Sans','Quicksand','Rajdhani',
+      'Raleway','Readex Pro','Red Hat Display','Righteous','Roboto','Roboto Condensed',
+      'Roboto Mono','Roboto Slab','Rokkitt','Rubik','Russo One','Sacramento','Saira',
+      'Saira Condensed','Satisfy','Sen','Shadows Into Light','Signika','Signika Negative',
+      'Silkscreen','Slabo 27px','Sora','Source Sans 3','Source Serif 4','Space Grotesk',
+      'Space Mono','Spectral','Squada One','Stint Ultra Expanded','Syne','Teko',
+      'Titillium Web','Ubuntu','Ubuntu Condensed','Urbanist','Varela Round','Vollkorn',
+      'Work Sans','Yanone Kaffeesatz','Yellowtail','Zen Kaku Gothic New','Zilla Slab'
+    ];
+
+    var _loadedFonts = {};
+
+    function initFontPicker() {
+      var sel = document.getElementById('textFontFamily');
+      if (!sel) return;
+      sel.innerHTML = GOOGLE_FONTS.map(function(f) {
+        return '<option value="' + f + '">' + f + '</option>';
+      }).join('');
+      sel.value = 'Montserrat';
+    }
+
+    function loadAndApplyFont(fontName) {
+      if (!_loadedFonts[fontName]) {
+        // Load font from Google Fonts
+        var link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fontName) + ':ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        _loadedFonts[fontName] = true;
+
+        // Wait for font to load then apply
+        setTimeout(function() {
+          setTextProp('fontFamily', fontName);
+          if (adCanvas) adCanvas.renderAll();
+        }, 500);
+      } else {
+        setTextProp('fontFamily', fontName);
+      }
+    }
+
+    // Also make text objects use Textbox (resizable width) instead of IText
+    // Override addTextToCanvas to use fabric.Textbox
+    var _origAddText = null;
+
+    // Init font picker on load
+    setTimeout(initFontPicker, 100);
 
     function getActiveText() {
       if (!adCanvas) return null;
@@ -6203,14 +6261,14 @@
             lockScalingFlip: true
           });
           obj.setControlsVisibility({
-            mt: false, mb: false, ml: false, mr: false,
+            mt: false, mb: false, ml: true, mr: true,
             tl: true, tr: true, bl: true, br: true, mtr: true
           });
         }
         if (obj.type === 'group' && obj.name === 'cta') {
           obj.set({ lockUniScaling: true, lockScalingFlip: true });
           obj.setControlsVisibility({
-            mt: false, mb: false, ml: false, mr: false,
+            mt: false, mb: false, ml: true, mr: true,
             tl: true, tr: true, bl: true, br: true, mtr: true
           });
         }
