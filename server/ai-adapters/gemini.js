@@ -4,9 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Try models in order — first available one wins
+// Try models in order — newest and fastest first
 const MODELS = [
-  'gemini-2.5-flash-image',
+  'gemini-2.0-flash-exp-image-generation',
   'gemini-2.0-flash',
   'imagen-4.0-generate-001'
 ];
@@ -69,6 +69,10 @@ async function tryGenerate(apiKey, model, prompt, referenceImageUrls, size) {
     }
   };
 
+  // 60-second timeout to prevent hanging
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -77,9 +81,11 @@ async function tryGenerate(apiKey, model, prompt, referenceImageUrls, size) {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
     }
   );
+  clearTimeout(timeout);
 
   if (!res.ok) {
     const errText = await res.text();
