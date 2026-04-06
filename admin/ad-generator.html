@@ -1248,6 +1248,25 @@
               </button>
             </div>
 
+            <!-- Element Controls (shown when element is selected) -->
+            <div id="elementControlsBar" style="display:none;margin-top:8px;padding:10px 14px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span style="font-size:11px;font-weight:700;color:var(--gray-500);">Selected:</span>
+              <div id="elCtrlText" style="display:flex;align-items:center;gap:6px;">
+                <button onclick="changeElFontSize(-2)" style="width:28px;height:28px;border:1px solid var(--gray-200);border-radius:4px;background:#fff;cursor:pointer;font-weight:700;">A-</button>
+                <button onclick="changeElFontSize(2)" style="width:28px;height:28px;border:1px solid var(--gray-200);border-radius:4px;background:#fff;cursor:pointer;font-weight:700;">A+</button>
+                <input type="color" id="elTextColor" value="#000000" onchange="changeElColor(this.value)" style="width:28px;height:28px;border:1px solid var(--gray-200);border-radius:4px;padding:1px;cursor:pointer;">
+                <button onclick="changeElColor('#000000')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--gray-200);background:#000;cursor:pointer;"></button>
+                <button onclick="changeElColor('#3052FF')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--gray-200);background:#3052FF;cursor:pointer;"></button>
+                <button onclick="changeElColor('#FF9000')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--gray-200);background:#FF9000;cursor:pointer;"></button>
+                <button onclick="changeElColor('#FFFFFF')" style="width:20px;height:20px;border-radius:4px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;"></button>
+              </div>
+              <div id="elCtrlSize" style="display:flex;align-items:center;gap:6px;">
+                <button onclick="changeElScale(-5)" style="padding:2px 8px;border:1px solid var(--gray-200);border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">Smaller</button>
+                <button onclick="changeElScale(5)" style="padding:2px 8px;border:1px solid var(--gray-200);border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">Bigger</button>
+              </div>
+              <button onclick="deleteSelectedEl()" style="margin-left:auto;padding:2px 10px;border:1px solid #fca5a5;border-radius:4px;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:11px;font-weight:600;">Delete</button>
+            </div>
+
             <!-- Nav -->
             <div class="step-nav">
               <button class="btn btn-secondary" onclick="goToStep(1)">&larr; Back to Person</button>
@@ -6955,9 +6974,156 @@
 
       syncTemplateToPreview(html, w, h);
 
+      // Make elements draggable + selectable
+      makeDraggable(frame, scale);
+
       // Highlight selected card
       document.querySelectorAll('#templatePicker > div').forEach(function(c) { c.style.borderColor = 'var(--gray-200)'; c.classList.remove('sel'); });
       if (cardEl) { cardEl.style.borderColor = '#3052FF'; cardEl.classList.add('sel'); }
+    }
+
+    // ============ DRAG + SELECT + RESIZE FOR HTML ELEMENTS ============
+
+    var _dragEl = null, _dragStartX = 0, _dragStartY = 0, _dragOrigLeft = 0, _dragOrigTop = 0, _editorScale = 1;
+    var _selectedEl = null;
+
+    function makeDraggable(container, scale) {
+      _editorScale = scale;
+      // Find all positioned children (images, text divs)
+      var els = container.querySelectorAll('[style*="position:absolute"], [style*="position: absolute"]');
+      els.forEach(function(el) {
+        el.style.cursor = 'move';
+        el.addEventListener('mousedown', startDrag);
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          selectElement(el);
+        });
+      });
+      // Also make contenteditable divs clickable for editing
+      var editables = container.querySelectorAll('[contenteditable]');
+      editables.forEach(function(el) {
+        el.style.cursor = 'text';
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          selectElement(el.closest('[style*="position:absolute"]') || el);
+        });
+        el.addEventListener('input', function() {
+          // Sync preview on text change
+          var frame = document.getElementById('adEditorFrame');
+          if (frame) {
+            var meta = SIZE_META[selectedSize];
+            syncTemplateToPreview(frame.innerHTML, meta.width, meta.height);
+          }
+        });
+      });
+      // Click container to deselect
+      container.addEventListener('click', function(e) {
+        if (e.target === container || e.target === container.firstElementChild) {
+          deselectAll();
+        }
+      });
+
+      document.addEventListener('mousemove', doDrag);
+      document.addEventListener('mouseup', stopDrag);
+    }
+
+    function selectElement(el) {
+      deselectAll();
+      _selectedEl = el;
+      el.style.outline = '2px solid #3052FF';
+      el.style.outlineOffset = '2px';
+      // Show element controls
+      showElementControls(el);
+    }
+
+    function deselectAll() {
+      if (_selectedEl) {
+        _selectedEl.style.outline = '';
+        _selectedEl.style.outlineOffset = '';
+      }
+      _selectedEl = null;
+      hideElementControls();
+    }
+
+    function startDrag(e) {
+      if (e.target.getAttribute('contenteditable') === 'true' && document.activeElement === e.target) return;
+      var el = e.currentTarget;
+      _dragEl = el;
+      _dragStartX = e.clientX;
+      _dragStartY = e.clientY;
+      _dragOrigLeft = parseInt(el.style.left) || 0;
+      _dragOrigTop = parseInt(el.style.top) || 0;
+      e.preventDefault();
+    }
+
+    function doDrag(e) {
+      if (!_dragEl) return;
+      var dx = (e.clientX - _dragStartX) / _editorScale;
+      var dy = (e.clientY - _dragStartY) / _editorScale;
+      _dragEl.style.left = (_dragOrigLeft + dx) + 'px';
+      _dragEl.style.top = (_dragOrigTop + dy) + 'px';
+    }
+
+    function stopDrag(e) {
+      if (_dragEl) {
+        _dragEl = null;
+        // Sync preview
+        var frame = document.getElementById('adEditorFrame');
+        if (frame) {
+          var meta = SIZE_META[selectedSize];
+          syncTemplateToPreview(frame.innerHTML, meta.width, meta.height);
+        }
+      }
+    }
+
+    function showElementControls(el) {
+      var bar = document.getElementById('elementControlsBar');
+      if (!bar) return;
+      bar.style.display = 'flex';
+      // Check if it's an image or text
+      var isImg = el.tagName === 'IMG';
+      var isText = el.querySelector('[contenteditable]') || el.getAttribute('contenteditable') === 'true';
+      document.getElementById('elCtrlText').style.display = isText ? 'flex' : 'none';
+      document.getElementById('elCtrlSize').style.display = isImg ? 'flex' : 'none';
+    }
+
+    function hideElementControls() {
+      var bar = document.getElementById('elementControlsBar');
+      if (bar) bar.style.display = 'none';
+    }
+
+    function changeElFontSize(delta) {
+      if (!_selectedEl) return;
+      var textEl = _selectedEl.querySelector('[contenteditable]') || _selectedEl;
+      var current = parseInt(textEl.style.fontSize) || 24;
+      textEl.style.fontSize = Math.max(8, current + delta) + 'px';
+      var frame = document.getElementById('adEditorFrame');
+      if (frame) { var meta = SIZE_META[selectedSize]; syncTemplateToPreview(frame.innerHTML, meta.width, meta.height); }
+    }
+
+    function changeElColor(color) {
+      if (!_selectedEl) return;
+      var textEl = _selectedEl.querySelector('[contenteditable]') || _selectedEl;
+      textEl.style.color = color;
+      var frame = document.getElementById('adEditorFrame');
+      if (frame) { var meta = SIZE_META[selectedSize]; syncTemplateToPreview(frame.innerHTML, meta.width, meta.height); }
+    }
+
+    function changeElScale(delta) {
+      if (!_selectedEl || _selectedEl.tagName !== 'IMG') return;
+      var current = parseFloat(_selectedEl.style.height) || 80;
+      _selectedEl.style.height = Math.max(10, current + delta) + '%';
+      var frame = document.getElementById('adEditorFrame');
+      if (frame) { var meta = SIZE_META[selectedSize]; syncTemplateToPreview(frame.innerHTML, meta.width, meta.height); }
+    }
+
+    function deleteSelectedEl() {
+      if (!_selectedEl) return;
+      _selectedEl.remove();
+      _selectedEl = null;
+      hideElementControls();
+      var frame = document.getElementById('adEditorFrame');
+      if (frame) { var meta = SIZE_META[selectedSize]; syncTemplateToPreview(frame.innerHTML, meta.width, meta.height); }
     }
 
     function renderTemplate(w, h) {
