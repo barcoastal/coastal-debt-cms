@@ -1009,7 +1009,7 @@ Analyze the provided screenshot and element data. Pick the layout pattern that b
 
 // Generate ad copy WITH creative text design (fonts, colors, styles)
 router.post('/generate-styled-copy', authenticateToken, async (req, res) => {
-  const { canvasWidth, canvasHeight, selectedSize } = req.body;
+  const { canvasWidth, canvasHeight, selectedSize, stylePrompt, tone, visualStyle, backgroundIsDark, backgroundBrightness, dominantColor } = req.body;
 
   try {
     const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
@@ -1017,6 +1017,32 @@ router.post('/generate-styled-copy', authenticateToken, async (req, res) => {
 
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey });
+
+    const toneGuide = {
+      urgent: 'Create urgency and FOMO - limited time, act now, daily payments draining your account.',
+      trust: 'Build trust and authority - proven track record, 1000+ businesses helped, BBB accredited.',
+      empathy: 'Address pain points - drowning in payments, stressed, losing sleep over debt.',
+      savings: 'Focus on numbers and savings - save up to 80%, reduce payments, specific dollar amounts.',
+      fresh: 'Fresh start angle - leave debt behind, rebuild, new beginning for your business.',
+      educational: 'Educational - explain MCA debt and why settlement is the smart choice.'
+    };
+
+    const styleGuide = {
+      bold: 'Bold Impact style: use Bebas Neue or Oswald for headline, UPPERCASE, huge font, tight letter spacing, high contrast.',
+      elegant: 'Elegant Professional: use Playfair Display for headline, refined spacing, dark navy or deep blue tones.',
+      modern: 'Modern Clean: use Space Grotesk or Outfit, generous whitespace, subtle blue accents, understated elegance.',
+      energetic: 'Energetic: use Montserrat bold/black, orange + blue combo, slight text shadow for pop.',
+      editorial: 'Editorial: use Playfair Display (possibly italic) for headline + DM Sans for body, magazine-quality sophistication.',
+      tech: 'Tech Forward: use Archivo or Space Grotesk, geometric feel, precise spacing, clean lines.'
+    };
+
+    const toneInstruction = toneGuide[tone] || 'Pick a compelling angle for MCA debt settlement.';
+    const styleInstruction = styleGuide[visualStyle] || 'Pick one of these styles randomly: Bold Impact, Elegant Professional, Modern Clean, Energetic, Editorial, or Tech Forward.';
+    const customPrompt = stylePrompt ? `\nUSER DESIGN REQUEST: "${stylePrompt}" - incorporate this into the design.` : '';
+
+    const bgContext = backgroundIsDark
+      ? `BACKGROUND IS DARK (brightness: ${backgroundBrightness || 'low'}, color: ${dominantColor || 'dark'}). Use LIGHT text colors: white #FFFFFF for headline, light gray #E2E8F0 for subheadline. CTA button should use #FF9000 orange or #FFFFFF white bg with dark text for contrast.`
+      : `BACKGROUND IS LIGHT (brightness: ${backgroundBrightness || 'high'}, color: ${dominantColor || '#F2F4F9'}). Use DARK text colors: #000000 or #1E293B for headline, #333333 or #475569 for subheadline. CTA button should use #3052FF blue bg with white text.`;
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
@@ -1029,13 +1055,21 @@ Canvas: ${canvasWidth}x${canvasHeight} (${selectedSize || 'square'})
 
 BRAND CONTEXT: Coastal Debt Resolve helps business owners settle MCA (Merchant Cash Advance) debt for 50-80% less. Professional, trustworthy, empowering.
 
+COPYWRITING TONE: ${toneInstruction}
+${customPrompt}
+
+VISUAL STYLE: ${styleInstruction}
+
+BACKGROUND CONTEXT: ${bgContext}
+CRITICAL: Text MUST be readable against the background. High contrast is mandatory.
+
 AVAILABLE FONTS (pick from these ONLY):
 Sora, Inter, Montserrat, Poppins, Playfair Display, Bebas Neue, Oswald, DM Sans, Plus Jakarta Sans, Outfit, Space Grotesk, Archivo
 
 DESIGN REQUIREMENTS:
-- Create a UNIQUE visual personality each time - vary dramatically between calls
 - Use contrasting font pairings (e.g. bold sans-serif headline + elegant serif subheadline)
-- Use brand colors creatively: #3052FF (blue), #FF9000 (orange), #000000, #333333, #FFFFFF
+- Text colors MUST contrast with the background (dark bg = light text, light bg = dark text)
+- Use brand colors creatively but ONLY where they contrast with the background
 - Headline should be SCROLL-STOPPING - 3-6 words max
 - Only about MCA / business debt - NEVER mention credit cards, personal debt
 

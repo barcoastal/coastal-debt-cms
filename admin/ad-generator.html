@@ -1220,7 +1220,7 @@
               <button onclick="addTextToCanvas('subheadline')" title="Add subheadline text">T Sub</button>
               <button onclick="addTextToCanvas('cta')" style="color:#fff;background:#3052FF;border-color:#3052FF;" title="Add CTA button">CTA</button>
               <button onclick="generateAndAddCopy()" style="color:#3052FF;font-weight:600;" title="AI generates headline + sub + CTA">&#9733; AI Copy</button>
-              <button onclick="generateStyledCopy()" id="aiStyleBtn" style="background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;font-weight:700;padding:4px 12px;" title="AI generates copy WITH unique design styles (fonts, colors, layout)">&#127912; AI Style</button>
+              <button onclick="showAiStylePanel()" id="aiStyleBtn" style="background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;font-weight:700;padding:4px 12px;" title="AI generates copy WITH unique design styles (fonts, colors, layout)">&#127912; AI Style</button>
               <span class="toolbar-sep"></span>
               <button onclick="addLogoToCanvas()" title="Add Coastal Debt logo">Logo</button>
               <button onclick="addBadgeToCanvas('trustpilot')" title="Add Trustpilot badge" style="font-size:11px;">&#9733;TP</button>
@@ -1233,6 +1233,47 @@
               <button onclick="showTemplatesModal()" title="Load a saved template">&#128203; Templates</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
+            <!-- AI Style Prompt Panel -->
+            <div id="aiStylePanel" style="display:none;padding:12px 16px;background:linear-gradient(135deg,#FFF7ED,#FFFBF5);border:1px solid #FDBA74;border-top:none;">
+              <div style="display:flex;gap:8px;align-items:start;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Describe the ad style you want</label>
+                  <input type="text" id="aiStylePrompt" placeholder="e.g. bold and urgent, elegant professional, modern minimal, playful energetic..." style="width:100%;padding:8px 12px;border:1.5px solid #FDBA74;border-radius:8px;font-size:13px;background:#fff;">
+                </div>
+                <div style="min-width:120px;">
+                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Tone</label>
+                  <select id="aiStyleTone" style="width:100%;padding:8px;border:1.5px solid #FDBA74;border-radius:8px;font-size:12px;background:#fff;">
+                    <option value="">Auto</option>
+                    <option value="urgent">Urgent / FOMO</option>
+                    <option value="trust">Trust / Authority</option>
+                    <option value="empathy">Empathy / Pain Point</option>
+                    <option value="savings">Savings / Numbers</option>
+                    <option value="fresh">Fresh Start</option>
+                    <option value="educational">Educational</option>
+                  </select>
+                </div>
+                <div style="min-width:120px;">
+                  <label style="font-size:11px;font-weight:700;color:#9A3412;display:block;margin-bottom:4px;">Visual Style</label>
+                  <select id="aiStyleVisual" style="width:100%;padding:8px;border:1.5px solid #FDBA74;border-radius:8px;font-size:12px;background:#fff;">
+                    <option value="">Random</option>
+                    <option value="bold">Bold Impact</option>
+                    <option value="elegant">Elegant Professional</option>
+                    <option value="modern">Modern Clean</option>
+                    <option value="energetic">Energetic</option>
+                    <option value="editorial">Editorial</option>
+                    <option value="tech">Tech Forward</option>
+                  </select>
+                </div>
+                <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+                  <label style="font-size:11px;color:transparent;display:block;margin-bottom:4px;">.</label>
+                  <button onclick="generateStyledCopy()" id="aiStyleGenBtn" style="padding:8px 20px;background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Generate</button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                <input type="checkbox" id="aiStyleAutoBg" checked style="accent-color:#FF9000;">
+                <label for="aiStyleAutoBg" style="font-size:11px;color:#9A3412;">Auto-detect background and use contrasting text colors</label>
+              </div>
+            </div>
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
               <select id="textFontFamily" onchange="setTextProp('fontFamily',this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;max-width:140px;">
                 <option value="Sora">Sora</option>
@@ -4870,20 +4911,73 @@
       syncCanvasToPreview();
     }
 
+    function showAiStylePanel() {
+      var panel = document.getElementById('aiStylePanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function detectBackgroundInfo() {
+      if (!adCanvas) return { isDark: false, dominantColor: '#F2F4F9' };
+      var bgColor = adCanvas.backgroundColor || '#F2F4F9';
+      // Check if there's a background image covering the canvas
+      var hasBgImage = adCanvas.getObjects().some(function(o) {
+        return o.name === 'background' || o.name === 'bgImage' || o.name === 'person';
+      });
+      // Sample the canvas center pixel to determine darkness
+      try {
+        var ctx = adCanvas.getContext('2d');
+        var cx = Math.round(adCanvas.width * 0.6);
+        var cy = Math.round(adCanvas.height * 0.3);
+        var pixel = ctx.getImageData(cx, cy, 1, 1).data;
+        var brightness = (pixel[0] * 299 + pixel[1] * 587 + pixel[2] * 114) / 1000;
+        return {
+          isDark: brightness < 128,
+          dominantColor: 'rgb(' + pixel[0] + ',' + pixel[1] + ',' + pixel[2] + ')',
+          brightness: Math.round(brightness)
+        };
+      } catch(e) {
+        // Fallback: check bg color
+        var r = parseInt(bgColor.slice(1,3),16) || 242;
+        var g = parseInt(bgColor.slice(3,5),16) || 244;
+        var b = parseInt(bgColor.slice(5,7),16) || 249;
+        var brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return { isDark: brightness < 128, dominantColor: bgColor, brightness: Math.round(brightness) };
+      }
+    }
+
     async function generateStyledCopy() {
       if (!adCanvas) return;
-      var btn = document.getElementById('aiStyleBtn');
+      var btn = document.getElementById('aiStyleGenBtn') || document.getElementById('aiStyleBtn');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Designing...';
+      btn.textContent = 'Generating...';
 
       var w = adCanvas.width;
       var h = adCanvas.height;
+
+      // Get prompt builder inputs
+      var stylePrompt = (document.getElementById('aiStylePrompt') || {}).value || '';
+      var tone = (document.getElementById('aiStyleTone') || {}).value || '';
+      var visualStyle = (document.getElementById('aiStyleVisual') || {}).value || '';
+      var autoBg = (document.getElementById('aiStyleAutoBg') || {}).checked !== false;
+
+      // Detect background
+      var bgInfo = autoBg ? detectBackgroundInfo() : { isDark: false, dominantColor: '#F2F4F9' };
 
       try {
         var res = await fetch('/api/ad-generator/generate-styled-copy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ canvasWidth: w, canvasHeight: h, selectedSize: selectedSize })
+          body: JSON.stringify({
+            canvasWidth: w,
+            canvasHeight: h,
+            selectedSize: selectedSize,
+            stylePrompt: stylePrompt,
+            tone: tone,
+            visualStyle: visualStyle,
+            backgroundIsDark: bgInfo.isDark,
+            backgroundBrightness: bgInfo.brightness,
+            dominantColor: bgInfo.dominantColor
+          })
         });
         if (!res.ok) throw new Error('Failed');
         var data = await res.json();
@@ -4967,10 +5061,10 @@
         syncCanvasToPreview();
 
         btn.disabled = false;
-        btn.innerHTML = '&#127912; AI Style';
+        btn.textContent = 'Generate';
       } catch(e) {
         btn.disabled = false;
-        btn.innerHTML = '&#127912; AI Style';
+        btn.textContent = 'Generate';
         alert('Style generation failed: ' + e.message);
       }
     }
