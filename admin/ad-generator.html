@@ -1202,7 +1202,27 @@
           <div id="templateEditorSection">
             <!-- Template Picker -->
             <div id="templatePicker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-              <!-- Generated dynamically from window.AdTemplates -->
+              <div onclick="selectTemplate('light_classic',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#F2F4F9;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                <div style="font-size:11px;font-weight:800;color:#000;line-height:1.15;">Understanding Your</div>
+                <div style="font-size:12px;font-weight:900;color:#3052FF;line-height:1.15;margin-top:2px;">MCA Debt</div>
+                <div style="font-size:11px;font-weight:800;color:#FF9000;line-height:1.15;margin-top:2px;">Matters!</div>
+                <div style="font-size:9px;color:var(--gray-500);margin-top:6px;font-weight:600;">Light Classic</div>
+              </div>
+              <div onclick="selectTemplate('blue_bold',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#3052FF;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#FF9000'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                <div style="font-size:13px;font-weight:900;color:#FF9000;line-height:1.1;">Eliminate</div>
+                <div style="font-size:11px;font-weight:800;color:#fff;line-height:1.15;margin-top:2px;">your MCA Debt</div>
+                <div style="font-size:9px;color:#ccc;margin-top:6px;font-weight:600;">Blue Bold</div>
+              </div>
+              <div onclick="selectTemplate('caps_blue',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#3052FF;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#7FB2FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                <div style="font-size:10px;font-weight:900;color:#fff;line-height:1.15;text-transform:uppercase;">Stuck in a Merchant Cash Advance Trap?</div>
+                <div style="font-size:9px;color:#ccc;margin-top:6px;font-weight:600;">Caps Bold</div>
+              </div>
+              <div onclick="selectTemplate('script_mix',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#F2F4F9;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                <div style="font-size:9px;font-weight:800;color:#3052FF;line-height:1.15;">DON'T CONSOLIDATE</div>
+                <div style="font-size:11px;font-weight:900;color:#000;line-height:1.15;">MCA DEBT</div>
+                <div style="font-size:12px;font-style:italic;color:#000;line-height:1.1;font-family:serif;">Annihilate it!</div>
+                <div style="font-size:9px;color:var(--gray-500);margin-top:4px;font-weight:600;">Mixed Style</div>
+              </div>
             </div>
 
             <!-- HTML Ad Editor -->
@@ -6852,50 +6872,77 @@
 
     function selectTemplate(name, cardEl) {
       currentTemplateName = name;
-      var template = window.AdTemplates[name];
-      if (!template) return;
-
       var meta = SIZE_META[selectedSize];
       var w = meta.width;
       var h = meta.height;
+      var personUrl = wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl || '';
+      var isBlue = (name === 'blue_bold' || name === 'caps_blue');
+      var bgColor = isBlue ? '#3052FF' : '#F2F4F9';
+      var logoUrl = isBlue ? '/assets/logos/logo-white-text.svg' : '/assets/logos/logo-dark-text.svg';
+      var chevUrl = '/assets/brand-assets/chevron-style-1.svg';
+      var badgeHtml = ['trustpilot-transparent.png','bsi-transparent.png','bbb-torch-awards.png'].map(function(b) {
+        return '<img src="/assets/trust-logos/' + b + '" style="height:' + Math.round(h*0.055) + 'px;width:auto;">';
+      }).join('');
 
-      currentTemplateData = {
-        personUrl: wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl,
-        bgColor: template.preview.bg,
-        chevronUrl: '/assets/brand-assets/chevron-style-1.svg',
-        logoUrl: '/assets/logos/logo-dark-text.svg',
-        badges: [
-          '/assets/trust-logos/trustpilot-transparent.png',
-          '/assets/trust-logos/bsi-transparent.png',
-          '/assets/trust-logos/bbb-torch-awards.png'
-        ]
-      };
+      currentTemplateData = { bgColor: bgColor, personUrl: personUrl, logoUrl: logoUrl };
 
-      // Blue templates use white logo
-      if (name === 'blue_bold' || name === 'caps_blue') {
-        currentTemplateData.logoUrl = '/assets/logos/logo-white-text.svg';
+      // Update bg picker
+      var bgPicker = document.getElementById('templateBgColor');
+      if (bgPicker) bgPicker.value = bgColor;
+
+      // Build HTML for each template inline
+      var sz = function(pct) { return Math.round(h * pct); };
+      var html = '';
+
+      if (name === 'light_classic') {
+        html = '<div style="width:'+w+'px;height:'+h+'px;background:#F2F4F9;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;left:0;height:85%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
+          '<img src="'+chevUrl+'" style="position:absolute;top:3%;left:3%;width:28%;z-index:1;opacity:0.9;">' +
+          '<img src="'+logoUrl+'" style="position:absolute;top:4%;right:5%;width:20%;z-index:10;">' +
+          '<div style="position:absolute;top:12%;right:5%;width:48%;z-index:5;">' +
+            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#000;line-height:1.12;">Understanding<br>Your <span style="color:#3052FF">MCA Debt</span></div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#FF9000;line-height:1.12;margin-top:2px;">Matters!</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.024)+'px;color:#000;margin-top:'+sz(0.025)+'px;line-height:1.5;">You need a <b>solution</b> tailored to your business challenges.</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.021)+'px;color:#333;margin-top:'+sz(0.02)+'px;line-height:1.5;">Explore your options with<br><b>a free consultation:</b></div>' +
+            '<div contenteditable="true" style="display:inline-block;background:#3052FF;color:#fff;font-size:'+sz(0.026)+'px;font-weight:700;padding:'+sz(0.013)+'px '+sz(0.035)+'px;border-radius:100px;margin-top:'+sz(0.018)+'px;">CoastalDebt.com</div>' +
+          '</div>' +
+          '<div style="position:absolute;bottom:3%;left:50%;transform:translateX(-50%);display:flex;gap:'+Math.round(w*0.04)+'px;z-index:10;">' + badgeHtml + '</div>' +
+        '</div>';
+      } else if (name === 'blue_bold') {
+        html = '<div style="width:'+w+'px;height:'+h+'px;background:#3052FF;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;right:0;height:78%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
+          '<img src="'+chevUrl+'" style="position:absolute;top:3%;right:5%;width:22%;z-index:1;opacity:0.25;">' +
+          '<div style="position:absolute;top:8%;left:5%;width:55%;z-index:5;">' +
+            '<div contenteditable="true" style="font-size:'+sz(0.08)+'px;font-weight:900;color:#FF9000;line-height:1.05;">Eliminate</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.065)+'px;font-weight:800;color:#fff;line-height:1.1;margin-top:4px;">your<br>MCA Debt<br>in 6-18 months</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.028)+'px;color:#fff;margin-top:'+sz(0.035)+'px;line-height:1.5;">Join our <b>Debt Relief<br>Program</b> Today!</div>' +
+          '</div>' +
+          '<img src="'+logoUrl+'" style="position:absolute;bottom:12%;left:5%;width:25%;z-index:10;">' +
+          '<div style="position:absolute;bottom:3%;left:5%;display:flex;gap:'+Math.round(w*0.03)+'px;z-index:10;">' + badgeHtml + '</div>' +
+        '</div>';
+      } else if (name === 'caps_blue') {
+        html = '<div style="width:'+w+'px;height:'+h+'px;background:#3052FF;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;right:-5%;height:65%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
+          '<div style="position:absolute;top:8%;left:5%;width:65%;z-index:5;">' +
+            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:900;color:#fff;line-height:1.12;text-transform:uppercase;">Stuck in a<br>Merchant Cash<br>Advance Trap?</div>' +
+          '</div>' +
+          '<img src="'+logoUrl+'" style="position:absolute;bottom:5%;left:5%;width:22%;z-index:10;">' +
+          '<div contenteditable="true" style="position:absolute;bottom:5%;right:5%;font-size:'+sz(0.018)+'px;color:#fff;font-weight:600;z-index:10;">www.coastaldebt.com</div>' +
+        '</div>';
+      } else if (name === 'script_mix') {
+        html = '<div style="width:'+w+'px;height:'+h+'px;background:#F2F4F9;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          '<div style="position:absolute;top:0;right:0;width:35%;height:100%;overflow:hidden;z-index:1;"><img src="'+chevUrl+'" style="width:100%;height:auto;opacity:0.8;"></div>' +
+          '<img src="'+logoUrl+'" style="position:absolute;top:5%;left:5%;width:22%;z-index:10;">' +
+          '<div style="position:absolute;top:22%;left:5%;width:70%;z-index:5;">' +
+            '<div contenteditable="true" style="font-size:'+sz(0.05)+'px;font-weight:800;color:#3052FF;line-height:1.15;text-transform:uppercase;">DON\'T CONSOLIDATE</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.065)+'px;font-weight:900;color:#000;line-height:1.1;text-transform:uppercase;">MCA DEBT</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:400;font-style:italic;color:#000;line-height:1.1;font-family:Playfair Display,serif;margin-top:4px;">Annihilate it!</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.019)+'px;color:#000;font-weight:600;text-transform:uppercase;margin-top:'+sz(0.05)+'px;line-height:1.6;">See if you qualify in minutes.<br>Enroll by Friday!</div>' +
+          '</div>' +
+        '</div>';
       }
 
-      // Update bg color picker
-      var bgPicker = document.getElementById('templateBgColor');
-      if (bgPicker) bgPicker.value = currentTemplateData.bgColor;
-
-      renderTemplate(w, h);
-
-      // Highlight selected card
-      document.querySelectorAll('#templatePicker > div').forEach(function(c) {
-        c.style.borderColor = 'var(--gray-200)';
-      });
-      if (cardEl) cardEl.style.borderColor = '#3052FF';
-    }
-
-    function renderTemplate(w, h) {
-      var template = window.AdTemplates[currentTemplateName];
-      if (!template) return;
-
-      var html = template.render(currentTemplateData, w, h);
-
-      // Scale to fit editor area (max ~600px wide)
+      // Render into editor
       var scale = Math.min(600 / w, 600 / h);
       var frame = document.getElementById('adEditorFrame');
       frame.style.width = w + 'px';
@@ -6903,13 +6950,21 @@
       frame.style.transform = 'scale(' + scale + ')';
       frame.innerHTML = html;
 
-      // Update wrapper dimensions to match scaled size so layout doesn't collapse
       var wrap = document.getElementById('adEditorWrap');
-      if (wrap) {
-        wrap.style.minHeight = Math.round(h * scale) + 32 + 'px';
-      }
+      if (wrap) wrap.style.minHeight = Math.round(h * scale) + 32 + 'px';
 
       syncTemplateToPreview(html, w, h);
+
+      // Highlight selected card
+      document.querySelectorAll('#templatePicker > div').forEach(function(c) { c.style.borderColor = 'var(--gray-200)'; c.classList.remove('sel'); });
+      if (cardEl) { cardEl.style.borderColor = '#3052FF'; cardEl.classList.add('sel'); }
+    }
+
+    function renderTemplate(w, h) {
+      // Re-render current template with updated data
+      if (currentTemplateName) {
+        selectTemplate(currentTemplateName, document.querySelector('#templatePicker .sel'));
+      }
     }
 
     function syncTemplateToPreview(html, w, h) {
@@ -7024,7 +7079,7 @@
       .then(d => { document.getElementById('galleryCount').textContent = d.total || '0'; })
       .catch(() => {});
     // Initialize template picker
-    initTemplatePicker();
+    // Template picker cards are hardcoded in HTML — no init needed
   </script>
 </body>
 </html>
