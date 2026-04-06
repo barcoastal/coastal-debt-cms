@@ -1007,6 +1007,100 @@ Layout C - "Story Full Person" (for story/reel 9:16):
 
 Analyze the provided screenshot and element data. Pick the layout pattern that best fits the canvas orientation and existing content. Return positions that match the chosen pattern exactly.`;
 
+// Generate ad copy WITH creative text design (fonts, colors, styles)
+router.post('/generate-styled-copy', authenticateToken, async (req, res) => {
+  const { canvasWidth, canvasHeight, selectedSize } = req.body;
+
+  try {
+    const apiKey = (process.env.ANTHROPIC_API_KEY || '').replace(/\s/g, '');
+    if (!apiKey) return res.status(500).json({ error: 'No API key' });
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: `You are a creative ad designer for Coastal Debt Resolve (MCA debt settlement). Generate ad copy AND a unique visual text design.
+
+Canvas: ${canvasWidth}x${canvasHeight} (${selectedSize || 'square'})
+
+BRAND CONTEXT: Coastal Debt Resolve helps business owners settle MCA (Merchant Cash Advance) debt for 50-80% less. Professional, trustworthy, empowering.
+
+AVAILABLE FONTS (pick from these ONLY):
+Sora, Inter, Montserrat, Poppins, Playfair Display, Bebas Neue, Oswald, DM Sans, Plus Jakarta Sans, Outfit, Space Grotesk, Archivo
+
+DESIGN REQUIREMENTS:
+- Create a UNIQUE visual personality each time - vary dramatically between calls
+- Use contrasting font pairings (e.g. bold sans-serif headline + elegant serif subheadline)
+- Use brand colors creatively: #3052FF (blue), #FF9000 (orange), #000000, #333333, #FFFFFF
+- Headline should be SCROLL-STOPPING - 3-6 words max
+- Only about MCA / business debt - NEVER mention credit cards, personal debt
+
+DESIGN STYLES TO ALTERNATE BETWEEN (pick one randomly):
+1. "Bold Impact" - Bebas Neue or Oswald uppercase headline, huge font, tight spacing
+2. "Elegant Professional" - Playfair Display headline, refined spacing, dark navy
+3. "Modern Clean" - Space Grotesk or Outfit, generous whitespace, blue accent
+4. "Energetic" - Montserrat Black, orange/blue combo, slight shadow
+5. "Editorial" - Playfair Display italic + DM Sans body, sophisticated
+6. "Tech Forward" - Archivo or Space Grotesk, small caps feel, blue gradient feel
+
+Return ONLY valid JSON:
+{
+  "designName": "name of the style chosen",
+  "headline": {
+    "text": "Your MCA Debt\\nMatters!",
+    "fontFamily": "Bebas Neue",
+    "fontSize": ${Math.round(canvasHeight * 0.08)},
+    "fontWeight": "bold",
+    "color": "#000000",
+    "textAlign": "left",
+    "charSpacing": 0,
+    "shadow": null,
+    "leftPercent": 0.45,
+    "topPercent": 0.1
+  },
+  "subheadline": {
+    "text": "Settle your business debt\\nfor up to 80% less.",
+    "fontFamily": "DM Sans",
+    "fontSize": ${Math.round(canvasHeight * 0.03)},
+    "fontWeight": "normal",
+    "color": "#333333",
+    "textAlign": "left",
+    "leftPercent": 0.45,
+    "topPercent": 0.4
+  },
+  "cta": {
+    "text": "CoastalDebt.com",
+    "fontFamily": "Sora",
+    "fontSize": ${Math.round(canvasHeight * 0.035)},
+    "fontWeight": "bold",
+    "textColor": "#FFFFFF",
+    "bgColor": "#3052FF",
+    "borderRadius": 30,
+    "leftPercent": 0.55,
+    "topPercent": 0.7
+  }
+}
+
+IMPORTANT: leftPercent and topPercent are 0-1 fractions of canvas size. Keep text on the RIGHT side (0.4-0.95 leftPercent) assuming person is on the left. Be creative with colors and font choices!`
+      }]
+    });
+
+    const text = message.content[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return res.status(500).json({ error: 'AI returned invalid style' });
+
+    const style = JSON.parse(match[0]);
+    res.json({ style });
+  } catch (err) {
+    console.error('Styled copy error:', err.message);
+    res.status(500).json({ error: 'Style generation failed: ' + err.message });
+  }
+});
+
 router.post('/ai-redesign', authenticateToken, async (req, res) => {
   const { elements, canvasWidth, canvasHeight, selectedSize, screenshot } = req.body;
   if (!elements || !canvasWidth || !canvasHeight) {

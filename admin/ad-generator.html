@@ -1220,6 +1220,7 @@
               <button onclick="addTextToCanvas('subheadline')" title="Add subheadline text">T Sub</button>
               <button onclick="addTextToCanvas('cta')" style="color:#fff;background:#3052FF;border-color:#3052FF;" title="Add CTA button">CTA</button>
               <button onclick="generateAndAddCopy()" style="color:#3052FF;font-weight:600;" title="AI generates headline + sub + CTA">&#9733; AI Copy</button>
+              <button onclick="generateStyledCopy()" id="aiStyleBtn" style="background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;font-weight:700;padding:4px 12px;" title="AI generates copy WITH unique design styles (fonts, colors, layout)">&#127912; AI Style</button>
               <span class="toolbar-sep"></span>
               <button onclick="addLogoToCanvas()" title="Add Coastal Debt logo">Logo</button>
               <button onclick="addBadgeToCanvas('trustpilot')" title="Add Trustpilot badge" style="font-size:11px;">&#9733;TP</button>
@@ -4867,6 +4868,111 @@
 
       adCanvas.renderAll();
       syncCanvasToPreview();
+    }
+
+    async function generateStyledCopy() {
+      if (!adCanvas) return;
+      var btn = document.getElementById('aiStyleBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:4px;"></div> Designing...';
+
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+
+      try {
+        var res = await fetch('/api/ad-generator/generate-styled-copy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ canvasWidth: w, canvasHeight: h, selectedSize: selectedSize })
+        });
+        if (!res.ok) throw new Error('Failed');
+        var data = await res.json();
+        var style = data.style;
+
+        // Remove existing text objects
+        adCanvas.getObjects().filter(function(o) {
+          return o.name === 'headline' || o.name === 'subheadline' || o.name === 'cta';
+        }).forEach(function(o) { adCanvas.remove(o); });
+
+        // Headline
+        var hl = new fabric.IText(style.headline.text, {
+          left: w * (style.headline.leftPercent || 0.45),
+          top: h * (style.headline.topPercent || 0.08),
+          fontSize: style.headline.fontSize || 36,
+          fontFamily: style.headline.fontFamily || 'Sora',
+          fontWeight: style.headline.fontWeight || 'bold',
+          fill: style.headline.color || '#000000',
+          lineHeight: 1.1,
+          name: 'headline',
+          editable: true,
+          lockUniScaling: true,
+          lockScalingFlip: true,
+          shadow: style.headline.shadow || null,
+          textAlign: style.headline.textAlign || 'left',
+          charSpacing: style.headline.charSpacing || 0
+        });
+        hl.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
+        adCanvas.add(hl);
+
+        // Subheadline
+        var sub = new fabric.IText(style.subheadline.text, {
+          left: w * (style.subheadline.leftPercent || 0.45),
+          top: h * (style.subheadline.topPercent || 0.4),
+          fontSize: style.subheadline.fontSize || 16,
+          fontFamily: style.subheadline.fontFamily || 'Inter',
+          fontWeight: style.subheadline.fontWeight || 'normal',
+          fill: style.subheadline.color || '#333333',
+          lineHeight: 1.4,
+          name: 'subheadline',
+          editable: true,
+          lockUniScaling: true,
+          lockScalingFlip: true,
+          textAlign: style.subheadline.textAlign || 'left'
+        });
+        sub.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
+        adCanvas.add(sub);
+
+        // CTA button
+        var ctaFontSize = style.cta.fontSize || Math.round(h * 0.035);
+        var ctaText = new fabric.Text(style.cta.text || 'CoastalDebt.com', {
+          fontSize: ctaFontSize,
+          fontFamily: style.cta.fontFamily || 'Sora',
+          fontWeight: style.cta.fontWeight || 'bold',
+          fill: style.cta.textColor || '#FFFFFF',
+          originX: 'center',
+          originY: 'center'
+        });
+        var ctaPadX = ctaFontSize * 1.8;
+        var ctaPadY = ctaFontSize * 0.7;
+        var ctaBg = new fabric.Rect({
+          width: ctaText.width + ctaPadX * 2,
+          height: ctaText.height + ctaPadY * 2,
+          rx: style.cta.borderRadius || (ctaText.height + ctaPadY * 2) / 2,
+          ry: style.cta.borderRadius || (ctaText.height + ctaPadY * 2) / 2,
+          fill: style.cta.bgColor || '#3052FF',
+          originX: 'center',
+          originY: 'center'
+        });
+        var ctaGroup = new fabric.Group([ctaBg, ctaText], {
+          left: w * (style.cta.leftPercent || 0.5),
+          top: h * (style.cta.topPercent || 0.7),
+          originX: 'center',
+          name: 'cta',
+          lockUniScaling: true
+        });
+        ctaGroup.setControlsVisibility({ mt:false, mb:false, ml:false, mr:false });
+        adCanvas.add(ctaGroup);
+
+        adCanvas.renderAll();
+        syncCanvasToPreview();
+
+        btn.disabled = false;
+        btn.innerHTML = '&#127912; AI Style';
+      } catch(e) {
+        btn.disabled = false;
+        btn.innerHTML = '&#127912; AI Style';
+        alert('Style generation failed: ' + e.message);
+      }
     }
 
     function generateAndAddCopy() {
