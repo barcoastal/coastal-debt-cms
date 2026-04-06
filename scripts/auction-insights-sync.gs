@@ -73,12 +73,16 @@ function syncReport(searchName, targetSheetId) {
     'title = "' + searchName.replace(/"/g, '\\"') + '" and mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false'
   );
 
-  // Collect all matches and find the newest one
+  // Collect all matches, EXCLUDE the target master sheet, find the newest
   let latestFile = null;
   let latestDate = new Date(0);
+  let fileCount = 0;
 
   while (files.hasNext()) {
     const file = files.next();
+    fileCount++;
+    // Skip the target master sheet
+    if (file.getId() === targetSheetId) continue;
     const created = file.getDateCreated();
     if (created > latestDate) {
       latestDate = created;
@@ -87,15 +91,11 @@ function syncReport(searchName, targetSheetId) {
   }
 
   if (!latestFile) {
-    return "SKIP: " + searchName + " — no file found in Drive";
+    return "SKIP: " + searchName + " — no source file found (" + fileCount + " files matched but all were the target)";
   }
 
   const sourceId = latestFile.getId();
-
-  // Don't copy if source IS the target (same file)
-  if (sourceId === targetSheetId) {
-    return "SKIP: " + searchName + " — latest file is already the target sheet";
-  }
+  Logger.log("Found source: " + latestFile.getName() + " (created: " + latestDate + ", id: " + sourceId + ")");
 
   // Open source and target
   const sourceSheet = SpreadsheetApp.openById(sourceId);
