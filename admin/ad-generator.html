@@ -1201,28 +1201,19 @@
           <!-- Left: Template Editor (new) -->
           <div id="templateEditorSection">
             <!-- Template Picker -->
-            <div id="templatePicker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-              <div onclick="selectTemplate('light_classic',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#F2F4F9;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
-                <div style="font-size:11px;font-weight:800;color:#000;line-height:1.15;">Understanding Your</div>
-                <div style="font-size:12px;font-weight:900;color:#3052FF;line-height:1.15;margin-top:2px;">MCA Debt</div>
-                <div style="font-size:11px;font-weight:800;color:#FF9000;line-height:1.15;margin-top:2px;">Matters!</div>
-                <div style="font-size:9px;color:var(--gray-500);margin-top:6px;font-weight:600;">Light Classic</div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:8px;">Choose a base design:</div>
+              <div id="templatePicker" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+                <div onclick="selectTemplate('light_classic',this)" style="border:2px solid var(--gray-200);border-radius:10px;cursor:pointer;overflow:hidden;transition:border-color 0.15s;position:relative;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                  <img src="/assets/ad-references/reference-square.png" style="width:100%;display:block;">
+                  <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;font-weight:600;padding:6px 10px;">Light Classic — Person Left</div>
+                </div>
+                <div onclick="selectTemplate('blue_bold',this)" style="border:2px solid var(--gray-200);border-radius:10px;cursor:pointer;overflow:hidden;transition:border-color 0.15s;position:relative;" onmouseover="this.style.borderColor='#FF9000'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
+                  <img src="/assets/ad-references/reference-blue-bg.png" style="width:100%;display:block;">
+                  <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;font-weight:600;padding:6px 10px;">Blue Bold — Person Right</div>
+                </div>
               </div>
-              <div onclick="selectTemplate('blue_bold',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#3052FF;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#FF9000'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
-                <div style="font-size:13px;font-weight:900;color:#FF9000;line-height:1.1;">Eliminate</div>
-                <div style="font-size:11px;font-weight:800;color:#fff;line-height:1.15;margin-top:2px;">your MCA Debt</div>
-                <div style="font-size:9px;color:#ccc;margin-top:6px;font-weight:600;">Blue Bold</div>
-              </div>
-              <div onclick="selectTemplate('caps_blue',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#3052FF;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#7FB2FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
-                <div style="font-size:10px;font-weight:900;color:#fff;line-height:1.15;text-transform:uppercase;">Stuck in a Merchant Cash Advance Trap?</div>
-                <div style="font-size:9px;color:#ccc;margin-top:6px;font-weight:600;">Caps Bold</div>
-              </div>
-              <div onclick="selectTemplate('script_mix',this)" style="border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;background:#F2F4F9;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--gray-200)'">
-                <div style="font-size:9px;font-weight:800;color:#3052FF;line-height:1.15;">DON'T CONSOLIDATE</div>
-                <div style="font-size:11px;font-weight:900;color:#000;line-height:1.15;">MCA DEBT</div>
-                <div style="font-size:12px;font-style:italic;color:#000;line-height:1.1;font-family:serif;">Annihilate it!</div>
-                <div style="font-size:9px;color:var(--gray-500);margin-top:4px;font-weight:600;">Mixed Style</div>
-              </div>
+              <div style="margin-top:8px;font-size:11px;color:var(--gray-400);">Click a design, then edit the text directly on the ad. Use your own person image or keep the reference.</div>
             </div>
 
             <!-- HTML Ad Editor -->
@@ -6905,58 +6896,53 @@
 
       currentTemplateData = { bgColor: bgColor, personUrl: personUrl, logoUrl: logoUrl };
 
-      // Update bg picker
       var bgPicker = document.getElementById('templateBgColor');
       if (bgPicker) bgPicker.value = bgColor;
 
-      // Build HTML for each template inline
+      // Reference images as base — text overlays on top
+      var refImages = {
+        light_classic: '/assets/ad-references/reference-square.png',
+        blue_bold: '/assets/ad-references/reference-blue-bg.png'
+      };
+
       var sz = function(pct) { return Math.round(h * pct); };
+      var refImg = refImages[name];
       var html = '';
 
-      if (name === 'light_classic') {
-        html = '<div style="width:'+w+'px;height:'+h+'px;background:#F2F4F9;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
-          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;left:0;height:85%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
-          '<img src="'+chevUrl+'" style="position:absolute;top:3%;left:3%;width:28%;z-index:1;opacity:0.9;">' +
-          '<img src="'+logoUrl+'" style="position:absolute;top:4%;right:5%;width:20%;z-index:10;">' +
-          '<div style="position:absolute;top:12%;right:5%;width:48%;z-index:5;">' +
-            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#000;line-height:1.12;">Understanding<br>Your <span style="color:#3052FF">MCA Debt</span></div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#FF9000;line-height:1.12;margin-top:2px;">Matters!</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.024)+'px;color:#000;margin-top:'+sz(0.025)+'px;line-height:1.5;">You need a <b>solution</b> tailored to your business challenges.</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.021)+'px;color:#333;margin-top:'+sz(0.02)+'px;line-height:1.5;">Explore your options with<br><b>a free consultation:</b></div>' +
-            '<div contenteditable="true" style="display:inline-block;background:#3052FF;color:#fff;font-size:'+sz(0.026)+'px;font-weight:700;padding:'+sz(0.013)+'px '+sz(0.035)+'px;border-radius:100px;margin-top:'+sz(0.018)+'px;">CoastalDebt.com</div>' +
-          '</div>' +
-          '<div style="position:absolute;bottom:3%;left:50%;transform:translateX(-50%);display:flex;gap:'+Math.round(w*0.04)+'px;z-index:10;">' + badgeHtml + '</div>' +
+      if (refImg) {
+        // USE REFERENCE IMAGE as base — just overlay editable text
+        var isLight = (name === 'light_classic');
+        var textColor = isLight ? '#000' : '#fff';
+        var accentColor = isLight ? '#3052FF' : '#FF9000';
+
+        html = '<div style="width:'+w+'px;height:'+h+'px;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          '<img src="'+refImg+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">' +
+
+          // Text overlay area — positioned based on template
+          (isLight ?
+            // Light Classic: text on right side
+            '<div style="position:absolute;top:12%;right:5%;width:48%;z-index:20;">' +
+              '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#000;line-height:1.12;text-shadow:0 1px 2px rgba(255,255,255,0.5);">Understanding<br>Your <span style="color:#3052FF">MCA Debt</span></div>' +
+              '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:800;color:#FF9000;line-height:1.12;margin-top:2px;">Matters!</div>' +
+              '<div contenteditable="true" style="font-size:'+sz(0.024)+'px;color:#000;margin-top:'+sz(0.025)+'px;line-height:1.5;">You need a <b>solution</b> tailored to<br>your business challenges.</div>' +
+              '<div contenteditable="true" style="font-size:'+sz(0.021)+'px;color:#333;margin-top:'+sz(0.02)+'px;line-height:1.5;">Explore your options with<br><b>a free consultation:</b></div>' +
+              '<div contenteditable="true" style="display:inline-block;background:#3052FF;color:#fff;font-size:'+sz(0.026)+'px;font-weight:700;padding:'+sz(0.013)+'px '+sz(0.035)+'px;border-radius:100px;margin-top:'+sz(0.018)+'px;">CoastalDebt.com</div>' +
+            '</div>'
+          :
+            // Blue Bold: text on left side
+            '<div style="position:absolute;top:8%;left:5%;width:55%;z-index:20;">' +
+              '<div contenteditable="true" style="font-size:'+sz(0.08)+'px;font-weight:900;color:#FF9000;line-height:1.05;">Eliminate</div>' +
+              '<div contenteditable="true" style="font-size:'+sz(0.065)+'px;font-weight:800;color:#fff;line-height:1.1;margin-top:4px;">your<br>MCA Debt<br>in 6-18 months</div>' +
+              '<div contenteditable="true" style="font-size:'+sz(0.028)+'px;color:#fff;margin-top:'+sz(0.035)+'px;line-height:1.5;">Join our <b>Debt Relief<br>Program</b> Today!</div>' +
+            '</div>'
+          ) +
         '</div>';
-      } else if (name === 'blue_bold') {
-        html = '<div style="width:'+w+'px;height:'+h+'px;background:#3052FF;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
-          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;right:0;height:78%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
-          '<img src="'+chevUrl+'" style="position:absolute;top:3%;right:5%;width:22%;z-index:1;opacity:0.25;">' +
-          '<div style="position:absolute;top:8%;left:5%;width:55%;z-index:5;">' +
-            '<div contenteditable="true" style="font-size:'+sz(0.08)+'px;font-weight:900;color:#FF9000;line-height:1.05;">Eliminate</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.065)+'px;font-weight:800;color:#fff;line-height:1.1;margin-top:4px;">your<br>MCA Debt<br>in 6-18 months</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.028)+'px;color:#fff;margin-top:'+sz(0.035)+'px;line-height:1.5;">Join our <b>Debt Relief<br>Program</b> Today!</div>' +
-          '</div>' +
-          '<img src="'+logoUrl+'" style="position:absolute;bottom:12%;left:5%;width:25%;z-index:10;">' +
-          '<div style="position:absolute;bottom:3%;left:5%;display:flex;gap:'+Math.round(w*0.03)+'px;z-index:10;">' + badgeHtml + '</div>' +
-        '</div>';
-      } else if (name === 'caps_blue') {
-        html = '<div style="width:'+w+'px;height:'+h+'px;background:#3052FF;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
-          (personUrl ? '<img src="'+personUrl+'" style="position:absolute;bottom:0;right:-5%;height:65%;width:auto;z-index:2;" crossorigin="anonymous">' : '') +
-          '<div style="position:absolute;top:8%;left:5%;width:65%;z-index:5;">' +
-            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:900;color:#fff;line-height:1.12;text-transform:uppercase;">Stuck in a<br>Merchant Cash<br>Advance Trap?</div>' +
-          '</div>' +
-          '<img src="'+logoUrl+'" style="position:absolute;bottom:5%;left:5%;width:22%;z-index:10;">' +
-          '<div contenteditable="true" style="position:absolute;bottom:5%;right:5%;font-size:'+sz(0.018)+'px;color:#fff;font-weight:600;z-index:10;">www.coastaldebt.com</div>' +
-        '</div>';
-      } else if (name === 'script_mix') {
-        html = '<div style="width:'+w+'px;height:'+h+'px;background:#F2F4F9;position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
-          '<div style="position:absolute;top:0;right:0;width:35%;height:100%;overflow:hidden;z-index:1;"><img src="'+chevUrl+'" style="width:100%;height:auto;opacity:0.8;"></div>' +
-          '<img src="'+logoUrl+'" style="position:absolute;top:5%;left:5%;width:22%;z-index:10;">' +
-          '<div style="position:absolute;top:22%;left:5%;width:70%;z-index:5;">' +
-            '<div contenteditable="true" style="font-size:'+sz(0.05)+'px;font-weight:800;color:#3052FF;line-height:1.15;text-transform:uppercase;">DON\'T CONSOLIDATE</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.065)+'px;font-weight:900;color:#000;line-height:1.1;text-transform:uppercase;">MCA DEBT</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.06)+'px;font-weight:400;font-style:italic;color:#000;line-height:1.1;font-family:Playfair Display,serif;margin-top:4px;">Annihilate it!</div>' +
-            '<div contenteditable="true" style="font-size:'+sz(0.019)+'px;color:#000;font-weight:600;text-transform:uppercase;margin-top:'+sz(0.05)+'px;line-height:1.6;">See if you qualify in minutes.<br>Enroll by Friday!</div>' +
+      } else {
+        // Fallback: generate from scratch (for templates without reference images)
+        html = '<div style="width:'+w+'px;height:'+h+'px;background:'+bgColor+';position:relative;overflow:hidden;font-family:Montserrat,sans-serif;">' +
+          '<div style="position:absolute;top:15%;left:5%;width:90%;z-index:5;text-align:center;">' +
+            '<div contenteditable="true" style="font-size:'+sz(0.07)+'px;font-weight:900;color:#3052FF;line-height:1.1;">YOUR HEADLINE HERE</div>' +
+            '<div contenteditable="true" style="font-size:'+sz(0.03)+'px;color:#333;margin-top:'+sz(0.03)+'px;line-height:1.5;">Your subheadline goes here</div>' +
           '</div>' +
         '</div>';
       }
