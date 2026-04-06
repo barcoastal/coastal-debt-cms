@@ -1381,7 +1381,7 @@
                 </div>
               </div>
             </div>
-            <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
+            <div id="textPropsBar" style="padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
               <select id="textFontFamily" onchange="loadAndApplyFont(this.value)" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;max-width:160px;">
               </select>
               <input type="number" id="textFontSize" value="32" min="8" max="120" step="1" onchange="setTextProp('fontSize',parseInt(this.value))" style="width:50px;padding:4px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;" title="Font size">
@@ -1389,6 +1389,12 @@
               <button onclick="setTextProp('fontStyle',getActiveText()?.fontStyle==='italic'?'normal':'italic')" style="font-style:italic;font-size:14px;width:28px;" title="Italic">I</button>
               <button onclick="setTextProp('underline',!getActiveText()?.underline)" style="text-decoration:underline;font-size:14px;width:28px;" title="Underline">U</button>
               <input type="color" id="textColorPicker" value="#000000" onchange="setTextProp('fill',this.value)" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Text color">
+              <button onclick="setTextProp('fill','#000000')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;background:#000000;cursor:pointer;padding:0;" title="Black"></button>
+              <button onclick="setTextProp('fill','#3052FF')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;background:#3052FF;cursor:pointer;padding:0;" title="Future Blue"></button>
+              <button onclick="setTextProp('fill','#FF9000')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;background:#FF9000;cursor:pointer;padding:0;" title="Orange"></button>
+              <button onclick="setTextProp('fill','#FFFFFF')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ddd;background:#FFFFFF;cursor:pointer;padding:0;" title="White"></button>
+              <button onclick="setTextProp('fill','#7FB2FF')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;background:#7FB2FF;cursor:pointer;padding:0;" title="Light Blue"></button>
+              <button onclick="setTextProp('fill','#F2F4F9')" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;background:#F2F4F9;cursor:pointer;padding:0;" title="Cyan Blue"></button>
               <select id="textAlign" onchange="setTextProp('textAlign',this.value)" style="padding:4px;border:1px solid var(--gray-200);border-radius:6px;font-size:11px;">
                 <option value="left">Left</option>
                 <option value="center">Center</option>
