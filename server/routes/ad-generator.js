@@ -92,13 +92,14 @@ BRAND IDENTITY:
 - Tone: Warm but authoritative. Never condescending. No fear tactics.
 - Emotional Journey: Acknowledge fear/shame → Build trust → Empower action → Celebrate freedom
 
-COLOR PALETTE (use these colors strictly):
-- Primary Blue "Future Blue": #3052FF (buttons, headers, accents)
-- Light Background "Cyan Blue": #F2F4F9 (backgrounds)
-- Accent Orange: #FF9000 (highlights, urgency, CTAs)
-- Secondary Light Blue: #7FB2FF (secondary accents)
-- Full Black: #000000 (text on light backgrounds)
-- Full White: #FFFFFF (text on dark/blue backgrounds)
+COLOR PALETTE (use ONLY these colors — this is mandatory):
+- Primary Blue "Future Blue": #3052FF — use this as the MAIN accent color in every image. Blue chevrons, blue elements, blue accents.
+- Light Background "Cyan Blue": #F2F4F9 — default background color when light
+- Accent Orange: #FF9000 — secondary accent for highlights
+- Secondary Light Blue: #7FB2FF — for gradients and secondary elements
+- Full Black: #000000 — for contrast elements
+- Full White: #FFFFFF — for light elements on dark backgrounds
+IMPORTANT: The generated image MUST prominently feature #3052FF blue and #F2F4F9 light backgrounds. These are the brand's signature colors. Every ad background should feel "Coastal Debt blue".
 
 TYPOGRAPHY:
 - Primary Font: Aeonik (Medium for headings/buttons, Regular for body)

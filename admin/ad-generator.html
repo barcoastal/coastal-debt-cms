@@ -4908,175 +4908,147 @@
       panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
 
-    // ============ TEXT STYLE PRESETS (from reference ads — no AI) ============
-
-    var TEXT_PRESETS = {
-      light_classic: {
-        // Reference: "Understanding Your MCA Debt Matters!" on #F2F4F9
-        parts: [
-          { text: 'Understanding\nYour ', color: '#000000', fontWeight: '800', fontStyle: 'normal' },
-          { text: 'MCA Debt', color: '#3052FF', fontWeight: '800', fontStyle: 'normal' },
-          { text: '\nMatters!', color: '#FF9000', fontWeight: '800', fontStyle: 'normal' }
-        ],
-        font: 'Sora',
-        headlineSizePct: 0.075,
-        sub: { text: 'You need a solution tailored\nto your business challenges.', color: '#000000', font: 'Sora', weight: 'normal', sizePct: 0.028 },
-        ctaSub: { text: 'Explore your options with\na free consultation:', color: '#333333', font: 'Sora', weight: 'normal', sizePct: 0.024 },
-        cta: { text: 'CoastalDebt.com', bgColor: '#3052FF', textColor: '#FFFFFF', sizePct: 0.03 },
-        position: 'right'
-      },
-      blue_bold: {
-        // Reference: "Eliminate your MCA Debt in 6-18 months" on blue bg
-        parts: [
-          { text: 'Eliminate ', color: '#FF9000', fontWeight: '900', fontStyle: 'normal' },
-          { text: 'your\nMCA Debt\nin 6-18 months', color: '#FFFFFF', fontWeight: '800', fontStyle: 'normal' }
-        ],
-        font: 'Montserrat',
-        headlineSizePct: 0.08,
-        sub: { text: 'Join our Debt Relief\nProgram Today!', color: '#FFFFFF', font: 'Sora', weight: 'normal', sizePct: 0.03 },
-        ctaSub: null,
-        cta: null,
-        position: 'left'
-      },
-      caps_blue: {
-        // Reference: "STUCK IN A MERCHANT CASH ADVANCE TRAP?"
-        parts: [
-          { text: 'STUCK IN A\nMERCHANT CASH\nADVANCE TRAP?', color: '#3052FF', fontWeight: '900', fontStyle: 'normal' }
-        ],
-        font: 'Montserrat',
-        headlineSizePct: 0.07,
-        sub: null,
-        ctaSub: { text: 'www.coastaldebt.com', color: '#333333', font: 'Sora', weight: '600', sizePct: 0.02 },
-        cta: null,
-        position: 'left'
-      },
-      script_mix: {
-        // Reference: "DON'T CONSOLIDATE MCA DEBT Annihilate it!"
-        parts: [
-          { text: "DON'T CONSOLIDATE", color: '#3052FF', fontWeight: '800', fontStyle: 'normal' },
-          { text: 'MCA DEBT', color: '#000000', fontWeight: '900', fontStyle: 'normal' },
-          { text: 'Annihilate it!', color: '#000000', fontWeight: 'normal', fontStyle: 'italic' }
-        ],
-        font: 'Sora',
-        italicFont: 'Playfair Display',
-        headlineSizePct: 0.065,
-        sub: { text: 'SEE IF YOU QUALIFY IN MINUTES.\nENROLL BY FRIDAY!', color: '#000000', font: 'Sora', weight: '600', sizePct: 0.022 },
-        ctaSub: null,
-        cta: null,
-        position: 'left'
-      }
-    };
+    // ============ 4 TEXT STYLE PRESETS + AI COPY ============
+    // Style = preset (deterministic), Copy = AI-generated words
 
     function applyTextPreset(presetName) {
       if (!adCanvas) return;
-      var preset = TEXT_PRESETS[presetName];
-      if (!preset) return;
       var w = adCanvas.width;
       var h = adCanvas.height;
 
-      // Remove existing text objects
+      // Remove old text
       adCanvas.getObjects().filter(function(o) {
         return o.name === 'headline' || o.name === 'headline-part' || o.name === 'subheadline' || o.name === 'cta' || o.name === 'cta-sub';
       }).forEach(function(o) { adCanvas.remove(o); });
 
-      // Calculate position
-      var leftBase = preset.position === 'left' ? 0.05 : preset.position === 'center' ? 0.15 : 0.45;
-      var topBase = 0.08;
-      var hlSize = Math.round(h * preset.headlineSizePct);
-      var curTop = h * topBase;
-
-      // Add headline parts
-      preset.parts.forEach(function(part, idx) {
-        var fontFamily = (part.fontStyle === 'italic' && preset.italicFont) ? preset.italicFont : preset.font;
-        var fontSize = (part.fontStyle === 'italic') ? Math.round(hlSize * 1.2) : hlSize;
-        var textObj = new fabric.IText(part.text, {
-          left: w * leftBase,
-          top: curTop,
-          fontSize: fontSize,
-          fontFamily: fontFamily,
-          fontWeight: part.fontWeight,
-          fontStyle: part.fontStyle,
-          fill: part.color,
-          lineHeight: 1.1,
-          name: idx === 0 ? 'headline' : 'headline-part',
-          editable: true,
-          lockUniScaling: true,
-          lockScalingFlip: true,
-          textAlign: 'left'
-        });
-        textObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
-        adCanvas.add(textObj);
-        curTop += textObj.getBoundingRect().height + 2;
-      });
-
-      // Subheadline
-      if (preset.sub) {
-        curTop += h * 0.03;
-        var subObj = new fabric.IText(preset.sub.text, {
-          left: w * leftBase,
-          top: curTop,
-          fontSize: Math.round(h * preset.sub.sizePct),
-          fontFamily: preset.sub.font,
-          fontWeight: preset.sub.weight,
-          fill: preset.sub.color,
-          lineHeight: 1.4,
-          name: 'subheadline',
-          editable: true,
-          lockUniScaling: true,
-          lockScalingFlip: true
-        });
-        subObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
-        adCanvas.add(subObj);
-        curTop += subObj.getBoundingRect().height + 4;
-      }
-
-      // CTA sub-text
-      if (preset.ctaSub) {
-        curTop += h * 0.02;
-        var ctaSubObj = new fabric.IText(preset.ctaSub.text, {
-          left: w * leftBase,
-          top: curTop,
-          fontSize: Math.round(h * preset.ctaSub.sizePct),
-          fontFamily: preset.ctaSub.font,
-          fontWeight: preset.ctaSub.weight,
-          fill: preset.ctaSub.color,
-          lineHeight: 1.4,
-          name: 'cta-sub',
-          editable: true,
-          lockUniScaling: true,
-          lockScalingFlip: true
-        });
-        ctaSubObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
-        adCanvas.add(ctaSubObj);
-        curTop += ctaSubObj.getBoundingRect().height + 8;
-      }
-
-      // CTA button
-      if (preset.cta) {
-        var ctaFontSize = Math.round(h * preset.cta.sizePct);
-        var btnText = new fabric.Text(preset.cta.text, {
-          fontSize: ctaFontSize, fontFamily: 'Sora', fontWeight: 'bold',
-          fill: preset.cta.textColor, originX: 'center', originY: 'center'
-        });
-        var padX = ctaFontSize * 1.8, padY = ctaFontSize * 0.7;
-        var btnBg = new fabric.Rect({
-          width: btnText.width + padX * 2, height: btnText.height + padY * 2,
-          rx: (btnText.height + padY * 2) / 2, ry: (btnText.height + padY * 2) / 2,
-          fill: preset.cta.bgColor, originX: 'center', originY: 'center'
-        });
-        var ctaGroup = new fabric.Group([btnBg, btnText], {
-          left: w * leftBase + 10, top: curTop,
-          name: 'cta', lockUniScaling: true
-        });
-        ctaGroup.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
-        adCanvas.add(ctaGroup);
-      }
-
-      adCanvas.renderAll();
-      syncCanvasToPreview();
-
       // Close panel
       document.getElementById('aiStylePanel').style.display = 'none';
+
+      // First generate AI copy, then apply the style
+      var btn = event && event.target;
+      if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+
+      fetch('/api/ad-generator/generate-copy-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: 'MCA debt settlement for business owners' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(copy) {
+        // Apply preset with AI-generated copy
+        renderPresetOnCanvas(presetName, copy, w, h);
+        if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+      })
+      .catch(function(e) {
+        // Fallback with default copy
+        var fallback = { headline: 'Your MCA Debt Matters!', highlight_words: ['MCA Debt'], subheadline: 'You need a solution tailored to your business challenges.', cta_text: 'Explore your options with a free consultation:', cta_button: 'CoastalDebt.com' };
+        renderPresetOnCanvas(presetName, fallback, w, h);
+        if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+      });
+    }
+
+    function renderPresetOnCanvas(presetName, copy, w, h) {
+      var headline = copy.headline || 'Your MCA Debt Matters!';
+      var highlights = copy.highlight_words || ['MCA Debt'];
+      var sub = copy.subheadline || 'You need a solution tailored to your business challenges.';
+      var ctaSub = copy.cta_text || 'Explore your options with a free consultation:';
+      var ctaBtn = copy.cta_button || 'CoastalDebt.com';
+
+      // Helper to add text
+      function addText(text, opts) {
+        var obj = new fabric.IText(text, Object.assign({
+          editable: true, lockUniScaling: true, lockScalingFlip: true, lineHeight: 1.15
+        }, opts));
+        obj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        adCanvas.add(obj);
+        return obj;
+      }
+
+      // Helper: split headline into colored parts
+      function splitHeadline(text, hlWords, mainColor, accentColor) {
+        var parts = [];
+        var remaining = text;
+        hlWords.forEach(function(word) {
+          var idx = remaining.toLowerCase().indexOf(word.toLowerCase());
+          if (idx >= 0) {
+            if (idx > 0) parts.push({ text: remaining.substring(0, idx), color: mainColor });
+            parts.push({ text: remaining.substring(idx, idx + word.length), color: accentColor });
+            remaining = remaining.substring(idx + word.length);
+          }
+        });
+        if (remaining) parts.push({ text: remaining, color: mainColor });
+        return parts;
+      }
+
+      var presets = {
+        light_classic: function() {
+          // Light BG: black headline, blue accent words, orange "!" , sub black, CTA blue pill
+          var left = w * 0.45;
+          var top = h * 0.08;
+          var sz = Math.round(h * 0.065);
+
+          // Split headline — highlight words in blue
+          var parts = splitHeadline(headline, highlights, '#000000', '#3052FF');
+          var fullText = parts.map(function(p) { return p.text; }).join('');
+          // Single text for now (Fabric doesn't do inline color), use blue for whole headline
+          addText(fullText, { left: left, top: top, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '800', fill: '#000000', name: 'headline' });
+
+          // Accent headline (just the highlight words on top, offset)
+          if (highlights.length > 0) {
+            var accentY = top + sz * 1.2 * (fullText.split(highlights[0])[0].split('\n').length - 1 + 0.9);
+            addText(highlights[0], { left: left, top: top + sz * 1.5, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '800', fill: '#3052FF', name: 'headline-part' });
+          }
+
+          addText(sub, { left: left, top: h * 0.42, fontSize: Math.round(h * 0.025), fontFamily: 'Sora', fontWeight: 'normal', fill: '#000000', name: 'subheadline' });
+          addText(ctaSub, { left: left, top: h * 0.55, fontSize: Math.round(h * 0.022), fontFamily: 'Sora', fontWeight: 'normal', fill: '#333333', name: 'cta-sub' });
+
+          // CTA pill
+          var ctaSz = Math.round(h * 0.028);
+          var bt = new fabric.Text(ctaBtn, { fontSize: ctaSz, fontFamily: 'Sora', fontWeight: 'bold', fill: '#fff', originX: 'center', originY: 'center' });
+          var bg = new fabric.Rect({ width: bt.width + ctaSz * 3, height: bt.height + ctaSz, rx: (bt.height + ctaSz) / 2, ry: (bt.height + ctaSz) / 2, fill: '#3052FF', originX: 'center', originY: 'center' });
+          var cta = new fabric.Group([bg, bt], { left: left, top: h * 0.65, name: 'cta', lockUniScaling: true });
+          cta.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+          adCanvas.add(cta);
+        },
+
+        blue_bold: function() {
+          // Blue BG: orange first word, white rest
+          var left = w * 0.05;
+          var sz = Math.round(h * 0.075);
+          var firstWord = headline.split(' ')[0];
+          var restWords = headline.substring(firstWord.length);
+
+          addText(firstWord, { left: left, top: h * 0.06, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '900', fill: '#FF9000', name: 'headline' });
+          addText(restWords.trim(), { left: left, top: h * 0.06 + sz * 1.2, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '800', fill: '#FFFFFF', name: 'headline-part' });
+          addText(sub, { left: left, top: h * 0.42, fontSize: Math.round(h * 0.028), fontFamily: 'Sora', fontWeight: 'normal', fill: '#FFFFFF', name: 'subheadline' });
+        },
+
+        caps_blue: function() {
+          // All caps blue on light bg
+          var left = w * 0.05;
+          var sz = Math.round(h * 0.06);
+          addText(headline.toUpperCase(), { left: left, top: h * 0.06, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '900', fill: '#3052FF', name: 'headline' });
+          addText('www.coastaldebt.com', { left: left, top: h * 0.85, fontSize: Math.round(h * 0.02), fontFamily: 'Sora', fontWeight: '600', fill: '#333333', name: 'subheadline' });
+        },
+
+        script_mix: function() {
+          // Blue line + black line + italic script
+          var left = w * 0.05;
+          var sz = Math.round(h * 0.055);
+          var words = headline.split(' ');
+          var line1 = words.slice(0, Math.ceil(words.length / 2)).join(' ');
+          var line2 = words.slice(Math.ceil(words.length / 2)).join(' ');
+
+          addText(line1.toUpperCase(), { left: left, top: h * 0.15, fontSize: sz, fontFamily: 'Montserrat', fontWeight: '800', fill: '#3052FF', name: 'headline' });
+          addText(line2.toUpperCase(), { left: left, top: h * 0.15 + sz * 1.2, fontSize: Math.round(sz * 1.1), fontFamily: 'Montserrat', fontWeight: '900', fill: '#000000', name: 'headline-part' });
+          addText(sub, { left: left, top: h * 0.55, fontSize: Math.round(h * 0.02), fontFamily: 'Sora', fontWeight: '600', fill: '#000000', name: 'subheadline' });
+        }
+      };
+
+      var renderFn = presets[presetName];
+      if (renderFn) renderFn();
+      adCanvas.renderAll();
+      syncCanvasToPreview();
     }
 
     function getBrightness(hex) {
