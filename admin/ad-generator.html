@@ -1233,54 +1233,37 @@
               <button onclick="showTemplatesModal()" title="Load a saved template">&#128203; Templates</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
-            <!-- AI Style Prompt Panel -->
-            <div id="aiStylePanel" style="display:none;padding:12px 16px;background:linear-gradient(135deg,#FFF7ED,#FFFBF5);border:1px solid #FDBA74;border-top:none;">
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;">
-                <div>
-                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Headline Angle</label>
-                  <select id="aiStyleAngle" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
-                    <option value="drowning">Drowning in MCA Debt?</option>
-                    <option value="stop_payments">Stop Daily ACH Payments</option>
-                    <option value="save_80">Save Up to 80%</option>
-                    <option value="free_consultation">Free Consultation</option>
-                    <option value="settle_debt">Settle Your MCA Debt</option>
-                    <option value="business_relief">Business Debt Relief</option>
-                    <option value="no_bankruptcy">No Bankruptcy Needed</option>
-                    <option value="crushing">Crushing MCA Payments?</option>
-                  </select>
+            <!-- Text Style Presets (from reference ads) -->
+            <div id="aiStylePanel" style="display:none;padding:12px 16px;background:#fff;border:1px solid var(--gray-200);border-top:none;">
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:8px;">Pick a text style from proven ads:</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                <!-- Style 1: Light bg, black+blue headline -->
+                <div onclick="applyTextPreset('light_classic')" style="cursor:pointer;border:2px solid var(--gray-200);border-radius:8px;padding:10px;background:#F2F4F9;text-align:left;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="this.style.borderColor='var(--gray-200)'">
+                  <div style="font-size:13px;font-weight:800;color:#000;line-height:1.1;">Understanding Your</div>
+                  <div style="font-size:13px;font-weight:800;color:#3052FF;line-height:1.1;">MCA Debt</div>
+                  <div style="font-size:13px;font-weight:800;color:#FF9000;line-height:1.1;">Matters!</div>
+                  <div style="font-size:8px;color:#333;margin-top:4px;">You need a <b>solution</b>...</div>
+                  <div style="display:inline-block;background:#3052FF;color:#fff;font-size:7px;padding:2px 6px;border-radius:10px;margin-top:3px;">CoastalDebt.com</div>
                 </div>
-                <div>
-                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Tone</label>
-                  <select id="aiStyleTone" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
-                    <option value="urgent">Urgent / FOMO</option>
-                    <option value="trust">Trust / Authority</option>
-                    <option value="empathy">Empathy / Pain</option>
-                    <option value="savings">Savings / Numbers</option>
-                    <option value="fresh">Fresh Start</option>
-                    <option value="educational">Educational</option>
-                  </select>
+                <!-- Style 2: Blue bg, orange+white headline -->
+                <div onclick="applyTextPreset('blue_bold')" style="cursor:pointer;border:2px solid var(--gray-200);border-radius:8px;padding:10px;background:#3052FF;text-align:left;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#FF9000'" onmouseout="this.style.borderColor='var(--gray-200)'">
+                  <div style="font-size:14px;font-weight:900;color:#FF9000;line-height:1.1;">Eliminate</div>
+                  <div style="font-size:12px;font-weight:800;color:#fff;line-height:1.1;">your MCA Debt</div>
+                  <div style="font-size:12px;font-weight:800;color:#fff;line-height:1.1;">in 6-18 months</div>
+                  <div style="font-size:8px;color:#E2E8F0;margin-top:4px;">Join our <b>Debt Relief</b>...</div>
                 </div>
-                <div>
-                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Visual Style</label>
-                  <select id="aiStyleVisual" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
-                    <option value="bold">Bold Impact</option>
-                    <option value="elegant">Elegant Pro</option>
-                    <option value="modern">Modern Clean</option>
-                    <option value="energetic">Energetic</option>
-                    <option value="editorial">Editorial</option>
-                    <option value="tech">Tech Forward</option>
-                  </select>
+                <!-- Style 3: Light bg, all-caps blue -->
+                <div onclick="applyTextPreset('caps_blue')" style="cursor:pointer;border:2px solid var(--gray-200);border-radius:8px;padding:10px;background:#F2F4F9;text-align:left;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="this.style.borderColor='var(--gray-200)'">
+                  <div style="font-size:11px;font-weight:900;color:#3052FF;line-height:1.15;text-transform:uppercase;">Stuck in a Merchant Cash Advance Trap?</div>
+                  <div style="font-size:7px;color:#333;margin-top:6px;">coastaldebt.com</div>
                 </div>
-                <div>
-                  <label style="font-size:10px;font-weight:700;color:#9A3412;display:block;margin-bottom:3px;">Text Position</label>
-                  <select id="aiStylePosition" style="width:100%;padding:6px;border:1.5px solid #FDBA74;border-radius:6px;font-size:11px;background:#fff;">
-                    <option value="right">Right Side</option>
-                    <option value="left">Left Side</option>
-                    <option value="center">Center</option>
-                    <option value="top">Top Area</option>
-                  </select>
+                <!-- Style 4: Light bg, mixed script -->
+                <div onclick="applyTextPreset('script_mix')" style="cursor:pointer;border:2px solid var(--gray-200);border-radius:8px;padding:10px;background:#F2F4F9;text-align:left;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#3052FF'" onmouseout="this.style.borderColor='var(--gray-200)'">
+                  <div style="font-size:10px;font-weight:800;color:#3052FF;line-height:1.1;">DON'T CONSOLIDATE</div>
+                  <div style="font-size:12px;font-weight:900;color:#000;line-height:1.1;">MCA DEBT</div>
+                  <div style="font-size:13px;font-style:italic;color:#000;line-height:1.1;font-family:serif;">Annihilate it!</div>
+                  <div style="font-size:7px;color:#000;margin-top:4px;">SEE IF YOU QUALIFY...</div>
                 </div>
-                <button onclick="generateStyledCopy()" id="aiStyleGenBtn" style="padding:6px 16px;background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Generate</button>
               </div>
             </div>
             <div id="textPropsBar" style="display:none;padding:6px 12px;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 8px 8px;display:none;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -4923,6 +4906,177 @@
     function showAiStylePanel() {
       var panel = document.getElementById('aiStylePanel');
       panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ============ TEXT STYLE PRESETS (from reference ads — no AI) ============
+
+    var TEXT_PRESETS = {
+      light_classic: {
+        // Reference: "Understanding Your MCA Debt Matters!" on #F2F4F9
+        parts: [
+          { text: 'Understanding\nYour ', color: '#000000', fontWeight: '800', fontStyle: 'normal' },
+          { text: 'MCA Debt', color: '#3052FF', fontWeight: '800', fontStyle: 'normal' },
+          { text: '\nMatters!', color: '#FF9000', fontWeight: '800', fontStyle: 'normal' }
+        ],
+        font: 'Sora',
+        headlineSizePct: 0.075,
+        sub: { text: 'You need a solution tailored\nto your business challenges.', color: '#000000', font: 'Sora', weight: 'normal', sizePct: 0.028 },
+        ctaSub: { text: 'Explore your options with\na free consultation:', color: '#333333', font: 'Sora', weight: 'normal', sizePct: 0.024 },
+        cta: { text: 'CoastalDebt.com', bgColor: '#3052FF', textColor: '#FFFFFF', sizePct: 0.03 },
+        position: 'right'
+      },
+      blue_bold: {
+        // Reference: "Eliminate your MCA Debt in 6-18 months" on blue bg
+        parts: [
+          { text: 'Eliminate ', color: '#FF9000', fontWeight: '900', fontStyle: 'normal' },
+          { text: 'your\nMCA Debt\nin 6-18 months', color: '#FFFFFF', fontWeight: '800', fontStyle: 'normal' }
+        ],
+        font: 'Montserrat',
+        headlineSizePct: 0.08,
+        sub: { text: 'Join our Debt Relief\nProgram Today!', color: '#FFFFFF', font: 'Sora', weight: 'normal', sizePct: 0.03 },
+        ctaSub: null,
+        cta: null,
+        position: 'left'
+      },
+      caps_blue: {
+        // Reference: "STUCK IN A MERCHANT CASH ADVANCE TRAP?"
+        parts: [
+          { text: 'STUCK IN A\nMERCHANT CASH\nADVANCE TRAP?', color: '#3052FF', fontWeight: '900', fontStyle: 'normal' }
+        ],
+        font: 'Montserrat',
+        headlineSizePct: 0.07,
+        sub: null,
+        ctaSub: { text: 'www.coastaldebt.com', color: '#333333', font: 'Sora', weight: '600', sizePct: 0.02 },
+        cta: null,
+        position: 'left'
+      },
+      script_mix: {
+        // Reference: "DON'T CONSOLIDATE MCA DEBT Annihilate it!"
+        parts: [
+          { text: "DON'T CONSOLIDATE", color: '#3052FF', fontWeight: '800', fontStyle: 'normal' },
+          { text: 'MCA DEBT', color: '#000000', fontWeight: '900', fontStyle: 'normal' },
+          { text: 'Annihilate it!', color: '#000000', fontWeight: 'normal', fontStyle: 'italic' }
+        ],
+        font: 'Sora',
+        italicFont: 'Playfair Display',
+        headlineSizePct: 0.065,
+        sub: { text: 'SEE IF YOU QUALIFY IN MINUTES.\nENROLL BY FRIDAY!', color: '#000000', font: 'Sora', weight: '600', sizePct: 0.022 },
+        ctaSub: null,
+        cta: null,
+        position: 'left'
+      }
+    };
+
+    function applyTextPreset(presetName) {
+      if (!adCanvas) return;
+      var preset = TEXT_PRESETS[presetName];
+      if (!preset) return;
+      var w = adCanvas.width;
+      var h = adCanvas.height;
+
+      // Remove existing text objects
+      adCanvas.getObjects().filter(function(o) {
+        return o.name === 'headline' || o.name === 'headline-part' || o.name === 'subheadline' || o.name === 'cta' || o.name === 'cta-sub';
+      }).forEach(function(o) { adCanvas.remove(o); });
+
+      // Calculate position
+      var leftBase = preset.position === 'left' ? 0.05 : preset.position === 'center' ? 0.15 : 0.45;
+      var topBase = 0.08;
+      var hlSize = Math.round(h * preset.headlineSizePct);
+      var curTop = h * topBase;
+
+      // Add headline parts
+      preset.parts.forEach(function(part, idx) {
+        var fontFamily = (part.fontStyle === 'italic' && preset.italicFont) ? preset.italicFont : preset.font;
+        var fontSize = (part.fontStyle === 'italic') ? Math.round(hlSize * 1.2) : hlSize;
+        var textObj = new fabric.IText(part.text, {
+          left: w * leftBase,
+          top: curTop,
+          fontSize: fontSize,
+          fontFamily: fontFamily,
+          fontWeight: part.fontWeight,
+          fontStyle: part.fontStyle,
+          fill: part.color,
+          lineHeight: 1.1,
+          name: idx === 0 ? 'headline' : 'headline-part',
+          editable: true,
+          lockUniScaling: true,
+          lockScalingFlip: true,
+          textAlign: 'left'
+        });
+        textObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        adCanvas.add(textObj);
+        curTop += textObj.getBoundingRect().height + 2;
+      });
+
+      // Subheadline
+      if (preset.sub) {
+        curTop += h * 0.03;
+        var subObj = new fabric.IText(preset.sub.text, {
+          left: w * leftBase,
+          top: curTop,
+          fontSize: Math.round(h * preset.sub.sizePct),
+          fontFamily: preset.sub.font,
+          fontWeight: preset.sub.weight,
+          fill: preset.sub.color,
+          lineHeight: 1.4,
+          name: 'subheadline',
+          editable: true,
+          lockUniScaling: true,
+          lockScalingFlip: true
+        });
+        subObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        adCanvas.add(subObj);
+        curTop += subObj.getBoundingRect().height + 4;
+      }
+
+      // CTA sub-text
+      if (preset.ctaSub) {
+        curTop += h * 0.02;
+        var ctaSubObj = new fabric.IText(preset.ctaSub.text, {
+          left: w * leftBase,
+          top: curTop,
+          fontSize: Math.round(h * preset.ctaSub.sizePct),
+          fontFamily: preset.ctaSub.font,
+          fontWeight: preset.ctaSub.weight,
+          fill: preset.ctaSub.color,
+          lineHeight: 1.4,
+          name: 'cta-sub',
+          editable: true,
+          lockUniScaling: true,
+          lockScalingFlip: true
+        });
+        ctaSubObj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        adCanvas.add(ctaSubObj);
+        curTop += ctaSubObj.getBoundingRect().height + 8;
+      }
+
+      // CTA button
+      if (preset.cta) {
+        var ctaFontSize = Math.round(h * preset.cta.sizePct);
+        var btnText = new fabric.Text(preset.cta.text, {
+          fontSize: ctaFontSize, fontFamily: 'Sora', fontWeight: 'bold',
+          fill: preset.cta.textColor, originX: 'center', originY: 'center'
+        });
+        var padX = ctaFontSize * 1.8, padY = ctaFontSize * 0.7;
+        var btnBg = new fabric.Rect({
+          width: btnText.width + padX * 2, height: btnText.height + padY * 2,
+          rx: (btnText.height + padY * 2) / 2, ry: (btnText.height + padY * 2) / 2,
+          fill: preset.cta.bgColor, originX: 'center', originY: 'center'
+        });
+        var ctaGroup = new fabric.Group([btnBg, btnText], {
+          left: w * leftBase + 10, top: curTop,
+          name: 'cta', lockUniScaling: true
+        });
+        ctaGroup.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
+        adCanvas.add(ctaGroup);
+      }
+
+      adCanvas.renderAll();
+      syncCanvasToPreview();
+
+      // Close panel
+      document.getElementById('aiStylePanel').style.display = 'none';
     }
 
     function getBrightness(hex) {
