@@ -5032,29 +5032,40 @@
         return o.name === 'headline' || o.name === 'headline-part' || o.name === 'subheadline' || o.name === 'cta' || o.name === 'cta-sub';
       }).forEach(function(o) { adCanvas.remove(o); });
 
-      // Close panel
-      document.getElementById('aiStylePanel').style.display = 'none';
+      // Show loading on the clicked card
+      var btn = event && event.target.closest ? event.target.closest('[onclick]') : null;
+      if (btn) {
+        btn.style.opacity = '0.6';
+        btn.style.pointerEvents = 'none';
+        var origHTML = btn.innerHTML;
+        btn.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:12px;"><div class="spinner-ring" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:6px;vertical-align:-3px;"></div>AI writing copy...</div>';
+      }
 
-      // First generate AI copy, then apply the style
-      var btn = event && event.target;
-      if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+      var angleMap = {
+        light_classic: 'trust and understanding — empathetic tone, acknowledge the struggle, offer hope',
+        blue_bold: 'bold and direct — eliminate debt, strong action words, urgency',
+        caps_blue: 'question-based — are you stuck? challenge the reader, create tension',
+        script_mix: 'rebellious and bold — dont consolidate, destroy the debt, aggressive'
+      };
+      var angle = angleMap[presetName] || 'MCA debt settlement';
 
       fetch('/api/ad-generator/generate-copy-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: 'MCA debt settlement for business owners' })
+        body: JSON.stringify({ topic: angle })
       })
       .then(function(r) { return r.json(); })
       .then(function(copy) {
         // Apply preset with AI-generated copy
         renderPresetOnCanvas(presetName, copy, w, h);
-        if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+        if (btn) { btn.innerHTML = origHTML; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+        document.getElementById('aiStylePanel').style.display = 'none';
       })
       .catch(function(e) {
-        // Fallback with default copy
         var fallback = { headline: 'Your MCA Debt Matters!', highlight_words: ['MCA Debt'], subheadline: 'You need a solution tailored to your business challenges.', cta_text: 'Explore your options with a free consultation:', cta_button: 'CoastalDebt.com' };
         renderPresetOnCanvas(presetName, fallback, w, h);
-        if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+        if (btn) { btn.innerHTML = origHTML; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+        document.getElementById('aiStylePanel').style.display = 'none';
       });
     }
 
