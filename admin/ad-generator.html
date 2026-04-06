@@ -1664,7 +1664,7 @@
   </div>
 
   <script src="assets/js/common.js?v=6"></script>
-  <script src="assets/js/ad-templates.js"></script>
+  <script src="/admin/assets/js/ad-templates.js?v=2"></script>
   <script>
     // ============ STATE ============
     let currentStep = 1;
@@ -6821,9 +6821,14 @@
     var currentTemplateData = {};
 
     function initTemplatePicker() {
-      if (!window.AdTemplates) return;
       var picker = document.getElementById('templatePicker');
       if (!picker) return;
+      if (!window.AdTemplates) {
+        picker.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:#dc2626;font-size:13px;">Templates failed to load. <button onclick="location.reload()" style="color:#3052FF;text-decoration:underline;border:none;background:none;cursor:pointer;">Reload page</button></div>';
+        // Try loading inline fallback
+        console.error('AdTemplates not loaded from ad-templates.js');
+        return;
+      }
       picker.innerHTML = '';
       var names = Object.keys(window.AdTemplates);
       names.forEach(function(name) {
