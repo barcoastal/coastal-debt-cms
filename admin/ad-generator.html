@@ -1198,8 +1198,93 @@
       <!-- ============ STEP 2: BACKGROUND ============ -->
       <div class="step-panel" id="step2">
         <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
-          <!-- Left: Canvas Editor -->
-          <div>
+          <!-- Left: Template Editor (new) -->
+          <div id="templateEditorSection">
+            <!-- Template Picker -->
+            <div id="templatePicker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+              <!-- Generated dynamically from window.AdTemplates -->
+            </div>
+
+            <!-- HTML Ad Editor -->
+            <div id="adEditorWrap" style="background:#e5e5e5;border-radius:8px;padding:16px;display:flex;justify-content:center;align-items:center;min-height:500px;">
+              <div id="adEditorFrame" style="transform-origin:top left;box-shadow:0 4px 20px rgba(0,0,0,0.15);border-radius:4px;overflow:hidden;">
+                <div style="color:var(--gray-400);text-align:center;padding:40px;font-size:14px;">Select a template above to start editing</div>
+              </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div style="margin-top:12px;padding:14px 16px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <label style="font-size:12px;font-weight:600;color:var(--gray-500);">Background:</label>
+              <input type="color" id="templateBgColor" value="#F2F4F9" onchange="changeTemplateBg(this.value)" style="width:32px;height:32px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
+              <button onclick="changeTemplateBg('#F2F4F9')" style="width:28px;height:28px;border-radius:6px;border:2px solid var(--gray-300);background:#F2F4F9;cursor:pointer;" title="Brand Light"></button>
+              <button onclick="changeTemplateBg('#3052FF')" style="width:28px;height:28px;border-radius:6px;border:2px solid var(--gray-300);background:#3052FF;cursor:pointer;" title="Brand Blue"></button>
+              <button onclick="changeTemplateBg('#FFFFFF')" style="width:28px;height:28px;border-radius:6px;border:2px solid var(--gray-300);background:#FFFFFF;cursor:pointer;" title="White"></button>
+              <button onclick="changeTemplateBg('#000000')" style="width:28px;height:28px;border-radius:6px;border:2px solid var(--gray-300);background:#000000;cursor:pointer;" title="Black"></button>
+              <span style="width:1px;height:24px;background:var(--gray-200);margin:0 4px;"></span>
+              <button class="btn btn-secondary" onclick="aiGenerateCopyForTemplate()" style="font-size:13px;font-weight:600;color:#3052FF;">&#9733; AI Copy</button>
+              <button class="btn btn-primary" onclick="exportAdAsPng()" style="font-size:13px;font-weight:700;padding:8px 16px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download PNG
+              </button>
+            </div>
+
+            <!-- Nav -->
+            <div class="step-nav">
+              <button class="btn btn-secondary" onclick="goToStep(1)">&larr; Back to Person</button>
+            </div>
+
+            <!-- Meta Ad Copy Generator (collapsible) — kept from original -->
+            <details style="margin-top:16px;">
+              <summary style="cursor:pointer;font-weight:700;font-size:14px;color:var(--gray-700);padding:10px 0;display:flex;align-items:center;gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3052FF" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                Meta Ad Copy Generator
+              </summary>
+              <div id="metaCopyCollapsibleNew" style="padding:16px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;">
+                <p style="color:var(--gray-500);font-size:13px;margin:0 0 16px;">Generate multiple variations of Facebook &amp; Instagram ad copy</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                  <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;font-size:12px;">Ad Angle / Topic</label>
+                    <select id="metaAdAngle3" class="form-input" style="font-size:13px;">
+                      <option value="general">General -- MCA Debt Relief</option>
+                      <option value="urgency">Urgency -- Act Now / Limited Time</option>
+                      <option value="savings">Savings -- Save Up To 80%</option>
+                      <option value="pain">Pain Point -- Drowning in Payments</option>
+                      <option value="trust">Trust -- Proven Results</option>
+                      <option value="fresh_start">Fresh Start -- New Beginning</option>
+                      <option value="comparison">Comparison -- Why Us vs Others</option>
+                      <option value="educational">Educational -- What is MCA Debt?</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;font-size:12px;">Variations</label>
+                    <select id="metaAdCount3" class="form-input" style="font-size:13px;">
+                      <option value="3" selected>3</option>
+                      <option value="5">5</option>
+                      <option value="8">8</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label style="font-weight:600;font-size:12px;">Custom Instructions <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
+                  <textarea id="metaAdCustom3" class="form-input" rows="2" placeholder="e.g. 'Focus on restaurant owners'..." style="font-size:13px;resize:vertical;"></textarea>
+                </div>
+                <button class="btn btn-primary" id="generateMetaCopyBtn3" onclick="generateMetaCopy2()" style="width:100%;padding:12px;font-size:14px;font-weight:700;">
+                  Generate Ad Copy
+                </button>
+                <div id="metaCopyResults3" style="margin-top:16px;display:none;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h4 style="margin:0;font-size:14px;">Generated Copy</h4>
+                    <button class="btn btn-secondary btn-small" onclick="copyAllMetaAds2()" style="font-size:11px;">Copy All</button>
+                  </div>
+                  <div id="metaCopyCards3"></div>
+                </div>
+              </div>
+            </details>
+          </div>
+          <!-- END new template editor section -->
+
+          <!-- OLD Canvas Editor (hidden — kept for fallback) -->
+          <div id="oldCanvasEditorSection" style="display:none;">
             <!-- Toolbar -->
             <div class="canvas-toolbar">
               <button id="separateLayersBtn" onclick="separateLayersFromCanvas()" title="Separate person from background into two layers" style="background:#3052FF;color:#fff;border-color:#3052FF;font-weight:600;">&#9998; Separate Layers</button>
@@ -1466,6 +1551,7 @@
               </div>
             </details>
           </div>
+          <!-- END old canvas editor (hidden) -->
 
           <!-- Right: iPhone Preview -->
           <div>
@@ -1578,6 +1664,7 @@
   </div>
 
   <script src="assets/js/common.js?v=6"></script>
+  <script src="assets/js/ad-templates.js"></script>
   <script>
     // ============ STATE ============
     let currentStep = 1;
@@ -6729,6 +6816,198 @@
       }
     }
 
+    // ============ HTML TEMPLATE EDITOR (Step 2 rebuild) ============
+    var currentTemplateName = null;
+    var currentTemplateData = {};
+
+    function initTemplatePicker() {
+      if (!window.AdTemplates) return;
+      var picker = document.getElementById('templatePicker');
+      if (!picker) return;
+      picker.innerHTML = '';
+      var names = Object.keys(window.AdTemplates);
+      names.forEach(function(name) {
+        var t = window.AdTemplates[name];
+        var p = t.preview || {};
+        var card = document.createElement('div');
+        card.style.cssText = 'border:2px solid var(--gray-200);border-radius:10px;padding:12px;cursor:pointer;transition:all 0.15s;background:' + (p.bg || '#F2F4F9') + ';';
+        card.onmouseover = function() { if (currentTemplateName !== name) card.style.borderColor = '#93a3f8'; };
+        card.onmouseout = function() { if (currentTemplateName !== name) card.style.borderColor = 'var(--gray-200)'; };
+        card.onclick = function(e) { selectTemplate(name, card); };
+
+        var inner = '';
+        if (p.hl1) inner += '<div style="font-size:11px;font-weight:800;color:' + (p.hl1c || '#000') + ';line-height:1.15;">' + p.hl1 + '</div>';
+        if (p.hl2) inner += '<div style="font-size:12px;font-weight:900;color:' + (p.hl2c || '#3052FF') + ';line-height:1.15;margin-top:2px;">' + p.hl2 + '</div>';
+        if (p.hl3) inner += '<div style="font-size:11px;font-weight:800;color:' + (p.hl3c || '#FF9000') + ';line-height:1.15;margin-top:2px;">' + p.hl3 + '</div>';
+        inner += '<div style="font-size:10px;color:' + (p.bg === '#3052FF' ? '#ccc' : 'var(--gray-500)') + ';margin-top:6px;font-weight:600;">' + t.name + '</div>';
+        card.innerHTML = inner;
+        picker.appendChild(card);
+      });
+    }
+
+    function selectTemplate(name, cardEl) {
+      currentTemplateName = name;
+      var template = window.AdTemplates[name];
+      if (!template) return;
+
+      var meta = SIZE_META[selectedSize];
+      var w = meta.width;
+      var h = meta.height;
+
+      currentTemplateData = {
+        personUrl: wizardState.personImageNoBg || wizardState.personImageUrl || generatedImageUrl,
+        bgColor: template.preview.bg,
+        chevronUrl: '/assets/brand-assets/chevron-style-1.svg',
+        logoUrl: '/assets/logos/logo-dark-text.svg',
+        badges: [
+          '/assets/trust-logos/trustpilot-transparent.png',
+          '/assets/trust-logos/bsi-transparent.png',
+          '/assets/trust-logos/bbb-torch-awards.png'
+        ]
+      };
+
+      // Blue templates use white logo
+      if (name === 'blue_bold' || name === 'caps_blue') {
+        currentTemplateData.logoUrl = '/assets/logos/logo-white-text.svg';
+      }
+
+      // Update bg color picker
+      var bgPicker = document.getElementById('templateBgColor');
+      if (bgPicker) bgPicker.value = currentTemplateData.bgColor;
+
+      renderTemplate(w, h);
+
+      // Highlight selected card
+      document.querySelectorAll('#templatePicker > div').forEach(function(c) {
+        c.style.borderColor = 'var(--gray-200)';
+      });
+      if (cardEl) cardEl.style.borderColor = '#3052FF';
+    }
+
+    function renderTemplate(w, h) {
+      var template = window.AdTemplates[currentTemplateName];
+      if (!template) return;
+
+      var html = template.render(currentTemplateData, w, h);
+
+      // Scale to fit editor area (max ~600px wide)
+      var scale = Math.min(600 / w, 600 / h);
+      var frame = document.getElementById('adEditorFrame');
+      frame.style.width = w + 'px';
+      frame.style.height = h + 'px';
+      frame.style.transform = 'scale(' + scale + ')';
+      frame.innerHTML = html;
+
+      // Update wrapper dimensions to match scaled size so layout doesn't collapse
+      var wrap = document.getElementById('adEditorWrap');
+      if (wrap) {
+        wrap.style.minHeight = Math.round(h * scale) + 32 + 'px';
+      }
+
+      syncTemplateToPreview(html, w, h);
+    }
+
+    function syncTemplateToPreview(html, w, h) {
+      var previewScale = 0.25;
+      var scaledHtml = '<div style="transform:scale(' + previewScale + ');transform-origin:top left;width:' + w + 'px;height:' + h + 'px;overflow:hidden;">' + html + '</div>';
+
+      var mirrors = document.querySelectorAll('.live-preview-mirror');
+      mirrors.forEach(function(m) {
+        m.innerHTML = scaledHtml;
+        m.style.overflow = 'hidden';
+      });
+
+      var mainPreview = document.getElementById('livePreview');
+      if (mainPreview) {
+        mainPreview.innerHTML = scaledHtml;
+        mainPreview.style.overflow = 'hidden';
+      }
+    }
+
+    function changeTemplateBg(color) {
+      if (!currentTemplateName) return;
+      currentTemplateData.bgColor = color;
+
+      // Swap logo for light/dark backgrounds
+      var isLight = (color === '#FFFFFF' || color === '#F2F4F9');
+      if (isLight) {
+        currentTemplateData.logoUrl = '/assets/logos/logo-dark-text.svg';
+      } else {
+        currentTemplateData.logoUrl = '/assets/logos/logo-white-text.svg';
+      }
+
+      var bgPicker = document.getElementById('templateBgColor');
+      if (bgPicker) bgPicker.value = color;
+
+      var meta = SIZE_META[selectedSize];
+      renderTemplate(meta.width, meta.height);
+    }
+
+    async function aiGenerateCopyForTemplate() {
+      if (!currentTemplateName) { alert('Select a template first'); return; }
+      var btn = event.target;
+      btn.disabled = true;
+      var origText = btn.textContent;
+      btn.textContent = 'Generating...';
+      try {
+        var res = await fetch('/api/ad-generator/generate-copy-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: 'MCA debt settlement' })
+        });
+        var copy = await res.json();
+
+        var words = (copy.headline || '').split(' ');
+        currentTemplateData.headline1 = words.slice(0, 2).join(' ');
+        currentTemplateData.headlineAccent = (copy.highlight_words || [])[0] || 'MCA Debt';
+        currentTemplateData.headlineEnd = words.slice(-1)[0] || 'Now!';
+        currentTemplateData.headline2 = words.slice(2, -1).join(' ');
+
+        var meta = SIZE_META[selectedSize];
+        renderTemplate(meta.width, meta.height);
+      } catch(e) {
+        alert('Failed: ' + e.message);
+      }
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+
+    async function exportAdAsPng() {
+      if (!currentTemplateName) { alert('Select a template first'); return; }
+
+      var btn = event.target.closest('button') || event.target;
+      btn.disabled = true;
+      var origHTML = btn.innerHTML;
+      btn.innerHTML = 'Exporting...';
+
+      var meta = SIZE_META[selectedSize];
+      var frame = document.getElementById('adEditorFrame');
+      var html = frame.innerHTML;
+
+      try {
+        var res = await fetch('/api/ad-generator/export-html-ad', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html: html, width: meta.width, height: meta.height })
+        });
+        var data = await res.json();
+        if (data.image_url) {
+          var a = document.createElement('a');
+          a.href = data.image_url;
+          a.download = 'ad-' + selectedSize + '-' + Date.now() + '.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          throw new Error(data.error || 'Export failed');
+        }
+      } catch(e) {
+        alert('Export failed: ' + e.message);
+      }
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    }
+
     // ============ INIT ============
     loadSettings();
     loadLogo();
@@ -6739,6 +7018,8 @@
       .then(r => r.json())
       .then(d => { document.getElementById('galleryCount').textContent = d.total || '0'; })
       .catch(() => {});
+    // Initialize template picker
+    initTemplatePicker();
   </script>
 </body>
 </html>

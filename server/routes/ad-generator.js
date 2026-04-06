@@ -890,6 +890,29 @@ Respond with ONLY valid JSON:
 
 // ============ COMPOSE AD (V2) ============
 
+// Export HTML ad to PNG at full resolution
+router.post('/export-html-ad', authenticateToken, async (req, res) => {
+  const { html, width, height } = req.body;
+  if (!html || !width || !height) return res.status(400).json({ error: 'html, width, height required' });
+
+  try {
+    const { renderHtmlToPng } = require('../services/puppeteer-renderer');
+
+    // Wrap in full HTML document with fonts
+    const fullHtml = `<!DOCTYPE html><html><head>
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Sora:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+      <style>*{margin:0;padding:0;box-sizing:border-box;}body{width:${width}px;height:${height}px;overflow:hidden;}</style>
+    </head><body>${html}</body></html>`;
+
+    const filename = `ad-export-${Date.now()}.png`;
+    const result = await renderHtmlToPng(fullHtml, width, height, filename);
+    res.json({ image_url: result.url });
+  } catch (err) {
+    console.error('Export HTML ad error:', err.message);
+    res.status(500).json({ error: 'Export failed: ' + err.message });
+  }
+});
+
 router.post('/compose', authenticateToken, async (req, res) => {
   const { person_image_url, person_info, size_label, background_color, chevrons, text_position } = req.body;
   const copyConfig = req.body.copy_config || req.body.copy;
