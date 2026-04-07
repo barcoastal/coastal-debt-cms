@@ -654,6 +654,20 @@
       }
     })();
 
+    // ============= Mobile Sticky CTA Mode =============
+    (function() {
+      var mobileCta = '{{mobileCta}}';
+      var ctaBar = document.getElementById('mobileStickyCtaBar');
+      if (!ctaBar) return;
+      if (mobileCta === 'form-only') {
+        var callBtn = ctaBar.querySelector('.mcta-call');
+        if (callBtn) callBtn.style.display = 'none';
+      } else if (mobileCta === 'call') {
+        var formBtn = ctaBar.querySelector('.mcta-form');
+        if (formBtn) formBtn.style.display = 'none';
+      }
+    })();
+
     // ============= Visitor ID & Tracking =============
     (function() {
       var k = '_vid_';
