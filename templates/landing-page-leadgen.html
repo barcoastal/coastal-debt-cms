@@ -135,7 +135,11 @@
     .trust-bottom img:hover{opacity:1}
 
     @media(max-width:768px){
-      .screen{padding:68px 20px 90px;justify-content:flex-start;overflow-y:auto}
+      body{overflow:auto}
+      .funnel{height:auto;overflow:visible}
+      .screen{position:relative;height:auto;min-height:100vh;min-height:100dvh;padding:64px 20px 90px;justify-content:flex-start;display:none}
+      .screen.active{display:flex;opacity:1;transform:none}
+      .screen.exit-left{display:none}
       .screen-step{margin-bottom:14px;font-size:0.7rem}
       .screen-question{font-size:1.4rem;margin-bottom:8px}
       .screen-sub{font-size:0.9rem;margin-bottom:20px}
@@ -150,7 +154,6 @@
       .trust-bottom{padding:12px 16px}
       .trust-bottom img{height:24px}
       .trust-bottom-inner{gap:16px}
-      body{overflow:auto}
       .submit-btn{height:50px;font-size:1.05rem;margin-top:14px}
       .form-group{margin-bottom:10px}
       .form-group input,.form-group select{height:48px}
