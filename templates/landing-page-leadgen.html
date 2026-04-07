@@ -153,7 +153,7 @@
   {{BODY_SCRIPTS}}
 
   <!-- Progress Bar -->
-  <div class="progress-bar" id="progressBar" style="width:33%"></div>
+  <div class="progress-bar" id="progressBar" style="width:25%"></div>
 
   <!-- Nav -->
   <nav class="nav">
@@ -172,7 +172,7 @@
     <!-- Screen 1: Debt Amount -->
     <div class="screen active" id="screenDebt">
       <div class="screen-inner">
-        <div class="screen-step">Step 1 of 3</div>
+        <div class="screen-step">Step 1 of 4</div>
         <h1 class="screen-question">How much business debt do you have?</h1>
         <p class="screen-sub">Select the range that best describes your current situation.</p>
         <div class="option-grid" id="debtOptions">
@@ -206,7 +206,7 @@
     <!-- Screen 2: MCA Question -->
     <div class="screen" id="screenMca">
       <div class="screen-inner">
-        <div class="screen-step">Step 2 of 3</div>
+        <div class="screen-step">Step 2 of 4</div>
         <h1 class="screen-question">Do you currently have a Merchant Cash Advance?</h1>
         <p class="screen-sub">MCAs include daily or weekly ACH withdrawals from business funders.</p>
         <div class="mca-options" id="mcaOptions">
@@ -228,16 +228,44 @@
       </div>
     </div>
 
-    <!-- Screen 3: Contact Form -->
+    <!-- Screen 3: Business Name -->
+    <div class="screen" id="screenBusiness">
+      <div class="screen-inner">
+        <div class="screen-step">Step 3 of 4</div>
+        <h1 class="screen-question">What is your business name?</h1>
+        <p class="screen-sub">This helps us look into your situation before we call.</p>
+        <div style="max-width:440px;margin:0 auto">
+          <div class="form-group" style="text-align:left">
+            <input type="text" id="businessNameInput" placeholder="Enter your business name" style="font-size:1.1rem;height:54px">
+          </div>
+          <button type="button" class="submit-btn" id="businessNextBtn">Continue</button>
+        </div>
+        <div class="screen-info">
+          <div class="info-items">
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Your info is 100% confidential</span>
+            </div>
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              <span>Almost done!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Contact Form -->
     <div class="screen form-screen" id="screenForm">
       <div class="screen-inner">
-        <div class="screen-step">Step 3 of 3</div>
-        <h1 class="screen-question">Great! You qualify.</h1>
-        <p class="screen-sub">Fill in your details for a free, no-obligation consultation.</p>
+        <div class="screen-step">Step 4 of 4</div>
+        <h1 class="screen-question">Last step — how can we reach you?</h1>
+        <p class="screen-sub">A debt specialist will contact you within 15 minutes.</p>
         <form id="leadForm">
           <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
           <input type="hidden" id="debt_amount" name="debt_amount" value="">
           <input type="hidden" id="has_mca" name="has_mca" value="">
+          <input type="hidden" id="company_name_hidden" name="company_name" value="">
           <input type="hidden" id="gclid" name="gclid" value="">
           <input type="hidden" id="msclkid" name="msclkid" value="">
           <input type="hidden" id="fbclid" name="fbclid" value="">
@@ -256,7 +284,26 @@
           <input type="hidden" id="page_url" name="page_url" value="">
           <input type="hidden" id="referrer_url" name="referrer_url" value="">
           {{HIDDEN_FIELDS}}
-          <div id="dynamicFormFields"></div>
+          <div class="form-group">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name" placeholder="John" required>
+          </div>
+          <div class="form-group">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" placeholder="Smith" required>
+          </div>
+          <div class="form-group">
+            <label for="phone_field">Phone Number</label>
+            <div class="phone-wrapper">
+              <span class="phone-prefix">&#127482;&#127480; +1</span>
+              <input type="tel" id="phone_field" name="phone" placeholder="(555) 123-4567" required>
+            </div>
+            <div class="phone-error" id="phone_field_error">Please enter a valid 10-digit US phone number</div>
+          </div>
+          <div class="form-group">
+            <label for="email_field">Email</label>
+            <input type="email" id="email_field" name="email" placeholder="john@company.com" required>
+          </div>
           <div class="consent-group">
             <label class="consent-label">
               <input type="checkbox" id="consentCheckbox" required>
@@ -475,7 +522,7 @@
         currentScreen = to;
       }, 100);
       // Update progress
-      var progress = { screenDebt: '33%', screenMca: '66%', screenForm: '90%', screenSuccess: '100%', screenSorryDebt: '33%', screenSorryMca: '66%' };
+      var progress = { screenDebt: '25%', screenMca: '50%', screenBusiness: '75%', screenForm: '90%', screenSuccess: '100%', screenSorryDebt: '25%', screenSorryMca: '50%' };
       document.getElementById('progressBar').style.width = progress[to] || '33%';
     }
 
@@ -507,35 +554,29 @@
             goToScreen('screenMca', 'screenSorryMca');
           } else {
             document.getElementById('has_mca').value = selectedMca;
-            goToScreen('screenMca', 'screenForm');
+            goToScreen('screenMca', 'screenBusiness');
           }
         }, 300);
       });
     });
 
-    // ============= Render Form Fields =============
-    var formFields = {{formFieldsJson}};
-    var html = formFields.filter(function(f) { return f.name !== 'has_mca' && f.name !== 'debt_amount'; }).map(function(field) {
-      if (field.type === 'radio') {
-        var options = (field.options || 'Yes,No').split(',').map(function(o) { return o.trim(); });
-        return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
-          options.map(function(opt, i) {
-            return '<label class="radio-label"><input type="radio" name="' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
-          }).join('') + '</div></div>';
-      } else if (field.type === 'select') {
-        var options = (field.options || '').split(',').map(function(o) { return o.trim(); });
-        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><select id="' + field.name + '" name="' + field.name + '"' + (field.required ? ' required' : '') + '><option value="">Select...</option>' + options.map(function(opt) { return '<option value="' + opt + '">' + opt + '</option>'; }).join('') + '</select></div>';
-      } else if (field.type === 'tel') {
-        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span><input type="tel" id="' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div><div class="phone-error" id="' + field.name + '_error">Please enter a valid 10-digit US phone number</div></div>';
-      } else if (field.type === 'hidden') {
-        var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount','has_mca'];
-        if (existingIds.includes(field.name)) return '';
-        return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
-      } else {
-        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><input type="' + field.type + '" id="' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+    // ============= Business Name Screen =============
+    document.getElementById('businessNextBtn').addEventListener('click', function() {
+      var bizName = document.getElementById('businessNameInput').value.trim();
+      if (!bizName) {
+        document.getElementById('businessNameInput').style.borderColor = '#dc2626';
+        document.getElementById('businessNameInput').focus();
+        return;
       }
-    }).join('');
-    document.getElementById('dynamicFormFields').innerHTML = html;
+      document.getElementById('company_name_hidden').value = bizName;
+      goToScreen('screenBusiness', 'screenForm');
+    });
+    document.getElementById('businessNameInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('businessNextBtn').click(); }
+    });
+    document.getElementById('businessNameInput').addEventListener('input', function() {
+      this.style.borderColor = '';
+    });
 
     // ============= Phone Formatting =============
     function isValidUSPhone(digits) {
