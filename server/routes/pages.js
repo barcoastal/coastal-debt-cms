@@ -508,7 +508,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -592,7 +592,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -789,7 +789,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1002,7 +1002,7 @@ function generateLandingPage(pageId) {
   // Generate variant B if template-level A/B test is configured
   const abCfg = JSON.parse(page.ab_config || '{}');
   if (abCfg.enabled && abCfg.variantB_template) {
-    const variantTemplateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', form: 'landing-page.html' };
+    const variantTemplateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', form: 'landing-page.html', leadgen: 'landing-page-leadgen.html' };
     const variantTemplateFile = variantTemplateFiles[abCfg.variantB_template] || 'landing-page.html';
     const variantTemplatePath = path.join(__dirname, '..', '..', 'templates', variantTemplateFile);
 

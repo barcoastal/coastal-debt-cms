@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  {{HEAD_SCRIPTS}}
+  <!-- Facebook Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --primary:{{colors.primary}};
+      --primary-light:{{colors.primaryLight}};
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --navy:#1a2e4a;
+      --navy-dark:#0f1c2e;
+      --white:#ffffff;
+      --gray-100:#f3f4f6;
+      --gray-200:#e5e7eb;
+      --gray-600:#4b5563;
+      --gray-800:#1f2937;
+      --green-600:#16a34a;
+      --red-600:#dc2626;
+    }
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white);overflow:hidden}
+
+    /* Progress bar */
+    .progress-bar{position:fixed;top:0;left:0;height:4px;background:var(--primary);z-index:200;transition:width 0.4s ease}
+
+    /* Nav */
+    .nav{position:fixed;top:0;left:0;right:0;background:var(--white);padding:14px 0;border-bottom:1px solid var(--gray-200);z-index:100}
+    .nav-inner{max-width:800px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
+    .nav-logo img{height:32px;width:auto}
+    .nav-phone{display:flex;align-items:center;gap:6px;color:var(--primary);font-weight:600;font-size:0.9rem;text-decoration:none}
+    .nav-phone svg{width:16px;height:16px}
+
+    /* Funnel container */
+    .funnel{position:relative;width:100%;height:100vh;overflow:hidden}
+
+    /* Each screen */
+    .screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 24px 40px;opacity:0;transform:translateX(60px);transition:all 0.4s ease;pointer-events:none}
+    .screen.active{opacity:1;transform:translateX(0);pointer-events:all}
+    .screen.exit-left{opacity:0;transform:translateX(-60px)}
+
+    /* Screen content */
+    .screen-inner{max-width:600px;width:100%;text-align:center}
+    .screen-step{display:inline-block;background:rgba(48,82,255,0.1);color:var(--primary);padding:6px 16px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:20px;text-transform:uppercase;letter-spacing:0.5px}
+    .screen-question{font-size:2rem;font-weight:800;color:var(--navy);margin-bottom:12px;line-height:1.3}
+    .screen-sub{font-size:1.05rem;color:var(--gray-600);margin-bottom:36px;line-height:1.6}
+
+    /* Debt amount options */
+    .option-grid{display:flex;flex-direction:column;gap:10px;max-width:440px;margin:0 auto}
+    .option-btn{display:flex;align-items:center;justify-content:center;padding:16px 24px;border:2px solid var(--gray-200);border-radius:14px;background:var(--white);font-size:1.05rem;font-weight:600;color:var(--gray-800);cursor:pointer;transition:all 0.2s;text-align:center}
+    .option-btn:hover{border-color:var(--primary);background:rgba(48,82,255,0.04);transform:translateY(-1px)}
+    .option-btn.selected{border-color:var(--primary);background:rgba(48,82,255,0.08);color:var(--primary)}
+
+    /* MCA radio buttons */
+    .mca-options{display:flex;gap:16px;max-width:360px;margin:0 auto}
+    .mca-btn{flex:1;padding:20px 24px;border:2px solid var(--gray-200);border-radius:14px;background:var(--white);font-size:1.1rem;font-weight:700;color:var(--gray-800);cursor:pointer;transition:all 0.2s;text-align:center}
+    .mca-btn:hover{border-color:var(--primary);background:rgba(48,82,255,0.04)}
+    .mca-btn.selected{border-color:var(--primary);background:rgba(48,82,255,0.08);color:var(--primary)}
+
+    /* Info section below question */
+    .screen-info{margin-top:40px;padding-top:28px;border-top:1px solid var(--gray-200);max-width:500px;margin-left:auto;margin-right:auto}
+    .info-items{display:flex;justify-content:center;gap:28px;flex-wrap:wrap}
+    .info-item{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-600)}
+    .info-item svg{width:18px;height:18px;color:var(--primary);flex-shrink:0}
+
+    /* Form screen */
+    .form-screen .screen-inner{max-width:480px}
+    .form-group{margin-bottom:14px;text-align:left}
+    .form-group label{display:block;font-weight:500;color:var(--gray-800);margin-bottom:6px;font-size:0.9rem}
+    .form-group input,.form-group select{width:100%;height:50px;padding:0 18px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;font-family:inherit;transition:all 0.2s;background:var(--white);outline:none}
+    .form-group input:focus,.form-group select:focus{border-color:var(--primary)}
+    .form-group input::placeholder{color:#aab}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234b5563' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+    .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;height:50px;transition:all 0.2s;background:var(--white)}
+    .phone-wrapper:focus-within{border-color:var(--primary)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:46px;border-radius:0 12px 12px 0;background:transparent}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
+    .radio-group{display:flex;gap:10px}
+    .radio-label{flex:1;height:50px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;background:var(--white);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--gray-800)}
+    .radio-label:has(input:checked){border-color:var(--primary);background:rgba(48,82,255,0.05);color:var(--primary);font-weight:600}
+    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    .radio-label span{line-height:50px}
+    .consent-group{margin:16px 0 0}
+    .consent-label{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:0.72rem;color:var(--gray-600);line-height:1.5;text-align:left}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+    .consent-label a{color:var(--primary);text-decoration:underline}
+    .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:24px}
+    .submit-btn{width:100%;height:54px;background:var(--cta-btn);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:16px}
+    .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+
+    /* Sorry screen */
+    .sorry-icon{width:64px;height:64px;margin:0 auto 20px;color:var(--gray-600);opacity:0.5}
+    .sorry-icon svg{width:100%;height:100%}
+    .sorry-title{font-size:1.6rem;font-weight:700;color:var(--navy);margin-bottom:12px}
+    .sorry-text{font-size:1rem;color:var(--gray-600);margin-bottom:8px}
+    .sorry-sub{font-size:0.9rem;color:var(--gray-600);opacity:0.6}
+
+    /* Success screen */
+    .success-icon{width:64px;height:64px;margin:0 auto 20px;color:var(--green-600)}
+    .success-icon svg{width:100%;height:100%}
+    .success-title{font-size:1.6rem;font-weight:700;color:var(--green-600);margin-bottom:12px}
+    .success-text{font-size:1rem;color:var(--gray-600)}
+
+    /* Trust bar at bottom */
+    .trust-bottom{position:fixed;bottom:0;left:0;right:0;background:var(--gray-100);border-top:1px solid var(--gray-200);padding:12px 24px;z-index:50}
+    .trust-bottom-inner{max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:20px}
+    .trust-bottom img{height:24px;opacity:0.6;filter:grayscale(0.3)}
+
+    @media(max-width:768px){
+      .screen{padding:70px 20px 80px}
+      .screen-question{font-size:1.5rem}
+      .screen-sub{font-size:0.95rem;margin-bottom:28px}
+      .option-btn{padding:14px 20px;font-size:0.95rem}
+      .mca-btn{padding:16px 20px;font-size:1rem}
+      .info-items{gap:16px}
+      .info-item{font-size:0.8rem}
+      .nav-phone span{display:none}
+      .trust-bottom img{height:20px}
+      .trust-bottom-inner{gap:14px}
+      body{overflow:auto}
+      .screen-info{margin-top:28px;padding-top:20px}
+    }
+  </style>
+</head>
+<body>
+  {{BODY_SCRIPTS}}
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar" style="width:33%"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <span class="nav-logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="32"></span>
+      <a href="tel:{{phone}}" class="nav-phone phone-element">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        <span>{{phone}}</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Funnel -->
+  <div class="funnel">
+
+    <!-- Screen 1: Debt Amount -->
+    <div class="screen active" id="screenDebt">
+      <div class="screen-inner">
+        <div class="screen-step">Step 1 of 3</div>
+        <h1 class="screen-question">How much business debt do you have?</h1>
+        <p class="screen-sub">Select the range that best describes your current situation.</p>
+        <div class="option-grid" id="debtOptions">
+          <button class="option-btn" data-value="under-20000">Under $20,000</button>
+          <button class="option-btn" data-value="20000-50000">$20,000 - $50,000</button>
+          <button class="option-btn" data-value="50000-100000">$50,000 - $100,000</button>
+          <button class="option-btn" data-value="100000-250000">$100,000 - $250,000</button>
+          <button class="option-btn" data-value="250000-500000">$250,000 - $500,000</button>
+          <button class="option-btn" data-value="500000-1000000">$500,000 - $1,000,000</button>
+          <button class="option-btn" data-value="1000000+">$1,000,000+</button>
+        </div>
+        <div class="screen-info">
+          <div class="info-items">
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>100% Confidential</span>
+            </div>
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>Takes 60 seconds</span>
+            </div>
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              <span>No obligation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: MCA Question -->
+    <div class="screen" id="screenMca">
+      <div class="screen-inner">
+        <div class="screen-step">Step 2 of 3</div>
+        <h1 class="screen-question">Do you currently have a Merchant Cash Advance?</h1>
+        <p class="screen-sub">MCAs include daily or weekly ACH withdrawals from business funders.</p>
+        <div class="mca-options" id="mcaOptions">
+          <button class="mca-btn" data-value="Yes">Yes</button>
+          <button class="mca-btn" data-value="No">No</button>
+        </div>
+        <div class="screen-info">
+          <div class="info-items">
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              <span>$100M+ in MCA debt resolved</span>
+            </div>
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+              <span>BBB Accredited since 2018</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Contact Form -->
+    <div class="screen form-screen" id="screenForm">
+      <div class="screen-inner">
+        <div class="screen-step">Step 3 of 3</div>
+        <h1 class="screen-question">Great! You qualify.</h1>
+        <p class="screen-sub">Fill in your details for a free, no-obligation consultation.</p>
+        <form id="leadForm">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" id="debt_amount" name="debt_amount" value="">
+          <input type="hidden" id="has_mca" name="has_mca" value="">
+          <input type="hidden" id="gclid" name="gclid" value="">
+          <input type="hidden" id="msclkid" name="msclkid" value="">
+          <input type="hidden" id="fbclid" name="fbclid" value="">
+          <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+          <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+          <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+          <input type="hidden" id="keyword" name="keyword" value="">
+          <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+          <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+          <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+          <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+          <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+          <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+          <input type="hidden" id="fb_placement" name="fb_placement" value="">
+          <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+          <input type="hidden" id="page_url" name="page_url" value="">
+          <input type="hidden" id="referrer_url" name="referrer_url" value="">
+          {{HIDDEN_FIELDS}}
+          <div id="dynamicFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="consentCheckbox" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="consentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{formSubmitText}}</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sorry: Debt too low -->
+    <div class="screen" id="screenSorryDebt">
+      <div class="screen-inner">
+        <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+        <h2 class="sorry-title">We're Sorry</h2>
+        <p class="sorry-text">Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+        <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+      </div>
+    </div>
+
+    <!-- Sorry: No MCA -->
+    <div class="screen" id="screenSorryMca">
+      <div class="screen-inner">
+        <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+        <h2 class="sorry-title">We're Sorry</h2>
+        <p class="sorry-text">Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+        <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="screen" id="screenSuccess">
+      <div class="screen-inner">
+        <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+        <h2 class="success-title">Thank You!</h2>
+        <p class="success-text">{{formSuccessMsg}}</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Trust Logos Bottom -->
+  <div class="trust-bottom">
+    <div class="trust-bottom-inner">
+      <img src="/lp/uploads/bbb-accredited.png" alt="BBB Accredited Business">
+      <img src="/lp/assets/trust-logos/bsi.webp" alt="BSI">
+      <img src="/lp/assets/trust-logos/trustpilot.webp" alt="Trustpilot">
+      <img src="/lp/assets/trust-logos/business-insider.svg" alt="Business Insider">
+    </div>
+  </div>
+
+  <script>
+    // ============= Config =============
+    var PAGE_SLUG = '{{SLUG}}';
+    var API_BASE = '/api';
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+
+    // ============= Hide phone if not set =============
+    (function() {
+      var phone = '{{phone}}';
+      if (!phone || phone === '{' + '{phone}}') {
+        document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // ============= Visitor ID & Tracking =============
+    (function() {
+      var k = '_vid_';
+      var id = localStorage.getItem(k);
+      if (!id) {
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        var s = Math.random().toString(36).substring(2, 6);
+        id = 'eli_' + t + r + s;
+        try { localStorage.setItem(k, id); } catch(e) {}
+      }
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      window._eliClickId = id;
+
+      try {
+        var ua = navigator.userAgent;
+        var browser = 'Unknown', browserVer = '', os = 'Unknown', osVer = '', deviceType = 'Desktop';
+        if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) { browser = 'Chrome'; browserVer = ua.match(/Chrome\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) { browser = 'Safari'; browserVer = ua.match(/Version\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Firefox') > -1) { browser = 'Firefox'; browserVer = ua.match(/Firefox\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Edg') > -1) { browser = 'Edge'; browserVer = ua.match(/Edg\/(\d+)/)?.[1] || ''; }
+        if (ua.indexOf('Windows') > -1) { os = 'Windows'; osVer = ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Mac OS') > -1) { os = 'macOS'; osVer = ua.match(/Mac OS X (\d+[._]\d+)/)?.[1]?.replace('_','.') || ''; }
+        else if (ua.indexOf('Android') > -1) { os = 'Android'; osVer = ua.match(/Android (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) { os = 'iOS'; osVer = ua.match(/OS (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Linux') > -1) { os = 'Linux'; }
+        if (/Mobile|Android|iPhone|iPod/.test(ua)) deviceType = 'Mobile';
+        else if (/iPad|Tablet/.test(ua)) deviceType = 'Tablet';
+
+        var params = new URLSearchParams(window.location.search);
+        function getCookieVal(name) {
+          var cookies = {};
+          document.cookie.split(';').forEach(function(c) {
+            var parts = c.trim().split('=');
+            if (parts.length >= 2) cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+          });
+          var val = cookies[name];
+          if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+          return '';
+        }
+
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eli_clickid: id,
+            gclid: params.get('gclid') || '',
+            msclkid: params.get('msclkid') || '',
+            fbclid: params.get('fbclid') || '',
+            fbc: getCookieVal('_fbc') || '',
+            fbp: getCookieVal('_fbp') || '',
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || 'adblock_blocked'; })(),
+            rdt_cid: params.get('rdt_cid') || '',
+            user_agent: ua, browser: browser, browser_version: browserVer, os: os, os_version: osVer, device_type: deviceType,
+            screen_width: screen.width, screen_height: screen.height, language: navigator.language || '',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            referrer_url: document.referrer || '', landing_page: window.location.pathname,
+            utm_source: params.get('utm_source') || '', utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '', utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || '', ab_variant: window._abVariant || ''
+          })
+        }).catch(function(){});
+
+        setTimeout(function() {
+          var rtId = '';
+          try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
+          if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
+          var fbcRetry = getCookieVal('_fbc') || '';
+          var fbpRetry = getCookieVal('_fbp') || '';
+          if (rtId || fbcRetry || fbpRetry) {
+            var retryData = { eli_clickid: id };
+            if (rtId) retryData.rt_clickid = rtId;
+            if (fbcRetry) retryData.fbc = fbcRetry;
+            if (fbpRetry) retryData.fbp = fbpRetry;
+            fetch('/api/visitors/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(retryData) }).catch(function(){});
+          }
+        }, 3000);
+      } catch(e) {}
+    })();
+
+    // ============= URL Params & Hidden Fields =============
+    (function() {
+      function getCookie(name) {
+        var cookies = {};
+        document.cookie.split(';').forEach(function(c) {
+          var parts = c.trim().split('=');
+          if (parts.length >= 2) cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+        });
+        var val = cookies[name];
+        if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+        return '';
+      }
+      function getStored(key) { try { return localStorage.getItem(key) || ''; } catch(e) { return ''; } }
+      function setStored(key, val) { try { if (val) localStorage.setItem(key, val); } catch(e) {} }
+
+      var _p = new URLSearchParams(window.location.search);
+
+      var gclid = _p.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+      if (gclid) { if (gclid.startsWith('GCL.')) { var parts = gclid.split('.'); gclid = parts[parts.length - 1]; } setStored('_gclid', gclid); document.getElementById('gclid').value = gclid; }
+
+      var msclkid = _p.get('msclkid') || getStored('_msclkid') || '';
+      if (msclkid) { setStored('_msclkid', msclkid); document.getElementById('msclkid').value = msclkid; }
+
+      var fbclid = _p.get('fbclid') || getStored('_fbclid') || '';
+      if (fbclid) { setStored('_fbclid', fbclid); document.getElementById('fbclid').value = fbclid; }
+
+      var keyword = _p.get('keyword') || '';
+      if (!keyword) { var ut = _p.get('utm_term') || ''; if (ut && !/^\d+$/.test(ut)) keyword = ut; }
+      keyword = keyword || getStored('_keyword') || '';
+      if (keyword) { setStored('_keyword', keyword); document.getElementById('keyword').value = keyword; }
+
+      var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+      var metaAltNames = { fb_campaign_id:['campaign_id','c_id','sub6','utm_id'], fb_adset_id:['adset_id','as_id','sub5','utm_content'], fb_ad_id:['ad_id','sub4','utm_term'], fb_campaign_name:['campaign_name','c_name','utm_campaign'], fb_adset_name:['adset_name','as_name'], fb_ad_name:['ad_name','sub2'], fb_placement:['placement','sub7'] };
+      metaParams.forEach(function(p) {
+        var val = _p.get(p) || '';
+        if (!val && metaAltNames[p]) { for (var i = 0; i < metaAltNames[p].length; i++) { val = _p.get(metaAltNames[p][i]) || ''; if (val) break; } }
+        val = val || getStored('_' + p) || '';
+        if (val) { setStored('_' + p, val); var el = document.getElementById(p); if (el) el.value = val; }
+      });
+
+      fetch('/api/visitors/ip').then(function(r) { return r.json(); }).then(function(d) { if (d.ip) { var el = document.getElementById('visitor_ip'); if (el) el.value = d.ip; } }).catch(function(){});
+
+      function getRtClickId() { try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {} return _p.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || 'adblock_blocked'; }
+      window.getRtClickId = getRtClickId;
+      var rtClickId = getRtClickId();
+      if (rtClickId) { setStored('_rt_clickid', rtClickId); document.getElementById('rt_clickid').value = rtClickId; }
+      setTimeout(function() { if (!document.getElementById('rt_clickid').value) { var delayed = getRtClickId(); if (delayed) { setStored('_rt_clickid', delayed); document.getElementById('rt_clickid').value = delayed; } } }, 2000);
+
+      var rdtCid = _p.get('rdt_cid') || getStored('_rdt_cid') || '';
+      if (rdtCid) { setStored('_rdt_cid', rdtCid); document.getElementById('rdt_cid').value = rdtCid; }
+
+      document.getElementById('page_url').value = window.location.href;
+      document.getElementById('referrer_url').value = document.referrer || '';
+    })();
+
+    // ============= Screen Navigation =============
+    var currentScreen = 'screenDebt';
+    var selectedDebt = '';
+    var selectedMca = '';
+
+    function goToScreen(from, to) {
+      var fromEl = document.getElementById(from);
+      var toEl = document.getElementById(to);
+      fromEl.classList.remove('active');
+      fromEl.classList.add('exit-left');
+      setTimeout(function() {
+        toEl.classList.add('active');
+        currentScreen = to;
+      }, 100);
+      // Update progress
+      var progress = { screenDebt: '33%', screenMca: '66%', screenForm: '90%', screenSuccess: '100%', screenSorryDebt: '33%', screenSorryMca: '66%' };
+      document.getElementById('progressBar').style.width = progress[to] || '33%';
+    }
+
+    // Debt amount selection
+    document.querySelectorAll('#debtOptions .option-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedDebt = this.dataset.value;
+        document.querySelectorAll('#debtOptions .option-btn').forEach(function(b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+        setTimeout(function() {
+          if (selectedDebt === 'under-20000') {
+            goToScreen('screenDebt', 'screenSorryDebt');
+          } else {
+            document.getElementById('debt_amount').value = selectedDebt;
+            goToScreen('screenDebt', 'screenMca');
+          }
+        }, 300);
+      });
+    });
+
+    // MCA selection
+    document.querySelectorAll('#mcaOptions .mca-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedMca = this.dataset.value;
+        document.querySelectorAll('#mcaOptions .mca-btn').forEach(function(b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+        setTimeout(function() {
+          if (selectedMca === 'No') {
+            goToScreen('screenMca', 'screenSorryMca');
+          } else {
+            document.getElementById('has_mca').value = selectedMca;
+            goToScreen('screenMca', 'screenForm');
+          }
+        }, 300);
+      });
+    });
+
+    // ============= Render Form Fields =============
+    var formFields = {{formFieldsJson}};
+    var html = formFields.filter(function(f) { return f.name !== 'has_mca' && f.name !== 'debt_amount'; }).map(function(field) {
+      if (field.type === 'radio') {
+        var options = (field.options || 'Yes,No').split(',').map(function(o) { return o.trim(); });
+        return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+          options.map(function(opt, i) {
+            return '<label class="radio-label"><input type="radio" name="' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
+          }).join('') + '</div></div>';
+      } else if (field.type === 'select') {
+        var options = (field.options || '').split(',').map(function(o) { return o.trim(); });
+        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><select id="' + field.name + '" name="' + field.name + '"' + (field.required ? ' required' : '') + '><option value="">Select...</option>' + options.map(function(opt) { return '<option value="' + opt + '">' + opt + '</option>'; }).join('') + '</select></div>';
+      } else if (field.type === 'tel') {
+        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span><input type="tel" id="' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div><div class="phone-error" id="' + field.name + '_error">Please enter a valid 10-digit US phone number</div></div>';
+      } else if (field.type === 'hidden') {
+        var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount','has_mca'];
+        if (existingIds.includes(field.name)) return '';
+        return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+      } else {
+        return '<div class="form-group"><label for="' + field.name + '">' + field.label + '</label><input type="' + field.type + '" id="' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+      }
+    }).join('');
+    document.getElementById('dynamicFormFields').innerHTML = html;
+
+    // ============= Phone Formatting =============
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      if (digits[0] === '0' || digits[0] === '1') return false;
+      if (digits[3] === '0' || digits[3] === '1') return false;
+      if (parseInt(digits.substring(0, 3)) === 555) return false;
+      return true;
+    }
+
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        var errEl = document.getElementById(e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // ============= Form Submission =============
+    var _formSubmitting = false;
+    document.getElementById('leadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      var consentBox = document.getElementById('consentCheckbox');
+      var consentErr = document.getElementById('consentError');
+      if (!consentBox.checked) { consentErr.style.display = 'block'; consentBox.focus(); return; }
+      consentErr.style.display = 'none';
+
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById(phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      _formSubmitting = true;
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = Object.fromEntries(formData.entries());
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+      if (!data.rt_clickid) data.rt_clickid = getRtClickId();
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          goToScreen('screenForm', 'screenSuccess');
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formSubmitText}}';
+      }
+    });
+  </script>
+</body>
+</html>
