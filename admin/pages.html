@@ -530,6 +530,13 @@
               </select>
             </div>
             <div class="form-group">
+              <label>Form Mode</label>
+              <select id="editFormMode" style="width:200px;">
+                <option value="normal">Normal Form</option>
+                <option value="prequalify">Pre-Qualify (Debt + MCA)</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>Form Title</label>
               <input type="text" id="editFormTitle" placeholder="See If You Qualify">
             </div>
@@ -973,6 +980,7 @@
       document.getElementById('editSubheadline').value = content.subheadline || '';
       document.getElementById('editBulletPoints').value = (content.bulletPoints || []).join('\n');
       document.getElementById('editMobileBulletsCount').value = content.mobileBulletsCount || 'all';
+      document.getElementById('editFormMode').value = content.formMode || 'normal';
       document.getElementById('editFormTitle').value = content.formTitle || '';
       document.getElementById('editFormSubtitle').value = content.formSubtitle || '';
 
@@ -1067,6 +1075,7 @@
         subheadline: document.getElementById('editSubheadline').value,
         bulletPoints: bulletPoints,
         mobileBulletsCount: document.getElementById('editMobileBulletsCount').value,
+        formMode: document.getElementById('editFormMode').value,
         formTitle: document.getElementById('editFormTitle').value,
         formSubtitle: document.getElementById('editFormSubtitle').value,
         howItWorksTitle: document.getElementById('editHowItWorksTitle').value,
@@ -1685,14 +1694,10 @@
       await origEditPage(id);
       if (_skipKwCheck) { _skipKwCheck = false; return; }
       const templateType = document.getElementById('editTemplateType').value;
-      // Show keyword modal if authority and content looks like defaults
+      // Always show keyword modal for authority pages
       if (templateType === 'authority') {
-        const badge = document.getElementById('editBadge').value || '';
-        const isDefault = !badge || badge === 'Business Bankruptcy Alternative 2026';
-        if (isDefault) {
-          hideModal('editModal');
-          showKeywordsModal(id, false);
-        }
+        hideModal('editModal');
+        showKeywordsModal(id, false);
       }
     };
 
@@ -1840,11 +1845,20 @@
         editPage(_kwPendingPageId);
       }
     }
+
+    function closeKeywordsModal() {
+      hideKeywordsModal();
+      if (_kwPendingPageId) {
+        _skipKwCheck = true;
+        editPage(_kwPendingPageId);
+      }
+    }
   </script>
 
   <!-- Authority Keywords Modal -->
   <div class="kw-modal-overlay" id="kwModal">
     <div class="kw-modal">
+      <button type="button" onclick="closeKeywordsModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>
       <div class="kw-modal-top">
         <h2>Authority Page - Enter Ad Group Keywords</h2>
         <p>Enter the keywords from your ad group. AI will generate keyword-optimized content designed to maximize your Google Ads Landing Page Experience score.</p>

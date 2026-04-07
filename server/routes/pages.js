@@ -859,6 +859,7 @@ function generateLandingPage(pageId) {
   // Handle JSON arrays for JavaScript
   html = html.replace(/{{bulletPointsJson}}/g, jsJson(mergedContent.bulletPoints || []));
   html = html.replace(/{{mobileBulletsCount}}/g, mergedContent.mobileBulletsCount || 'all');
+  html = html.replace(/{{formMode}}/g, mergedContent.formMode || 'normal');
   html = html.replace(/{{stepsJson}}/g, jsJson(mergedContent.steps || []));
   html = html.replace(/{{empathyTextJson}}/g, jsJson(mergedContent.empathyText || []));
   html = html.replace(/{{comparisonRowsJson}}/g, jsJson(mergedContent.comparisonRows || []));
