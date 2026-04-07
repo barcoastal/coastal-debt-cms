@@ -1315,37 +1315,35 @@
 
           <!-- OLD Canvas Editor (hidden — kept for fallback) -->
           <div id="oldCanvasEditorSection">
-            <!-- Toolbar -->
-            <div class="canvas-toolbar">
-              <button id="separateLayersBtn" onclick="separateLayersFromCanvas()" title="Separate person from background into two layers" style="background:#3052FF;color:#fff;border-color:#3052FF;font-weight:600;">&#9998; Separate Layers</button>
-              <span class="toolbar-sep"></span>
-              <button onclick="canvasBringForward()" title="Bring Forward">&#8593; Forward</button>
-              <button onclick="canvasSendBackward()" title="Send Backward">&#8595; Backward</button>
-              <button onclick="canvasDelete()" title="Delete Selected">&#128465; Delete</button>
-              <span class="toolbar-sep"></span>
-              <label>Background:</label>
-              <input type="color" id="canvasBgColor" value="#F2F4F9" onchange="setCanvasBgColor(this.value)" style="width:32px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
-              <button onclick="document.getElementById('bgImageUpload').click()">Upload BG</button>
-              <button onclick="generateCanvasBg()">AI Background</button>
-              <span class="toolbar-sep"></span>
-              <button onclick="addChevronToCanvas()" style="color:#3052FF;font-weight:600;" title="Add Coastal brand chevron shape">&#9654;&#9654; Chevrons</button>
-              <input type="color" id="chevronColorPicker" value="#3052FF" onchange="updateChevronColor(this.value)" style="width:28px;height:28px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;" title="Chevron color">
-              <span class="toolbar-sep"></span>
-              <button onclick="addTextToCanvas('headline')" style="font-weight:700;" title="Add headline text">T Headline</button>
-              <button onclick="addTextToCanvas('subheadline')" title="Add subheadline text">T Sub</button>
-              <button onclick="addTextToCanvas('cta')" style="color:#fff;background:#3052FF;border-color:#3052FF;" title="Add CTA button">CTA</button>
-              <button onclick="generateAndAddCopy()" style="color:#3052FF;font-weight:600;" title="AI generates headline + sub + CTA">&#9733; AI Copy</button>
-              <button onclick="showAiStylePanel()" id="aiStyleBtn" style="background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;border:none;font-weight:700;padding:4px 12px;" title="AI generates copy WITH unique design styles (fonts, colors, layout)">&#127912; AI Style</button>
-              <span class="toolbar-sep"></span>
-              <button onclick="addLogoToCanvas()" title="Add Coastal Debt logo">Logo</button>
-              <button onclick="addBadgeToCanvas('trustpilot')" title="Add Trustpilot badge" style="font-size:11px;">&#9733;TP</button>
-              <button onclick="addBadgeToCanvas('iso')" title="Add ISO badge" style="font-size:11px;">ISO</button>
-              <button onclick="addBadgeToCanvas('bbb')" title="Add BBB badge" style="font-size:11px;">BBB</button>
-              <span class="toolbar-sep"></span>
-              <button onclick="aiRedesign()" id="aiRedesignBtn" style="background:linear-gradient(135deg,#3052FF,#7FB2FF);color:#fff;border:none;font-weight:700;padding:4px 14px;" title="AI rearranges all elements into a professional layout">&#10024; AI Redesign</button>
-              <span class="toolbar-sep"></span>
-              <button onclick="saveCurrentAsTemplate()" title="Save current layout as template" style="font-weight:600;">&#128190; Save Template</button>
-              <button onclick="showTemplatesModal()" title="Load a saved template">&#128203; Templates</button>
+            <!-- Row 1: Canvas tools -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#fff;border:1px solid var(--gray-200);border-radius:8px 8px 0 0;align-items:center;">
+              <button id="separateLayersBtn" onclick="separateLayersFromCanvas()" style="background:#3052FF;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">&#9998; Separate</button>
+              <button onclick="canvasBringForward()" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">&#8593;</button>
+              <button onclick="canvasSendBackward()" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">&#8595;</button>
+              <button onclick="canvasDelete()" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">&#128465;</button>
+              <span style="width:1px;height:20px;background:var(--gray-200);"></span>
+              <label style="font-size:11px;font-weight:600;color:var(--gray-500);">BG:</label>
+              <input type="color" id="canvasBgColor" value="#F2F4F9" onchange="setCanvasBgColor(this.value)" style="width:28px;height:24px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
+              <button onclick="document.getElementById('bgImageUpload').click()" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">Upload</button>
+              <button onclick="generateCanvasBg()" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">AI BG</button>
+            </div>
+            <!-- Row 2: Add elements -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px;background:#f8f9ff;border-left:1px solid var(--gray-200);border-right:1px solid var(--gray-200);align-items:center;">
+              <button onclick="addChevronToCanvas()" style="padding:3px 10px;border:1px solid #3052FF;border-radius:6px;background:#fff;color:#3052FF;font-size:11px;font-weight:600;cursor:pointer;">&#9654;&#9654; Chevrons</button>
+              <input type="color" id="chevronColorPicker" value="#3052FF" onchange="updateChevronColor(this.value)" style="width:24px;height:24px;border:1px solid var(--gray-300);border-radius:4px;padding:1px;cursor:pointer;">
+              <span style="width:1px;height:20px;background:var(--gray-200);"></span>
+              <button onclick="addTextToCanvas('headline')" style="padding:3px 10px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;font-weight:700;cursor:pointer;">T Headline</button>
+              <button onclick="addTextToCanvas('subheadline')" style="padding:3px 10px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">T Sub</button>
+              <button onclick="addTextToCanvas('cta')" style="padding:3px 10px;border:none;border-radius:6px;background:#3052FF;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">CTA</button>
+              <span style="width:1px;height:20px;background:var(--gray-200);"></span>
+              <button onclick="addLogoToCanvas()" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;">Logo</button>
+              <button onclick="addBadgeToCanvas('trustpilot')" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:10px;cursor:pointer;">&#9733;TP</button>
+              <button onclick="addBadgeToCanvas('iso')" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:10px;cursor:pointer;">ISO</button>
+              <button onclick="addBadgeToCanvas('bbb')" style="padding:3px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;font-size:10px;cursor:pointer;">BBB</button>
+              <span style="width:1px;height:20px;background:var(--gray-200);"></span>
+              <button onclick="generateAndAddCopy()" style="padding:3px 10px;border:1px solid #3052FF;border-radius:6px;background:#fff;color:#3052FF;font-size:11px;font-weight:600;cursor:pointer;">&#9733; AI Copy</button>
+              <button onclick="showAiStylePanel()" id="aiStyleBtn" style="padding:3px 10px;border:none;border-radius:6px;background:linear-gradient(135deg,#FF9000,#FF6B00);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">&#127912; AI Style</button>
+              <button onclick="aiRedesign()" id="aiRedesignBtn" style="padding:3px 10px;border:none;border-radius:6px;background:linear-gradient(135deg,#3052FF,#7FB2FF);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">&#10024; Redesign</button>
             </div>
             <!-- Text Properties Bar (shown when text is selected) -->
             <!-- Text Style Presets (from reference ads) -->
