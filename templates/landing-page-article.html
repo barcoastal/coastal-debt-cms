@@ -208,7 +208,7 @@
     /* Responsive */
     @media(max-width:1024px){
       .article-layout{grid-template-columns:1fr;gap:40px}
-      .sidebar-form{order:-1;position:relative;top:0;max-width:520px;margin:0 auto}
+      .sidebar-form{position:relative;top:0;max-width:520px;margin:0 auto}
       .article-content{max-width:100%}
       .article-hero h1{font-size:2.2rem}
     }
@@ -402,11 +402,75 @@
     <!-- Sidebar Form -->
     <aside class="sidebar-form">
       <div class="form-card">
-        <!-- Main Form -->
-        <div class="form-step form-step-main active">
+        <!-- Step 1: Debt Amount -->
+        <div class="form-step form-step-1 active">
           <h2 class="form-title">{{formTitle}}</h2>
           <p class="form-subtitle">{{formSubtitle}}</p>
+          <div class="form-group">
+            <label for="debt_amount">How much business debt do you have?</label>
+            <select id="debt_amount" name="debt_amount">
+              <option value="">Select amount...</option>
+              <option value="under-20000">Under $20,000</option>
+              <option value="20000-50000">$20,000 - $50,000</option>
+              <option value="50000-100000">$50,000 - $100,000</option>
+              <option value="100000-250000">$100,000 - $250,000</option>
+              <option value="250000-500000">$250,000 - $500,000</option>
+              <option value="500000-1000000">$500,000 - $1,000,000</option>
+              <option value="1000000+">$1,000,000+</option>
+            </select>
+          </div>
+          <button type="button" class="submit-btn" id="checkDebtBtn" style="display:none;">Continue</button>
+        </div>
+
+        <!-- Step 2: Sorry - Debt too low -->
+        <div class="form-step form-step-sorry">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 3: MCA Question -->
+        <div class="form-step form-step-mca">
+          <h2 class="form-title">One Quick Question</h2>
+          <p class="form-subtitle">Do you currently have a Merchant Cash Advance (MCA)?</p>
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="Yes">
+                <span>Yes</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="No">
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Sorry - No MCA -->
+        <div class="form-step form-step-sorry-mca">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Rest of Form -->
+        <div class="form-step form-step-2">
+          <h2 class="form-title">Great! You Qualify</h2>
+          <p class="form-subtitle">Complete your details for a free consultation.</p>
           <form id="leadForm">
+            <input type="hidden" id="debt_amount_hidden" name="debt_amount">
+            <input type="hidden" id="has_mca_hidden" name="has_mca" value="">
             <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
             <input type="hidden" id="gclid" name="gclid" value="">
             <input type="hidden" id="msclkid" name="msclkid" value="">
@@ -427,35 +491,6 @@
             <input type="hidden" id="referrer_url" name="referrer_url" value="">
             {{HIDDEN_FIELDS}}
             <div id="dynamicFormFields"></div>
-            <!-- Pre-qualification at the end of the form -->
-            <div id="preQualFields">
-              <div class="form-group">
-                <label for="debt_amount">How much business debt do you have?</label>
-                <select id="debt_amount" name="debt_amount" required>
-                  <option value="">Select amount...</option>
-                  <option value="under-20000">Under $20,000</option>
-                  <option value="20000-50000">$20,000 - $50,000</option>
-                  <option value="50000-100000">$50,000 - $100,000</option>
-                  <option value="100000-250000">$100,000 - $250,000</option>
-                  <option value="250000-500000">$250,000 - $500,000</option>
-                  <option value="500000-1000000">$500,000 - $1,000,000</option>
-                  <option value="1000000+">$1,000,000+</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Do you have a Merchant Cash Advance (MCA)?</label>
-                <div class="radio-group">
-                  <label class="radio-label">
-                    <input type="radio" name="has_mca" value="Yes" required>
-                    <span>Yes</span>
-                  </label>
-                  <label class="radio-label">
-                    <input type="radio" name="has_mca" value="No" required>
-                    <span>No</span>
-                  </label>
-                </div>
-              </div>
-            </div>
             <div class="consent-group">
               <label class="consent-label">
                 <input type="checkbox" id="consentCheckbox" required>
@@ -465,30 +500,6 @@
             </div>
             <button type="submit" class="submit-btn">{{formSubmitText}}</button>
           </form>
-        </div>
-
-        <!-- Sorry - Debt too low -->
-        <div class="form-step form-step-sorry">
-          <div class="sorry-message">
-            <div class="sorry-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-            </div>
-            <h3>We're Sorry</h3>
-            <p>Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
-            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
-          </div>
-        </div>
-
-        <!-- Sorry - No MCA -->
-        <div class="form-step form-step-sorry-mca">
-          <div class="sorry-message">
-            <div class="sorry-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-            </div>
-            <h3>We're Sorry</h3>
-            <p>Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
-            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
-          </div>
         </div>
 
         <!-- Success -->
@@ -821,22 +832,32 @@
     document.getElementById('page_url').value = window.location.href;
     document.getElementById('referrer_url').value = document.referrer || '';
 
-    // Form elements
+    // Form step elements
     const skipPreQual = {{skipPreQual}};
-    const stepMain = document.querySelector('.form-step-main');
+    const step1 = document.querySelector('.form-step-1');
     const stepSorry = document.querySelector('.form-step-sorry');
+    const stepMca = document.querySelector('.form-step-mca');
     const stepSorryMca = document.querySelector('.form-step-sorry-mca');
+    const step2 = document.querySelector('.form-step-2');
     const stepSuccess = document.querySelector('.form-success');
+    const debtSelect = document.getElementById('debt_amount');
+    const checkDebtBtn = document.getElementById('checkDebtBtn');
 
-    // Skip pre-qualification: hide debt/MCA fields
+    // Skip pre-qualification: hide debt/MCA steps, show form directly
     if (skipPreQual) {
-      var preQualFields = document.getElementById('preQualFields');
-      if (preQualFields) preQualFields.style.display = 'none';
+      step1.classList.remove('active');
+      step1.style.display = 'none';
+      stepSorry.style.display = 'none';
+      stepMca.style.display = 'none';
+      stepSorryMca.style.display = 'none';
+      step2.querySelector('.form-title').textContent = '{{formTitle}}';
+      step2.querySelector('.form-subtitle').textContent = '{{formSubtitle}}';
+      step2.classList.add('active');
     }
 
-    // Render dynamic form fields (skip has_mca and debt_amount -- handled by preQualFields)
+    // Render dynamic form fields (skip has_mca -- handled by its own step)
     const formFields = {{formFieldsJson}};
-    const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca' && field.name !== 'debt_amount').map(field => {
+    const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
       if (field.type === 'radio') {
         const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
         return `
@@ -924,7 +945,57 @@
       });
     });
 
-    // No step navigation needed -- debt/MCA are inline fields at the end of the form
+    // Step 1: Auto-advance on debt amount selection
+    debtSelect.addEventListener('change', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) return;
+
+      setTimeout(function() {
+        step1.classList.remove('active');
+        if (debtValue === 'under-20000') {
+          stepSorry.classList.add('active');
+        } else {
+          document.getElementById('debt_amount_hidden').value = debtValue;
+          stepMca.classList.add('active');
+        }
+      }, 200);
+    });
+
+    // Step 2: MCA question -- auto-advance on radio select
+    document.querySelectorAll('input[name="mca_check"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        const mcaValue = this.value;
+        setTimeout(function() {
+          stepMca.classList.remove('active');
+          if (mcaValue === 'No') {
+            stepSorryMca.classList.add('active');
+          } else {
+            // Set has_mca hidden field in the form
+            var mcaHidden = document.getElementById('has_mca_hidden');
+            if (mcaHidden) mcaHidden.value = mcaValue;
+            step2.classList.add('active');
+          }
+        }, 200);
+      });
+    });
+
+    // Keep button as no-JS fallback
+    checkDebtBtn.addEventListener('click', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) {
+        debtSelect.focus();
+        debtSelect.style.borderColor = '#dc2626';
+        setTimeout(() => debtSelect.style.borderColor = '#eee', 2000);
+        return;
+      }
+      step1.classList.remove('active');
+      if (debtValue === 'under-20000') {
+        stepSorry.classList.add('active');
+      } else {
+        document.getElementById('debt_amount_hidden').value = debtValue;
+        stepMca.classList.add('active');
+      }
+    });
 
     // Dedup flag to prevent double-submissions
     var _formSubmitting = false;
@@ -958,22 +1029,6 @@
         }
       }
 
-      // Pre-qualification check (debt amount & MCA)
-      if (!skipPreQual) {
-        var debtVal = document.getElementById('debt_amount').value;
-        if (debtVal === 'under-20000') {
-          stepMain.classList.remove('active');
-          stepSorry.classList.add('active');
-          return;
-        }
-        var mcaRadio = this.querySelector('input[name="has_mca"]:checked');
-        if (mcaRadio && mcaRadio.value === 'No') {
-          stepMain.classList.remove('active');
-          stepSorryMca.classList.add('active');
-          return;
-        }
-      }
-
       _formSubmitting = true;
       const btn = this.querySelector('.submit-btn');
       btn.disabled = true;
@@ -1001,7 +1056,7 @@
           if (typeof fbq === 'function' && _fbPixelId) {
             fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
           }
-          stepMain.classList.remove('active');
+          step2.classList.remove('active');
           stepSuccess.classList.add('active');
           document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
