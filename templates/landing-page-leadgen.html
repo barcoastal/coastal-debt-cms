@@ -128,6 +128,11 @@
     .success-title{font-size:1.8rem;font-weight:800;color:var(--green-500);margin-bottom:12px}
     .success-text{font-size:1.05rem;color:var(--gray-600)}
 
+    /* Motivation sticky */
+    .motivation-bar{position:fixed;bottom:68px;left:0;right:0;background:var(--blue);color:var(--white);padding:10px 24px;z-index:51;text-align:center;font-size:0.85rem;font-weight:600;display:none}
+    .motivation-bar span{opacity:0.85}
+    .motivation-bar strong{color:#FFD666}
+
     /* Trust bar at bottom */
     .trust-bottom{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--gray-200);padding:16px 24px;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,0.04)}
     .trust-bottom-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:32px}
@@ -151,6 +156,8 @@
       .info-item{font-size:0.78rem}
       .screen-info{margin-top:20px;padding-top:14px}
       .nav-phone span{display:none}
+      .motivation-bar{display:block}
+      .screen{padding:64px 20px 130px}
       .trust-bottom{padding:12px 16px}
       .trust-bottom img{height:24px}
       .trust-bottom-inner{gap:16px}
@@ -361,6 +368,11 @@
   </div>
 
   <!-- Trust Logos Bottom -->
+  <!-- Motivation Sticky -->
+  <div class="motivation-bar" id="motivationBar">
+    <span id="motivationText"><strong>Did you know?</strong> Debt settlement can reduce your payments by up to 80%</span>
+  </div>
+
   <div class="trust-bottom">
     <div class="trust-bottom-inner">
       <img src="/lp/uploads/bbb-accredited.png" alt="BBB Accredited Business">
@@ -671,6 +683,29 @@
         btn.textContent = '{{formSubmitText}}';
       }
     });
+
+    // ============= Motivation Bar Rotation =============
+    (function() {
+      var messages = [
+        '<strong>Did you know?</strong> Debt settlement can reduce your payments by up to 80%',
+        '<strong>$100M+</strong> in MCA debt resolved for small businesses',
+        '<strong>Free consultation</strong> — no obligation, 100% confidential',
+        '<strong>BBB Accredited</strong> since 2018 — trusted by thousands',
+        '<strong>Stop daily ACH withdrawals</strong> — we negotiate directly with funders'
+      ];
+      var idx = 0;
+      var el = document.getElementById('motivationText');
+      if (!el) return;
+      setInterval(function() {
+        idx = (idx + 1) % messages.length;
+        el.style.opacity = '0';
+        setTimeout(function() {
+          el.innerHTML = messages[idx];
+          el.style.opacity = '1';
+        }, 300);
+      }, 5000);
+      el.style.transition = 'opacity 0.3s ease';
+    })();
   </script>
 </body>
 </html>
