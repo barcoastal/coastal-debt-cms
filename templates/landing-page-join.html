@@ -1346,47 +1346,106 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 							<p class='gform_required_legend'>&quot;<span class="gfield_required gfield_required_asterisk">*</span>&quot; indicates required fields</p>
                         </div>
 <div class="hme-lan-frm" style="max-width:520px;margin:0 auto;padding:20px 0;">
-  <form id="joinForm" onsubmit="return submitJoinForm(event)">
+  <style>
+    .jf-form .form-group { margin-bottom: 14px; }
+    .jf-form .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #112337; }
+    .jf-form .form-group input, .jf-form .form-group select, .jf-form .form-group textarea {
+      width: 100%; height: 48px; padding: 0 18px; border: 1.5px solid #eee; border-radius: 500px;
+      font-size: 15px; font-family: inherit; color: #112337; background: #fff;
+      -webkit-appearance: none; appearance: none;
+    }
+    .jf-form .form-group select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23445268' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 18px center; padding-right: 40px;
+    }
+    .jf-form .form-group textarea { height: auto; padding: 12px 18px; border-radius: 16px; }
+    .jf-form .form-group input:focus, .jf-form .form-group select:focus { outline: none; border-color: #3052FF; }
+    .jf-form .radio-group { display: flex; gap: 10px; }
+    .jf-form .radio-group label { flex: 1; display: block; cursor: pointer; margin: 0; }
+    .jf-form .radio-group input[type="radio"] { display: none; }
+    .jf-form .radio-group span {
+      display: block; padding: 14px; border: 1.5px solid #eee; border-radius: 500px;
+      text-align: center; font-weight: 600; font-size: 14px; transition: all 0.2s; cursor: pointer;
+    }
+    .jf-form .radio-group input:checked + span { border-color: #3052FF; background: rgba(48,82,255,0.06); color: #3052FF; }
+    .jf-form .consent-group { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0; }
+    .jf-form .consent-group input { margin-top: 3px; accent-color: #3052FF; width: 16px; height: 16px; flex-shrink: 0; }
+    .jf-form .consent-group label { font-size: 11px; color: #667085; line-height: 1.5; }
+    .jf-form .consent-group a { color: #3052FF; }
+    .jf-form .submit-btn {
+      width: 100%; height: 52px; background: #3052FF; color: #fff; border: none; border-radius: 500px;
+      font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.2s;
+    }
+    .jf-form .submit-btn:hover { background: #204CE5; }
+  </style>
+  <form id="joinForm" class="jf-form" action="/api/leads" method="POST">
     <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+    <input type="hidden" id="gclid" name="gclid" value="">
+    <input type="hidden" id="msclkid" name="msclkid" value="">
+    <input type="hidden" id="fbclid" name="fbclid" value="">
+    <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+    <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+    <input type="hidden" id="keyword" name="keyword" value="">
+    <input type="hidden" id="page_url" name="page_url" value="">
+    <input type="hidden" id="referrer_url" name="referrer_url" value="">
     {{HIDDEN_FIELDS}}
-    <div style="margin-bottom:16px;">
-      <label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px;color:#112337;">How Much Debt Does Your Business Have? *</label>
-      <select name="debt_amount" id="jf_debt" required onchange="joinFormCheck()" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff;-webkit-appearance:none;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath fill=%27%23445268%27 d=%27M6 8L0 0h12z%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 18px center;">
-        <option value="">Select</option>
-        <option value="Under $20,000">Under $20,000</option>
-        <option value="$20,000 - $50,000">$20,000 - $50,000</option>
-        <option value="$50,000 - $100,000">$50,000 - $100,000</option>
-        <option value="$100,000 - $500,000">$100,000 - $500,000</option>
-        <option value="$500,000 - $1,000,000">$500,000 - $1,000,000</option>
-        <option value="$1,000,000 - $5,000,000">$1,000,000 - $5,000,000</option>
-        <option value="Over $5,000,000">Over $5,000,000</option>
-      </select>
+    <div id="dynamicFormFields">
+      <!-- CMS form fields render here -->
     </div>
-    <div style="margin-bottom:16px;">
-      <label style="display:block;font-size:14px;font-weight:600;margin-bottom:6px;color:#112337;">Do you have any unsecured business loans or MCAs? *</label>
-      <div style="display:flex;gap:10px;">
-        <label style="flex:1;cursor:pointer;"><input type="radio" name="has_mca" value="Yes" required onchange="joinFormCheck()" style="display:none;"><span id="jf_mca_yes" style="display:block;padding:14px;border:1.5px solid #eee;border-radius:500px;text-align:center;font-weight:600;font-size:14px;color:#112337;background:#fff;transition:all 0.2s;cursor:pointer;">Yes</span></label>
-        <label style="flex:1;cursor:pointer;"><input type="radio" name="has_mca" value="No" onchange="joinFormCheck()" style="display:none;"><span id="jf_mca_no" style="display:block;padding:14px;border:1.5px solid #eee;border-radius:500px;text-align:center;font-weight:600;font-size:14px;color:#112337;background:#fff;transition:all 0.2s;cursor:pointer;">No</span></label>
-      </div>
+    <div class="consent-group">
+      <input type="checkbox" id="consentCheckbox" required>
+      <label for="consentCheckbox">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</label>
     </div>
-    <div id="jf_ineligible" style="display:none;padding:20px;background:#FEF3C7;border-radius:12px;color:#92400E;font-size:13px;text-align:center;margin-bottom:16px;line-height:1.6;">Unfortunately, at this time we are only able to assist businesses with multiple MCAs and debt amounts of more than $20,000.</div>
-    <div id="jf_contact_fields" style="display:none;">
-      <div style="margin-bottom:12px;"><input name="company_name" type="text" required placeholder="Company Name" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-        <input name="first_name" type="text" required placeholder="First Name" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;">
-        <input name="last_name" type="text" required placeholder="Last Name" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-        <input name="email" type="email" required placeholder="Email" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;">
-        <input name="phone" type="tel" required placeholder="Phone" style="width:100%;height:48px;padding:0 18px;border:1.5px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;">
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;">
-        <input type="checkbox" name="consent" required id="jf_consent" style="margin-top:3px;accent-color:#3052FF;width:16px;height:16px;flex-shrink:0;">
-        <label for="jf_consent" style="font-size:11px;color:#667085;line-height:1.5;">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" style="color:#3052FF;">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank" style="color:#3052FF;">Terms of Use</a>.</label>
-      </div>
-      <button type="submit" id="jf_submit" style="width:100%;height:52px;background:#3052FF;color:#fff;border:none;border-radius:500px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;">Submit</button>
-    </div>
+    <button type="submit" class="submit-btn">{{formButton}}</button>
   </form>
+  <script>
+    // Render CMS form fields
+    var formFields = {{formFieldsJson}};
+    var html = formFields.map(function(field) {
+      if (field.type === 'radio') {
+        var opts = (field.options || 'Yes,No').split(',').map(function(o) { return o.trim(); });
+        return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+          opts.map(function(opt) {
+            return '<label><input type="radio" name="' + field.name + '" value="' + opt.toLowerCase() + '" ' + (field.required ? 'required' : '') + '><span>' + opt + '</span></label>';
+          }).join('') + '</div></div>';
+      } else if (field.type === 'select') {
+        var opts = (field.options || '').split(',').map(function(o) { return o.trim(); });
+        return '<div class="form-group"><label>' + field.label + '</label><select name="' + field.name + '" ' + (field.required ? 'required' : '') + '><option value="">Select...</option>' +
+          opts.map(function(o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') + '</select></div>';
+      } else if (field.type === 'hidden') {
+        return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+      } else {
+        return '<div class="form-group"><label>' + field.label + '</label><input type="' + field.type + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '" ' + (field.required ? 'required' : '') + '></div>';
+      }
+    }).join('');
+    document.getElementById('dynamicFormFields').innerHTML = html;
+
+    // Form submit
+    document.getElementById('joinForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var fd = new FormData(this);
+      var data = {};
+      fd.forEach(function(v, k) { data[k] = v; });
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true; btn.textContent = 'Submitting...';
+      try {
+        var res = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (res.ok) { window.location.href = '/thank-you?slug={{SLUG}}'; }
+        else { throw new Error('Failed'); }
+      } catch(err) {
+        alert('Submission failed. Please try again.');
+        btn.disabled = false; btn.textContent = '{{formButton}}';
+      }
+    });
+
+    // Capture URL params for hidden fields
+    var params = new URLSearchParams(window.location.search);
+    ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k) {
+      var v = params.get(k); if (v) { var el = document.getElementById(k); if (el) el.value = v; }
+    });
+    document.getElementById('page_url').value = window.location.href;
+    document.getElementById('referrer_url').value = document.referrer;
+  </script>
 </div>
                         </div><script>
 gform.initializeOnLoaded( function() {gformInitSpinner( 1, 'https://join.coastaldebt.com/wp-content/plugins/gravityforms/images/spinner.svg', false );jQuery('#gform_ajax_frame_1').on('load',function(){var contents = jQuery(this).contents().find('*').html();var is_postback = contents.indexOf('GF_AJAX_POSTBACK') >= 0;if(!is_postback){return;}var form_content = jQuery(this).contents().find('#gform_wrapper_1');var is_confirmation = jQuery(this).contents().find('#gform_confirmation_wrapper_1').length > 0;var is_redirect = contents.indexOf('gformRedirect(){') >= 0;var is_form = form_content.length > 0 && ! is_redirect && ! is_confirmation;var mt = parseInt(jQuery('html').css('margin-top'), 10) + parseInt(jQuery('body').css('margin-top'), 10) + 100;if(is_form){form_content.find('form').css('opacity', 0);jQuery('#gform_wrapper_1').html(form_content.html());if(form_content.hasClass('gform_validation_error')){jQuery('#gform_wrapper_1').addClass('gform_validation_error');} else {jQuery('#gform_wrapper_1').removeClass('gform_validation_error');}setTimeout( function() { /* delay the scroll by 50 milliseconds to fix a bug in chrome */  }, 50 );if(window['gformInitDatepicker']) {gformInitDatepicker();}if(window['gformInitPriceFields']) {gformInitPriceFields();}var current_page = jQuery('#gform_source_page_number_1').val();gformInitSpinner( 1, 'https://join.coastaldebt.com/wp-content/plugins/gravityforms/images/spinner.svg', false );jQuery(document).trigger('gform_page_loaded', [1, current_page]);window['gf_submitting_1'] = false;}else if(!is_redirect){var confirmation_content = jQuery(this).contents().find('.GF_AJAX_POSTBACK').html();if(!confirmation_content){confirmation_content = contents;}jQuery('#gform_wrapper_1').replaceWith(confirmation_content);jQuery(document).trigger('gform_confirmation_loaded', [1]);window['gf_submitting_1'] = false;wp.a11y.speak(jQuery('#gform_confirmation_message_1').text());}else{jQuery('#gform_1').append(contents);if(window['gformRedirect']) {gformRedirect();}}jQuery(document).trigger("gform_pre_post_render", [{ formId: "1", currentPage: "current_page", abort: function() { this.preventDefault(); } }]);        if (event && event.defaultPrevented) {                return;        }        const gformWrapperDiv = document.getElementById( "gform_wrapper_1" );        if ( gformWrapperDiv ) {            const visibilitySpan = document.createElement( "span" );            visibilitySpan.id = "gform_visibility_test_1";            gformWrapperDiv.insertAdjacentElement( "afterend", visibilitySpan );        }        const visibilityTestDiv = document.getElementById( "gform_visibility_test_1" );        let postRenderFired = false;        function triggerPostRender() {            if ( postRenderFired ) {                return;            }            postRenderFired = true;            gform.core.triggerPostRenderEvents( 1, current_page );            if ( visibilityTestDiv ) {                visibilityTestDiv.parentNode.removeChild( visibilityTestDiv );            }        }        function debounce( func, wait, immediate ) {            var timeout;            return function() {                var context = this, args = arguments;                var later = function() {                    timeout = null;                    if ( !immediate ) func.apply( context, args );                };                var callNow = immediate && !timeout;                clearTimeout( timeout );                timeout = setTimeout( later, wait );                if ( callNow ) func.apply( context, args );            };        }        const debouncedTriggerPostRender = debounce( function() {            triggerPostRender();        }, 200 );        if ( visibilityTestDiv && visibilityTestDiv.offsetParent === null ) {            const observer = new MutationObserver( ( mutations ) => {                mutations.forEach( ( mutation ) => {                    if ( mutation.type === 'attributes' && visibilityTestDiv.offsetParent !== null ) {                        debouncedTriggerPostRender();                        observer.disconnect();                    }                });            });            observer.observe( document.body, {                attributes: true,                childList: false,                subtree: true,                attributeFilter: [ 'style', 'class' ],            });        } else {            triggerPostRender();        }    } );} );
