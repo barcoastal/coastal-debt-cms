@@ -1,0 +1,379 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../database');
+const { authenticateToken } = require('./auth');
+
+const GRAPH_API = 'https://graph.facebook.com/v21.0';
+const MAIN_PAGE_ID = '111392035105994';
+const IG_ACCOUNT_ID = '17841460812475563';
+
+// ---------------------------------------------------------------------------
+// Helper: resolve page token + page ID from the stored token in facebook_config
+// ---------------------------------------------------------------------------
+async function getPageToken() {
+  const config = db.prepare('SELECT * FROM facebook_config WHERE id = 1').get();
+  if (!config || !config.page_access_token) {
+    return null;
+  }
+
+  // The stored token may be a user token – try /me/accounts first
+  try {
+    const res = await fetch(
+      `${GRAPH_API}/me/accounts?access_token=${config.page_access_token}`
+    );
+    const data = await res.json();
+
+    if (data.data && data.data.length > 0) {
+      const mainPage =
+        data.data.find((p) => p.id === MAIN_PAGE_ID) || data.data[0];
+      return {
+        token: mainPage.access_token,
+        pageId: mainPage.id,
+        pageName: mainPage.name,
+      };
+    }
+  } catch (_) {
+    // fall through
+  }
+
+  // Fallback: the stored value is already a page token
+  return {
+    token: config.page_access_token,
+    pageId: MAIN_PAGE_ID,
+    pageName: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helper: fetch JSON from Graph API (GET)
+// ---------------------------------------------------------------------------
+async function graphGet(path, token, params = {}) {
+  const url = new URL(`${GRAPH_API}${path}`);
+  url.searchParams.set('access_token', token);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Helper: POST JSON to Graph API
+// ---------------------------------------------------------------------------
+async function graphPost(path, token, body) {
+  const res = await fetch(`${GRAPH_API}${path}?access_token=${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/engagement/posts
+// Fetch recent posts from both Facebook page and Instagram account
+// ---------------------------------------------------------------------------
+router.get('/posts', authenticateToken, async (req, res) => {
+  try {
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    const { token, pageId } = page;
+    const targetPageId = pageId || MAIN_PAGE_ID;
+
+    // Fetch FB and IG posts in parallel
+    const [fbData, igData] = await Promise.all([
+      graphGet(`/${targetPageId}/posts`, token, {
+        fields: 'message,created_time,full_picture,permalink_url,comments.summary(true),likes.summary(true)',
+        limit: '20',
+      }),
+      graphGet(`/${IG_ACCOUNT_ID}/media`, token, {
+        fields: 'caption,timestamp,media_url,permalink,thumbnail_url,media_type,comments_count,like_count',
+        limit: '20',
+      }),
+    ]);
+
+    // Normalize FB posts
+    const fbPosts = (fbData.data || []).map((p) => ({
+      id: p.id,
+      message: p.message || '',
+      created_time: p.created_time,
+      image: p.full_picture || null,
+      permalink: p.permalink_url || null,
+      comments_count: p.comments?.summary?.total_count || 0,
+      likes_count: p.likes?.summary?.total_count || 0,
+      platform: 'facebook',
+    }));
+
+    // Normalize IG posts
+    const igPosts = (igData.data || []).map((p) => ({
+      id: p.id,
+      message: p.caption || '',
+      created_time: p.timestamp,
+      image: p.media_url || p.thumbnail_url || null,
+      permalink: p.permalink || null,
+      media_type: p.media_type || null,
+      comments_count: p.comments_count || 0,
+      likes_count: p.like_count || 0,
+      platform: 'instagram',
+    }));
+
+    // Merge and sort by date descending
+    const posts = [...fbPosts, ...igPosts].sort(
+      (a, b) => new Date(b.created_time) - new Date(a.created_time)
+    );
+
+    return res.json({ posts });
+  } catch (err) {
+    console.error('[engagement] Error fetching posts:', err);
+    return res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/engagement/posts/:id/comments
+// Fetch comments on a specific post
+// ---------------------------------------------------------------------------
+router.get('/posts/:id/comments', authenticateToken, async (req, res) => {
+  try {
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    const { platform } = req.query;
+    const postId = req.params.id;
+
+    let comments = [];
+
+    if (platform === 'instagram') {
+      const data = await graphGet(`/${postId}/comments`, page.token, {
+        fields: 'from,text,timestamp,like_count,replies{from,text,timestamp,like_count}',
+        limit: '50',
+      });
+
+      if (data.error) {
+        return res.status(400).json({ error: data.error.message || 'Graph API error' });
+      }
+
+      // Normalize IG comments: text -> message, timestamp -> created_time
+      comments = (data.data || []).map((c) => ({
+        id: c.id,
+        from: c.from || { name: 'Unknown', id: null },
+        message: c.text || '',
+        created_time: c.timestamp,
+        like_count: c.like_count || 0,
+        replies: (c.replies?.data || []).map((r) => ({
+          id: r.id,
+          from: r.from || { name: 'Unknown', id: null },
+          message: r.text || '',
+          created_time: r.timestamp,
+          like_count: r.like_count || 0,
+        })),
+        platform: 'instagram',
+      }));
+    } else {
+      // Default to Facebook
+      const data = await graphGet(`/${postId}/comments`, page.token, {
+        fields: 'from,message,created_time,like_count,comments{from,message,created_time,like_count}',
+        limit: '50',
+      });
+
+      if (data.error) {
+        return res.status(400).json({ error: data.error.message || 'Graph API error' });
+      }
+
+      comments = (data.data || []).map((c) => ({
+        id: c.id,
+        from: c.from || { name: 'Unknown', id: null },
+        message: c.message || '',
+        created_time: c.created_time,
+        like_count: c.like_count || 0,
+        replies: (c.comments?.data || []).map((r) => ({
+          id: r.id,
+          from: r.from || { name: 'Unknown', id: null },
+          message: r.message || '',
+          created_time: r.created_time,
+          like_count: r.like_count || 0,
+        })),
+        platform: 'facebook',
+      }));
+    }
+
+    return res.json({ comments });
+  } catch (err) {
+    console.error('[engagement] Error fetching comments:', err);
+    return res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/engagement/comments/:id/like
+// Like a comment
+// ---------------------------------------------------------------------------
+router.post('/comments/:id/like', authenticateToken, async (req, res) => {
+  try {
+    const { platform } = req.body;
+    const commentId = req.params.id;
+
+    if (platform === 'instagram') {
+      return res.json({ success: false, error: 'Instagram comment likes not supported via API' });
+    }
+
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    const data = await graphPost(`/${commentId}/likes`, page.token, {});
+
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message || 'Graph API error' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[engagement] Error liking comment:', err);
+    return res.status(500).json({ error: 'Failed to like comment' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/engagement/comments/:id/reply
+// Reply to a comment
+// ---------------------------------------------------------------------------
+router.post('/comments/:id/reply', authenticateToken, async (req, res) => {
+  try {
+    const { message, platform } = req.body;
+    const commentId = req.params.id;
+
+    if (!message) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    let data;
+
+    if (platform === 'instagram') {
+      data = await graphPost(`/${commentId}/replies`, page.token, { message });
+    } else {
+      data = await graphPost(`/${commentId}/comments`, page.token, { message });
+    }
+
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message || 'Graph API error' });
+    }
+
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('[engagement] Error replying to comment:', err);
+    return res.status(500).json({ error: 'Failed to reply to comment' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/engagement/posts/:id/like-comment
+// Like a specific comment (alternative endpoint)
+// ---------------------------------------------------------------------------
+router.post('/posts/:id/like-comment', authenticateToken, async (req, res) => {
+  try {
+    const { platform } = req.body;
+    const commentId = req.params.id;
+
+    if (platform === 'instagram') {
+      return res.json({ success: false, error: 'Instagram comment likes not supported via API' });
+    }
+
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    const data = await graphPost(`/${commentId}/likes`, page.token, {});
+
+    if (data.error) {
+      return res.status(400).json({ error: data.error.message || 'Graph API error' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[engagement] Error liking comment:', err);
+    return res.status(500).json({ error: 'Failed to like comment' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/engagement/stats
+// Quick stats: total comments today, total likes, unanswered comments
+// ---------------------------------------------------------------------------
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const page = await getPageToken();
+    if (!page) {
+      return res.status(400).json({ error: 'Facebook config not found or missing page_access_token' });
+    }
+
+    const { token, pageId } = page;
+    const targetPageId = pageId || MAIN_PAGE_ID;
+
+    // Fetch recent posts from both platforms to calculate stats
+    const [fbData, igData] = await Promise.all([
+      graphGet(`/${targetPageId}/posts`, token, {
+        fields: 'comments.summary(true),likes.summary(true),created_time',
+        limit: '20',
+      }),
+      graphGet(`/${IG_ACCOUNT_ID}/media`, token, {
+        fields: 'comments_count,like_count,timestamp',
+        limit: '20',
+      }),
+    ]);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalComments = 0;
+    let totalLikes = 0;
+    let commentsToday = 0;
+
+    // Aggregate FB stats
+    for (const post of (fbData.data || [])) {
+      const commentCount = post.comments?.summary?.total_count || 0;
+      const likeCount = post.likes?.summary?.total_count || 0;
+      totalComments += commentCount;
+      totalLikes += likeCount;
+
+      if (new Date(post.created_time) >= today) {
+        commentsToday += commentCount;
+      }
+    }
+
+    // Aggregate IG stats
+    for (const post of (igData.data || [])) {
+      totalComments += post.comments_count || 0;
+      totalLikes += post.like_count || 0;
+
+      if (new Date(post.timestamp) >= today) {
+        commentsToday += post.comments_count || 0;
+      }
+    }
+
+    return res.json({
+      stats: {
+        comments_today: commentsToday,
+        total_comments: totalComments,
+        total_likes: totalLikes,
+      },
+    });
+  } catch (err) {
+    console.error('[engagement] Error fetching stats:', err);
+    return res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+module.exports = router;
