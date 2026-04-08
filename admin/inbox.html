@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inbox | Coastal Debt CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <style>
+    /* Override main-content for full-height inbox */
+    .main-content { padding: 0 !important; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .inbox-container { display: flex; flex: 1; min-height: 0; }
+
+    /* Left Panel */
+    .conv-panel { width: 360px; min-width: 360px; border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; background: #fff; }
+    .conv-header { padding: 20px 20px 0; flex-shrink: 0; }
+    .conv-header h1 { font-size: 1.35rem; margin-bottom: 14px; }
+    .conv-search { position: relative; margin-bottom: 14px; }
+    .conv-search input {
+      width: 100%; padding: 9px 12px 9px 36px; border: 1px solid var(--gray-200); border-radius: 8px;
+      font-size: 0.85rem; background: var(--gray-50); transition: border-color .15s;
+    }
+    .conv-search input:focus { outline: none; border-color: var(--primary); background: #fff; }
+    .conv-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--gray-400); }
+    .conv-filters { display: flex; gap: 6px; margin-bottom: 14px; }
+    .conv-filters button {
+      padding: 5px 12px; border-radius: 20px; border: 1px solid var(--gray-200); background: #fff;
+      font-size: 0.75rem; cursor: pointer; color: var(--gray-600); transition: all .15s; font-weight: 500;
+    }
+    .conv-filters button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .conv-filters button:hover:not(.active) { border-color: var(--gray-400); }
+    .conv-list { flex: 1; overflow-y: auto; }
+    .conv-item {
+      display: flex; align-items: flex-start; gap: 12px; padding: 14px 20px; cursor: pointer;
+      border-bottom: 1px solid var(--gray-100); transition: background .1s; position: relative;
+    }
+    .conv-item:hover { background: var(--gray-50); }
+    .conv-item.active { background: #eef1ff; border-left: 3px solid var(--primary); padding-left: 17px; }
+    .conv-avatar {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--gray-200); display: flex;
+      align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; color: var(--gray-600);
+      flex-shrink: 0;
+    }
+    .conv-info { flex: 1; min-width: 0; }
+    .conv-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .conv-name { font-weight: 600; font-size: 0.85rem; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-platform {
+      font-size: 0.6rem; padding: 1px 6px; border-radius: 10px; font-weight: 700; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .conv-platform.fb { background: #1877f2; color: #fff; }
+    .conv-platform.ig { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: #fff; }
+    .conv-snippet { font-size: 0.78rem; color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .conv-meta { display: flex; align-items: center; flex-shrink: 0; flex-direction: column; gap: 4px; }
+    .conv-time { font-size: 0.68rem; color: var(--gray-400); white-space: nowrap; }
+    .conv-unread { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+    .conv-item.unread .conv-name { color: var(--gray-900); }
+    .conv-item.unread .conv-snippet { color: var(--gray-700); font-weight: 500; }
+    .conv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--gray-400); font-size: 0.85rem; gap: 8px; }
+
+    /* Right Panel */
+    .msg-panel { flex: 1; display: flex; flex-direction: column; background: var(--gray-50); min-width: 0; }
+    .msg-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--gray-400); gap: 12px;
+    }
+    .msg-empty svg { width: 56px; height: 56px; opacity: 0.4; }
+    .msg-empty p { font-size: 0.95rem; }
+    .msg-header {
+      display: flex; align-items: center; gap: 12px; padding: 16px 24px; background: #fff;
+      border-bottom: 1px solid var(--gray-200); flex-shrink: 0;
+    }
+    .msg-header-back {
+      display: none; background: none; border: none; cursor: pointer; padding: 4px; color: var(--gray-600);
+    }
+    .msg-header-name { font-weight: 600; font-size: 1rem; }
+    .msg-thread { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 4px; }
+    .msg-date-sep { text-align: center; font-size: 0.7rem; color: var(--gray-400); margin: 12px 0; font-weight: 500; }
+    .msg-bubble-wrap { display: flex; flex-direction: column; max-width: 65%; margin-bottom: 2px; }
+    .msg-bubble-wrap.them { align-self: flex-start; }
+    .msg-bubble-wrap.us { align-self: flex-end; }
+    .msg-bubble {
+      padding: 10px 14px; border-radius: 18px; font-size: 0.85rem; line-height: 1.45;
+      word-wrap: break-word; white-space: pre-wrap;
+    }
+    .msg-bubble-wrap.them .msg-bubble { background: #fff; color: var(--gray-800); border-bottom-left-radius: 4px; }
+    .msg-bubble-wrap.us .msg-bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+    .msg-time { font-size: 0.65rem; color: var(--gray-400); margin-top: 2px; padding: 0 4px; }
+    .msg-bubble-wrap.us .msg-time { text-align: right; }
+    .msg-attachment { margin-top: 6px; }
+    .msg-attachment img { max-width: 240px; border-radius: 12px; cursor: pointer; }
+    .msg-attachment a { color: var(--primary); font-size: 0.8rem; text-decoration: underline; }
+    .msg-reply {
+      display: flex; align-items: flex-end; gap: 10px; padding: 14px 24px; background: #fff;
+      border-top: 1px solid var(--gray-200); flex-shrink: 0;
+    }
+    .msg-reply textarea {
+      flex: 1; padding: 10px 14px; border: 1px solid var(--gray-200); border-radius: 20px; resize: none;
+      font-family: inherit; font-size: 0.85rem; max-height: 120px; line-height: 1.4; overflow-y: auto;
+      transition: border-color .15s;
+    }
+    .msg-reply textarea:focus { outline: none; border-color: var(--primary); }
+    .msg-reply button {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--primary); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s;
+    }
+    .msg-reply button:hover { background: var(--primary-light); }
+    .msg-reply button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .msg-reply button svg { width: 18px; height: 18px; color: #fff; }
+
+    /* Loading */
+    .loading-spinner {
+      display: flex; align-items: center; justify-content: center; padding: 40px;
+    }
+    .loading-spinner::after {
+      content: ''; width: 28px; height: 28px; border: 3px solid var(--gray-200);
+      border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Sidebar unread badge */
+    .nav-badge {
+      background: #ef4444; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 1px 6px;
+      border-radius: 10px; margin-left: auto; min-width: 18px; text-align: center; line-height: 1.4;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .conv-panel { width: 100%; min-width: 100%; }
+      .msg-panel { display: none; }
+      .inbox-container.thread-open .conv-panel { display: none; }
+      .inbox-container.thread-open .msg-panel { display: flex; }
+      .msg-header-back { display: flex; }
+      .msg-bubble-wrap { max-width: 80%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="nautilus-brand">NAUTILUS</span>
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/inbox.html" class="active" style="display:flex;align-items:center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Inbox
+          <span class="nav-badge" id="sidebarBadge" style="display:none;">0</span>
+        </a>
+        <a href="/admin/deep-analysis.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          Deep Analysis
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/calls.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Calls
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/tiktok.html">TikTok</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/reddit.html">Reddit</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+          <a href="/admin/fb-deep-events.html">FB Deep Events</a>
+          <a href="/admin/tiktok-debug.html">TikTok Debug</a>
+        </div>
+        <a href="/admin/redtrack.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          RedTrack
+        </a>
+        <a href="/admin/google-sheet.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Google Sheet
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/ad-generator.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
+          Ad Generator
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="inbox-container" id="inboxContainer">
+        <!-- Left: Conversation List -->
+        <div class="conv-panel">
+          <div class="conv-header">
+            <h1>Inbox</h1>
+            <div class="conv-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="Search conversations...">
+            </div>
+            <div class="conv-filters">
+              <button class="active" data-filter="all">All</button>
+              <button data-filter="facebook">Facebook</button>
+              <button data-filter="instagram">Instagram</button>
+              <button data-filter="unread">Unread</button>
+            </div>
+          </div>
+          <div class="conv-list" id="convList">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+
+        <!-- Right: Message Thread -->
+        <div class="msg-panel" id="msgPanel">
+          <div class="msg-empty" id="msgEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <p>Select a conversation</p>
+          </div>
+          <div id="msgThread" style="display:none;flex:1;flex-direction:column;min-height:0;">
+            <div class="msg-header">
+              <button class="msg-header-back" id="backBtn" onclick="closeThread()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="msg-header-name" id="threadName"></div>
+              <span class="conv-platform" id="threadPlatform"></span>
+            </div>
+            <div class="msg-thread" id="messageArea"></div>
+            <div class="msg-reply">
+              <textarea id="replyInput" rows="1" placeholder="Type a message..."></textarea>
+              <button id="sendBtn" onclick="sendReply()" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+const PAGE_ID = '111392035105994';
+const token = localStorage.getItem('token');
+if (!token) window.location = '/admin/login.html';
+
+let conversations = [];
+let activeConvId = null;
+let activeConv = null;
+let currentFilter = 'all';
+let searchQuery = '';
+let pollTimer = null;
+let lastConvData = '';
+
+// ── API helpers ──
+async function api(url) {
+  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+  if (res.status === 401) { window.location = '/admin/login.html'; return null; }
+  return res.json();
+}
+async function apiPost(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (res.status === 401) { window.location = '/admin/login.html'; return null; }
+  return res.json();
+}
+
+// ── Time formatting ──
+function relativeTime(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  if (diff < 604800) return d.toLocaleDateString('en-US', { weekday: 'short' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function messageTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+function dateSeparator(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+// ── Notifications ──
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+function showNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/admin/assets/img/logo-icon.png' });
+  }
+  playBeep();
+}
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    gain.gain.value = 0.1;
+    osc.start(); osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+// ── Conversation list ──
+async function loadConversations(silent) {
+  if (!silent) {
+    document.getElementById('convList').innerHTML = '<div class="loading-spinner"></div>';
+  }
+  const data = await api('/api/inbox/conversations');
+  if (!data) return;
+
+  const newData = JSON.stringify(data.conversations);
+  if (silent && lastConvData) {
+    // Check for new messages
+    const oldConvs = JSON.parse(lastConvData);
+    for (const conv of data.conversations) {
+      const old = oldConvs.find(c => c.id === conv.id);
+      if (old && conv.message_count > old.message_count && conv.id !== activeConvId) {
+        const name = conv.participants?.[0]?.name || 'Someone';
+        showNotification('New message from ' + name, conv.snippet || '');
+      }
+    }
+  }
+  lastConvData = newData;
+  conversations = data.conversations || [];
+  renderConversations();
+  updateUnreadBadge();
+}
+
+function renderConversations() {
+  const list = document.getElementById('convList');
+  let filtered = conversations;
+
+  if (currentFilter === 'facebook') filtered = filtered.filter(c => c.platform === 'facebook');
+  else if (currentFilter === 'instagram') filtered = filtered.filter(c => c.platform === 'instagram');
+  else if (currentFilter === 'unread') filtered = filtered.filter(c => c.unread_count > 0);
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(c => {
+      const name = c.participants?.[0]?.name || '';
+      return name.toLowerCase().includes(q) || (c.snippet || '').toLowerCase().includes(q);
+    });
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="conv-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>No conversations found</span></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(c => {
+    const name = c.participants?.[0]?.name || 'Unknown';
+    const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const isUnread = c.unread_count > 0;
+    const isActive = c.id === activeConvId;
+    const platformClass = c.platform === 'instagram' ? 'ig' : 'fb';
+    const platformLabel = c.platform === 'instagram' ? 'IG' : 'FB';
+    return `
+      <div class="conv-item ${isUnread ? 'unread' : ''} ${isActive ? 'active' : ''}" onclick="openConversation('${c.id}')">
+        <div class="conv-avatar">${initials}</div>
+        <div class="conv-info">
+          <div class="conv-name-row">
+            <span class="conv-name">${escHtml(name)}</span>
+            <span class="conv-platform ${platformClass}">${platformLabel}</span>
+          </div>
+          <div class="conv-snippet">${escHtml(c.snippet || '')}</div>
+        </div>
+        <div class="conv-meta">
+          <span class="conv-time">${relativeTime(c.updated_time)}</span>
+          ${isUnread ? '<span class="conv-unread"></span>' : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateUnreadBadge() {
+  const total = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+  const badge = document.getElementById('sidebarBadge');
+  if (total > 0) {
+    badge.textContent = total > 99 ? '99+' : total;
+    badge.style.display = '';
+    document.title = `(${total}) Inbox | Coastal Debt CMS`;
+  } else {
+    badge.style.display = 'none';
+    document.title = 'Inbox | Coastal Debt CMS';
+  }
+}
+
+// ── Message thread ──
+async function openConversation(convId) {
+  activeConvId = convId;
+  activeConv = conversations.find(c => c.id === convId);
+  renderConversations();
+
+  document.getElementById('msgEmpty').style.display = 'none';
+  const thread = document.getElementById('msgThread');
+  thread.style.display = 'flex';
+
+  const name = activeConv?.participants?.[0]?.name || 'Unknown';
+  document.getElementById('threadName').textContent = name;
+  const plat = document.getElementById('threadPlatform');
+  plat.textContent = activeConv?.platform === 'instagram' ? 'IG' : 'FB';
+  plat.className = 'conv-platform ' + (activeConv?.platform === 'instagram' ? 'ig' : 'fb');
+
+  document.getElementById('inboxContainer').classList.add('thread-open');
+  const area = document.getElementById('messageArea');
+  area.innerHTML = '<div class="loading-spinner"></div>';
+
+  const data = await api('/api/inbox/conversations/' + convId + '/messages');
+  if (!data) return;
+  renderMessages(data.messages || []);
+}
+
+function renderMessages(messages) {
+  const area = document.getElementById('messageArea');
+  if (!messages.length) {
+    area.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:40px;font-size:0.85rem;">No messages yet</div>';
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  for (const msg of messages) {
+    const msgDate = dateSeparator(msg.created_time);
+    if (msgDate !== lastDate) {
+      html += `<div class="msg-date-sep">${msgDate}</div>`;
+      lastDate = msgDate;
+    }
+    const isUs = msg.from?.id === PAGE_ID;
+    const side = isUs ? 'us' : 'them';
+    let attachHtml = '';
+    if (msg.attachments && msg.attachments.length) {
+      for (const att of msg.attachments) {
+        if (att.mime_type && att.mime_type.startsWith('image')) {
+          attachHtml += `<div class="msg-attachment"><img src="${escHtml(att.url || att.image_data?.url || '')}" alt="attachment" onclick="window.open(this.src)"></div>`;
+        } else if (att.url) {
+          attachHtml += `<div class="msg-attachment"><a href="${escHtml(att.url)}" target="_blank">Attachment</a></div>`;
+        }
+      }
+    }
+    html += `
+      <div class="msg-bubble-wrap ${side}">
+        <div class="msg-bubble">${escHtml(msg.message || '')}${attachHtml}</div>
+        <div class="msg-time">${messageTime(msg.created_time)}</div>
+      </div>`;
+  }
+  area.innerHTML = html;
+  area.scrollTop = area.scrollHeight;
+}
+
+function closeThread() {
+  activeConvId = null;
+  activeConv = null;
+  document.getElementById('inboxContainer').classList.remove('thread-open');
+  document.getElementById('msgThread').style.display = 'none';
+  document.getElementById('msgEmpty').style.display = '';
+  renderConversations();
+}
+
+// ── Reply ──
+async function sendReply() {
+  const input = document.getElementById('replyInput');
+  const message = input.value.trim();
+  if (!message || !activeConv) return;
+
+  const recipientId = activeConv.participants?.[0]?.id;
+  if (!recipientId) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  // Optimistically add message
+  const area = document.getElementById('messageArea');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble-wrap us';
+  bubble.innerHTML = `<div class="msg-bubble">${escHtml(message)}</div><div class="msg-time">Sending...</div>`;
+  area.appendChild(bubble);
+  area.scrollTop = area.scrollHeight;
+
+  const result = await apiPost('/api/inbox/conversations/' + activeConvId + '/reply', {
+    message,
+    platform: activeConv.platform,
+    recipientId
+  });
+
+  if (result && result.success) {
+    bubble.querySelector('.msg-time').textContent = messageTime(new Date().toISOString());
+  } else {
+    bubble.querySelector('.msg-time').textContent = 'Failed to send';
+    bubble.querySelector('.msg-time').style.color = 'var(--red)';
+  }
+}
+
+// ── Textarea auto-resize & Enter to send ──
+const replyInput = document.getElementById('replyInput');
+replyInput.addEventListener('input', () => {
+  replyInput.style.height = 'auto';
+  replyInput.style.height = Math.min(replyInput.scrollHeight, 120) + 'px';
+  document.getElementById('sendBtn').disabled = !replyInput.value.trim();
+});
+replyInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (replyInput.value.trim()) sendReply();
+  }
+});
+
+// ── Search & Filters ──
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  renderConversations();
+});
+document.querySelectorAll('.conv-filters button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.conv-filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderConversations();
+  });
+});
+
+// ── Polling ──
+function startPolling() {
+  pollTimer = setInterval(() => {
+    loadConversations(true);
+    if (activeConvId) refreshActiveThread();
+  }, 10000);
+}
+async function refreshActiveThread() {
+  const data = await api('/api/inbox/conversations/' + activeConvId + '/messages');
+  if (!data) return;
+  const area = document.getElementById('messageArea');
+  const wasAtBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 60;
+  renderMessages(data.messages || []);
+  if (wasAtBottom) area.scrollTop = area.scrollHeight;
+}
+
+// ── User info (sidebar footer) ──
+async function loadUserInfo() {
+  try {
+    const data = await api('/api/auth/me');
+    if (data) {
+      document.getElementById('userName').textContent = data.name || 'Admin';
+      document.getElementById('userEmail').textContent = data.email || '';
+      document.getElementById('userAvatar').textContent = (data.name || 'A')[0].toUpperCase();
+    }
+  } catch(e) {}
+}
+function logout() {
+  localStorage.removeItem('token');
+  window.location = '/admin/login.html';
+}
+
+// ── Helpers ──
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Init ──
+requestNotificationPermission();
+loadUserInfo();
+loadConversations();
+startPolling();
+</script>
+</body>
+</html>

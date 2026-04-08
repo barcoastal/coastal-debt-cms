@@ -32,6 +32,7 @@ const redditAdsRoutes = require('./routes/reddit-ads');
 const retreaverRoutes = require('./routes/retreaver');
 const adGeneratorRoutes = require('./routes/ad-generator');
 const deepAnalysisRoutes = require('./routes/deep-analysis');
+const inboxRoutes = require('./routes/inbox');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -224,6 +225,7 @@ app.use('/api/reddit-ads', redditAdsRoutes);
 app.use('/api/retreaver', retreaverRoutes);
 app.use('/api/ad-generator', adGeneratorRoutes);
 app.use('/api/deep-analysis', deepAnalysisRoutes);
+app.use('/api/inbox', inboxRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)
