@@ -2397,7 +2397,16 @@ async function handleJoinSubmit(e) {
   var d = {}; new FormData(e.target).forEach(function(v, k) { d[k] = v; });
   try {
     var r = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
-    if (r.ok) window.location.href = '/thank-you?slug={{SLUG}}'; else throw 0;
+    if (r.ok) {
+      // Show thank you inline
+      var form = document.getElementById('leadForm');
+      form.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
+        '<div style="width:60px;height:60px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        '<h2 style="font-size:24px;font-weight:800;color:#0B1320;margin-bottom:8px;">Thank You!</h2>' +
+        '<p style="font-size:16px;color:#445268;line-height:1.6;">Your information has been received.<br>A debt specialist will call you within <b>15 minutes</b>.</p>' +
+        '<a href="tel:{{phoneDigits}}" style="display:inline-flex;align-items:center;gap:8px;background:#3052FF;color:#fff;font-size:18px;font-weight:700;padding:14px 32px;border-radius:50px;text-decoration:none;margin-top:16px;">Call Now: {{phone}}</a>' +
+        '</div>';
+    } else throw 0;
   } catch(err) {
     alert('Submission failed. Please try again.');
     btn.disabled = false; btn.textContent = '{{formButton}}';
