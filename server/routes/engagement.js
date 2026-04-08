@@ -133,7 +133,7 @@ router.get('/posts', authenticateToken, async (req, res) => {
       id: p.id,
       message: p.caption || '',
       created_time: p.timestamp,
-      image: p.media_url || p.thumbnail_url || null,
+      image: (p.media_type === 'VIDEO' ? p.thumbnail_url : p.media_url) || p.thumbnail_url || null,
       permalink: p.permalink || null,
       media_type: p.media_type || null,
       comments_count: p.comments_count || 0,
