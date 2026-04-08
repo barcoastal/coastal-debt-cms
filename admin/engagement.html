@@ -254,6 +254,7 @@ async function apiPost(url, body) {
 }
 
 function escHtml(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function proxyImg(url) { if (!url) return ''; return '/api/engagement/image-proxy?url=' + encodeURIComponent(url); }
 function relTime(d) {
   var now = Date.now(), t = new Date(d).getTime(), diff = (now - t) / 1000;
   if (diff < 60) return 'just now';
@@ -296,7 +297,7 @@ function renderPosts() {
     var platClass = p.platform === 'instagram' ? 'ig' : 'fb';
     var platLabel = p.platform === 'instagram' ? 'IG' : 'FB';
     var thumbHtml = img
-      ? '<img class="post-thumb" src="' + escHtml(img) + '" onerror="this.style.display=\'none\'">'
+      ? '<img class="post-thumb" src="' + proxyImg(img) + '" onerror="this.style.display=\'none\'">'
       : '<div class="post-thumb-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/></svg></div>';
 
     var typeBadge = p.type === 'ad' ? '<span class="post-type-badge ad">AD</span>' : '';
@@ -332,7 +333,7 @@ async function selectPost(id) {
 
   // Header
   var img = activePost.full_picture || activePost.media_url || activePost.thumbnail_url || '';
-  document.getElementById('commentThumb').src = img || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="%23e5e7eb"><rect width="44" height="44"/></svg>';
+  document.getElementById('commentThumb').src = img ? proxyImg(img) : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="%23e5e7eb"><rect width="44" height="44"/></svg>';
   document.getElementById('commentPostText').textContent = activePost.message || activePost.caption || 'No caption';
   var comments = activePost.comments_count || (activePost.comments && activePost.comments.summary ? activePost.comments.summary.total_count : 0) || 0;
   var likes = activePost.likes_count || activePost.like_count || (activePost.likes && activePost.likes.summary ? activePost.likes.summary.total_count : 0) || 0;

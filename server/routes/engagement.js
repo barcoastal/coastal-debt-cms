@@ -450,4 +450,26 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// GET /api/engagement/image-proxy
+// Proxy Facebook/Instagram CDN images to avoid CORS/referrer blocks
+// ---------------------------------------------------------------------------
+router.get('/image-proxy', authenticateToken, async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url || (!url.includes('fbcdn.net') && !url.includes('instagram.') && !url.includes('facebook.'))) {
+      return res.status(400).send('Invalid URL');
+    }
+    const response = await fetch(url);
+    if (!response.ok) return res.status(response.status).send('Image fetch failed');
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=86400');
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    res.status(500).send('Proxy error');
+  }
+});
+
 module.exports = router;
