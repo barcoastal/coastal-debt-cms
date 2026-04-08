@@ -225,7 +225,7 @@
             <p>Select a post to view comments</p>
           </div>
           <div id="commentContent" style="display:none;flex-direction:column;height:100%;overflow-y:auto;">
-            <div id="postDetailSection"></div>
+            <div id="postDetailSection" style="background:#fff;flex-shrink:0;"></div>
             <div class="comment-list" id="commentList" style="flex-shrink:0;">
               <div class="loading-spinner"></div>
             </div>
@@ -349,9 +349,10 @@ async function selectPost(id) {
   content.style.display = 'flex';
 
   // Build post detail in the panel
+  console.log('[Engagement] Post image URL:', img);
   var detailEl = document.getElementById('postDetailSection');
   detailEl.innerHTML =
-    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="this.style.display=\'none\'">' : '') +
+    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="console.error(\'Image proxy failed, trying direct\');this.onerror=null;this.src=\'' + img.replace(/'/g, "\\'") + '\'">' : '') +
     '<div class="post-detail-body">' +
       '<span class="post-detail-platform ' + platClass + '">' + platLabel + '</span>' +
       '<span class="post-detail-time">' + relTime(time) + '</span>' +
