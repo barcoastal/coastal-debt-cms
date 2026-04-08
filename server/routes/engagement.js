@@ -166,18 +166,20 @@ router.get('/posts', authenticateToken, async (req, res) => {
       };
     });
 
-    // For ads with object_story_id, try to get comment counts
-    for (const ad of fbAds) {
+    // For ads with object_story_id, fetch the actual post to get image + comment/like counts
+    await Promise.all(fbAds.map(async (ad) => {
       if (ad.id && ad.id.includes('_')) {
         try {
           const postData = await graphGet(`/${ad.id}`, token, {
-            fields: 'comments.summary(true),likes.summary(true)',
+            fields: 'full_picture,message,comments.summary(true),likes.summary(true)',
           });
+          if (postData.full_picture) ad.image = postData.full_picture;
+          if (postData.message && !ad.message) ad.message = postData.message;
           ad.comments_count = postData.comments?.summary?.total_count || 0;
           ad.likes_count = postData.likes?.summary?.total_count || 0;
         } catch (_) {}
       }
-    }
+    }));
 
     // Merge and sort by date descending
     const posts = [...fbPosts, ...igPosts, ...fbAds].sort(
