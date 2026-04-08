@@ -52,7 +52,7 @@
     .comment-empty p { font-size: 0.95rem; }
     .comment-header { padding: 0; background: #fff; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; }
     .comment-header-back { display: none; background: none; border: none; cursor: pointer; padding: 4px; color: var(--gray-600); }
-    .post-detail-img { width: 100%; max-height: 400px; object-fit: cover; display: block; }
+    .post-detail-img { width: 100%; max-height: 400px; object-fit: cover; display: block; background: var(--gray-100); min-height: 200px; }
     .post-detail-body { padding: 16px 24px; }
     .post-detail-actions { display: flex; gap: 20px; padding: 10px 24px; border-top: 1px solid var(--gray-100); }
     .post-detail-actions span { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--gray-600); font-weight: 500; }
@@ -335,7 +335,7 @@ async function selectPost(id) {
   activePost = posts.find(p => p.id === id);
   renderPosts();
 
-  var img = activePost.full_picture || activePost.media_url || activePost.thumbnail_url || '';
+  var img = activePost.image || activePost.full_picture || activePost.media_url || activePost.thumbnail_url || '';
   var text = activePost.message || activePost.caption || 'No caption';
   var commentsCount = activePost.comments_count || (activePost.comments && activePost.comments.summary ? activePost.comments.summary.total_count : 0) || 0;
   var likes = activePost.likes_count || activePost.like_count || (activePost.likes && activePost.likes.summary ? activePost.likes.summary.total_count : 0) || 0;
@@ -351,7 +351,7 @@ async function selectPost(id) {
   // Build post detail in the panel
   var detailEl = document.getElementById('postDetailSection');
   detailEl.innerHTML =
-    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="this.src=\'' + proxyImg(activePost.thumbnail_url || '') + '\';this.onerror=function(){this.style.display=\'none\'}">' : '') +
+    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="this.style.display=\'none\'">' : '') +
     '<div class="post-detail-body">' +
       '<span class="post-detail-platform ' + platClass + '">' + platLabel + '</span>' +
       '<span class="post-detail-time">' + relTime(time) + '</span>' +
