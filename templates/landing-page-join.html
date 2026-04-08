@@ -2303,14 +2303,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Not eligible message
   var notEligible = '<div id="jfNotEligible" style="display:none;background:#FFF3CD;border:1px solid #FFE69C;border-radius:12px;padding:20px;text-align:center;margin-top:12px;font-size:15px;color:#664D03;line-height:1.6">' +
-    'Unfortunately, at this time we are only able to assist businesses with multiple MCAs and debt amounts of more than $20,000.</div>';
+    'Thank you for your interest in Coastal Debt Resolve. Unfortunately, at this time, we are only able to assist businesses with multiple MCA\'s with debt amounts of more than $20,000.</div>';
 
   c.innerHTML = step1 + step2 + step3 + notEligible;
 
-  // Step 1 → Step 2 (triggers on dropdown change, no button needed)
+  // Step 1 → Step 2 (triggers on dropdown change)
   document.getElementById('jfDebt').addEventListener('change', function() {
     var debt = this.value;
     if (!debt) return;
+    // Visual feedback: highlight dropdown border blue
+    this.style.borderColor = '#3052FF';
+    this.style.boxShadow = '0 0 0 2px rgba(48,82,255,0.15)';
+
     if (debt === 'Under $20,000') {
       document.getElementById('jfStep1Btn').style.display = 'none';
       document.getElementById('jfStep2').style.display = 'none';
@@ -2318,9 +2322,15 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('jfNotEligible').style.display = 'block';
       return;
     }
+    // Animate transition
     document.getElementById('jfStep1Btn').style.display = 'none';
     document.getElementById('jfNotEligible').style.display = 'none';
-    document.getElementById('jfStep2').style.display = 'block';
+    var step2 = document.getElementById('jfStep2');
+    step2.style.display = 'block';
+    step2.style.opacity = '0';
+    step2.style.transform = 'translateY(10px)';
+    step2.style.transition = 'opacity 0.3s, transform 0.3s';
+    setTimeout(function() { step2.style.opacity = '1'; step2.style.transform = 'translateY(0)'; }, 50);
   });
 
   // Step 2 → Step 3 (on radio click)
@@ -2333,13 +2343,21 @@ document.addEventListener('DOMContentLoaded', function() {
       if (this.value === 'No') {
         document.getElementById('jfStep3').style.display = 'none';
         document.getElementById('jfNotEligible').style.display = 'block';
+        document.getElementById('consentCb').closest('div').style.display = 'none';
+        document.querySelector('#leadForm button[type="submit"]').style.display = 'none';
       } else {
         document.getElementById('jfNotEligible').style.display = 'none';
-        document.getElementById('jfStep3').style.display = 'block';
-        // Show consent + submit
-        document.getElementById('consentCb').closest('div').style.display = 'flex';
-        var submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) submitBtn.style.display = 'block';
+        var step3 = document.getElementById('jfStep3');
+        step3.style.display = 'block';
+        step3.style.opacity = '0';
+        step3.style.transform = 'translateY(10px)';
+        step3.style.transition = 'opacity 0.3s, transform 0.3s';
+        setTimeout(function() { step3.style.opacity = '1'; step3.style.transform = 'translateY(0)'; }, 50);
+        // Show consent + submit with animation
+        var consentDiv = document.getElementById('consentCb').closest('div');
+        consentDiv.style.display = 'flex';
+        var submitBtn = document.querySelector('#leadForm button[type="submit"]');
+        submitBtn.style.display = 'block';
       }
     });
   });
