@@ -297,7 +297,7 @@ function renderPosts() {
   }
   list.innerHTML = filtered.map(function(p) {
     var text = p.message || p.caption || '';
-    var img = p.full_picture || p.media_url || p.thumbnail_url || '';
+    var img = p.image || p.full_picture || p.media_url || p.thumbnail_url || '';
     var comments = p.comments_count || (p.comments && p.comments.summary ? p.comments.summary.total_count : 0) || 0;
     var likes = p.likes_count || p.like_count || (p.likes && p.likes.summary ? p.likes.summary.total_count : 0) || 0;
     var time = p.created_time || p.timestamp || '';

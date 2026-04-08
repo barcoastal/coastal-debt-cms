@@ -199,6 +199,14 @@ router.get('/posts', authenticateToken, async (req, res) => {
       (a, b) => new Date(b.created_time) - new Date(a.created_time)
     );
 
+    // Debug: log image status
+    const withImg = posts.filter(p => p.image).length;
+    const withoutImg = posts.filter(p => !p.image).length;
+    console.log(`[engagement] Posts: ${posts.length} total, ${withImg} with image, ${withoutImg} without`);
+    if (posts.length > 0 && !posts[0].image) {
+      console.log('[engagement] First post raw:', JSON.stringify(posts[0]).substring(0, 300));
+    }
+
     return res.json({ posts });
   } catch (err) {
     console.error('[engagement] Error fetching posts:', err);
