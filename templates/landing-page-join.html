@@ -2307,16 +2307,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   c.innerHTML = step1 + step2 + step3 + notEligible;
 
-  // Step 1 → Step 2
-  document.getElementById('jfStep1Btn').addEventListener('click', function() {
-    var debt = document.getElementById('jfDebt').value;
-    if (!debt) { alert('Please select a debt amount.'); return; }
+  // Step 1 → Step 2 (triggers on dropdown change, no button needed)
+  document.getElementById('jfDebt').addEventListener('change', function() {
+    var debt = this.value;
+    if (!debt) return;
     if (debt === 'Under $20,000') {
-      document.getElementById('jfStep1').style.display = 'none';
+      document.getElementById('jfStep1Btn').style.display = 'none';
+      document.getElementById('jfStep2').style.display = 'none';
+      document.getElementById('jfStep3').style.display = 'none';
       document.getElementById('jfNotEligible').style.display = 'block';
       return;
     }
     document.getElementById('jfStep1Btn').style.display = 'none';
+    document.getElementById('jfNotEligible').style.display = 'none';
     document.getElementById('jfStep2').style.display = 'block';
   });
 
