@@ -956,15 +956,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 							<div class="elementor-icon-box-wrapper">
 
 						<div class="elementor-icon-box-icon">
-				<a href="tel:+18889799511" class="elementor-icon" tabindex="-1" aria-label="(888) 979-9511">
+				<a href="tel:{{phoneDigits}}" class="elementor-icon" tabindex="-1" aria-label="{{phone}}">
 				<i aria-hidden="true" class="fas fa-phone-alt"></i>				</a>
 			</div>
 			
 						<div class="elementor-icon-box-content">
 
 									<div class="elementor-icon-box-title">
-						<a href="tel:+18889799511" >
-							(888) 979-9511						</a>
+						<a href="tel:{{phoneDigits}}" >
+							{{phone}}						</a>
 					</div>
 				
 				
@@ -1027,7 +1027,7 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
         {{HIDDEN_FIELDS}}
         <div id="dynamicFormFields"></div>
         <div style="display:flex;gap:8px;align-items:flex-start;margin:14px 0 14px;">
-          <input type="checkbox" id="consentCb" required style="margin-top:3px;accent-color:#3052FF;width:16px;height:16px;flex-shrink:0;">
+          <input type="checkbox" id="consentCb" required style="margin-top:2px;accent-color:#3052FF;width:20px;height:20px;flex-shrink:0;cursor:pointer;border:2px solid #3052FF;border-radius:4px;">
           <label for="consentCb" style="font-size:11px;color:#3052FF;line-height:1.5;">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" style="color:#3052FF;text-decoration:underline;">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank" style="color:#3052FF;text-decoration:underline;">Terms of Use</a>.</label>
         </div>
         <button type="submit" class="gform_button button" style="width:100%;padding:12px;background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;">{{formButton}}</button>
