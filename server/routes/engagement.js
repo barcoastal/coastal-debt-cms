@@ -83,8 +83,12 @@ router.get('/posts', authenticateToken, async (req, res) => {
     const { token, pageId } = page;
     const targetPageId = pageId || MAIN_PAGE_ID;
 
-    // Fetch FB and IG posts in parallel
-    const [fbData, igData] = await Promise.all([
+    // Get ad account ID from config for fetching ads
+    const config = db.prepare('SELECT ad_account_id FROM facebook_config WHERE id = 1').get();
+    const adAccountId = config?.ad_account_id || '';
+
+    // Fetch FB posts, IG posts, and FB ads in parallel
+    const fetches = [
       graphGet(`/${targetPageId}/posts`, token, {
         fields: 'message,created_time,full_picture,permalink_url,comments.summary(true),likes.summary(true)',
         limit: '20',
@@ -93,7 +97,21 @@ router.get('/posts', authenticateToken, async (req, res) => {
         fields: 'caption,timestamp,media_url,permalink,thumbnail_url,media_type,comments_count,like_count',
         limit: '20',
       }),
-    ]);
+    ];
+
+    // Fetch ads if ad account is configured
+    if (adAccountId) {
+      const actId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+      fetches.push(
+        graphGet(`/${actId}/ads`, token, {
+          fields: 'name,creative{title,body,image_url,thumbnail_url,object_story_id},created_time,effective_status,insights.date_preset(last_7d){impressions,clicks,spend,actions}',
+          limit: '20',
+          filtering: JSON.stringify([{field:'effective_status',operator:'IN',value:['ACTIVE','PAUSED']}]),
+        })
+      );
+    }
+
+    const [fbData, igData, adsData] = await Promise.all(fetches);
 
     // Normalize FB posts
     const fbPosts = (fbData.data || []).map((p) => ({
@@ -105,6 +123,7 @@ router.get('/posts', authenticateToken, async (req, res) => {
       comments_count: p.comments?.summary?.total_count || 0,
       likes_count: p.likes?.summary?.total_count || 0,
       platform: 'facebook',
+      type: 'post',
     }));
 
     // Normalize IG posts
@@ -118,10 +137,50 @@ router.get('/posts', authenticateToken, async (req, res) => {
       comments_count: p.comments_count || 0,
       likes_count: p.like_count || 0,
       platform: 'instagram',
+      type: 'post',
     }));
 
+    // Normalize FB ads
+    const fbAds = (adsData?.data || []).map((ad) => {
+      const creative = ad.creative || {};
+      const insights = ad.insights?.data?.[0] || {};
+      const storyId = creative.object_story_id || '';
+      return {
+        id: storyId || ad.id,
+        ad_id: ad.id,
+        message: creative.body || creative.title || ad.name || '',
+        created_time: ad.created_time,
+        image: creative.image_url || creative.thumbnail_url || null,
+        permalink: storyId ? `https://www.facebook.com/${storyId}` : null,
+        comments_count: 0,
+        likes_count: 0,
+        platform: 'facebook',
+        type: 'ad',
+        status: ad.effective_status,
+        insights: {
+          impressions: insights.impressions || '0',
+          clicks: insights.clicks || '0',
+          spend: insights.spend || '0',
+          leads: (insights.actions || []).find(a => a.action_type === 'lead')?.value || '0',
+        },
+      };
+    });
+
+    // For ads with object_story_id, try to get comment counts
+    for (const ad of fbAds) {
+      if (ad.id && ad.id.includes('_')) {
+        try {
+          const postData = await graphGet(`/${ad.id}`, token, {
+            fields: 'comments.summary(true),likes.summary(true)',
+          });
+          ad.comments_count = postData.comments?.summary?.total_count || 0;
+          ad.likes_count = postData.likes?.summary?.total_count || 0;
+        } catch (_) {}
+      }
+    }
+
     // Merge and sort by date descending
-    const posts = [...fbPosts, ...igPosts].sort(
+    const posts = [...fbPosts, ...igPosts, ...fbAds].sort(
       (a, b) => new Date(b.created_time) - new Date(a.created_time)
     );
 
