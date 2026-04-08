@@ -631,8 +631,8 @@ async function loadUserInfo() {
     }
   } catch(e) {}
 }
-function logout() {
-  localStorage.removeItem('token');
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
   window.location = '/admin/login.html';
 }
 
