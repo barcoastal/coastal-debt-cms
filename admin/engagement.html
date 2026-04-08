@@ -274,10 +274,18 @@ function setFilter(f, btn) {
 
 // ── Load Posts ──
 async function loadPosts() {
-  var data = await api('/api/engagement/posts');
-  if (!data) return;
-  posts = data.posts || [];
-  renderPosts();
+  try {
+    var data = await api('/api/engagement/posts');
+    if (!data) return;
+    if (data.error) {
+      document.getElementById('postList').innerHTML = '<div class="post-empty"><p style="color:#ef4444;">Error: ' + escHtml(data.error) + '</p></div>';
+      return;
+    }
+    posts = data.posts || [];
+    renderPosts();
+  } catch(e) {
+    document.getElementById('postList').innerHTML = '<div class="post-empty"><p style="color:#ef4444;">Failed to load: ' + escHtml(e.message) + '</p></div>';
+  }
 }
 
 function renderPosts() {
@@ -296,9 +304,10 @@ function renderPosts() {
     var isActive = p.id === activePostId ? ' active' : '';
     var platClass = p.platform === 'instagram' ? 'ig' : 'fb';
     var platLabel = p.platform === 'instagram' ? 'IG' : 'FB';
+    var placeholderSvg = '<div class="post-thumb-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/></svg></div>';
     var thumbHtml = img
-      ? '<img class="post-thumb" src="' + proxyImg(img) + '" onerror="this.style.display=\'none\'">'
-      : '<div class="post-thumb-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/></svg></div>';
+      ? '<img class="post-thumb" src="' + proxyImg(img) + '" onerror="this.outerHTML=\'' + placeholderSvg.replace(/'/g,"\\'") + '\'">'
+      : placeholderSvg;
 
     var typeBadge = p.type === 'ad' ? '<span class="post-type-badge ad">AD</span>' : '';
     var statusBadge = p.status ? '<span class="post-status ' + p.status + '">' + p.status + '</span>' : '';
