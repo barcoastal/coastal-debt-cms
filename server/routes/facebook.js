@@ -1525,7 +1525,7 @@ router.post('/test', authenticateToken, async (req, res) => {
         action_source: 'website',
         event_id: testEventId,
         user_data: {
-          em: ['test'],
+          em: [crypto.createHash('sha256').update('test@example.com').digest('hex')],
           client_ip_address: '127.0.0.1',
           client_user_agent: 'CMS Connection Test'
         },
