@@ -224,18 +224,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
             <p>Select a post to view comments</p>
           </div>
-          <div id="commentContent" style="display:none;flex-direction:column;height:100%;">
-            <div class="comment-header">
-              <button class="comment-header-back" onclick="closeComments()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <img class="comment-header-thumb" id="commentThumb" src="">
-              <div class="comment-header-info">
-                <div class="comment-header-text" id="commentPostText"></div>
-                <div class="comment-header-stats" id="commentPostStats"></div>
-              </div>
-            </div>
-            <div class="comment-list" id="commentList">
+          <div id="commentContent" style="display:none;flex-direction:column;height:100%;overflow-y:auto;">
+            <div id="postDetailSection"></div>
+            <div class="comment-list" id="commentList" style="flex-shrink:0;">
               <div class="loading-spinner"></div>
             </div>
           </div>
@@ -357,11 +348,10 @@ async function selectPost(id) {
   var content = document.getElementById('commentContent');
   content.style.display = 'flex';
 
-  // Build post detail + comments in the panel
-  var headerEl = content.querySelector('.comment-header');
-  headerEl.innerHTML =
-    '<button class="comment-header-back" onclick="closeComments()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg></button>' +
-    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="this.style.display=\'none\'">' : '') +
+  // Build post detail in the panel
+  var detailEl = document.getElementById('postDetailSection');
+  detailEl.innerHTML =
+    (img ? '<img class="post-detail-img" src="' + proxyImg(img) + '" onerror="this.src=\'' + proxyImg(activePost.thumbnail_url || '') + '\';this.onerror=function(){this.style.display=\'none\'}">' : '') +
     '<div class="post-detail-body">' +
       '<span class="post-detail-platform ' + platClass + '">' + platLabel + '</span>' +
       '<span class="post-detail-time">' + relTime(time) + '</span>' +
