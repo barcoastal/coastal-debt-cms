@@ -18,8 +18,9 @@ a{color:#3052FF;text-decoration:none}
 .hdr{background:#fff;border-bottom:1px solid #eee;padding:12px 0;position:sticky;top:0;z-index:100}
 .hdr-inner{display:flex;align-items:center;gap:16px;max-width:1140px;margin:0 auto;padding:0 24px}
 .hdr-logo img{height:34px}
-.hdr-badges{display:flex;align-items:center;gap:12px;margin-left:20px}
+.hdr-badges{display:flex;align-items:center;gap:14px;margin-left:20px}
 .hdr-badges img{height:36px;width:auto}
+.hdr-badges .iso-text{font-size:11px;font-weight:700;color:#445268;line-height:1.2;white-space:nowrap}
 .hdr-phone{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:700;color:#112337;font-size:15px;white-space:nowrap}
 .hdr-phone svg{flex-shrink:0}
 
@@ -27,19 +28,22 @@ a{color:#3052FF;text-decoration:none}
 .hero{padding:40px 0 50px;background:#F2F4F9;position:relative;overflow:hidden}
 .hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;max-width:1140px;margin:0 auto;padding:0 24px}
 .hero-left{position:relative;z-index:2}
-.hero h1{font-size:38px;line-height:1.12;font-weight:800;color:#0B1320;margin-bottom:20px;text-shadow:0.02em 0 currentColor}
+.hero h1{font-size:38px;line-height:1.12;font-weight:800;color:#0B1320;margin-bottom:20px}
 .hero-person{position:relative;margin-top:10px}
 .hero-person img{max-width:420px;position:relative;z-index:2}
-/* Blue chevron shapes behind person */
-.hero-person::before{content:'';position:absolute;top:-10%;left:10%;width:70%;height:90%;background:linear-gradient(135deg,rgba(48,82,255,0.12),rgba(48,82,255,0.06));border-radius:0 60% 60% 0;z-index:0;transform:skewX(-5deg)}
-.hero-person::after{content:'';position:absolute;top:5%;left:0;width:50%;height:80%;background:linear-gradient(135deg,rgba(127,178,255,0.2),rgba(48,82,255,0.08));border-radius:0 50% 50% 0;z-index:1;transform:skewX(-8deg)}
+.hero-chevrons{position:absolute;top:-10px;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.hero-chevrons .chev{position:absolute;color:#3052FF}
+.hero-chevrons .chev-1{top:5%;left:0;width:140px;height:240px;opacity:0.15}
+.hero-chevrons .chev-2{top:0;left:60px;width:160px;height:260px;opacity:0.25}
 
-/* Form card (right side in hero) */
+/* Form area (right side in hero) — NO card, NO shadow */
 .hero-right{position:relative;z-index:3}
-.form-badge{display:inline-block;background:#3052FF;color:#fff;font-size:15px;font-weight:600;padding:10px 28px;border-radius:50px;margin-bottom:16px}
-.form-desc{font-size:15px;color:#445268;line-height:1.6;margin-bottom:20px}
+.form-badge{display:inline-block;background:#3052FF;color:#fff;font-size:15px;font-weight:600;padding:10px 28px;border-radius:50px;margin-bottom:16px;transform:rotate(-1deg)}
+.form-desc{font-size:15px;color:#445268;line-height:1.6;margin-bottom:12px}
 .form-desc a{color:#3052FF;font-weight:600}
 .form-desc b{color:#112337}
+.form-register{font-size:15px;color:#445268;margin-bottom:20px}
+.form-register b{color:#112337}
 .form-group{margin-bottom:12px}
 .form-group label{display:block;font-size:14px;font-weight:700;color:#112337;margin-bottom:5px}
 .form-group input,.form-group select{width:100%;height:45px;padding:0 18px;border:1px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff}
@@ -56,6 +60,12 @@ a{color:#3052FF;text-decoration:none}
 .consent-group a{color:#3052FF}
 .submit-btn{width:100%;height:50px;background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s}
 .submit-btn:hover{background:transparent;color:#3052FF;box-shadow:inset 0 0 0 2px #3052FF}
+.not-eligible{display:none;background:#FFF3CD;border:1px solid #FFE69C;border-radius:12px;padding:20px;text-align:center;margin-top:16px;font-size:15px;color:#664D03;line-height:1.6}
+.not-eligible b{display:block;font-size:17px;margin-bottom:4px}
+
+/* Multi-step form: hide steps by default */
+.form-step{display:none}
+.form-step.active{display:block}
 
 /* Stats */
 .stats{padding:60px 0;background:#fff}
@@ -119,14 +129,14 @@ a{color:#3052FF;text-decoration:none}
 <body data-slug="{{SLUG}}">
 {{BODY_SCRIPTS}}
 
-<!-- Header: logo + trust badges + phone -->
+<!-- Header: logo + BBB + BSI/ISO + phone (NO Trustpilot) -->
 <header class="hdr">
   <div class="hdr-inner">
     <div class="hdr-logo"><img src="/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve"></div>
     <div class="hdr-badges">
-      <img src="/assets/trust-logos/bbb-torch-awards.png" alt="BBB">
+      <img src="/assets/trust-logos/bbb-torch-awards.png" alt="BBB Accredited Business">
       <img src="/assets/trust-logos/bsi-transparent.png" alt="BSI">
-      <img src="/assets/trust-logos/trustpilot-transparent.png" alt="Trustpilot">
+      <span class="iso-text">ISO 9001:2015<br>Certified</span>
     </div>
     <a href="tel:{{phoneDigits}}" class="hdr-phone">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
@@ -135,19 +145,23 @@ a{color:#3052FF;text-decoration:none}
   </div>
 </header>
 
-<!-- Hero: headline+person left, form right -->
+<!-- Hero: headline+person left, multi-step form right -->
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-left">
       <h1>{{headline}}<br>{{headlineLine2}} <span style="color:#3052FF">{{headlineHighlight}}</span></h1>
       <div class="hero-person">
+        <div class="hero-chevrons">
+          <img class="chev chev-1" src="/assets/brand-assets/chevron-style-1.svg" alt="">
+          <img class="chev chev-2" src="/assets/brand-assets/chevron-style-1.svg" alt="">
+        </div>
         <img src="/assets/join-template/hero-person.webp" alt="Business professional">
       </div>
     </div>
     <div class="hero-right">
-      <div class="form-badge">{{headlineLine2}}</div>
-      <p class="form-desc">{{subheadline}}</p>
-      <p class="form-desc">Register below by <b id="dayOfWeek"></b></p>
+      <div class="form-badge">Pay less than you owe</div>
+      <p class="form-desc">Small Businesses In <b>{{areaName}}</b> Discover if you qualify for our <b>PROVEN</b> MCA Debt Relief program. <a href="#">(Only $20K+ MCA Debt Relief. No Loans or Other Debt).</a></p>
+      <p class="form-register">Register below by <b id="dayOfWeek"></b></p>
       <form id="leadForm" action="/api/leads" method="POST">
         <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
         <input type="hidden" id="gclid" name="gclid" value="">
@@ -159,12 +173,50 @@ a{color:#3052FF;text-decoration:none}
         <input type="hidden" id="page_url" name="page_url" value="">
         <input type="hidden" id="referrer_url" name="referrer_url" value="">
         {{HIDDEN_FIELDS}}
-        <div id="dynamicFormFields"></div>
-        <div class="consent-group">
-          <input type="checkbox" id="consentCheckbox" required>
-          <label for="consentCheckbox">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</label>
+
+        <!-- Step 1: Debt amount -->
+        <div class="form-step active" id="formStep1">
+          <div class="form-group">
+            <label>How Much Debt Does Your Business Have? *</label>
+            <select id="debtAmountSelect" name="debt_amount" required>
+              <option value="">Select</option>
+              <option value="Under $20K">Under $20K</option>
+              <option value="$20K - $50K">$20K - $50K</option>
+              <option value="$50K - $100K">$50K - $100K</option>
+              <option value="$100K - $250K">$100K - $250K</option>
+              <option value="$250K - $500K">$250K - $500K</option>
+              <option value="$500K+">$500K+</option>
+            </select>
+          </div>
+          <button type="button" class="submit-btn" id="step1Btn">Submit</button>
         </div>
-        <button type="submit" class="submit-btn">{{formButton}}</button>
+
+        <!-- Step 2: MCA/unsecured loans question -->
+        <div class="form-step" id="formStep2">
+          <div class="form-group">
+            <label>Do you have any unsecured business loans or MCAs? *</label>
+            <div class="radio-group">
+              <label><input type="radio" name="has_mca" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="has_mca" value="No"><span>No</span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Contact details (CMS dynamic fields + consent + submit) -->
+        <div class="form-step" id="formStep3">
+          <div id="dynamicFormFields"></div>
+          <div class="consent-group">
+            <input type="checkbox" id="consentCheckbox" required>
+            <label for="consentCheckbox">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</label>
+          </div>
+          <button type="submit" class="submit-btn">{{formButton}}</button>
+        </div>
+
+        <!-- Not eligible message -->
+        <div class="not-eligible" id="notEligible">
+          <b>Sorry, you don't qualify at this time.</b>
+          Our MCA Debt Relief program is designed for businesses with $20K+ in unsecured business loans or merchant cash advances. If your situation changes, feel free to check back.
+        </div>
       </form>
     </div>
   </div>
@@ -219,19 +271,101 @@ a{color:#3052FF;text-decoration:none}
 </footer>
 
 <script>
-// Day of week
-var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-document.getElementById('dayOfWeek').textContent=days[new Date().getDay()]+', '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'});
+// Dynamic date: next Wednesday (or today if Wednesday)
+(function(){
+  var now=new Date();
+  var day=now.getDay(); // 0=Sun
+  var daysUntilWed=(3-day+7)%7;
+  if(daysUntilWed===0) daysUntilWed=7; // next Wed, not today
+  var wed=new Date(now);
+  wed.setDate(wed.getDate()+daysUntilWed);
+  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var el=document.getElementById('dayOfWeek');
+  if(el) el.textContent=days[wed.getDay()]+', '+wed.toLocaleDateString('en-US',{month:'long',day:'numeric'});
+})();
 
-// Render CMS form fields
+// Render CMS form fields (contact fields only — debt_amount and has_mca are hardcoded above)
 var formFields={{formFieldsJson}};
-(function(){var c=document.getElementById('dynamicFormFields');if(!c||!formFields)return;var h=formFields.map(function(f){if(f.type==='hidden'){var skip=['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url'];if(skip.indexOf(f.name)>=0)return'';return'<input type="hidden" name="'+f.name+'" value="'+(f.placeholder||'')+'">';}if(f.type==='radio'){var o=(f.options||'Yes,No').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><div class="radio-group">'+o.map(function(v){v=v.trim();return'<label><input type="radio" name="'+f.name+'" value="'+v+'" '+(f.required?'required':'')+'><span>'+v+'</span></label>';}).join('')+'</div></div>';}if(f.type==='select'){var o=(f.options||'').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><select name="'+f.name+'" '+(f.required?'required':'')+'><option value="">Select</option>'+o.map(function(v){v=v.trim();return'<option value="'+v+'">'+v+'</option>';}).join('')+'</select></div>';}return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><input type="'+(f.type||'text')+'" name="'+f.name+'" placeholder="'+(f.placeholder||'')+'" '+(f.required?'required':'')+'></div>';}).join('');c.innerHTML=h;})();
+(function(){
+  var c=document.getElementById('dynamicFormFields');
+  if(!c||!formFields)return;
+  // Fields to skip (already hardcoded or handled as hidden)
+  var skipNames=['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url','debt_amount','has_mca'];
+  var h=formFields.map(function(f){
+    if(skipNames.indexOf(f.name)>=0 && f.type==='hidden') return '';
+    if(f.name==='debt_amount'||f.name==='has_mca') return ''; // skip — hardcoded in steps
+    if(f.type==='hidden'){
+      return '<input type="hidden" name="'+f.name+'" value="'+(f.placeholder||'')+'">';
+    }
+    if(f.type==='radio'){
+      var o=(f.options||'Yes,No').split(',');
+      return '<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><div class="radio-group">'+o.map(function(v){v=v.trim();return '<label><input type="radio" name="'+f.name+'" value="'+v+'" '+(f.required?'required':'')+'><span>'+v+'</span></label>';}).join('')+'</div></div>';
+    }
+    if(f.type==='select'){
+      var o=(f.options||'').split(',');
+      return '<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><select name="'+f.name+'" '+(f.required?'required':'')+'><option value="">Select</option>'+o.map(function(v){v=v.trim();return '<option value="'+v+'">'+v+'</option>';}).join('')+'</select></div>';
+    }
+    return '<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><input type="'+(f.type||'text')+'" name="'+f.name+'" placeholder="'+(f.placeholder||'')+'" '+(f.required?'required':'')+'></div>';
+  }).join('');
+  c.innerHTML=h;
+})();
+
+// Multi-step form logic
+(function(){
+  var step1=document.getElementById('formStep1');
+  var step2=document.getElementById('formStep2');
+  var step3=document.getElementById('formStep3');
+  var notEligible=document.getElementById('notEligible');
+  var debtSelect=document.getElementById('debtAmountSelect');
+  var step1Btn=document.getElementById('step1Btn');
+
+  // Step 1 → Step 2 (or not eligible)
+  step1Btn.addEventListener('click',function(){
+    var val=debtSelect.value;
+    if(!val){alert('Please select your debt amount.');return;}
+    if(val==='Under $20K'){
+      step1.classList.remove('active');
+      notEligible.style.display='block';
+      return;
+    }
+    step1.classList.remove('active');
+    step2.classList.add('active');
+  });
+
+  // Step 2 → Step 3 (or not eligible)
+  var mcaRadios=document.querySelectorAll('input[name="has_mca"]');
+  mcaRadios.forEach(function(r){
+    r.addEventListener('change',function(){
+      if(this.value==='No'){
+        step2.classList.remove('active');
+        notEligible.style.display='block';
+        return;
+      }
+      // Yes → show contact fields
+      step2.classList.remove('active');
+      step3.classList.add('active');
+    });
+  });
+})();
 
 // Form submission
-document.getElementById('leadForm').addEventListener('submit',async function(e){e.preventDefault();if(!document.getElementById('consentCheckbox').checked){alert('Please agree to the consent.');return;}var b=this.querySelector('.submit-btn');b.disabled=true;b.textContent='Submitting...';var d={};new FormData(this).forEach(function(v,k){d[k]=v;});try{var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.ok){window.location.href='/thank-you?slug={{SLUG}}';}else throw new Error();}catch(err){alert('Submission failed.');b.disabled=false;b.textContent='{{formButton}}';}});
+document.getElementById('leadForm').addEventListener('submit',async function(e){
+  e.preventDefault();
+  if(!document.getElementById('consentCheckbox').checked){alert('Please agree to the consent.');return;}
+  var b=this.querySelector('button[type="submit"]');
+  b.disabled=true;b.textContent='Submitting...';
+  var d={};new FormData(this).forEach(function(v,k){d[k]=v;});
+  try{
+    var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    if(r.ok){window.location.href='/thank-you?slug={{SLUG}}';}else throw new Error();
+  }catch(err){alert('Submission failed.');b.disabled=false;b.textContent='{{formButton}}';}
+});
 
 // URL params
-var p=new URLSearchParams(window.location.search);['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k){var v=p.get(k);if(v){var el=document.getElementById(k);if(el)el.value=v;}});document.getElementById('page_url').value=window.location.href;document.getElementById('referrer_url').value=document.referrer;
+var p=new URLSearchParams(window.location.search);
+['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k){var v=p.get(k);if(v){var el=document.getElementById(k);if(el)el.value=v;}});
+document.getElementById('page_url').value=window.location.href;
+document.getElementById('referrer_url').value=document.referrer;
 </script>
 </body>
 </html>
