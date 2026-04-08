@@ -99,12 +99,14 @@ router.get('/posts', authenticateToken, async (req, res) => {
       }),
     ];
 
-    // Fetch ads if ad account is configured
+    // Fetch ads if ad account is configured — need user token for ads API
+    const userConfig = db.prepare('SELECT page_access_token FROM facebook_config WHERE id = 1').get();
+    const userToken = userConfig?.page_access_token || token;
     if (adAccountId) {
       const actId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
       fetches.push(
-        graphGet(`/${actId}/ads`, token, {
-          fields: 'name,creative{title,body,image_url,thumbnail_url,object_story_id},created_time,effective_status,insights.date_preset(last_7d){impressions,clicks,spend,actions}',
+        graphGet(`/${actId}/ads`, userToken, {
+          fields: 'name,creative{title,body,image_url,thumbnail_url,effective_object_story_id},created_time,effective_status,insights.date_preset(last_7d){impressions,clicks,spend,actions}',
           limit: '20',
           filtering: JSON.stringify([{field:'effective_status',operator:'IN',value:['ACTIVE','PAUSED']}]),
         })
@@ -140,17 +142,23 @@ router.get('/posts', authenticateToken, async (req, res) => {
       type: 'post',
     }));
 
+    // Helper: upscale FB thumbnail URL from 64x64 to 480x480
+    function upscaleThumb(url) {
+      if (!url) return null;
+      return url.replace(/p64x64/g, 'p480x480').replace(/q75/g, 'q90');
+    }
+
     // Normalize FB ads
     const fbAds = (adsData?.data || []).map((ad) => {
       const creative = ad.creative || {};
       const insights = ad.insights?.data?.[0] || {};
-      const storyId = creative.object_story_id || '';
+      const storyId = creative.effective_object_story_id || creative.object_story_id || '';
       return {
         id: storyId || ad.id,
         ad_id: ad.id,
         message: creative.body || creative.title || ad.name || '',
         created_time: ad.created_time,
-        image: creative.image_url || creative.thumbnail_url || null,
+        image: creative.image_url || upscaleThumb(creative.thumbnail_url) || null,
         permalink: storyId ? `https://www.facebook.com/${storyId}` : null,
         comments_count: 0,
         likes_count: 0,
