@@ -106,7 +106,7 @@ router.get('/posts', authenticateToken, async (req, res) => {
       const actId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
       fetches.push(
         graphGet(`/${actId}/ads`, userToken, {
-          fields: 'name,creative{title,body,image_url,thumbnail_url,effective_object_story_id},created_time,effective_status,insights.date_preset(last_7d){impressions,clicks,spend,actions}',
+          fields: 'name,creative{title,body,image_url,thumbnail_url,effective_object_story_id,asset_feed_spec{images,videos}},created_time,effective_status,insights.date_preset(last_7d){impressions,clicks,spend,actions}',
           limit: '20',
           filtering: JSON.stringify([{field:'effective_status',operator:'IN',value:['ACTIVE','PAUSED']}]),
         })
@@ -153,12 +153,17 @@ router.get('/posts', authenticateToken, async (req, res) => {
       const creative = ad.creative || {};
       const insights = ad.insights?.data?.[0] || {};
       const storyId = creative.effective_object_story_id || creative.object_story_id || '';
+      // Extract image: asset_feed_spec images/videos → creative image_url → upscaled thumbnail
+      const feedSpec = creative.asset_feed_spec || {};
+      const feedImage = feedSpec.images?.[0]?.url || feedSpec.images?.[0]?.hash || null;
+      const feedVideoThumb = feedSpec.videos?.[0]?.thumbnail_url || null;
+      const adImage = creative.image_url || feedVideoThumb || feedImage || upscaleThumb(creative.thumbnail_url) || null;
       return {
         id: storyId || ad.id,
         ad_id: ad.id,
         message: creative.body || creative.title || ad.name || '',
         created_time: ad.created_time,
-        image: creative.image_url || upscaleThumb(creative.thumbnail_url) || null,
+        image: adImage,
         permalink: storyId ? `https://www.facebook.com/${storyId}` : null,
         comments_count: 0,
         likes_count: 0,
