@@ -2253,56 +2253,122 @@ var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Render form fields
   var formFields = {{formFieldsJson}};
   var c = document.getElementById('dynamicFormFields');
   if (!c || !formFields) return;
-  var h = formFields.map(function(f) {
-    var s = 'width:100%;height:45px;padding:0 18px;border:1px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff;';
-    if (f.type === 'hidden') {
-      var skip = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url'];
-      if (skip.indexOf(f.name) >= 0) return '';
-      return '<input type="hidden" name="' + f.name + '" value="' + (f.placeholder||'') + '">';
-    }
-    if (f.type === 'radio') {
-      var opts = (f.options||'Yes,No').split(',');
-      return '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">' + f.label + '</label><div style="display:flex;gap:10px">' +
-        opts.map(function(v){v=v.trim();return '<label style="flex:1;cursor:pointer"><input type="radio" name="'+f.name+'" value="'+v+'" '+(f.required?'required':'')+' style="display:none"><span style="display:block;padding:12px;border:1px solid #eee;border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:#fff">'+v+'</span></label>';}).join('') +
-        '</div></div>';
-    }
-    if (f.type === 'select') {
-      var opts = (f.options||'').split(',');
-      return '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">' + f.label + '</label><select name="'+f.name+'" '+(f.required?'required':'')+' style="'+s+'-webkit-appearance:none;appearance:none"><option value="">Select</option>'+opts.map(function(v){v=v.trim();return '<option value="'+v+'">'+v+'</option>';}).join('')+'</select></div>';
-    }
-    return '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">' + f.label + '</label><input type="'+(f.type||'text')+'" name="'+f.name+'" placeholder="'+(f.placeholder||'')+'" '+(f.required?'required':'')+' style="'+s+'"></div>';
+
+  var is = 'width:100%;height:45px;padding:0 18px;border:1px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff;';
+
+  // Step 1: Debt amount (hardcoded pre-q)
+  var step1 = '<div id="jfStep1">' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">How Much Debt Does Your Business Have? *</label>' +
+    '<select id="jfDebt" name="debt_amount" required style="' + is + '-webkit-appearance:none;appearance:none;background-image:url(\'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath fill=%27%23445268%27 d=%27M6 8L0 0h12z%27/%3E%3C/svg%3E\');background-repeat:no-repeat;background-position:right 18px center;padding-right:40px">' +
+    '<option value="">Select</option>' +
+    '<option value="Under $20,000">Under $20,000</option>' +
+    '<option value="$20,000 - $50,000">$20,000 - $50,000</option>' +
+    '<option value="$50,000 - $100,000">$50,000 - $100,000</option>' +
+    '<option value="$100,000 - $500,000">$100,000 - $500,000</option>' +
+    '<option value="$500,000 - $1,000,000">$500,000 - $1,000,000</option>' +
+    '<option value="$1,000,000+">$1,000,000+</option>' +
+    '</select></div>' +
+    '<button type="button" id="jfStep1Btn" style="' + is + 'background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;text-align:center;">Submit</button>' +
+    '</div>';
+
+  // Step 2: MCA question
+  var step2 = '<div id="jfStep2" style="display:none">' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">Do you have any unsecured business loans or MCAs? *</label>' +
+    '<div style="display:flex;gap:10px">' +
+    '<label style="flex:1;cursor:pointer"><input type="radio" name="has_mca" value="Yes" required style="display:none"><span id="jfMcaYes" style="display:block;padding:12px;border:1px solid #eee;border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:#fff">Yes</span></label>' +
+    '<label style="flex:1;cursor:pointer"><input type="radio" name="has_mca" value="No" style="display:none"><span id="jfMcaNo" style="display:block;padding:12px;border:1px solid #eee;border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:#fff">No</span></label>' +
+    '</div></div></div>';
+
+  // Step 3: Contact fields (from CMS form — skip has_mca and hidden)
+  var contactFields = formFields.filter(function(f) {
+    return f.type !== 'hidden' && f.name !== 'has_mca';
+  }).map(function(f) {
+    return '<div style="margin-bottom:12px"><label style="display:block;font-weight:700;margin-bottom:5px">' + f.label + (f.required ? ' *' : '') + '</label>' +
+      '<input type="' + (f.type || 'text') + '" name="' + f.name + '" placeholder="' + (f.placeholder || '') + '" ' + (f.required ? 'required' : '') + ' style="' + is + '"></div>';
   }).join('');
-  c.innerHTML = h;
-  
-  // Radio button styling
-  c.addEventListener('change', function(e) {
-    if (e.target.type==='radio') {
-      var g=e.target.closest('div[style*="display:flex"]');
-      if(g)g.querySelectorAll('span').forEach(function(s){s.style.borderColor='#eee';s.style.background='#fff';s.style.color='#112337';});
-      var sp=e.target.nextElementSibling;
-      if(sp){sp.style.borderColor='#3052FF';sp.style.background='rgba(48,82,255,0.06)';sp.style.color='#3052FF';}
+
+  // Hidden fields from CMS
+  var hiddenFields = formFields.filter(function(f) {
+    return f.type === 'hidden';
+  }).map(function(f) {
+    var skip = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url'];
+    if (skip.indexOf(f.name) >= 0) return '';
+    return '<input type="hidden" name="' + f.name + '" value="' + (f.placeholder || '') + '">';
+  }).join('');
+
+  var step3 = '<div id="jfStep3" style="display:none">' + contactFields + hiddenFields + '</div>';
+
+  // Not eligible message
+  var notEligible = '<div id="jfNotEligible" style="display:none;background:#FFF3CD;border:1px solid #FFE69C;border-radius:12px;padding:20px;text-align:center;margin-top:12px;font-size:15px;color:#664D03;line-height:1.6">' +
+    'Unfortunately, at this time we are only able to assist businesses with multiple MCAs and debt amounts of more than $20,000.</div>';
+
+  c.innerHTML = step1 + step2 + step3 + notEligible;
+
+  // Step 1 → Step 2
+  document.getElementById('jfStep1Btn').addEventListener('click', function() {
+    var debt = document.getElementById('jfDebt').value;
+    if (!debt) { alert('Please select a debt amount.'); return; }
+    if (debt === 'Under $20,000') {
+      document.getElementById('jfStep1').style.display = 'none';
+      document.getElementById('jfNotEligible').style.display = 'block';
+      return;
     }
+    document.getElementById('jfStep1Btn').style.display = 'none';
+    document.getElementById('jfStep2').style.display = 'block';
   });
-  
+
+  // Step 2 → Step 3 (on radio click)
+  document.querySelectorAll('input[name="has_mca"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      // Style selected
+      document.getElementById('jfMcaYes').style.cssText = 'display:block;padding:12px;border:1px solid ' + (this.value === 'Yes' ? '#3052FF' : '#eee') + ';border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:' + (this.value === 'Yes' ? 'rgba(48,82,255,0.06)' : '#fff') + ';color:' + (this.value === 'Yes' ? '#3052FF' : '#112337');
+      document.getElementById('jfMcaNo').style.cssText = 'display:block;padding:12px;border:1px solid ' + (this.value === 'No' ? '#3052FF' : '#eee') + ';border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:' + (this.value === 'No' ? 'rgba(48,82,255,0.06)' : '#fff') + ';color:' + (this.value === 'No' ? '#3052FF' : '#112337');
+
+      if (this.value === 'No') {
+        document.getElementById('jfStep3').style.display = 'none';
+        document.getElementById('jfNotEligible').style.display = 'block';
+      } else {
+        document.getElementById('jfNotEligible').style.display = 'none';
+        document.getElementById('jfStep3').style.display = 'block';
+        // Show consent + submit
+        document.getElementById('consentCb').closest('div').style.display = 'flex';
+        var submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.style.display = 'block';
+      }
+    });
+  });
+
+  // Hide consent and submit initially
+  var consentDiv = document.getElementById('consentCb');
+  if (consentDiv) consentDiv.closest('div').style.display = 'none';
+  var submitBtn = document.querySelector('#leadForm button[type="submit"]');
+  if (submitBtn) submitBtn.style.display = 'none';
+
   // URL params
-  var p=new URLSearchParams(window.location.search);
-  ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k){var v=p.get(k);if(v){var el=document.getElementById(k);if(el)el.value=v;}});
-  document.getElementById('page_url').value=window.location.href;
-  document.getElementById('referrer_url').value=document.referrer;
+  var p = new URLSearchParams(window.location.search);
+  ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k) {
+    var v = p.get(k); if (v) { var el = document.getElementById(k); if (el) el.value = v; }
+  });
+  document.getElementById('page_url').value = window.location.href;
+  document.getElementById('referrer_url').value = document.referrer;
 });
 
 async function handleJoinSubmit(e) {
   e.preventDefault();
-  if(!document.getElementById('consentCb').checked){alert('Please agree.');return false;}
-  var btn=e.target.querySelector('button[type="submit"]');
-  btn.disabled=true;btn.textContent='Submitting...';
-  var d={};new FormData(e.target).forEach(function(v,k){d[k]=v;});
-  try{var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.ok)window.location.href='/thank-you?slug={{SLUG}}';else throw 0;}
-  catch(e){alert('Failed. Try again.');btn.disabled=false;btn.textContent='{{formButton}}';}
+  if (!document.getElementById('consentCb').checked) { alert('Please agree to the consent.'); return false; }
+  var btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  var d = {}; new FormData(e.target).forEach(function(v, k) { d[k] = v; });
+  try {
+    var r = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+    if (r.ok) window.location.href = '/thank-you?slug={{SLUG}}'; else throw 0;
+  } catch(err) {
+    alert('Submission failed. Please try again.');
+    btn.disabled = false; btn.textContent = '{{formButton}}';
+  }
   return false;
 }
 </script>
