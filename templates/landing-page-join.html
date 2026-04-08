@@ -6,39 +6,231 @@
 <meta name="robots" content="noindex, nofollow">
 <title>{{pageTitle}}</title>
 <meta name="description" content="{{metaDescription}}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 {{HEAD_SCRIPTS}}
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;color:#112337;line-height:1.5;background:#fff;padding-bottom:70px}img{max-width:100%;height:auto;display:block}a{color:#3052FF;text-decoration:none}.container{max-width:1100px;margin:0 auto;padding:0 20px}
-.header{background:#fff;border-bottom:1px solid #eee;padding:14px 0;position:sticky;top:0;z-index:100}.header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:0 20px}.header-logo img{height:36px}.header-phone{display:flex;align-items:center;gap:8px;font-weight:700;color:#112337;font-size:15px}
-.hero{padding:50px 0 40px}.hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:50px;align-items:center;max-width:1100px;margin:0 auto;padding:0 20px}.hero h1{font-size:42px;line-height:1.1;font-weight:800;color:#0B1320;margin-bottom:14px}.hero h1 .hl{color:#3052FF}.hero-sub{font-size:20px;font-weight:600;color:#112337;margin-bottom:12px}.hero-desc{font-size:15px;color:#445268;margin-bottom:24px;line-height:1.6}.hero-trust{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.hero-trust img{height:48px}.hero-img img{max-width:440px;margin:0 auto}
-.form-section{background:linear-gradient(180deg,#fff,#F2F4F9);padding:50px 0}.form-card{max-width:540px;margin:0 auto;background:#fff;border-radius:18px;padding:36px 32px;box-shadow:0 8px 32px rgba(17,35,55,0.08)}.form-card h2{text-align:center;font-size:26px;font-weight:800;margin-bottom:6px}.form-card .form-sub{text-align:center;color:#566175;font-size:14px;margin-bottom:22px}
-.form-group{margin-bottom:14px}.form-group label{display:block;font-size:13px;font-weight:600;color:#112337;margin-bottom:5px}.form-group input,.form-group select{width:100%;height:48px;padding:0 18px;border:1.5px solid #E3E7EE;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff;-webkit-appearance:none;appearance:none}.form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23445268' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;padding-right:40px}.form-group input:focus,.form-group select:focus{outline:none;border-color:#3052FF}
-.radio-group{display:flex;gap:10px}.radio-group label{flex:1;cursor:pointer;margin:0}.radio-group input[type="radio"]{display:none}.radio-group span{display:block;padding:14px;border:1.5px solid #E3E7EE;border-radius:500px;text-align:center;font-weight:600;font-size:14px;transition:all 0.2s;cursor:pointer}.radio-group input:checked+span{border-color:#3052FF;background:rgba(48,82,255,0.06);color:#3052FF}
-.consent-group{display:flex;gap:10px;align-items:flex-start;margin:16px 0}.consent-group input{margin-top:3px;accent-color:#3052FF;width:16px;height:16px;flex-shrink:0}.consent-group label{font-size:11px;color:#667085;line-height:1.5}.consent-group a{color:#3052FF}
-.submit-btn{width:100%;height:52px;background:#3052FF;color:#fff;border:none;border-radius:500px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.2s}.submit-btn:hover{background:#204CE5}
-.stats{padding:60px 0}.stats-title{text-align:center;font-size:30px;font-weight:800;margin-bottom:6px}.stats-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:36px}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:1100px;margin:0 auto;padding:0 20px}.stat-card{padding:28px 16px;background:#F2F4F9;border-radius:14px;text-align:center}.stat-num{font-size:44px;font-weight:800;color:#3052FF;line-height:1;margin-bottom:6px}.stat-label{font-size:13px;color:#566175}
-.how{padding:70px 0;background:#F2F4F9}.how-title{text-align:center;font-size:32px;font-weight:800;margin-bottom:8px}.how-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:44px}.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:1100px;margin:0 auto;padding:0 20px}.how-card{background:#fff;border-radius:14px;padding:36px 24px;text-align:center;box-shadow:0 4px 16px rgba(17,35,55,0.05)}.how-icon{width:72px;height:72px;margin:0 auto 16px;background:rgba(48,82,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center}.how-icon img{width:38px;height:38px}.how-card h3{font-size:18px;font-weight:700;margin-bottom:8px}.how-card p{color:#566175;font-size:14px;line-height:1.6}
-.testimonials{padding:70px 0}.test-title{text-align:center;font-size:32px;font-weight:800;margin-bottom:8px}.test-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:44px}.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1100px;margin:0 auto;padding:0 20px}.test-card{background:#F2F4F9;border-radius:14px;padding:28px 24px}.test-stars{color:#FFB800;font-size:18px;margin-bottom:12px}.test-quote{font-size:14px;line-height:1.6;margin-bottom:18px;font-style:italic}.test-author{display:flex;align-items:center;gap:10px}.test-avatar{width:44px;height:44px;border-radius:50%;background:#3052FF;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}.test-name{font-weight:700;font-size:13px}.test-role{color:#778091;font-size:12px}
-.sticky-cta{position:fixed;bottom:0;left:0;right:0;background:#3052FF;padding:14px 20px;z-index:1000;box-shadow:0 -4px 20px rgba(48,82,255,0.3)}.sticky-cta a{color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px}
-.footer{padding:36px 20px 24px;background:#0B1320;color:#9BA5B8;text-align:center;font-size:12px;line-height:1.7}.footer a{color:#C7D0E0;margin:0 8px}
-@media(max-width:900px){.hero{padding:24px 0 20px}.hero-grid{grid-template-columns:1fr;gap:24px;text-align:center}.hero h1{font-size:30px}.hero h1 br{display:none}.hero-sub{font-size:17px}.hero-trust{justify-content:center}.hero-trust img{height:36px}.hero-img img{max-width:280px}.form-card{padding:28px 22px;margin:0 16px}.form-card h2{font-size:22px}.stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}.stat-num{font-size:32px}.how-grid,.test-grid{grid-template-columns:1fr;gap:16px}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,-apple-system,sans-serif;color:#112337;line-height:1.5;background:#fff;padding-bottom:76px}
+img{max-width:100%;height:auto;display:block}
+a{color:#3052FF;text-decoration:none}
+
+/* Header — logo + trust badges + phone */
+.hdr{background:#fff;border-bottom:1px solid #eee;padding:12px 0;position:sticky;top:0;z-index:100}
+.hdr-inner{display:flex;align-items:center;gap:16px;max-width:1140px;margin:0 auto;padding:0 24px}
+.hdr-logo img{height:34px}
+.hdr-badges{display:flex;align-items:center;gap:12px;margin-left:20px}
+.hdr-badges img{height:36px;width:auto}
+.hdr-phone{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:700;color:#112337;font-size:15px;white-space:nowrap}
+.hdr-phone svg{flex-shrink:0}
+
+/* Hero — headline+person left, form right */
+.hero{padding:40px 0 50px;background:#F2F4F9;position:relative;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;max-width:1140px;margin:0 auto;padding:0 24px}
+.hero-left{position:relative;z-index:2}
+.hero h1{font-size:38px;line-height:1.12;font-weight:800;color:#0B1320;margin-bottom:20px;text-shadow:0.02em 0 currentColor}
+.hero-person{position:relative;margin-top:10px}
+.hero-person img{max-width:420px;position:relative;z-index:2}
+/* Blue chevron shapes behind person */
+.hero-person::before{content:'';position:absolute;top:-10%;left:10%;width:70%;height:90%;background:linear-gradient(135deg,rgba(48,82,255,0.12),rgba(48,82,255,0.06));border-radius:0 60% 60% 0;z-index:0;transform:skewX(-5deg)}
+.hero-person::after{content:'';position:absolute;top:5%;left:0;width:50%;height:80%;background:linear-gradient(135deg,rgba(127,178,255,0.2),rgba(48,82,255,0.08));border-radius:0 50% 50% 0;z-index:1;transform:skewX(-8deg)}
+
+/* Form card (right side in hero) */
+.hero-right{position:relative;z-index:3}
+.form-badge{display:inline-block;background:#3052FF;color:#fff;font-size:15px;font-weight:600;padding:10px 28px;border-radius:50px;margin-bottom:16px}
+.form-desc{font-size:15px;color:#445268;line-height:1.6;margin-bottom:20px}
+.form-desc a{color:#3052FF;font-weight:600}
+.form-desc b{color:#112337}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:14px;font-weight:700;color:#112337;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;height:45px;padding:0 18px;border:1px solid #eee;border-radius:500px;font-size:15px;font-family:inherit;color:#112337;background:#fff}
+.form-group select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23445268' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;padding-right:40px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#3052FF}
+.radio-group{display:flex;gap:10px}
+.radio-group label{flex:1;cursor:pointer;margin:0}
+.radio-group input[type="radio"]{display:none}
+.radio-group span{display:block;padding:12px;border:1px solid #eee;border-radius:500px;text-align:center;font-weight:600;font-size:14px;transition:all 0.15s;cursor:pointer;background:#fff}
+.radio-group input:checked+span{border-color:#3052FF;background:rgba(48,82,255,0.06);color:#3052FF}
+.consent-group{display:flex;gap:8px;align-items:flex-start;margin:14px 0}
+.consent-group input{margin-top:3px;accent-color:#3052FF;width:16px;height:16px;flex-shrink:0}
+.consent-group label{font-size:11px;color:#667085;line-height:1.5}
+.consent-group a{color:#3052FF}
+.submit-btn{width:100%;height:50px;background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s}
+.submit-btn:hover{background:transparent;color:#3052FF;box-shadow:inset 0 0 0 2px #3052FF}
+
+/* Stats */
+.stats{padding:60px 0;background:#fff}
+.stats-title{text-align:center;font-size:28px;font-weight:800;color:#0B1320;margin-bottom:6px}
+.stats-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:36px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:1100px;margin:0 auto;padding:0 20px}
+.stat-card{padding:28px 16px;background:#F2F4F9;border-radius:14px;text-align:center}
+.stat-num{font-size:44px;font-weight:800;color:#3052FF;line-height:1;margin-bottom:6px}
+.stat-label{font-size:13px;color:#566175;font-weight:500}
+
+/* How it works */
+.how{padding:70px 0;background:#F2F4F9}
+.how-title{text-align:center;font-size:30px;font-weight:800;color:#0B1320;margin-bottom:8px}
+.how-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:44px}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:1100px;margin:0 auto;padding:0 20px}
+.how-card{background:#fff;border-radius:14px;padding:36px 24px;text-align:center;box-shadow:0 4px 16px rgba(17,35,55,0.05)}
+.how-icon{width:72px;height:72px;margin:0 auto 16px;background:rgba(48,82,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.how-icon img{width:38px;height:38px}
+.how-card h3{font-size:18px;font-weight:700;color:#0B1320;margin-bottom:8px}
+.how-card p{color:#566175;font-size:14px;line-height:1.6}
+
+/* Testimonials */
+.testimonials{padding:70px 0;background:#fff}
+.test-title{text-align:center;font-size:30px;font-weight:800;color:#0B1320;margin-bottom:8px}
+.test-sub{text-align:center;color:#566175;font-size:15px;margin-bottom:44px}
+.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1100px;margin:0 auto;padding:0 20px}
+.test-card{background:#F2F4F9;border-radius:14px;padding:28px 24px}
+.test-stars{color:#FFB800;font-size:18px;margin-bottom:12px}
+.test-quote{font-size:14px;line-height:1.6;margin-bottom:18px;font-style:italic;color:#112337}
+.test-author{display:flex;align-items:center;gap:10px}
+.test-avatar{width:44px;height:44px;border-radius:50%;background:#3052FF;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.test-name{font-weight:700;font-size:13px;color:#0B1320}
+.test-role{color:#778091;font-size:12px}
+
+/* Sticky CTA */
+.sticky-cta{position:fixed;bottom:0;left:0;right:0;background:#3052FF;min-height:56px;z-index:9999;display:flex;align-items:center;justify-content:center;box-shadow:0 -4px 20px rgba(48,82,255,0.3)}
+.sticky-cta a{color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px;padding:14px 20px}
+
+/* Footer */
+.footer{padding:36px 20px 24px;background:#0B1320;color:#9BA5B8;text-align:center;font-size:12px;line-height:1.7}
+.footer a{color:#C7D0E0;margin:0 8px}
+
+/* Mobile */
+@media(max-width:900px){
+  .hdr-badges{display:none}
+  .hero{padding:24px 0 30px}
+  .hero-inner{grid-template-columns:1fr;gap:20px}
+  .hero h1{font-size:28px}
+  .hero h1 br{display:none}
+  .hero-person{text-align:center}
+  .hero-person img{max-width:300px;margin:0 auto}
+  .form-badge{font-size:13px;padding:8px 20px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .stat-num{font-size:32px}
+  .how-grid,.test-grid{grid-template-columns:1fr;gap:16px}
+  .sticky-cta{min-height:50px}
+  .sticky-cta a{font-size:14px;padding:10px 14px}
+}
 </style>
 </head>
 <body data-slug="{{SLUG}}">
 {{BODY_SCRIPTS}}
-<header class="header"><div class="header-inner"><div class="header-logo"><img src="/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve"></div><a href="tel:{{phoneDigits}}" class="header-phone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>{{phone}}</a></div></header>
-<section class="hero"><div class="hero-grid"><div><h1>{{headline}}<br><span class="hl">{{headlineHighlight}}</span></h1><div class="hero-sub">{{headlineLine2}}</div><p class="hero-desc">{{subheadline}}</p><div class="hero-trust"><img src="/assets/trust-logos/bsi-transparent.png" alt="BSI"><img src="/assets/trust-logos/bbb-torch-awards.png" alt="BBB"><img src="/assets/join-template/logo-business-insider.svg" alt="Business Insider"></div></div><div class="hero-img"><img src="/assets/join-template/hero-person.webp" alt="Business professional"></div></div></section>
-<section class="form-section"><div class="form-card"><h2>{{formTitle}}</h2><p class="form-sub">{{formSubtitle}}</p><form id="leadForm" action="/api/leads" method="POST"><input type="hidden" name="landing_page_slug" value="{{SLUG}}"><input type="hidden" id="gclid" name="gclid" value=""><input type="hidden" id="msclkid" name="msclkid" value=""><input type="hidden" id="fbclid" name="fbclid" value=""><input type="hidden" id="rt_clickid" name="rt_clickid" value=""><input type="hidden" id="eli_clickid" name="eli_clickid" value=""><input type="hidden" id="keyword" name="keyword" value=""><input type="hidden" id="page_url" name="page_url" value=""><input type="hidden" id="referrer_url" name="referrer_url" value="">{{HIDDEN_FIELDS}}<div id="dynamicFormFields"></div><div class="consent-group"><input type="checkbox" id="consentCheckbox" required><label for="consentCheckbox">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</label></div><button type="submit" class="submit-btn">{{formButton}}</button></form></div></section>
-<section class="stats"><div class="stats-title">Real Results. Real Savings.</div><div class="stats-sub">Actual settlements negotiated for businesses like yours</div><div class="stats-grid"><div class="stat-card"><div class="stat-num">73%</div><div class="stat-label">Debt Reduction</div></div><div class="stat-card"><div class="stat-num">65%</div><div class="stat-label">Debt Reduction</div></div><div class="stat-card"><div class="stat-num">58%</div><div class="stat-label">Debt Reduction</div></div><div class="stat-card"><div class="stat-num">30%</div><div class="stat-label">Debt Reduction</div></div></div></section>
-<section class="how"><div class="how-title">How It Works</div><div class="how-sub">Our proven 3-step process has helped 1,000+ businesses</div><div class="how-grid"><div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-1.svg" alt=""></div><h3>Free Consultation</h3><p>Schedule a free, confidential call with our MCA debt experts. No obligation, no pressure.</p></div><div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-2.svg" alt=""></div><h3>Expert Analysis</h3><p>We analyze your debt situation and create a custom settlement strategy for your business.</p></div><div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-3.svg" alt=""></div><h3>Same-Day Sign Up</h3><p>Start saving immediately. We negotiate with creditors while you focus on running your business.</p></div></div></section>
-<section class="testimonials"><div class="test-title">What Our Clients Say</div><div class="test-sub">Real stories from business owners we've helped</div><div class="test-grid"><div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"Coastal Debt saved my business. I was drowning in MCA payments and they negotiated a settlement that cut my debt in half."</div><div class="test-author"><div class="test-avatar">RC</div><div><div class="test-name">Robert C.</div><div class="test-role">Restaurant Owner</div></div></div></div><div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"Professional and transparent. They got me a 65% reduction. I can finally breathe again."</div><div class="test-author"><div class="test-avatar">JM</div><div><div class="test-name">Jennifer M.</div><div class="test-role">Construction Company</div></div></div></div><div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"The process was smooth and they handled everything. My daily ACH payments stopped within weeks."</div><div class="test-author"><div class="test-avatar">DK</div><div><div class="test-name">David K.</div><div class="test-role">Retail Store Owner</div></div></div></div></div></section>
-<div class="sticky-cta"><a href="tel:{{phoneDigits}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>Get Relief Now: {{phone}}</a></div>
-<footer class="footer"><div>&copy; 2026 Coastal Debt Resolve. All rights reserved.</div><div style="margin-top:8px"><a href="/privacy">Privacy Policy</a> &bull; <a href="/terms">Terms of Service</a></div></footer>
+
+<!-- Header: logo + trust badges + phone -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-logo"><img src="/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve"></div>
+    <div class="hdr-badges">
+      <img src="/assets/trust-logos/bbb-torch-awards.png" alt="BBB">
+      <img src="/assets/trust-logos/bsi-transparent.png" alt="BSI">
+      <img src="/assets/trust-logos/trustpilot-transparent.png" alt="Trustpilot">
+    </div>
+    <a href="tel:{{phoneDigits}}" class="hdr-phone">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+      {{phone}}
+    </a>
+  </div>
+</header>
+
+<!-- Hero: headline+person left, form right -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <h1>{{headline}}<br>{{headlineLine2}} <span style="color:#3052FF">{{headlineHighlight}}</span></h1>
+      <div class="hero-person">
+        <img src="/assets/join-template/hero-person.webp" alt="Business professional">
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="form-badge">{{headlineLine2}}</div>
+      <p class="form-desc">{{subheadline}}</p>
+      <p class="form-desc">Register below by <b id="dayOfWeek"></b></p>
+      <form id="leadForm" action="/api/leads" method="POST">
+        <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+        <input type="hidden" id="gclid" name="gclid" value="">
+        <input type="hidden" id="msclkid" name="msclkid" value="">
+        <input type="hidden" id="fbclid" name="fbclid" value="">
+        <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+        <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+        <input type="hidden" id="keyword" name="keyword" value="">
+        <input type="hidden" id="page_url" name="page_url" value="">
+        <input type="hidden" id="referrer_url" name="referrer_url" value="">
+        {{HIDDEN_FIELDS}}
+        <div id="dynamicFormFields"></div>
+        <div class="consent-group">
+          <input type="checkbox" id="consentCheckbox" required>
+          <label for="consentCheckbox">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</label>
+        </div>
+        <button type="submit" class="submit-btn">{{formButton}}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="stats">
+  <div class="stats-title">Real Results. Real Savings.</div>
+  <div class="stats-sub">Actual settlements negotiated for businesses like yours</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num">73%</div><div class="stat-label">Debt Reduction</div></div>
+    <div class="stat-card"><div class="stat-num">65%</div><div class="stat-label">Debt Reduction</div></div>
+    <div class="stat-card"><div class="stat-num">58%</div><div class="stat-label">Debt Reduction</div></div>
+    <div class="stat-card"><div class="stat-num">30%</div><div class="stat-label">Debt Reduction</div></div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="how">
+  <div class="how-title">How It Works</div>
+  <div class="how-sub">Our proven 3-step process has helped 1,000+ businesses</div>
+  <div class="how-grid">
+    <div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-1.svg" alt=""></div><h3>Free Consultation</h3><p>Schedule a free, confidential call with our MCA debt experts. No obligation, no pressure.</p></div>
+    <div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-2.svg" alt=""></div><h3>Expert Analysis</h3><p>We analyze your debt situation and create a custom settlement strategy for your business.</p></div>
+    <div class="how-card"><div class="how-icon"><img src="/assets/join-template/icon-step-3.svg" alt=""></div><h3>Same-Day Sign Up</h3><p>Start saving immediately. We negotiate with creditors while you focus on running your business.</p></div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="testimonials">
+  <div class="test-title">What Our Clients Say</div>
+  <div class="test-sub">Real stories from business owners we've helped</div>
+  <div class="test-grid">
+    <div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"Coastal Debt saved my business. I was drowning in MCA payments and they negotiated a settlement that cut my debt in half."</div><div class="test-author"><div class="test-avatar">RC</div><div><div class="test-name">Robert C.</div><div class="test-role">Restaurant Owner</div></div></div></div>
+    <div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"Professional and transparent. They got me a 65% reduction. I can finally breathe again."</div><div class="test-author"><div class="test-avatar">JM</div><div><div class="test-name">Jennifer M.</div><div class="test-role">Construction Company</div></div></div></div>
+    <div class="test-card"><div class="test-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><div class="test-quote">"The process was smooth and they handled everything. My daily ACH payments stopped within weeks."</div><div class="test-author"><div class="test-avatar">DK</div><div><div class="test-name">David K.</div><div class="test-role">Retail Store Owner</div></div></div></div>
+  </div>
+</section>
+
+<!-- Sticky CTA -->
+<div class="sticky-cta">
+  <a href="tel:{{phoneDigits}}">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+    Get Relief Now: {{phone}}
+  </a>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div>&copy; 2026 Coastal Debt Resolve. All rights reserved.</div>
+  <div style="margin-top:8px"><a href="/privacy">Privacy Policy</a> &bull; <a href="/terms">Terms of Service</a></div>
+</footer>
+
 <script>
+// Day of week
+var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+document.getElementById('dayOfWeek').textContent=days[new Date().getDay()]+', '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'});
+
+// Render CMS form fields
 var formFields={{formFieldsJson}};
-(function(){var c=document.getElementById('dynamicFormFields');if(!c||!formFields)return;var h=formFields.map(function(f){if(f.type==='hidden'){var skip=['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url'];if(skip.indexOf(f.name)>=0)return'';return'<input type="hidden" name="'+f.name+'" value="'+(f.placeholder||'')+'">';}if(f.type==='radio'){var o=(f.options||'Yes,No').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><div class="radio-group">'+o.map(function(v){v=v.trim();return'<label><input type="radio" name="'+f.name+'" value="'+v+'" '+(f.required?'required':'')+'><span>'+v+'</span></label>';}).join('')+'</div></div>';}if(f.type==='select'){var o=(f.options||'').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><select name="'+f.name+'" '+(f.required?'required':'')+'><option value="">Select...</option>'+o.map(function(v){v=v.trim();return'<option value="'+v+'">'+v+'</option>';}).join('')+'</select></div>';}return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><input type="'+(f.type||'text')+'" name="'+f.name+'" placeholder="'+(f.placeholder||'')+'" '+(f.required?'required':'')+'></div>';}).join('');c.innerHTML=h;})();
-document.getElementById('leadForm').addEventListener('submit',async function(e){e.preventDefault();if(!document.getElementById('consentCheckbox').checked){alert('Please agree to the consent.');return;}var b=this.querySelector('.submit-btn');b.disabled=true;b.textContent='Submitting...';var d={};new FormData(this).forEach(function(v,k){d[k]=v;});try{var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.ok){window.location.href='/thank-you?slug={{SLUG}}';}else throw new Error();}catch(err){alert('Submission failed. Please try again.');b.disabled=false;b.textContent='{{formButton}}';}});
+(function(){var c=document.getElementById('dynamicFormFields');if(!c||!formFields)return;var h=formFields.map(function(f){if(f.type==='hidden'){var skip=['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','page_url','referrer_url'];if(skip.indexOf(f.name)>=0)return'';return'<input type="hidden" name="'+f.name+'" value="'+(f.placeholder||'')+'">';}if(f.type==='radio'){var o=(f.options||'Yes,No').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><div class="radio-group">'+o.map(function(v){v=v.trim();return'<label><input type="radio" name="'+f.name+'" value="'+v+'" '+(f.required?'required':'')+'><span>'+v+'</span></label>';}).join('')+'</div></div>';}if(f.type==='select'){var o=(f.options||'').split(',');return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><select name="'+f.name+'" '+(f.required?'required':'')+'><option value="">Select</option>'+o.map(function(v){v=v.trim();return'<option value="'+v+'">'+v+'</option>';}).join('')+'</select></div>';}return'<div class="form-group"><label>'+f.label+(f.required?' *':'')+'</label><input type="'+(f.type||'text')+'" name="'+f.name+'" placeholder="'+(f.placeholder||'')+'" '+(f.required?'required':'')+'></div>';}).join('');c.innerHTML=h;})();
+
+// Form submission
+document.getElementById('leadForm').addEventListener('submit',async function(e){e.preventDefault();if(!document.getElementById('consentCheckbox').checked){alert('Please agree to the consent.');return;}var b=this.querySelector('.submit-btn');b.disabled=true;b.textContent='Submitting...';var d={};new FormData(this).forEach(function(v,k){d[k]=v;});try{var r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.ok){window.location.href='/thank-you?slug={{SLUG}}';}else throw new Error();}catch(err){alert('Submission failed.');b.disabled=false;b.textContent='{{formButton}}';}});
+
+// URL params
 var p=new URLSearchParams(window.location.search);['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword'].forEach(function(k){var v=p.get(k);if(v){var el=document.getElementById(k);if(el)el.value=v;}});document.getElementById('page_url').value=window.location.href;document.getElementById('referrer_url').value=document.referrer;
 </script>
 </body>
