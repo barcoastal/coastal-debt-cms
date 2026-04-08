@@ -310,8 +310,6 @@
 
 <script>
 const PAGE_ID = '111392035105994';
-const token = localStorage.getItem('token');
-if (!token) window.location = '/admin/login.html';
 
 let conversations = [];
 let activeConvId = null;
@@ -321,16 +319,16 @@ let searchQuery = '';
 let pollTimer = null;
 let lastConvData = '';
 
-// ── API helpers ──
+// ── API helpers (cookie-based auth, same as other admin pages) ──
 async function api(url) {
-  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+  const res = await fetch(url);
   if (res.status === 401) { window.location = '/admin/login.html'; return null; }
   return res.json();
 }
 async function apiPost(url, body) {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (res.status === 401) { window.location = '/admin/login.html'; return null; }
