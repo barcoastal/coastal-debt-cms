@@ -92,7 +92,343 @@ var gf_legacy = {"is_legacy":""};
 <link rel="canonical" href="https://join.coastaldebt.com/" />
 <link rel='shortlink' href='https://join.coastaldebt.com/' />
  <!-- Consent override -->
-  <!-- jQuery script removed -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'granted',
+      'ad_user_data': 'granted',
+      'ad_personalization': 'granted',
+      'analytics_storage': 'granted'
+    });
+    gtag('consent', 'update', {
+      'ad_storage': 'granted',
+      'ad_user_data': 'granted',
+      'ad_personalization': 'granted',
+      'analytics_storage': 'granted'
+    });
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-T3JN6N6K');</script>
+<!-- End Google Tag Manager -->
+
+<!-- RedTrack loader -->
+<script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=.coastaldebt.com&cookieduration=90&defaultcampaignid=6899cb404a9f370347d4e263&regviewonce=false"></script>
+
+<script>
+/**
+ * Universal attribution → Gravity Forms (diagnostic build)
+ * - RT Click ID + GCLID/wbraid/gbraid/msclkid/fbclid + UTMs + subs + meta
+ * - Fills any GF form on page (normal + AJAX), no overwrite of real values
+ * - Adds ATTR LOADED log + ATTR_READY flag for quick verification
+ */
+(function () {
+
+  console.log('ATTR LOADED');           // <-- visible proof the script ran
+  window.ATTR_READY = false;            // <-- flips to true after first fill attempt
+
+  // ====== Adblock detection for RedTrack loader ======
+  function setAdblockBlocked() {
+    TARGET_CLICK_IDs.forEach(function(hid) {
+      var field = document.querySelector('input[name="' + hid + '"]');
+      if (field && !field.value) {
+        field.value = 'adblock_blocked';
+      }
+    });
+  }
+  function isRedTrackBlocked() {
+    // RedTrack sets window.uniclick or window.rtkClickID or cookies
+    var noGlobals = (typeof window.uniclick === 'undefined' && typeof window.rtkClickID === 'undefined');
+    var noCookies = !document.cookie.match(/rtk|uniclick|clickid/i);
+    return noGlobals && noCookies;
+  }
+  function checkRedTrackBlockedAndSet() {
+    if (isRedTrackBlocked()) setAdblockBlocked();
+  }
+  // Check after DOMContentLoaded and after a short delay
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkRedTrackBlockedAndSet, 2000);
+  });
+  // Also check on form submit as a fallback
+  document.addEventListener('submit', function() {
+    setTimeout(checkRedTrackBlockedAndSet, 100);
+  }, true);
+
+  /* ====== CONFIG ====== */
+  var TARGET_CLICK_IDs = ['input_42'];
+  var PLACEHOLDER_RE = /^\{\s*querystring\s*:[^}]+\}$/i;
+
+  /* ====== Helpers ====== */
+  function getCookie(n){var r=document.cookie.split('; ').find(s=>s.startsWith(n+'='));return r?decodeURIComponent(r.split('=')[1]||''):''}
+  function val(v){return (v||'').replace(/\+/g,' ').trim()}
+  var Q = new URLSearchParams(location.search);
+  function getParam(k){ return val(Q.get(k)); }
+
+  /* ====== RedTrack Click ID ====== */
+  var RT_COOKIE_KEYS  = ['rtkclickid-store','rtkClickID','clickid','uniclick_id','uc_clickid','click_id'];
+  var RT_STORAGE_KEYS = ['rtkclickid-store','clickid','uniclick_id','uc_clickid','click_id'];
+
+  function getRTFromCookies(){ for(const k of RT_COOKIE_KEYS){ const v=getCookie(k); if(v) return v; } return ''; }
+  function getRTFromStorage(){ for(const k of RT_STORAGE_KEYS){ const v=localStorage.getItem(k); if(v) return v; } return ''; }
+  function getRTFromGlobals(){ const g=['rtkClickID','lastPaidClickAttribution','firstClickAttribution','firstPaidClickAttribution'];
+    for(const k of g){ if(typeof window[k]==='string' && window[k]) return window[k]; } return ''; }
+  function getRTFromURL(){ for(const p of ['clickid','click_id','rtkclickid']){ const v=getParam(p); if(v) return v; } return ''; }
+  function getRTClickID(){ return getRTFromCookies() || getRTFromGlobals() || getRTFromStorage() || getRTFromURL() || ''; }
+
+  /* ====== Other IDs ====== */
+  function getGclid(){
+    const fromUrl = getParam('gclid'); if (fromUrl) return fromUrl;
+    const variants = ['_gcl_aw','_gcl_dc','_gcl_gb'];
+    for (const c of variants){
+      const v = getCookie(c); if (!v) continue;
+      const m = v.match(/(Cj[A-Za-z0-9_\-]{20,}|gclid=([^.|;]+))/i);
+      if (m) return m[2] || m[1];
+      const seg = v.split('.').pop(); if (seg && /[A-Za-z0-9_-]{20,}/.test(seg)) return seg;
+    }
+    return localStorage.getItem('gclid') || localStorage.getItem('GCLID') || '';
+  }
+  function getBraid(key){
+    const fromUrl = getParam(key); if (fromUrl) return fromUrl;
+    const gb = getCookie('_gcl_gb'); if (gb && gb.includes(key+'=')){ const m = gb.match(new RegExp(key+'=([^;|]+)')); if (m) return m[1]; }
+    return '';
+  }
+  function getMSCLKID(){ return getParam('msclkid') || getCookie('_uetmsclkid') || localStorage.getItem('msclkid') || ''; }
+  function getFBCLID(){
+    const fromUrl = getParam('fbclid'); if (fromUrl) return fromUrl;
+    const fbc = getCookie('_fbc');      // <-- fixed cookie name
+    if (fbc){ const last = fbc.split('.').pop(); if (last && /[A-Za-z0-9_-]{10,}/.test(last)) return last; }
+    return localStorage.getItem('fbclid') || '';
+  }
+
+  function deviceType(){
+    const ua = navigator.userAgent.toLowerCase();
+    if (/tablet|ipad|playbook|silk/.test(ua)) return 'tablet';
+    if (/mobi|iphone|android|blackberry|phone/.test(ua)) return 'mobile';
+    return 'desktop';
+  }
+
+  /* ====== Build payload ====== */
+  function buildPayload(){
+    const p = {};
+    p.utm_source   = getParam('utm_source');
+    p.utm_medium   = getParam('utm_medium');
+    p.utm_campaign = getParam('utm_campaign');
+    p.utm_term     = getParam('utm_term');
+
+    p.gclid          = getGclid();
+    p.wbraid         = getBraid('wbraid');
+    p.gbraid         = getBraid('gbraid');
+    p.gad_source     = getParam('gad_source');
+    p.gad_campaignid = getParam('gad_campaignid');
+
+    ['hsa_acc','hsa_cam','hsa_grp','hsa_ad','hsa_src','hsa_tgt','hsa_kw','hsa_mt','hsa_net','hsa_ver']
+      .forEach(k => p[k] = getParam(k));
+
+    p.msclkid = getMSCLKID();
+    p.fbclid  = getFBCLID();
+
+    p.clickID = val(getRTClickID());
+    p.cmpid   = getParam('cmpid');
+    p.ref_id  = getParam('ref_id');
+    for (let i=2;i<=10;i++) p['sub'+i] = getParam('sub'+i);
+
+    p.utmAgid   = p.hsa_grp || '';
+    p.utmAd     = p.hsa_ad  || '';
+    p.creative  = p.hsa_tgt || '';
+    p.source    = p.utm_source || 'Unknown';
+    p.leadStatus= 'New';
+    p.vendorId  = 'Search';
+
+    p.entryDate = new Date().toISOString();
+    p.sourceURL = location.href;
+    p.deviceType= deviceType();
+    p.preferredLanguage = (navigator.language||'en').toLowerCase().startsWith('es') ? 'spanish' : 'english';
+    p.pageName  = document.title || location.pathname;
+
+    return p;
+  }
+
+  const MATCHERS = [
+    [/^utm[_-]?source$|utm\s*source/i,'utm_source'],
+    [/^utm[_-]?medium$|utm\s*medium/i,'utm_medium'],
+    [/^utm[_-]?campaign$|utm\s*campaign/i,'utm_campaign'],
+    [/^utm[_-]?term$|utm\s*term|keyword/i,'utm_term'],
+    [/^gclid$/i,'gclid'],[/^wbraid$/i,'wbraid'],[/^gbraid$/i,'gbraid'],
+    [/^msclkid$/i,'msclkid'],[/^fbclid$/i,'fbclid'],
+    [/^gad[_-]?source$/i,'gad_source'],[/^gad[_-]?campaignid$/i,'gad_campaignid'],
+    [/^hsa_acc$/i,'hsa_acc'],[/^hsa_cam$/i,'hsa_cam'],[/^hsa_grp$/i,'hsa_grp'],
+    [/^hsa_ad$/i,'hsa_ad'],[/^hsa_src$/i,'hsa_src'],[/^hsa_tgt$/i,'hsa_tgt'],
+    [/^hsa_kw$/i,'hsa_kw'],[/^hsa_mt$/i,'hsa_mt'],[/^hsa_net$/i,'hsa_net'],[/^hsa_ver$/i,'hsa_ver'],
+    [/^(click[\s_-]?id|rtkclickid|uniclick|data\s*click\s*id)$/i,'clickID'],
+    [/^cmpid$/i,'cmpid'],[/^ref[_-]?id$/i,'ref_id'],
+    [/^sub2$/i,'sub2'],[/^sub3$/i,'sub3'],[/^sub4$/i,'sub4'],[/^sub5$/i,'sub5'],
+    [/^sub6$/i,'sub6'],[/^sub7$/i,'sub7'],[/^sub8$/i,'sub8'],[/^sub9$/i,'sub9'],[/^sub10$/i,'sub10'],
+    [/^utm[_-]?agid$/i,'utmAgid'],[/^utm[_-]?ad$/i,'utmAd'],[/^creative$/i,'creative'],
+    [/^source$/i,'source'],[/^lead[_-]?status$/i,'leadStatus'],[/^vendor[_-]?id$/i,'vendorId'],
+    [/^entry[_-]?date$/i,'entryDate'],[/^source[_-]?url$/i,'sourceURL'],[/^device[_-]?type$/i,'deviceType'],
+    [/^preferred[_-]?language$/i,'preferredLanguage'],[/^page[_-]?name$/i,'pageName']
+  ];
+
+  function shouldReplace(el){
+    const v=(el.value||'').trim();
+    return !v || PLACEHOLDER_RE.test(v);
+  }
+
+  function resolveKey(el){
+    const id=(el.id||''), name=(el.name||'');
+    let label=''; const wrap=el.closest('.gfield');
+    if (wrap){ const lab=wrap.querySelector('.gfield_label, label'); if (lab) label=(lab.textContent||'').trim(); }
+    const hay=(id+' '+name+' '+label).toLowerCase();
+
+    if (TARGET_CLICK_IDs.length && TARGET_CLICK_IDs.includes(name)) return 'clickID';
+    for (const [re,key] of MATCHERS){ if (re.test(hay)) return key; }
+    return '';
+  }
+
+  function fill(container){
+    const data = buildPayload();
+    const scope = container || document;
+    const inputs = scope.querySelectorAll('form input, form textarea, form select');
+
+    inputs.forEach(function(el){
+      const key = resolveKey(el);
+      if (!key || !(key in data)) return;
+      const v = data[key]; if (!v) return;
+
+      if (el.tagName === 'SELECT'){
+        if (!shouldReplace(el)) return;
+        const opts=[...el.options];
+        const exact=opts.find(o => (o.value||o.text).toLowerCase() === v.toLowerCase());
+        const loose=opts.find(o => (o.value||o.text).toLowerCase().includes(v.toLowerCase()));
+        const pick=exact||loose; if (pick) el.value=pick.value;
+      } else {
+        if (shouldReplace(el)) el.value=v;
+      }
+    });
+
+    window.ATTR_READY = true;           // <-- we tried to fill at least once
+  }
+
+ function waitForRTandFill(container){
+  // Wait up to 12 seconds total for RedTrack ClickID
+  const deadline = Date.now() + 12000;
+
+  (function poll(){
+    if (getRTClickID()){
+      fill(container);
+      return;
+    }
+    if (Date.now() < deadline){
+      setTimeout(poll, 250);   // keep checking every 250ms
+    } else {
+      // Give up on ClickID but still fill everything else (UTMs, gclid, etc.)
+      fill(container);
+    }
+  })();
+}
+
+// Initial attempts when DOM is ready
+document.addEventListener('DOMContentLoaded', function(){
+  waitForRTandFill(document);
+  setTimeout(()=>waitForRTandFill(document), 800);
+  setTimeout(()=>waitForRTandFill(document), 2500);
+});
+
+// Extra safety: run again after full page load (all scripts/resources ready)
+window.addEventListener('load', function () {
+  waitForRTandFill(document);
+});
+
+// For AJAX / multi-step Gravity Forms
+if (window.jQuery){
+  jQuery(document).on('gform_post_render', function(_e, formId){
+    waitForRTandFill(document.getElementById('gform_'+formId) || document);
+  });
+}
+
+  // Debug helpers
+  window.ATTR_DEBUG = function(){
+    console.log('ATTR_READY:', window.ATTR_READY);
+    console.log('RT cookie(s):', document.cookie.split('; ').filter(s=>/rtk|clickid|uniclick/i.test(s)).join(' | '));
+    console.log('RT url:', getRTFromURL());
+    console.log('ClickID now:', getRTClickID());
+    const ids = TARGET_CLICK_IDs.length ? TARGET_CLICK_IDs : ['(auto-matching)'];
+    console.log('ClickID targets:', ids);
+    console.table(
+      [...document.querySelectorAll('input[type=hidden]')].map(i=>({id:i.id,name:i.name,label:i.closest('.gfield')?.querySelector('.gfield_label, label')?.textContent?.trim()||'',value:i.value}))
+    );
+  };
+  // ==========================
+  // LOG MISSING CLICKID ON FORM SUBMIT
+  // ==========================
+  document.querySelectorAll('form').forEach(function(f) {
+        f.addEventListener('submit', function(e){
+          TARGET_CLICK_IDs.forEach(function(hid){
+            const hf = document.querySelector('input[name="' + hid + '"]');
+            const click = getRTClickID();
+
+            let reason = '';
+            if(!hf){
+              reason = 'FIELD_NOT_FOUND';
+            } else if(!click){
+              reason = 'NO_CLICKID_AVAILABLE';
+              // If RedTrack is blocked by adblock, set adblock_blocked
+              if (isRedTrackBlocked() && hf && !hf.value) {
+              hf.value = 'adblock_blocked';
+              }
+            } else if(hf.value){
+              reason = 'FIELD_ALREADY_HAS_VALUE';
+            } else if(!window.ATTR_READY){
+              reason = 'TIMING_ISSUE_ATTR_NOT_READY';
+            } else {
+              reason = 'UNKNOWN';
+            }
+
+            // Fill field with placeholder if empty (unless already set above)
+            if(hf && !hf.value) hf.value = click || 'NO_CLICKID';
+
+            // Log to console (optional)
+            console.log('[FORM SUBMIT LOG]', {
+              timestamp: new Date().toISOString(),
+              fieldId: hid,
+              fieldValue: hf ? hf.value : null,
+              clickID: click,
+              ATTR_READY: window.ATTR_READY,
+              reason: reason,
+              cookies: document.cookie,
+              storage: Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])),
+              url: location.href,
+              userAgent: navigator.userAgent
+            });
+
+            // Log to server
+            fetch('/log-missing-clickid.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                timestamp: new Date().toISOString(),
+                fieldId: hid,
+                fieldValue: hf ? hf.value : null,
+                clickID: click,
+                ATTR_READY: window.ATTR_READY,
+                reason: reason,
+                cookies: document.cookie,
+                storage: Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])),
+                url: location.href,
+                userAgent: navigator.userAgent
+              })
+            }).catch(console.error);
+
+          });
+        });
+  });
+
+})();
+</script>
 
 <script type='text/javascript'>
 piAId = '1112663';
@@ -863,9 +1199,9 @@ body.page-id-943 .gform_wrapper{
 }*/
 
 		</style>
-		<meta name="generator" content="WP Rocket 3.20.6.1" data-wpr-features="wpr_preconnect_external_domains wpr_auto_preload_fonts wpr_oci wpr_image_dimensions wpr_preload_links wpr_host_fonts_locally wpr_mobile" />{{HEAD_SCRIPTS}}
+		<meta name="generator" content="WP Rocket 3.20.6.1" data-wpr-features="wpr_preconnect_external_domains wpr_auto_preload_fonts wpr_oci wpr_image_dimensions wpr_preload_links wpr_host_fonts_locally wpr_mobile" />
 </head>
-{{BODY_SCRIPTS}}
+
 <body class="home wp-singular page-template-default page page-id-10 wp-embed-responsive wp-theme-hello-elementor hello-elementor-default elementor-default elementor-kit-7 elementor-page elementor-page-10">
 
 <!-- Google Tag Manager (noscript) -->
@@ -1000,7 +1336,7 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
                             <p class='gform_description'></p>
 							<p class='gform_required_legend'>&quot;<span class="gfield_required gfield_required_asterisk">*</span>&quot; indicates required fields</p>
                         </div><form id="leadForm" action="/api/leads" method="POST" onsubmit="return handleJoinSubmit(event)">
-        <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+        <input type="hidden" name="landing_page_slug" value="join-test">
         <input type="hidden" id="gclid" name="gclid" value="">
         <input type="hidden" id="msclkid" name="msclkid" value="">
         <input type="hidden" id="fbclid" name="fbclid" value="">
@@ -1009,13 +1345,13 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
         <input type="hidden" id="keyword" name="keyword" value="">
         <input type="hidden" id="page_url" name="page_url" value="">
         <input type="hidden" id="referrer_url" name="referrer_url" value="">
-        {{HIDDEN_FIELDS}}
+        
         <div id="dynamicFormFields"></div>
         <div style="display:flex;gap:8px;align-items:flex-start;margin:14px 0;">
           <input type="checkbox" id="consentCb" required style="margin-top:3px;accent-color:#3052FF;width:16px;height:16px;flex-shrink:0;">
           <label for="consentCb" style="font-size:11px;color:#667085;line-height:1.5;">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" style="color:#3052FF;">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank" style="color:#3052FF;">Terms of Use</a>.</label>
         </div>
-        <button type="submit" style="width:100%;height:50px;background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;font-family:inherit;">{{formButton}}</button>
+        <button type="submit" style="width:100%;height:50px;background:#3052FF;color:#fff;border:none;border-radius:50px;font-size:20px;font-weight:500;cursor:pointer;font-family:inherit;">Get My Free MCA Analysis</button>
       </form>
                         </div>
 </div>
@@ -2244,8 +2580,7 @@ var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false
 
 <script>
 // CMS Form Rendering
-document.addEventListener("DOMContentLoaded", function() {
-var formFields = {{formFieldsJson}};
+var formFields = [{"name":"has_mca","label":"Do you have MCA (Merchant Cash Advance) debt?","type":"radio","required":true,"options":"Yes,No"},{"name":"company_name","label":"Company Name","type":"text","required":true,"placeholder":"Your Company Name"},{"name":"first_name","label":"First Name","type":"text","required":true,"placeholder":"John"},{"name":"last_name","label":"Last Name","type":"text","required":true,"placeholder":"Smith"},{"name":"email","label":"Email","type":"email","required":true,"placeholder":"john@company.com"},{"name":"phone","label":"Phone","type":"tel","required":true,"placeholder":"(555) 123-4567"}];
 (function() {
   var c = document.getElementById('dynamicFormFields');
   if (!c || !formFields) return;
@@ -2290,11 +2625,11 @@ async function handleJoinSubmit(e) {
   new FormData(e.target).forEach(function(v, k) { data[k] = v; });
   try {
     var res = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    if (res.ok) { window.location.href = '/thank-you?slug={{SLUG}}'; }
+    if (res.ok) { window.location.href = '/thank-you?slug=join-test'; }
     else throw new Error();
   } catch(err) {
     alert('Submission failed. Please try again.');
-    btn.disabled = false; btn.textContent = '{{formButton}}';
+    btn.disabled = false; btn.textContent = 'Get My Free MCA Analysis';
   }
   return false;
 }
@@ -2306,7 +2641,6 @@ var params = new URLSearchParams(window.location.search);
 });
 document.getElementById('page_url').value = window.location.href;
 document.getElementById('referrer_url').value = document.referrer;
-});
 </script>
 </body>
 </html>
