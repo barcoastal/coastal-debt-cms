@@ -609,7 +609,48 @@ textarea:focus {
   transform: translateX(22px);
 }
 
-/* Responsive */
+/* ============ Mobile Hamburger Button ============ */
+.mobile-hamburger {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1100;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--navy-dark);
+  color: var(--white);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-hamburger svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Sidebar overlay backdrop */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+}
+
+/* ============ Responsive ============ */
 @media (max-width: 1200px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -621,20 +662,281 @@ textarea:focus {
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    display: none;
+  /* Show hamburger */
+  .mobile-hamburger {
+    display: flex;
   }
 
+  /* Sidebar: slide-out drawer instead of hidden */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    width: 280px;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay.visible {
+    display: block;
+  }
+
+  /* Main content full-width */
   .main-content {
     margin-left: 0;
+    max-width: 100vw;
+    padding: 70px 16px 24px;
   }
 
+  /* Page header */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .page-header > div,
+  .page-header > a {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .page-header .btn,
+  .page-header a.btn {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    padding: 10px 12px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Live clock: hide on mobile to save space */
+  #liveClock {
+    display: none !important;
+  }
+
+  /* Stats */
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
   }
 
+  .stat-card {
+    padding: 14px 16px;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  /* Filters: stack vertically */
+  .filters {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filters input,
+  .filters select {
+    width: 100%;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .filters .btn {
+    width: 100%;
+    height: 44px;
+  }
+
+  /* Time range buttons: scrollable */
+  .time-range-btns {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    width: 100%;
+    padding: 3px;
+    gap: 0;
+  }
+
+  .time-range-btns button {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* Tables: horizontal scroll with touch */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Form rows */
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  /* Modals: full-width on mobile */
+  .modal {
+    max-width: calc(100vw - 32px);
+    max-height: 85vh;
+    margin: 16px;
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  /* Charts */
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Pipeline kanban: horizontal scroll */
+  .pipeline-container {
+    padding-bottom: 16px;
+  }
+
+  .pipeline-column {
+    min-width: 260px;
+    max-width: 260px;
+  }
+
+  /* Detail tabs: scrollable */
+  .detail-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .detail-tabs button {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Email sub-nav: scrollable */
+  .email-subnav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .email-subnav a {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  /* Campaign stats */
+  .campaign-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* Column editor: position from left on mobile */
+  .col-editor-panel {
+    right: auto;
+    left: 0;
+  }
+
+  /* Badges: touch-friendly */
+  .badge {
+    padding: 5px 12px;
+    font-size: 0.7rem;
+  }
+
+  /* Action buttons: touch targets */
+  .action-btn {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    min-height: 36px;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  /* Toggle: slightly larger for touch */
+  .toggle {
+    width: 52px;
+    height: 28px;
+  }
+
+  .toggle-slider:before {
+    width: 22px;
+    height: 22px;
+  }
+
+  .toggle input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+  }
+
+  /* Page size selector */
+  .page-size-selector {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Sidebar nav items: larger tap targets */
+  .sidebar-nav a {
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+
+  .sidebar-nav .nav-submenu a {
+    padding-left: 52px;
+    font-size: 0.95rem;
+  }
+
+  .sidebar-nav .nav-group-toggle {
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+  }
+
+  /* Loading spinner: centered better on mobile */
+  .loading {
+    padding: 30px;
   }
 }
 
@@ -1087,11 +1389,5 @@ textarea:focus {
 @media (max-width: 1200px) {
   .campaign-stats {
     grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .campaign-stats {
-    grid-template-columns: repeat(2, 1fr);
   }
 }

@@ -450,6 +450,92 @@ function initClock() {
   setInterval(tick, 1000);
 }
 
-// Run auth check and clock on page load
+// ─── Mobile Sidebar ────────────────────────────────────────────────────────
+function initMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  // Create hamburger button
+  const btn = document.createElement('button');
+  btn.className = 'mobile-hamburger';
+  btn.setAttribute('aria-label', 'Open menu');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+  document.body.appendChild(btn);
+
+  function openSidebar() {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('visible');
+    // Force reflow then animate
+    requestAnimationFrame(function() { overlay.classList.add('active'); });
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    btn.setAttribute('aria-label', 'Close menu');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('active');
+    setTimeout(function() { overlay.classList.remove('visible'); }, 300);
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    btn.setAttribute('aria-label', 'Open menu');
+  }
+
+  btn.addEventListener('click', function() {
+    if (sidebar.classList.contains('mobile-open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar when a nav link is tapped
+  sidebar.querySelectorAll('.sidebar-nav a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
+
+  // Swipe-to-close: detect left swipe on open sidebar
+  var touchStartX = 0;
+  var touchStartY = 0;
+  sidebar.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    // Swipe left to close (at least 60px horizontal, mostly horizontal)
+    if (dx < -60 && dy < 80 && sidebar.classList.contains('mobile-open')) {
+      closeSidebar();
+    }
+  }, { passive: true });
+
+  // Swipe-to-open from left edge
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches[0].clientX < 20 && !sidebar.classList.contains('mobile-open')) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    if (touchStartX < 20 && !sidebar.classList.contains('mobile-open')) {
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      var dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+      if (dx > 60 && dy < 80) openSidebar();
+    }
+  }, { passive: true });
+}
+
+// Run auth check, clock, and mobile sidebar on page load
 checkAuth();
 initClock();
+initMobileSidebar();
