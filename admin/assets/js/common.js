@@ -535,7 +535,58 @@ function initMobileSidebar() {
   }, { passive: true });
 }
 
-// Run auth check, clock, and mobile sidebar on page load
+// ─── PWA Setup ─────────────────────────────────────────────────────────────
+function initPWA() {
+  // Inject manifest link if not already present
+  if (!document.querySelector('link[rel="manifest"]')) {
+    var link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = '/admin/manifest.json';
+    document.head.appendChild(link);
+  }
+
+  // Inject theme-color if not present
+  if (!document.querySelector('meta[name="theme-color"]')) {
+    var meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = '#0f1c2e';
+    document.head.appendChild(meta);
+  }
+
+  // Inject apple-touch-icon if not present
+  if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+    var icon = document.createElement('link');
+    icon.rel = 'apple-touch-icon';
+    icon.href = '/admin/assets/icons/icon-180x180.png';
+    document.head.appendChild(icon);
+  }
+
+  // Apple mobile web app meta tags
+  if (!document.querySelector('meta[name="apple-mobile-web-app-capable"]')) {
+    var capable = document.createElement('meta');
+    capable.name = 'apple-mobile-web-app-capable';
+    capable.content = 'yes';
+    document.head.appendChild(capable);
+
+    var statusBar = document.createElement('meta');
+    statusBar.name = 'apple-mobile-web-app-status-bar-style';
+    statusBar.content = 'black-translucent';
+    document.head.appendChild(statusBar);
+
+    var appTitle = document.createElement('meta');
+    appTitle.name = 'apple-mobile-web-app-title';
+    appTitle.content = 'Nautilus';
+    document.head.appendChild(appTitle);
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(function() {});
+  }
+}
+
+// Run auth check, clock, mobile sidebar, and PWA on page load
 checkAuth();
 initClock();
 initMobileSidebar();
+initPWA();
