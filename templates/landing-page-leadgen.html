@@ -160,25 +160,25 @@
     .sorry-sub{font-size:0.85rem;color:var(--gray-500);opacity:0.8}
 
     /* ===== SIDE PANEL (desktop) ===== */
-    .side{position:sticky;top:80px;align-self:flex-start;height:calc(100vh - 100px);display:flex;flex-direction:column;gap:14px}
+    .side{position:sticky;top:88px;align-self:center;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 110px)}
 
-    .side-card{background:var(--blue);color:var(--white);border-radius:20px;padding:26px 24px 22px;position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column}
+    .side-card{background:var(--blue);color:var(--white);border-radius:20px;padding:24px 22px 20px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px}
     .side-card::before{content:"››";position:absolute;top:-30px;right:-20px;font-size:220px;font-weight:900;line-height:1;color:rgba(255,255,255,0.08);letter-spacing:-0.1em;pointer-events:none}
     .side-card::after{content:"";position:absolute;bottom:-80px;left:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(127,178,255,0.4),transparent 70%);pointer-events:none}
 
     .side-kicker{position:relative;font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--orange);margin-bottom:10px;display:flex;align-items:center;gap:8px}
     .side-kicker::before{content:"›";font-size:1.1rem;line-height:0.6;color:var(--orange)}
 
-    .side-head{position:relative;font-size:1.3rem;font-weight:800;line-height:1.25;letter-spacing:-0.015em;margin-bottom:20px}
+    .side-head{position:relative;font-size:1.3rem;font-weight:800;line-height:1.25;letter-spacing:-0.015em;margin-bottom:0}
 
-    .side-stats{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .side-stats{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
     .stat{background:rgba(255,255,255,0.12);border-radius:12px;padding:12px 14px}
     .stat-num{font-size:1.35rem;font-weight:800;color:var(--white);letter-spacing:-0.02em}
     .stat-lbl{font-size:0.72rem;opacity:0.85;margin-top:2px}
 
-    .side-testimonial{position:relative;background:var(--white);color:var(--ink);border-radius:14px;padding:18px 16px 14px;margin-top:auto;box-shadow:0 8px 20px -8px rgba(10,16,51,0.25)}
+    .side-testimonial{position:relative;background:var(--white);color:var(--ink);border-radius:14px;padding:18px 16px 14px;margin-top:0;box-shadow:0 8px 20px -8px rgba(10,16,51,0.25)}
     .side-testimonial .qmark{position:absolute;top:-14px;left:16px;background:var(--orange);color:var(--white);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;font-family:Georgia,serif;line-height:1;padding-top:6px}
-    .side-testimonial .quote{font-size:0.88rem;line-height:1.55;font-weight:500;margin-top:4px;min-height:80px;transition:opacity 0.3s;color:var(--gray-800)}
+    .side-testimonial .quote{font-size:0.88rem;line-height:1.55;font-weight:500;margin-top:4px;min-height:66px;transition:opacity 0.3s;color:var(--gray-800)}
     .side-testimonial .stars{color:var(--orange);font-size:0.88rem;letter-spacing:2px;margin-top:10px}
     .side-testimonial .who{font-size:0.8rem;color:var(--ink);margin-top:6px;font-weight:700}
     .side-testimonial .role{font-size:0.72rem;color:var(--gray-500);font-weight:500;margin-top:2px}
