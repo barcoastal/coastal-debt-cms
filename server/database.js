@@ -840,6 +840,10 @@ db.exec(`INSERT OR IGNORE INTO salesforce_config (id) VALUES (1)`);
 // Add Salesforce Lead ID column to leads
 try { db.exec(`ALTER TABLE leads ADD COLUMN salesforce_lead_id TEXT`); } catch (e) {}
 
+// Industry + number of MCA loans (leadgen v2)
+try { db.exec(`ALTER TABLE leads ADD COLUMN industry TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN mca_count TEXT`); } catch (e) {}
+
 // Outbrain: Business Debt landing page + direct form (no pre-qual)
 const obFormExists = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
 if (!obFormExists) {

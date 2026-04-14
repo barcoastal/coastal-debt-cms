@@ -25,357 +25,517 @@
   <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
       --blue:#3052FF;
+      --blue-deep:#1a2e9c;
       --blue-light:#7FB2FF;
+      --blue-50:#EEF2FF;
       --orange:#FF9000;
-      --orange-hover:#e68200;
       --cyan-bg:#F2F4F9;
       --white:#ffffff;
+      --ink:#0B1020;
       --gray-100:#f3f4f6;
       --gray-200:#e5e7eb;
+      --gray-300:#d1d5db;
+      --gray-500:#6b7280;
       --gray-600:#4b5563;
       --gray-800:#1f2937;
       --green-500:#22c55e;
       --red-500:#ef4444;
+      --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
     }
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--gray-800);line-height:1.6;background:var(--cyan-bg);overflow:hidden}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);line-height:1.6;background:#F6F8FD;overflow:hidden}
+
+    /* Tech background: grid + gradient blobs */
+    .tech-bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+    .tech-bg::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(48,82,255,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(48,82,255,0.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at 30% 20%,black 0%,transparent 70%)}
+    .tech-bg .blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.55}
+    .tech-bg .b1{width:540px;height:540px;background:radial-gradient(circle,#7FB2FF 0%,transparent 70%);top:-120px;left:-80px}
+    .tech-bg .b2{width:420px;height:420px;background:radial-gradient(circle,#FFB866 0%,transparent 70%);bottom:-120px;right:8%;opacity:0.35}
+    .tech-bg .b3{width:380px;height:380px;background:radial-gradient(circle,#C9D6FF 0%,transparent 70%);top:40%;right:-80px;opacity:0.5}
 
     /* Progress bar */
-    .progress-bar{position:fixed;top:0;left:0;height:4px;background:var(--blue);z-index:200;transition:width 0.5s cubic-bezier(.4,0,.2,1)}
+    .progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--blue) 0%,#7FB2FF 100%);z-index:200;transition:width 0.5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 12px rgba(48,82,255,0.5)}
 
     /* Nav */
-    .nav{position:fixed;top:0;left:0;right:0;background:var(--white);padding:14px 0;border-bottom:1px solid var(--gray-200);z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.04)}
-    .nav-inner{max-width:800px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
-    .nav-logo img{height:32px;width:auto}
-    .nav-phone{display:flex;align-items:center;gap:6px;color:var(--blue);font-weight:600;font-size:0.9rem;text-decoration:none;transition:color 0.2s}
-    .nav-phone:hover{color:#1a2e4a}
-    .nav-phone svg{width:16px;height:16px}
+    .nav{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,0.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:12px 0;border-bottom:1px solid rgba(48,82,255,0.08);z-index:100}
+    .nav-inner{max-width:1240px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
+    .nav-logo img{height:30px;width:auto;display:block}
+    .nav-phone{display:flex;align-items:center;gap:8px;color:var(--blue);font-weight:700;font-size:0.92rem;text-decoration:none;transition:color 0.2s;padding:8px 14px;border-radius:999px;background:rgba(48,82,255,0.08)}
+    .nav-phone:hover{background:rgba(48,82,255,0.14)}
+    .nav-phone svg{width:15px;height:15px}
 
-    /* Funnel container */
-    .funnel{position:relative;width:100%;height:100vh;overflow:hidden}
+    /* Layout: 2 columns on desktop */
+    .stage{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:68px 24px 24px;min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:stretch}
+
+    /* Funnel column */
+    .funnel-col{position:relative;min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center}
+    .funnel{position:relative;width:100%;max-width:640px}
+
+    /* Step pill row (tech breadcrumbs) */
+    .step-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
+    .step-dot{width:28px;height:4px;border-radius:2px;background:rgba(48,82,255,0.15);transition:all 0.3s}
+    .step-dot.done{background:var(--blue)}
+    .step-dot.active{background:var(--blue);box-shadow:0 0 0 3px rgba(48,82,255,0.15)}
 
     /* Each screen */
-    .screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 24px 100px;opacity:0;transform:translateY(24px);transition:all 0.45s cubic-bezier(.4,0,.2,1);pointer-events:none}
-    .screen.active{opacity:1;transform:translateY(0);pointer-events:all}
-    .screen.exit-left{opacity:0;transform:translateY(-24px)}
+    .screen{display:none;opacity:0;transform:translateY(16px);transition:opacity 0.4s ease,transform 0.4s ease}
+    .screen.active{display:block;opacity:1;transform:translateY(0)}
 
-    /* Screen content */
-    .screen-inner{max-width:600px;width:100%;text-align:center}
-    .screen-step{display:inline-block;background:rgba(48,82,255,0.08);color:var(--blue);padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;margin-bottom:24px;text-transform:uppercase;letter-spacing:1px}
-    .screen-question{font-size:2.2rem;font-weight:800;color:var(--gray-800);margin-bottom:14px;line-height:1.25;letter-spacing:-0.02em}
-    .screen-sub{font-size:1.05rem;color:var(--gray-600);margin-bottom:40px;line-height:1.7}
+    /* Card */
+    .card{background:rgba(255,255,255,0.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(48,82,255,0.1);border-radius:24px;padding:34px 32px;box-shadow:0 20px 60px -20px rgba(15,23,66,0.18),0 1px 2px rgba(15,23,66,0.04);text-align:center}
 
-    /* Debt amount options */
-    .option-grid{display:flex;flex-direction:column;gap:10px;max-width:440px;margin:0 auto}
-    .option-btn{display:flex;align-items:center;justify-content:center;padding:16px 24px;border:2px solid var(--gray-200);border-radius:14px;background:var(--white);font-size:1.05rem;font-weight:600;color:var(--gray-800);cursor:pointer;transition:all 0.2s;text-align:center;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
-    .option-btn:hover{border-color:var(--blue);background:var(--white);transform:translateY(-2px);box-shadow:0 4px 12px rgba(48,82,255,0.1)}
-    .option-btn.selected{border-color:var(--blue);background:rgba(48,82,255,0.04);color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+    /* Illustration */
+    .illo{width:64px;height:64px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(48,82,255,0.12),rgba(127,178,255,0.2));border:1px solid rgba(48,82,255,0.18);border-radius:18px;color:var(--blue);position:relative}
+    .illo svg{width:30px;height:30px}
+    .illo::before{content:"";position:absolute;inset:-6px;border-radius:22px;border:1px dashed rgba(48,82,255,0.18);pointer-events:none}
 
-    /* MCA radio buttons */
-    .mca-options{display:flex;gap:16px;max-width:400px;margin:0 auto}
-    .mca-btn{flex:1;padding:28px 24px;border:2px solid var(--gray-200);border-radius:16px;background:var(--white);font-size:1.15rem;font-weight:700;color:var(--gray-800);cursor:pointer;transition:all 0.2s;text-align:center;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
-    .mca-btn:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 4px 12px rgba(48,82,255,0.1)}
-    .mca-btn.selected{border-color:var(--blue);background:rgba(48,82,255,0.04);color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+    .step-label{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:0.68rem;font-weight:700;color:var(--blue);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px;padding:4px 10px;background:rgba(48,82,255,0.08);border-radius:999px}
+    .step-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px rgba(48,82,255,0.2)}
 
-    /* Info section below question */
-    .screen-info{margin-top:48px;padding-top:24px;border-top:1px solid var(--gray-200);max-width:500px;margin-left:auto;margin-right:auto}
-    .info-items{display:flex;justify-content:center;gap:28px;flex-wrap:wrap}
-    .info-item{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-600)}
-    .info-item svg{width:18px;height:18px;color:var(--blue);flex-shrink:0}
+    .screen-question{font-size:1.85rem;font-weight:800;color:var(--ink);margin-bottom:10px;line-height:1.22;letter-spacing:-0.02em}
+    .screen-sub{font-size:0.98rem;color:var(--gray-600);margin-bottom:28px;line-height:1.6}
+
+    /* Options */
+    .option-grid{display:flex;flex-direction:column;gap:8px;max-width:420px;margin:0 auto}
+    .option-btn{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border:1.5px solid var(--gray-200);border-radius:14px;background:var(--white);font-size:1rem;font-weight:600;color:var(--ink);cursor:pointer;transition:all 0.18s;font-family:inherit;text-align:left}
+    .option-btn::after{content:"→";color:var(--gray-300);font-size:1.1rem;transition:all 0.18s;font-family:var(--mono)}
+    .option-btn:hover{border-color:var(--blue);transform:translateX(2px);box-shadow:0 6px 18px -8px rgba(48,82,255,0.3)}
+    .option-btn:hover::after{color:var(--blue);transform:translateX(4px)}
+    .option-btn.selected{border-color:var(--blue);background:rgba(48,82,255,0.05);color:var(--blue)}
+    .option-btn.selected::after{color:var(--blue)}
+
+    /* Yes/No */
+    .mca-options{display:flex;gap:12px;max-width:380px;margin:0 auto}
+    .mca-btn{flex:1;padding:26px 20px;border:1.5px solid var(--gray-200);border-radius:16px;background:var(--white);font-size:1.1rem;font-weight:700;color:var(--ink);cursor:pointer;transition:all 0.18s;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px}
+    .mca-btn svg{width:22px;height:22px;color:var(--gray-500);transition:color 0.18s}
+    .mca-btn:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(48,82,255,0.25)}
+    .mca-btn:hover svg{color:var(--blue)}
+    .mca-btn.selected{border-color:var(--blue);background:rgba(48,82,255,0.05);color:var(--blue)}
+    .mca-btn.selected svg{color:var(--blue)}
+
+    /* Industry grid */
+    .industry-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:460px;margin:0 auto}
+    .industry-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--gray-200);border-radius:14px;background:var(--white);font-size:0.95rem;font-weight:600;color:var(--ink);cursor:pointer;transition:all 0.18s;font-family:inherit;text-align:left}
+    .industry-btn svg{width:20px;height:20px;flex-shrink:0;color:var(--blue)}
+    .industry-btn:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(48,82,255,0.25)}
+    .industry-btn.selected{border-color:var(--blue);background:rgba(48,82,255,0.06);color:var(--blue)}
+
+    /* Info bar */
+    .screen-info{margin-top:24px;padding-top:18px;border-top:1px dashed rgba(48,82,255,0.15)}
+    .info-items{display:flex;justify-content:center;gap:22px;flex-wrap:wrap}
+    .info-item{display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--gray-600);font-weight:500}
+    .info-item svg{width:16px;height:16px;color:var(--blue)}
 
     /* Form screen */
-    .form-screen .screen-inner{max-width:460px}
-    .form-group{margin-bottom:14px;text-align:left}
-    .form-group label{display:block;font-weight:500;color:var(--gray-800);margin-bottom:6px;font-size:0.9rem}
-    .form-group input,.form-group select{width:100%;height:52px;padding:0 18px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;font-family:inherit;transition:all 0.2s;background:var(--white);outline:none;color:var(--gray-800)}
-    .form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+    .form-group{margin-bottom:12px;text-align:left}
+    .form-group label{display:block;font-weight:600;color:var(--gray-800);margin-bottom:6px;font-size:0.82rem;letter-spacing:0.02em}
+    .form-group input,.form-group select{width:100%;height:50px;padding:0 16px;border:1.5px solid var(--gray-200);border-radius:12px;font-size:0.98rem;font-family:inherit;transition:all 0.18s;background:var(--white);outline:none;color:var(--ink)}
+    .form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(48,82,255,0.1)}
     .form-group input::placeholder{color:#b0b8c4}
-    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234b5563' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
-    .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;height:52px;transition:all 0.2s;background:var(--white)}
-    .phone-wrapper:focus-within{border-color:var(--blue)}
-    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
-    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:48px;border-radius:0 12px 12px 0;background:transparent;color:var(--gray-800)}
-    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
-    .phone-error{color:var(--red-500);font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
-    .radio-group{display:flex;gap:10px}
-    .radio-label{flex:1;height:50px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;background:var(--white);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--gray-800)}
-    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.04);color:var(--blue);font-weight:600}
-    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
-    .radio-label span{line-height:50px}
-    .consent-group{margin:16px 0 0}
+    .phone-wrapper{display:flex;align-items:center;border:1.5px solid var(--gray-200);border-radius:12px;height:50px;transition:all 0.18s;background:var(--white)}
+    .phone-wrapper:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(48,82,255,0.1)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:46px;border-radius:0 12px 12px 0;background:transparent}
+    .phone-wrapper input[type="tel"]:focus{box-shadow:none}
+    .phone-error{color:var(--red-500);font-size:0.78rem;margin-top:4px;display:none}
+    .consent-group{margin:14px 0 0}
     .consent-label{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:0.72rem;color:var(--gray-600);line-height:1.5;text-align:left}
-    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:15px;height:15px;accent-color:var(--blue);cursor:pointer}
     .consent-label a{color:var(--blue);text-decoration:underline}
-    .consent-error{color:var(--red-500);font-size:0.8rem;margin-top:4px;display:none;padding-left:24px}
-    .submit-btn{width:100%;height:56px;background:var(--blue);color:var(--white);border:none;border-radius:50px;font-size:1.15rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:18px;box-shadow:0 4px 16px rgba(48,82,255,0.25)}
-    .submit-btn:hover{background:#2443e6;transform:translateY(-2px);box-shadow:0 8px 24px rgba(48,82,255,0.3)}
-    .submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+    .consent-error{color:var(--red-500);font-size:0.78rem;margin-top:4px;display:none}
+    .submit-btn{position:relative;width:100%;height:54px;background:linear-gradient(135deg,var(--blue) 0%,#4A6BFF 100%);color:var(--white);border:none;border-radius:14px;font-size:1.05rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px;box-shadow:0 8px 24px -8px rgba(48,82,255,0.5);overflow:hidden;font-family:inherit}
+    .submit-btn::after{content:"→";margin-left:8px;display:inline-block;transition:transform 0.2s}
+    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px -8px rgba(48,82,255,0.6)}
+    .submit-btn:hover::after{transform:translateX(4px)}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
 
-    /* Sorry screen */
-    .sorry-icon{width:64px;height:64px;margin:0 auto 20px;color:var(--gray-600);opacity:0.4}
-    .sorry-icon svg{width:100%;height:100%}
-    .sorry-title{font-size:1.6rem;font-weight:700;color:var(--gray-800);margin-bottom:12px}
-    .sorry-text{font-size:1rem;color:var(--gray-600);margin-bottom:8px}
-    .sorry-sub{font-size:0.9rem;color:var(--gray-600);opacity:0.6}
+    /* Sorry / Success */
+    .sorry-icon,.success-icon{width:68px;height:68px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+    .sorry-icon{background:rgba(107,114,128,0.1);color:var(--gray-500)}
+    .success-icon{background:rgba(34,197,94,0.12);color:var(--green-500)}
+    .sorry-icon svg,.success-icon svg{width:32px;height:32px}
+    .sorry-title{font-size:1.5rem;font-weight:800;color:var(--ink);margin-bottom:10px}
+    .success-title{font-size:1.7rem;font-weight:800;color:var(--green-500);margin-bottom:10px}
+    .sorry-text,.success-text{font-size:1rem;color:var(--gray-600);margin-bottom:6px}
+    .sorry-sub{font-size:0.85rem;color:var(--gray-500);opacity:0.8}
 
-    /* Success screen */
-    .success-icon{width:72px;height:72px;margin:0 auto 20px;color:var(--green-500)}
-    .success-icon svg{width:100%;height:100%}
-    .success-title{font-size:1.8rem;font-weight:800;color:var(--green-500);margin-bottom:12px}
-    .success-text{font-size:1.05rem;color:var(--gray-600)}
+    /* ===== SIDE PANEL (desktop) ===== */
+    .side{position:sticky;top:80px;align-self:flex-start;height:calc(100vh - 100px);display:flex;flex-direction:column;gap:14px}
 
-    /* Motivation sticky */
-    .motivation-bar{position:fixed;bottom:52px;left:0;right:0;background:var(--blue);color:var(--white);padding:8px 36px 8px 16px;z-index:51;text-align:center;font-size:0.82rem;font-weight:600;display:none}
-    .motivation-bar span{opacity:0.85}
-    .motivation-bar strong{color:#FFD666}
-    .motivation-close{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.2rem;cursor:pointer;padding:4px;line-height:1}
-    .motivation-close:hover{color:var(--white)}
+    .side-card{background:linear-gradient(160deg,#0B1020 0%,#1a2e9c 55%,#3052FF 100%);color:var(--white);border-radius:24px;padding:22px 22px 20px;position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column}
+    .side-card::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px);background-size:24px 24px;opacity:0.6;pointer-events:none}
+    .side-card::after{content:"";position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,144,0,0.35),transparent 70%);pointer-events:none}
 
-    /* Trust bar at bottom */
-    .trust-bottom{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--gray-200);padding:16px 24px;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,0.04)}
-    .trust-bottom-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:32px}
-    .trust-bottom img{height:36px;opacity:0.7;transition:opacity 0.2s}
+    .side-kicker{position:relative;font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#FFD666;opacity:0.9;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .side-kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:#FFD666;box-shadow:0 0 8px #FFD666;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    .side-head{position:relative;font-size:1.25rem;font-weight:800;line-height:1.25;letter-spacing:-0.01em;margin-bottom:18px}
+
+    .side-stats{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .stat{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;backdrop-filter:blur(6px)}
+    .stat-num{font-size:1.35rem;font-weight:800;color:#FFD666;font-family:var(--mono);letter-spacing:-0.02em}
+    .stat-lbl{font-size:0.72rem;opacity:0.75;margin-top:2px}
+
+    .side-testimonial{position:relative;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:16px;margin-top:auto;backdrop-filter:blur(6px)}
+    .side-testimonial .qmark{position:absolute;top:-10px;left:14px;background:#FFD666;color:#0B1020;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;font-family:serif;line-height:1}
+    .side-testimonial .quote{font-size:0.88rem;line-height:1.55;font-weight:500;margin-top:4px;min-height:80px;transition:opacity 0.3s}
+    .side-testimonial .stars{color:#FFD666;font-size:0.82rem;letter-spacing:1px;margin-top:10px}
+    .side-testimonial .who{font-size:0.78rem;opacity:0.85;margin-top:6px;font-weight:600}
+    .side-testimonial .role{font-size:0.72rem;opacity:0.6;font-weight:500}
+
+    .side-motiv{position:relative;padding:14px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;font-size:0.82rem;line-height:1.45;display:flex;align-items:flex-start;gap:10px;backdrop-filter:blur(6px)}
+    .side-motiv svg{flex-shrink:0;width:18px;height:18px;color:#FFD666;margin-top:1px}
+    .side-motiv b{color:#FFD666;font-weight:700}
+
+    /* Trust row bottom */
+    .trust-bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.85);backdrop-filter:blur(10px);border-top:1px solid rgba(48,82,255,0.08);padding:10px 24px;z-index:50}
+    .trust-bottom-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:32px}
+    .trust-bottom img{height:26px;opacity:0.6;transition:opacity 0.2s}
     .trust-bottom img:hover{opacity:1}
 
-    @media(max-width:768px){
+    /* Mobile motivation bar (mobile only) */
+    .motivation-bar{display:none;position:fixed;bottom:46px;left:0;right:0;background:linear-gradient(90deg,var(--blue) 0%,#4A6BFF 100%);color:var(--white);padding:8px 36px 8px 16px;z-index:51;text-align:center;font-size:0.8rem;font-weight:600}
+    .motivation-bar strong{color:#FFD666}
+    .motivation-close{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.2rem;cursor:pointer;padding:4px;line-height:1}
+
+    @media(max-width:980px){
       body{overflow:auto}
-      .funnel{height:auto;overflow:visible}
-      .screen{position:relative;height:auto;min-height:100vh;min-height:100dvh;padding:64px 20px 90px;justify-content:flex-start;display:none}
-      .screen.active{display:flex;opacity:1;transform:none}
-      .screen.exit-left{display:none}
-      .screen-step{margin-bottom:14px;font-size:0.7rem}
-      .screen-question{font-size:1.4rem;margin-bottom:8px}
-      .screen-sub{font-size:0.9rem;margin-bottom:20px}
-      .option-grid{gap:8px}
-      .option-btn{padding:12px 18px;font-size:0.92rem}
-      .mca-options{gap:10px}
-      .mca-btn{padding:18px 20px;font-size:1rem}
-      .info-items{gap:14px}
-      .info-item{font-size:0.78rem}
-      .screen-info{margin-top:20px;padding-top:14px}
+      .stage{grid-template-columns:1fr;padding:60px 16px 120px;min-height:auto;gap:18px}
+      .funnel-col{min-height:auto;align-items:flex-start;padding-top:10px}
+      .card{padding:24px 20px;border-radius:20px}
+      .screen-question{font-size:1.45rem}
+      .screen-sub{font-size:0.88rem;margin-bottom:20px}
+      .illo{width:56px;height:56px;margin-bottom:14px}
+      .illo svg{width:26px;height:26px}
+      .option-btn{padding:13px 16px;font-size:0.95rem}
+      .mca-btn{padding:20px 16px;font-size:1rem}
+      .industry-grid{grid-template-columns:1fr}
+      .info-items{gap:12px}
+      .info-item{font-size:0.74rem}
       .nav-phone span{display:none}
+      .nav-phone{padding:7px 10px}
       .motivation-bar{display:block}
-      .screen{padding:64px 20px 130px}
-      .trust-bottom{padding:10px 16px}
-      .trust-bottom img{height:20px}
+      .trust-bottom{padding:8px 16px}
+      .trust-bottom img{height:18px}
       .trust-bottom-inner{gap:14px}
-      .submit-btn{height:50px;font-size:1.05rem;margin-top:14px}
-      .form-group{margin-bottom:10px}
-      .form-group input,.form-group select{height:48px}
-      .phone-wrapper{height:48px}
-      .consent-label{font-size:0.65rem}
+      .side{position:relative;top:auto;height:auto;gap:12px}
+      .side-card{padding:18px}
+      .side-head{font-size:1.05rem;margin-bottom:14px}
+      .side-stats{margin-bottom:14px}
+      .stat-num{font-size:1.15rem}
+      .side-testimonial .quote{min-height:0}
+      .submit-btn{height:50px;font-size:1rem}
+      .form-group input,.form-group select,.phone-wrapper{height:48px}
+      .phone-wrapper input[type="tel"]{height:44px}
     }
   </style>
 </head>
 <body>
   {{BODY_SCRIPTS}}
 
+  <!-- Tech background -->
+  <div class="tech-bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+
   <!-- Progress Bar -->
-  <div class="progress-bar" id="progressBar" style="width:25%"></div>
+  <div class="progress-bar" id="progressBar" style="width:16%"></div>
 
   <!-- Nav -->
   <nav class="nav">
     <div class="nav-inner">
-      <span class="nav-logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="32"></span>
+      <span class="nav-logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve"></span>
       <a href="tel:{{phone}}" class="nav-phone phone-element">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
         <span>{{phone}}</span>
       </a>
     </div>
   </nav>
 
-  <!-- Funnel -->
-  <div class="funnel">
+  <div class="stage">
+    <!-- LEFT: Funnel -->
+    <div class="funnel-col">
+      <div class="funnel">
 
-    <!-- Screen 1: Debt Amount -->
-    <div class="screen active" id="screenDebt">
-      <div class="screen-inner">
-        <div class="screen-step">Step 1 of 4</div>
-        <h1 class="screen-question">How much business debt do you have?</h1>
-        <p class="screen-sub">Select the range that best describes your current situation.</p>
-        <div class="option-grid" id="debtOptions">
-          <button class="option-btn" data-value="under-20000">Under $20,000</button>
-          <button class="option-btn" data-value="20000-50000">$20,000 - $50,000</button>
-          <button class="option-btn" data-value="50000-100000">$50,000 - $100,000</button>
-          <button class="option-btn" data-value="100000-250000">$100,000 - $250,000</button>
-          <button class="option-btn" data-value="250000-500000">$250,000 - $500,000</button>
-          <button class="option-btn" data-value="500000-1000000">$500,000 - $1,000,000</button>
-          <button class="option-btn" data-value="1000000+">$1,000,000+</button>
+        <!-- Step dots -->
+        <div class="step-dots" id="stepDots">
+          <div class="step-dot active" data-step="1"></div>
+          <div class="step-dot" data-step="2"></div>
+          <div class="step-dot" data-step="3"></div>
+          <div class="step-dot" data-step="4"></div>
+          <div class="step-dot" data-step="5"></div>
+          <div class="step-dot" data-step="6"></div>
         </div>
-        <div class="screen-info">
-          <div class="info-items">
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>100% Confidential</span>
-            </div>
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              <span>Takes 60 seconds</span>
-            </div>
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              <span>No obligation</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Screen 2: MCA Question -->
-    <div class="screen" id="screenMca">
-      <div class="screen-inner">
-        <div class="screen-step">Step 2 of 4</div>
-        <h1 class="screen-question">Do you currently have a Merchant Cash Advance?</h1>
-        <p class="screen-sub">MCAs include daily or weekly ACH withdrawals from business funders.</p>
-        <div class="mca-options" id="mcaOptions">
-          <button class="mca-btn" data-value="Yes">Yes</button>
-          <button class="mca-btn" data-value="No">No</button>
-        </div>
-        <div class="screen-info">
-          <div class="info-items">
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              <span>$100M+ in MCA debt resolved</span>
+        <!-- Screen 1: Debt Amount -->
+        <div class="screen active" id="screenDebt">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             </div>
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
-              <span>BBB Accredited since 2018</span>
+            <div class="step-label">Step 1 of 6</div>
+            <h1 class="screen-question">How much business debt do you have?</h1>
+            <p class="screen-sub">Select the range that best describes your situation.</p>
+            <div class="option-grid" id="debtOptions">
+              <button class="option-btn" data-value="under-20000">Under $20,000</button>
+              <button class="option-btn" data-value="20000-50000">$20,000 – $50,000</button>
+              <button class="option-btn" data-value="50000-100000">$50,000 – $100,000</button>
+              <button class="option-btn" data-value="100000-250000">$100,000 – $250,000</button>
+              <button class="option-btn" data-value="250000-500000">$250,000 – $500,000</button>
+              <button class="option-btn" data-value="500000-1000000">$500,000 – $1,000,000</button>
+              <button class="option-btn" data-value="1000000+">$1,000,000+</button>
+            </div>
+            <div class="screen-info">
+              <div class="info-items">
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>100% Confidential</span></div>
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>60 seconds</span></div>
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg><span>No obligation</span></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Screen 3: Business Name -->
-    <div class="screen" id="screenBusiness">
-      <div class="screen-inner">
-        <div class="screen-step">Step 3 of 4</div>
-        <h1 class="screen-question">What is your business name?</h1>
-        <p class="screen-sub">This helps us look into your situation before we call.</p>
-        <div style="max-width:440px;margin:0 auto">
-          <div class="form-group" style="text-align:left">
-            <input type="text" id="businessNameInput" placeholder="Enter your business name" style="font-size:1.1rem;height:56px;border-radius:14px">
+        <!-- Screen 2: MCA Question -->
+        <div class="screen" id="screenMca">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+            </div>
+            <div class="step-label">Step 2 of 6</div>
+            <h1 class="screen-question">Do you currently have a Merchant Cash Advance?</h1>
+            <p class="screen-sub">MCAs include daily or weekly ACH withdrawals from business funders.</p>
+            <div class="mca-options" id="mcaOptions">
+              <button class="mca-btn" data-value="Yes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                Yes
+              </button>
+              <button class="mca-btn" data-value="No">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                No
+              </button>
+            </div>
+            <div class="screen-info">
+              <div class="info-items">
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>$100M+ MCA debt resolved</span></div>
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg><span>BBB Accredited</span></div>
+              </div>
+            </div>
           </div>
-          <button type="button" class="submit-btn" id="businessNextBtn">Continue</button>
         </div>
-        <div class="screen-info">
-          <div class="info-items">
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Your info is 100% confidential</span>
+
+        <!-- Screen 3: Industry -->
+        <div class="screen" id="screenIndustry">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg>
             </div>
-            <div class="info-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              <span>Almost done!</span>
+            <div class="step-label">Step 3 of 6</div>
+            <h1 class="screen-question">What industry is your business in?</h1>
+            <p class="screen-sub">This helps us match you with a specialist familiar with your industry.</p>
+            <div class="industry-grid" id="industryOptions">
+              <button class="industry-btn" data-value="Trucking / Logistics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Trucking / Logistics</button>
+              <button class="industry-btn" data-value="Construction"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M4 20V8l8-4 8 4v12M8 20v-6h8v6"/></svg>Construction</button>
+              <button class="industry-btn" data-value="Restaurant / Food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7a3 3 0 006 0V2M6 9v13M14 2v9a4 4 0 004 4h.5V2"/></svg>Restaurant / Food</button>
+              <button class="industry-btn" data-value="Retail / E-commerce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>Retail / E-commerce</button>
+              <button class="industry-btn" data-value="Healthcare / Medical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>Healthcare / Medical</button>
+              <button class="industry-btn" data-value="Auto / Repair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M5 17l2-6h10l2 6M5 17v3M19 17v3M7 12V8a2 2 0 012-2h6a2 2 0 012 2v4"/><circle cx="8" cy="17" r="1"/><circle cx="16" cy="17" r="1"/></svg>Auto / Repair</button>
+              <button class="industry-btn" data-value="Professional Services"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Professional Services</button>
+              <button class="industry-btn" data-value="Cleaning / Services"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V3h6v8M5 21h14l-2-10H7L5 21z"/></svg>Cleaning / Services</button>
+              <button class="industry-btn" data-value="Manufacturing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M3 20V9l5 3V9l5 3V9l8 5v6"/></svg>Manufacturing</button>
+              <button class="industry-btn" data-value="Real Estate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9M5 10v11h14V10"/></svg>Real Estate</button>
+              <button class="industry-btn" data-value="Beauty / Salon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>Beauty / Salon</button>
+              <button class="industry-btn" data-value="Other"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>Other</button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Screen 4: Contact Form -->
-    <div class="screen form-screen" id="screenForm">
-      <div class="screen-inner">
-        <div class="screen-step">Step 4 of 4</div>
-        <h1 class="screen-question">Last step - how can we reach you?</h1>
-        <p class="screen-sub">A debt specialist will contact you within 15 minutes.</p>
-        <form id="leadForm">
-          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
-          <input type="hidden" id="debt_amount" name="debt_amount" value="">
-          <input type="hidden" id="has_mca" name="has_mca" value="">
-          <input type="hidden" id="company_name_hidden" name="company_name" value="">
-          <input type="hidden" id="gclid" name="gclid" value="">
-          <input type="hidden" id="msclkid" name="msclkid" value="">
-          <input type="hidden" id="fbclid" name="fbclid" value="">
-          <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
-          <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
-          <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
-          <input type="hidden" id="keyword" name="keyword" value="">
-          <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
-          <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
-          <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
-          <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
-          <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
-          <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
-          <input type="hidden" id="fb_placement" name="fb_placement" value="">
-          <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
-          <input type="hidden" id="page_url" name="page_url" value="">
-          <input type="hidden" id="referrer_url" name="referrer_url" value="">
-          {{HIDDEN_FIELDS}}
-          <div class="form-group">
-            <label for="first_name">First Name</label>
-            <input type="text" id="first_name" name="first_name" placeholder="John" required>
-          </div>
-          <div class="form-group">
-            <label for="last_name">Last Name</label>
-            <input type="text" id="last_name" name="last_name" placeholder="Smith" required>
-          </div>
-          <div class="form-group">
-            <label for="phone_field">Phone Number</label>
-            <div class="phone-wrapper">
-              <span class="phone-prefix">&#127482;&#127480; +1</span>
-              <input type="tel" id="phone_field" name="phone" placeholder="(555) 123-4567" required>
+        <!-- Screen 4: MCA Count -->
+        <div class="screen" id="screenMcaCount">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="12" rx="2"/><path d="M2 14h20M6 4h12M4 6h16"/></svg>
             </div>
-            <div class="phone-error" id="phone_field_error">Please enter a valid 10-digit US phone number</div>
+            <div class="step-label">Step 4 of 6</div>
+            <h1 class="screen-question">How many MCA loans do you have right now?</h1>
+            <p class="screen-sub">Include any active merchant cash advances or daily-payment loans.</p>
+            <div class="option-grid" id="mcaCountOptions">
+              <button class="option-btn" data-value="1">1 MCA loan</button>
+              <button class="option-btn" data-value="2">2 MCA loans</button>
+              <button class="option-btn" data-value="3">3 MCA loans</button>
+              <button class="option-btn" data-value="4-5">4 – 5 MCA loans</button>
+              <button class="option-btn" data-value="6+">6 or more</button>
+            </div>
+            <div class="screen-info">
+              <div class="info-items">
+                <div class="info-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>We consolidate multiple MCAs</span></div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="email_field">Email</label>
-            <input type="email" id="email_field" name="email" placeholder="john@company.com" required>
+        </div>
+
+        <!-- Screen 5: Business Name -->
+        <div class="screen" id="screenBusiness">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 14h6M9 18h3"/></svg>
+            </div>
+            <div class="step-label">Step 5 of 6</div>
+            <h1 class="screen-question">What is your business name?</h1>
+            <p class="screen-sub">This helps us look into your situation before we call.</p>
+            <div style="max-width:420px;margin:0 auto">
+              <div class="form-group">
+                <input type="text" id="businessNameInput" placeholder="Enter your business name" style="height:54px;font-size:1.05rem;border-radius:14px">
+              </div>
+              <button type="button" class="submit-btn" id="businessNextBtn">Continue</button>
+            </div>
           </div>
-          <div class="consent-group">
-            <label class="consent-label">
-              <input type="checkbox" id="consentCheckbox" required>
-              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
-            </label>
-            <div class="consent-error" id="consentError">You must agree to continue</div>
+        </div>
+
+        <!-- Screen 6: Contact Form -->
+        <div class="screen form-screen" id="screenForm">
+          <div class="card">
+            <div class="illo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div class="step-label">Step 6 of 6</div>
+            <h1 class="screen-question">Last step — how can we reach you?</h1>
+            <p class="screen-sub">A debt specialist will contact you within 15 minutes.</p>
+            <form id="leadForm" style="max-width:420px;margin:0 auto">
+              <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+              <input type="hidden" id="debt_amount" name="debt_amount" value="">
+              <input type="hidden" id="has_mca" name="has_mca" value="">
+              <input type="hidden" id="industry" name="industry" value="">
+              <input type="hidden" id="mca_count" name="mca_count" value="">
+              <input type="hidden" id="company_name_hidden" name="company_name" value="">
+              <input type="hidden" id="gclid" name="gclid" value="">
+              <input type="hidden" id="msclkid" name="msclkid" value="">
+              <input type="hidden" id="fbclid" name="fbclid" value="">
+              <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+              <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+              <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+              <input type="hidden" id="keyword" name="keyword" value="">
+              <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+              <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+              <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+              <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+              <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+              <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+              <input type="hidden" id="fb_placement" name="fb_placement" value="">
+              <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+              <input type="hidden" id="page_url" name="page_url" value="">
+              <input type="hidden" id="referrer_url" name="referrer_url" value="">
+              {{HIDDEN_FIELDS}}
+              <div class="form-group">
+                <label for="first_name">First Name</label>
+                <input type="text" id="first_name" name="first_name" placeholder="John" required>
+              </div>
+              <div class="form-group">
+                <label for="last_name">Last Name</label>
+                <input type="text" id="last_name" name="last_name" placeholder="Smith" required>
+              </div>
+              <div class="form-group">
+                <label for="phone_field">Phone Number</label>
+                <div class="phone-wrapper">
+                  <span class="phone-prefix">&#127482;&#127480; +1</span>
+                  <input type="tel" id="phone_field" name="phone" placeholder="(555) 123-4567" required>
+                </div>
+                <div class="phone-error" id="phone_field_error">Please enter a valid 10-digit US phone number</div>
+              </div>
+              <div class="form-group">
+                <label for="email_field">Email</label>
+                <input type="email" id="email_field" name="email" placeholder="john@company.com" required>
+              </div>
+              <div class="consent-group">
+                <label class="consent-label">
+                  <input type="checkbox" id="consentCheckbox" required>
+                  <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+                </label>
+                <div class="consent-error" id="consentError">You must agree to continue</div>
+              </div>
+              <button type="submit" class="submit-btn">{{formSubmitText}}</button>
+            </form>
           </div>
-          <button type="submit" class="submit-btn">{{formSubmitText}}</button>
-        </form>
+        </div>
+
+        <!-- Sorry: Debt too low -->
+        <div class="screen" id="screenSorryDebt">
+          <div class="card">
+            <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+            <h2 class="sorry-title">We're Sorry</h2>
+            <p class="sorry-text">Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Sorry: No MCA -->
+        <div class="screen" id="screenSorryMca">
+          <div class="card">
+            <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+            <h2 class="sorry-title">We're Sorry</h2>
+            <p class="sorry-text">Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div class="screen" id="screenSuccess">
+          <div class="card">
+            <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+            <h2 class="success-title">Thank You!</h2>
+            <p class="success-text">{{formSuccessMsg}}</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
-    <!-- Sorry: Debt too low -->
-    <div class="screen" id="screenSorryDebt">
-      <div class="screen-inner">
-        <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
-        <h2 class="sorry-title">We're Sorry</h2>
-        <p class="sorry-text">Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
-        <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
-      </div>
-    </div>
+    <!-- RIGHT: Side panel (testimonials + motivation) -->
+    <aside class="side">
+      <div class="side-card">
+        <div class="side-kicker">You're doing great</div>
+        <div class="side-head" id="sideHead">Relief is closer than you think.</div>
 
-    <!-- Sorry: No MCA -->
-    <div class="screen" id="screenSorryMca">
-      <div class="screen-inner">
-        <div class="sorry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
-        <h2 class="sorry-title">We're Sorry</h2>
-        <p class="sorry-text">Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
-        <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
-      </div>
-    </div>
+        <div class="side-stats">
+          <div class="stat">
+            <div class="stat-num">$100M+</div>
+            <div class="stat-lbl">MCA debt resolved</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">15 min</div>
+            <div class="stat-lbl">Avg. callback time</div>
+          </div>
+        </div>
 
-    <!-- Success -->
-    <div class="screen" id="screenSuccess">
-      <div class="screen-inner">
-        <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
-        <h2 class="success-title">Thank You!</h2>
-        <p class="success-text">{{formSuccessMsg}}</p>
-      </div>
-    </div>
+        <div class="side-motiv" id="sideMotiv">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span><b>Did you know?</b> Debt settlement can reduce your payments by up to 80%.</span>
+        </div>
 
+        <div class="side-testimonial">
+          <div class="qmark">"</div>
+          <div class="quote" id="testiQuote">Their team was helpful, offered clear communication, effective results, and empathetic support.</div>
+          <div class="stars">★★★★★</div>
+          <div class="who" id="testiWho">KMJ Trucking, LLC</div>
+          <div class="role" id="testiRole">Verified client • July 2025</div>
+        </div>
+      </div>
+    </aside>
   </div>
 
-  <!-- Trust Logos Bottom -->
-  <!-- Motivation Sticky -->
+  <!-- Mobile motivation bar -->
   <div class="motivation-bar" id="motivationBar">
     <span id="motivationText"><strong>Did you know?</strong> Debt settlement can reduce your payments by up to 80%</span>
     <button class="motivation-close" onclick="document.getElementById('motivationBar').style.display='none'" aria-label="Close">&times;</button>
   </div>
 
+  <!-- Trust logos -->
   <div class="trust-bottom">
     <div class="trust-bottom-inner">
       <img src="/lp/uploads/bbb-accredited.png" alt="BBB Accredited Business">
@@ -539,19 +699,41 @@
     var currentScreen = 'screenDebt';
     var selectedDebt = '';
     var selectedMca = '';
+    var selectedIndustry = '';
+    var selectedMcaCount = '';
+
+    var stepMap = {
+      screenDebt: 1, screenMca: 2, screenIndustry: 3, screenMcaCount: 4, screenBusiness: 5, screenForm: 6,
+      screenSuccess: 6, screenSorryDebt: 1, screenSorryMca: 2
+    };
+    var progressMap = {
+      screenDebt: '16%', screenMca: '33%', screenIndustry: '50%', screenMcaCount: '66%',
+      screenBusiness: '83%', screenForm: '95%', screenSuccess: '100%',
+      screenSorryDebt: '16%', screenSorryMca: '33%'
+    };
+
+    function updateStepDots(toScreen) {
+      var step = stepMap[toScreen] || 1;
+      document.querySelectorAll('.step-dot').forEach(function(d) {
+        var s = parseInt(d.dataset.step, 10);
+        d.classList.remove('active','done');
+        if (s < step) d.classList.add('done');
+        else if (s === step) d.classList.add('active');
+      });
+    }
 
     function goToScreen(from, to) {
       var fromEl = document.getElementById(from);
       var toEl = document.getElementById(to);
       fromEl.classList.remove('active');
-      fromEl.classList.add('exit-left');
       setTimeout(function() {
         toEl.classList.add('active');
         currentScreen = to;
-      }, 100);
-      // Update progress
-      var progress = { screenDebt: '25%', screenMca: '50%', screenBusiness: '75%', screenForm: '90%', screenSuccess: '100%', screenSorryDebt: '25%', screenSorryMca: '50%' };
-      document.getElementById('progressBar').style.width = progress[to] || '33%';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 120);
+      document.getElementById('progressBar').style.width = progressMap[to] || '33%';
+      updateStepDots(to);
+      updateSidePanel(to);
     }
 
     // Debt amount selection
@@ -567,7 +749,7 @@
             document.getElementById('debt_amount').value = selectedDebt;
             goToScreen('screenDebt', 'screenMca');
           }
-        }, 300);
+        }, 260);
       });
     });
 
@@ -582,13 +764,39 @@
             goToScreen('screenMca', 'screenSorryMca');
           } else {
             document.getElementById('has_mca').value = selectedMca;
-            goToScreen('screenMca', 'screenBusiness');
+            goToScreen('screenMca', 'screenIndustry');
           }
-        }, 300);
+        }, 260);
       });
     });
 
-    // ============= Business Name Screen =============
+    // Industry selection
+    document.querySelectorAll('#industryOptions .industry-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedIndustry = this.dataset.value;
+        document.querySelectorAll('#industryOptions .industry-btn').forEach(function(b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+        setTimeout(function() {
+          document.getElementById('industry').value = selectedIndustry;
+          goToScreen('screenIndustry', 'screenMcaCount');
+        }, 260);
+      });
+    });
+
+    // MCA Count selection
+    document.querySelectorAll('#mcaCountOptions .option-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedMcaCount = this.dataset.value;
+        document.querySelectorAll('#mcaCountOptions .option-btn').forEach(function(b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+        setTimeout(function() {
+          document.getElementById('mca_count').value = selectedMcaCount;
+          goToScreen('screenMcaCount', 'screenBusiness');
+        }, 260);
+      });
+    });
+
+    // Business Name
     document.getElementById('businessNextBtn').addEventListener('click', function() {
       var bizName = document.getElementById('businessNameInput').value.trim();
       if (!bizName) {
@@ -602,11 +810,9 @@
     document.getElementById('businessNameInput').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('businessNextBtn').click(); }
     });
-    document.getElementById('businessNameInput').addEventListener('input', function() {
-      this.style.borderColor = '';
-    });
+    document.getElementById('businessNameInput').addEventListener('input', function() { this.style.borderColor = ''; });
 
-    // ============= Phone Formatting =============
+    // Phone formatting
     function isValidUSPhone(digits) {
       if (digits.length !== 10) return false;
       if (digits[0] === '0' || digits[0] === '1') return false;
@@ -614,7 +820,6 @@
       if (parseInt(digits.substring(0, 3)) === 555) return false;
       return true;
     }
-
     document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
       phoneInput.addEventListener('input', function(e) {
         var x = e.target.value.replace(/\D/g, '').substring(0, 10);
@@ -630,7 +835,7 @@
       });
     });
 
-    // ============= Form Submission =============
+    // Form submit
     var _formSubmitting = false;
     document.getElementById('leadForm').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -687,27 +892,85 @@
       }
     });
 
-    // ============= Motivation Bar Rotation =============
+    // ============= Side Panel: testimonials + motivation =============
+    var TESTIMONIALS = [
+      { quote: "Their team was helpful, offered clear communication, effective results, and empathetic support.", who: "KMJ Trucking, LLC", role: "Verified client • July 2025" },
+      { quote: "I cannot thank Carlos enough for his guidance through this process. He has been amazing.", who: "Edward Sweeney", role: "Verified client • August 2025" },
+      { quote: "Zachary and Natasha helped put my mind at ease and have been VERY good at keeping me informed.", who: "Arnie Creinin", role: "Verified client • July 2025" },
+      { quote: "Simone did an outstanding job with our company. She was always true to her word.", who: "Tyler Geoffroy", role: "Verified client • July 2025" },
+      { quote: "We got a little over our head with multiple MCA loans over four years. Coastal helped us breathe again.", who: "Bill Hedge", role: "Logistics Company" },
+      { quote: "My business's finances got real bad paying these loans because of the high interest.", who: "Pedro Lins", role: "Flooring Company" },
+      { quote: "Zack and Natasha were the first people to truly explain everything to me in detail.", who: "Heather Heltzinger", role: "Verified client • July 2025" },
+      { quote: "My experience with Coastal Debt has been great! My rep Julio has been there every step.", who: "Danny Francis", role: "Verified client • August 2025" }
+    ];
+
+    var MOTIVATIONS = {
+      screenDebt: { head: "Relief is closer than you think.", body: "<b>Did you know?</b> Debt settlement can reduce your payments by up to 80%." },
+      screenMca: { head: "We specialize in MCA debt.", body: "<b>$100M+</b> in MCA debt resolved for small business owners." },
+      screenIndustry: { head: "Every industry, same playbook.", body: "<b>We've helped</b> trucking, retail, healthcare, construction and 20+ other industries." },
+      screenMcaCount: { head: "Multiple MCAs? We handle stacks.", body: "<b>Even 6+ stacked MCAs</b> can be consolidated into one manageable payment." },
+      screenBusiness: { head: "Almost there — just one more step.", body: "<b>BBB Accredited</b> since 2018. Your info is 100% confidential." },
+      screenForm: { head: "A specialist is ready to call.", body: "<b>15 minute</b> average callback time. No obligation, just a plan." },
+      screenSuccess: { head: "You're in good hands.", body: "<b>Check your phone</b> — a specialist will reach out shortly." },
+      screenSorryDebt: { head: "Keep us in mind.", body: "If your situation changes, we'll be here to help." },
+      screenSorryMca: { head: "Keep us in mind.", body: "We focus on MCA debt — if that changes, come back anytime." }
+    };
+
+    var tIdx = 0;
+    var headEl = document.getElementById('sideHead');
+    var motivEl = document.getElementById('sideMotiv');
+    var quoteEl = document.getElementById('testiQuote');
+    var whoEl = document.getElementById('testiWho');
+    var roleEl = document.getElementById('testiRole');
+
+    function renderTestimonial() {
+      var t = TESTIMONIALS[tIdx % TESTIMONIALS.length];
+      if (!quoteEl) return;
+      quoteEl.style.opacity = '0';
+      setTimeout(function() {
+        quoteEl.textContent = t.quote;
+        whoEl.textContent = t.who;
+        roleEl.textContent = t.role;
+        quoteEl.style.opacity = '1';
+      }, 260);
+    }
+    if (quoteEl) { quoteEl.style.transition = 'opacity 0.26s ease'; }
+    renderTestimonial();
+    setInterval(function() { tIdx++; renderTestimonial(); }, 6000);
+
+    function updateSidePanel(screenId) {
+      var m = MOTIVATIONS[screenId];
+      if (!m || !headEl || !motivEl) return;
+      headEl.style.transition = 'opacity 0.25s';
+      motivEl.style.transition = 'opacity 0.25s';
+      headEl.style.opacity = '0';
+      motivEl.style.opacity = '0';
+      setTimeout(function() {
+        headEl.textContent = m.head;
+        motivEl.querySelector('span').innerHTML = m.body;
+        headEl.style.opacity = '1';
+        motivEl.style.opacity = '1';
+      }, 240);
+    }
+
+    // Mobile motivation rotation (same messages)
     (function() {
       var messages = [
-        '<strong>Did you know?</strong> Debt settlement can reduce your payments by up to 80%',
-        '<strong>$100M+</strong> in MCA debt resolved for small businesses',
-        '<strong>Free consultation</strong> - no obligation, 100% confidential',
-        '<strong>BBB Accredited</strong> since 2018 - trusted by thousands',
-        '<strong>Stop daily ACH withdrawals</strong> - we negotiate directly with funders'
+        '<strong>Did you know?</strong> Debt settlement can reduce payments by up to 80%',
+        '<strong>$100M+</strong> in MCA debt resolved',
+        '<strong>Free consultation</strong> — no obligation, 100% confidential',
+        '<strong>BBB Accredited</strong> since 2018',
+        '<strong>Stop daily ACH withdrawals</strong> — we negotiate directly with funders'
       ];
       var idx = 0;
       var el = document.getElementById('motivationText');
       if (!el) return;
+      el.style.transition = 'opacity 0.3s ease';
       setInterval(function() {
         idx = (idx + 1) % messages.length;
         el.style.opacity = '0';
-        setTimeout(function() {
-          el.innerHTML = messages[idx];
-          el.style.opacity = '1';
-        }, 300);
+        setTimeout(function() { el.innerHTML = messages[idx]; el.style.opacity = '1'; }, 300);
       }, 5000);
-      el.style.transition = 'opacity 0.3s ease';
     })();
   </script>
 </body>

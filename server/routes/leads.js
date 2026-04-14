@@ -111,6 +111,8 @@ router.post('/', async (req, res) => {
     phone,
     debt_amount,
     has_mca,
+    industry,
+    mca_count,
     considered_bankruptcy,
     gclid,
     msclkid,
@@ -177,8 +179,8 @@ router.post('/', async (req, res) => {
   const result = db.prepare(`
     INSERT INTO leads (
       landing_page_id, article_id, full_name, first_name, last_name, company_name, email, phone,
-      debt_amount, has_mca, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, rdt_cid, eli_clickid, hidden_fields, ab_variant
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      debt_amount, has_mca, industry, mca_count, considered_bankruptcy, gclid, msclkid, fbclid, rt_clickid, rdt_cid, eli_clickid, hidden_fields, ab_variant
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     page ? page.id : null,
     article ? article.id : null,
@@ -190,6 +192,8 @@ router.post('/', async (req, res) => {
     phone,
     debt_amount,
     has_mca,
+    industry || '',
+    mca_count || '',
     considered_bankruptcy,
     gclid || '',
     msclkid || '',
@@ -217,6 +221,8 @@ router.post('/', async (req, res) => {
         phone,
         debt_amount,
         has_mca,
+        industry: industry || '',
+        mca_count: mca_count || '',
         considered_bankruptcy,
         gclid: gclid || '',
         msclkid: msclkid || '',
