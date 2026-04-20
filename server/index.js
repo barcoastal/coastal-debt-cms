@@ -359,6 +359,15 @@ const { fetchRedditMissingCosts } = require('./routes/reddit-ads');
 setInterval(fetchRedditMissingCosts, 15 * 60 * 1000);
 setTimeout(fetchRedditMissingCosts, 120 * 1000); // 120s after startup (staggered)
 
+// Reddit CAPI sync — pull RedTrack conversions and forward to Reddit every 5 min
+const { syncRedditCapi } = require('./services/reddit-capi-sync');
+setTimeout(() => {
+  syncRedditCapi().catch(err => console.error('Reddit CAPI sync (initial) error:', err));
+  setInterval(() => {
+    syncRedditCapi().catch(err => console.error('Reddit CAPI sync error:', err));
+  }, 5 * 60 * 1000);
+}, 30 * 1000);
+
 // Background Auction Insights sync - every 6 hours
 const { syncAuctionInsights } = require('./routes/analytics');
 setInterval(syncAuctionInsights, 6 * 60 * 60 * 1000);
