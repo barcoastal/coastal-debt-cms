@@ -963,6 +963,95 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
   }
 });
 
+// Get campaigns (active by default, all=1 for all)
+router.get('/campaigns', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const showAll = req.query.all === '1';
+    const whereClause = showAll ? '' : `WHERE campaign.status = 'ENABLED'`;
+    const query = `SELECT campaign.id, campaign.name, campaign.status FROM campaign ${whereClause} ORDER BY campaign.name`;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        body: JSON.stringify({ query })
+      }
+    );
+    const data = await response.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+
+    const campaigns = (data[0]?.results || []).map(r => ({
+      id: r.campaign.id, name: r.campaign.name, status: r.campaign.status
+    }));
+    res.json({ campaigns });
+  } catch (err) {
+    console.error('Error fetching campaigns:', err);
+    res.status(500).json({ error: 'Failed to fetch campaigns: ' + err.message });
+  }
+});
+
+// Get ad groups (filter by campaign name or id)
+router.get('/ad-groups', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const { campaign, campaign_id, all } = req.query;
+    const filters = [];
+    if (all !== '1') filters.push(`ad_group.status = 'ENABLED'`, `campaign.status = 'ENABLED'`);
+    if (campaign_id) filters.push(`campaign.id = ${parseInt(campaign_id, 10) || 0}`);
+    if (campaign) filters.push(`campaign.name = '${String(campaign).replace(/'/g, "\\'")}'`);
+    const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const query = `
+      SELECT ad_group.id, ad_group.name, ad_group.status, campaign.id, campaign.name
+      FROM ad_group
+      ${whereClause}
+      ORDER BY campaign.name, ad_group.name
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        body: JSON.stringify({ query })
+      }
+    );
+    const data = await response.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+
+    const ad_groups = (data[0]?.results || []).map(r => ({
+      id: r.adGroup.id,
+      name: r.adGroup.name,
+      status: r.adGroup.status,
+      campaign_id: r.campaign.id,
+      campaign_name: r.campaign.name
+    }));
+    res.json({ ad_groups });
+  } catch (err) {
+    console.error('Error fetching ad groups:', err);
+    res.status(500).json({ error: 'Failed to fetch ad groups: ' + err.message });
+  }
+});
+
 // Manual conversion upload from admin
 router.post('/upload-conversion', authenticateToken, async (req, res) => {
   const { lead_id, conversion_action_id, conversion_value } = req.body;
