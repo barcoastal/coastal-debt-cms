@@ -230,6 +230,42 @@
         </div>
         <div id="pagination" style="margin-top: 16px; display: flex; gap: 8px; justify-content: center; align-items: center;"></div>
       </div>
+
+      <!-- Reddit CAPI — Event Mapping -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+          <h3 class="card-title">Reddit CAPI — Event Mapping</h3>
+        </div>
+        <p style="color:var(--gray-500);font-size:13px;margin-bottom:16px;">Map RedTrack event names to Reddit Conversions API event types. Only visitors with a <code>rdt_cid</code> are sent.</p>
+
+        <table id="capiMappingsTable" style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          <thead>
+            <tr style="text-align:left;border-bottom:1px solid #ddd;">
+              <th style="padding:8px;">RedTrack event</th>
+              <th style="padding:8px;">Reddit event</th>
+              <th style="padding:8px;">Custom name</th>
+              <th style="padding:8px;">Active</th>
+              <th style="padding:8px;"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="newMapRtName" placeholder="redtrack event (e.g. lead)" style="padding:6px;" />
+          <select id="newMapRedditType" style="padding:6px;">
+            <option>Lead</option>
+            <option>Purchase</option>
+            <option>SignUp</option>
+            <option>AddToCart</option>
+            <option>ViewContent</option>
+            <option>PageVisit</option>
+            <option>Custom</option>
+          </select>
+          <input id="newMapCustomName" placeholder="custom event name (if Custom)" style="padding:6px;display:none;" />
+          <button id="newMapAddBtn" class="btn btn-primary">Add Mapping</button>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -436,6 +472,68 @@
     }
 
     loadAll();
+
+    async function loadCapiMappings() {
+      const tbody = document.querySelector('#capiMappingsTable tbody');
+      try {
+        const rows = await api('/api/reddit-ads/capi/config');
+        tbody.innerHTML = rows.map(r => `
+          <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:8px;"><code>${r.redtrack_event_name}</code></td>
+            <td style="padding:8px;">${r.reddit_event_type}</td>
+            <td style="padding:8px;">${r.reddit_custom_event_name || '—'}</td>
+            <td style="padding:8px;">
+              <input type="checkbox" data-id="${r.id}" class="capiActiveToggle" ${r.is_active ? 'checked' : ''} />
+            </td>
+            <td style="padding:8px;">
+              <button data-id="${r.id}" class="capiDelBtn" style="color:#c00;background:none;border:none;cursor:pointer;">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+        tbody.querySelectorAll('.capiActiveToggle').forEach(cb => {
+          cb.addEventListener('change', async (e) => {
+            await api('/api/reddit-ads/capi/config/' + e.target.dataset.id, {
+              method: 'PUT',
+              body: JSON.stringify({ is_active: e.target.checked })
+            });
+          });
+        });
+        tbody.querySelectorAll('.capiDelBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            if (!confirm('Delete this mapping?')) return;
+            await api('/api/reddit-ads/capi/config/' + e.target.dataset.id, { method: 'DELETE' });
+            loadCapiMappings();
+          });
+        });
+      } catch (err) {
+        console.error('Error loading CAPI mappings:', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:8px;color:var(--gray-500);">Failed to load mappings.</td></tr>';
+      }
+    }
+
+    document.getElementById('newMapRedditType').addEventListener('change', (e) => {
+      document.getElementById('newMapCustomName').style.display = e.target.value === 'Custom' ? '' : 'none';
+    });
+
+    document.getElementById('newMapAddBtn').addEventListener('click', async () => {
+      const rtName = document.getElementById('newMapRtName').value.trim();
+      const reType = document.getElementById('newMapRedditType').value;
+      const custom = document.getElementById('newMapCustomName').value.trim() || null;
+      if (!rtName) { alert('RedTrack event name required'); return; }
+      try {
+        const data = await api('/api/reddit-ads/capi/config', {
+          method: 'POST',
+          body: JSON.stringify({ redtrack_event_name: rtName, reddit_event_type: reType, reddit_custom_event_name: custom })
+        });
+        document.getElementById('newMapRtName').value = '';
+        document.getElementById('newMapCustomName').value = '';
+        loadCapiMappings();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    loadCapiMappings();
   </script>
 <script>
 (function(){
