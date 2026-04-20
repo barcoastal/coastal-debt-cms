@@ -86,7 +86,7 @@ async function syncRedditCapi() {
           INSERT INTO conversion_events
             (lead_id, eli_clickid, conversion_action_name, revenue, source, status, error_message, redtrack_conversion_id)
           VALUES (?, ?, ?, ?, 'reddit_capi', 'blocked', 'Lead is blocked', ?)
-        `).run(lead.id, visitor.eli_clickid, conv.type, conv.payout || null, String(conv.id));
+        `).run(lead.id, visitor.eli_clickid, conv.type, conv.payout != null ? conv.payout : null, String(conv.id));
         stats.blocked++;
         continue;
       }
@@ -101,8 +101,8 @@ async function syncRedditCapi() {
         lead?.id || null,
         visitor.eli_clickid,
         conv.type,
-        conv.payout || null,
-        conv.payout || null,
+        conv.payout != null ? conv.payout : null,
+        conv.payout != null ? conv.payout : null,
         result.success ? 'sent' : 'failed',
         result.error || null,
         result.payload ? JSON.stringify(result.payload) : null,
@@ -113,6 +113,20 @@ async function syncRedditCapi() {
     } catch (err) {
       console.error('Reddit CAPI sync — error on conversion', conv.id, err);
       stats.failed++;
+      // Best-effort log to conversion_events so operator can see what failed
+      try {
+        db.prepare(`
+          INSERT INTO conversion_events
+            (eli_clickid, conversion_action_name, revenue, source, status, error_message, redtrack_conversion_id)
+          VALUES (?, ?, ?, 'reddit_capi', 'failed', ?, ?)
+        `).run(
+          null,
+          conv.type,
+          conv.payout != null ? conv.payout : null,
+          err.message,
+          String(conv.id)
+        );
+      } catch (_) { /* best effort */ }
     }
   }
 
