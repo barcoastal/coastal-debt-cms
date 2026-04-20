@@ -266,6 +266,37 @@
           <button id="newMapAddBtn" class="btn btn-primary">Add Mapping</button>
         </div>
       </div>
+
+      <!-- Reddit CAPI — Manual Sync -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+          <h3 class="card-title">Reddit CAPI — Sync</h3>
+        </div>
+        <button id="syncCapiBtn" class="btn btn-primary">Sync now</button>
+        <pre id="syncCapiResult" style="margin-top:12px;background:#f5f5f5;padding:12px;border-radius:4px;display:none;font-size:12px;"></pre>
+      </div>
+
+      <!-- Reddit CAPI — Recent Events -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+          <h3 class="card-title">Reddit CAPI — Recent Events</h3>
+        </div>
+        <table id="capiEventsTable" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="text-align:left;border-bottom:1px solid #ddd;">
+              <th style="padding:8px;">When</th>
+              <th style="padding:8px;">Lead</th>
+              <th style="padding:8px;">RT event</th>
+              <th style="padding:8px;">Value</th>
+              <th style="padding:8px;">Status</th>
+              <th style="padding:8px;">Error</th>
+              <th style="padding:8px;"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button id="refreshCapiEventsBtn" class="btn" style="margin-top:12px;">Refresh</button>
+      </div>
     </main>
   </div>
 
@@ -534,6 +565,62 @@
     });
 
     loadCapiMappings();
+
+    document.getElementById('syncCapiBtn').addEventListener('click', async () => {
+      const resultEl = document.getElementById('syncCapiResult');
+      resultEl.style.display = 'block';
+      resultEl.textContent = 'Syncing…';
+      try {
+        const data = await api('/api/reddit-ads/capi/sync', { method: 'POST' });
+        resultEl.textContent = JSON.stringify(data, null, 2);
+        loadCapiEvents();
+      } catch (err) {
+        resultEl.textContent = 'Error: ' + err.message;
+      }
+    });
+
+    async function loadCapiEvents() {
+      const tbody = document.querySelector('#capiEventsTable tbody');
+      try {
+        const data = await api('/api/reddit-ads/capi/events?limit=50');
+        tbody.innerHTML = (data.events || []).map(ev => {
+          const statusColor = ev.status === 'sent' ? '#0a0' : (ev.status === 'failed' ? '#c00' : '#888');
+          const name = [ev.first_name, ev.last_name].filter(Boolean).join(' ') || ev.email || ev.eli_clickid || '—';
+          const errMsg = (ev.error_message || '').replace(/"/g, '&quot;');
+          return `
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:8px;">${ev.created_at}</td>
+              <td style="padding:8px;">${name}</td>
+              <td style="padding:8px;"><code>${ev.conversion_action_name || '—'}</code></td>
+              <td style="padding:8px;">${ev.revenue != null ? '$' + ev.revenue : '—'}</td>
+              <td style="padding:8px;color:${statusColor};font-weight:600;">${ev.status}</td>
+              <td style="padding:8px;color:#c00;font-size:11px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${errMsg}">${ev.error_message || ''}</td>
+              <td style="padding:8px;">
+                ${ev.status === 'failed' ? `<button data-id="${ev.id}" class="capiRetryBtn btn" style="padding:2px 8px;font-size:12px;">Retry</button>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.querySelectorAll('.capiRetryBtn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            try {
+              const r = await api('/api/reddit-ads/capi/events/' + id + '/retry', { method: 'POST' });
+              alert(r.success ? 'Retried — sent.' : 'Retry failed: ' + (r.error || 'unknown'));
+            } catch (err) {
+              alert('Retry failed: ' + err.message);
+            }
+            loadCapiEvents();
+          });
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:12px;color:#c00;">Failed to load: ${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('refreshCapiEventsBtn').addEventListener('click', loadCapiEvents);
+    loadCapiEvents();
   </script>
 <script>
 (function(){
