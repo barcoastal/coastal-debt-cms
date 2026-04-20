@@ -374,6 +374,33 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
   }
 }
 
+/**
+ * POST /capi/test — Fire a synthetic test event to Reddit CAPI (test_mode = true).
+ * Body: { reddit_event_type?, reddit_custom_event_name?, rdt_cid?, email?, phone?, payout? }
+ */
+router.post('/capi/test', authenticateToken, async (req, res) => {
+  try {
+    const {
+      reddit_event_type = 'Lead',
+      reddit_custom_event_name = null,
+      rdt_cid = 'test_rdt_cid_00000',
+      email = 'test@example.com',
+      phone = '+15551234567',
+      payout = 10
+    } = req.body || {};
+
+    const mapping = { reddit_event_type, reddit_custom_event_name, _test_mode: true };
+    const conv = { id: `test_${Date.now()}`, created_at: new Date().toISOString(), payout };
+    const visitor = { rdt_cid, eli_clickid: 'test_eli', ip_address: '127.0.0.1', user_agent: 'CoastalDebtCMS-Test/1.0' };
+    const lead = { email, phone };
+
+    const result = await sendRedditEvent(mapping, conv, visitor, lead);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
 module.exports.fetchRedditMissingCosts = fetchRedditMissingCosts;
 module.exports.getRedditTotalSpend = getRedditTotalSpend;
