@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -268,6 +269,101 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * Send a single conversion event to Reddit Conversions API.
+ * Returns { success, error, payload }.
+ *
+ * @param {object} mapping - reddit_capi_config row (reddit_event_type, reddit_custom_event_name)
+ * @param {object} conv - RedTrack conversion row (id, clickid, type, payout, created_at)
+ * @param {object} visitor - visitors row (rdt_cid, ip_address, user_agent, eli_clickid)
+ * @param {object|null} lead - leads row (email, phone) or null
+ */
+async function sendRedditEvent(mapping, conv, visitor, lead) {
+  try {
+    const config = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
+    if (!config || !config.account_id || !config.client_id || !config.client_secret || !config.refresh_token) {
+      return { success: false, error: 'Reddit Ads not configured (missing account_id / OAuth credentials)' };
+    }
+
+    const hash = (val) => {
+      if (!val) return null;
+      return crypto.createHash('sha256').update(String(val).trim().toLowerCase()).digest('hex');
+    };
+
+    const normalizePhone = (phone) => {
+      if (!phone) return null;
+      const digits = phone.replace(/\D/g, '');
+      return digits || null;
+    };
+
+    const user = {};
+    if (lead?.email) user.email = hash(lead.email);
+    const phoneDigits = normalizePhone(lead?.phone);
+    if (phoneDigits) user.phone_number = hash(phoneDigits);
+    if (visitor.eli_clickid) user.external_id = hash(visitor.eli_clickid);
+    if (visitor.ip_address) user.ip_address = visitor.ip_address;
+    if (visitor.user_agent) user.user_agent = visitor.user_agent;
+
+    const eventPayload = {
+      event_at: new Date(conv.created_at || Date.now()).toISOString(),
+      event_type: {
+        tracking_type: mapping.reddit_event_type,
+        custom_event_name: mapping.reddit_event_type === 'Custom' ? (mapping.reddit_custom_event_name || null) : null
+      },
+      click_id: visitor.rdt_cid,
+      event_metadata: {
+        currency: 'USD',
+        value_decimal: conv.payout != null ? parseFloat(conv.payout) : 0,
+        conversion_id: String(conv.id)
+      },
+      user
+    };
+
+    const requestBody = {
+      test_mode: !!mapping._test_mode,
+      events: [eventPayload]
+    };
+
+    const url = `https://ads-api.reddit.com/api/v2.0/conversions/events/${config.account_id}`;
+
+    const doRequest = async (token) => fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'CoastalDebtCMS/1.0'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    let token = await getRedditAccessToken(config);
+    let response = await doRequest(token);
+
+    // 401 → force token refresh once and retry
+    if (response.status === 401) {
+      cachedToken = null;
+      tokenExpiresAt = 0;
+      token = await getRedditAccessToken(config);
+      response = await doRequest(token);
+    }
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errMsg = result.message || result.error || `Reddit API ${response.status}`;
+      console.error('Reddit CAPI error:', errMsg);
+      return { success: false, error: errMsg, payload: requestBody };
+    }
+
+    console.log(`Reddit CAPI: sent ${mapping.reddit_event_type} for conv ${conv.id} (rdt_cid=${visitor.rdt_cid})`);
+    return { success: true, payload: requestBody };
+  } catch (err) {
+    console.error('Reddit CAPI request failed:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = router;
 module.exports.fetchRedditMissingCosts = fetchRedditMissingCosts;
 module.exports.getRedditTotalSpend = getRedditTotalSpend;
+module.exports.sendRedditEvent = sendRedditEvent;
