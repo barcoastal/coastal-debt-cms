@@ -3,6 +3,11 @@ const db = require('../database');
 const { authenticateToken } = require('./auth');
 const crypto = require('crypto');
 
+let _syncRedditCapi = null;
+setTimeout(() => {
+  try { _syncRedditCapi = require('../services/reddit-capi-sync').syncRedditCapi; } catch (e) {}
+}, 0);
+
 const router = express.Router();
 
 // Cached access token
@@ -399,6 +404,136 @@ router.post('/capi/test', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+/**
+ * GET /capi/config — list event mappings
+ */
+router.get('/capi/config', authenticateToken, (req, res) => {
+  const rows = db.prepare('SELECT * FROM reddit_capi_config ORDER BY created_at DESC').all();
+  res.json(rows);
+});
+
+/**
+ * POST /capi/config — create a mapping
+ * Body: { redtrack_event_name, reddit_event_type, reddit_custom_event_name? }
+ */
+router.post('/capi/config', authenticateToken, (req, res) => {
+  const { redtrack_event_name, reddit_event_type, reddit_custom_event_name = null } = req.body || {};
+  if (!redtrack_event_name || !reddit_event_type) {
+    return res.status(400).json({ error: 'redtrack_event_name and reddit_event_type required' });
+  }
+  const allowed = ['Lead', 'Purchase', 'SignUp', 'AddToCart', 'ViewContent', 'PageVisit', 'Custom'];
+  if (!allowed.includes(reddit_event_type)) {
+    return res.status(400).json({ error: `reddit_event_type must be one of ${allowed.join(', ')}` });
+  }
+  try {
+    const r = db.prepare(`
+      INSERT INTO reddit_capi_config (redtrack_event_name, reddit_event_type, reddit_custom_event_name)
+      VALUES (?, ?, ?)
+    `).run(redtrack_event_name.toLowerCase(), reddit_event_type, reddit_custom_event_name);
+    res.json({ id: r.lastInsertRowid });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * PUT /capi/config/:id — update a mapping
+ */
+router.put('/capi/config/:id', authenticateToken, (req, res) => {
+  const { redtrack_event_name, reddit_event_type, reddit_custom_event_name, is_active } = req.body || {};
+  db.prepare(`
+    UPDATE reddit_capi_config SET
+      redtrack_event_name = COALESCE(?, redtrack_event_name),
+      reddit_event_type = COALESCE(?, reddit_event_type),
+      reddit_custom_event_name = ?,
+      is_active = COALESCE(?, is_active)
+    WHERE id = ?
+  `).run(
+    redtrack_event_name ? redtrack_event_name.toLowerCase() : null,
+    reddit_event_type || null,
+    reddit_custom_event_name ?? null,
+    is_active != null ? (is_active ? 1 : 0) : null,
+    req.params.id
+  );
+  res.json({ success: true });
+});
+
+/**
+ * DELETE /capi/config/:id
+ */
+router.delete('/capi/config/:id', authenticateToken, (req, res) => {
+  db.prepare('DELETE FROM reddit_capi_config WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+/**
+ * GET /capi/events — recent reddit_capi events
+ */
+router.get('/capi/events', authenticateToken, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+  const offset = parseInt(req.query.offset) || 0;
+  const rows = db.prepare(`
+    SELECT ce.*, l.first_name, l.last_name, l.email
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    WHERE ce.source = 'reddit_capi'
+    ORDER BY ce.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+  const total = db.prepare("SELECT COUNT(*) as c FROM conversion_events WHERE source = 'reddit_capi'").get().c;
+  res.json({ events: rows, total });
+});
+
+/**
+ * POST /capi/events/:id/retry — retry a failed event
+ */
+router.post('/capi/events/:id/retry', authenticateToken, async (req, res) => {
+  const ev = db.prepare("SELECT * FROM conversion_events WHERE id = ? AND source = 'reddit_capi'").get(req.params.id);
+  if (!ev) return res.status(404).json({ error: 'Event not found' });
+  if (!ev.redtrack_conversion_id) return res.status(400).json({ error: 'Missing redtrack_conversion_id' });
+
+  const mapping = db.prepare('SELECT * FROM reddit_capi_config WHERE redtrack_event_name = ?').get(String(ev.conversion_action_name).toLowerCase());
+  if (!mapping) return res.status(400).json({ error: 'No mapping for event name' });
+
+  const visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(ev.eli_clickid);
+  if (!visitor || !visitor.rdt_cid) return res.status(400).json({ error: 'Visitor has no rdt_cid' });
+
+  const lead = ev.lead_id ? db.prepare('SELECT email, phone FROM leads WHERE id = ?').get(ev.lead_id) : null;
+
+  const conv = {
+    id: ev.redtrack_conversion_id,
+    clickid: visitor.rt_clickid,
+    type: ev.conversion_action_name,
+    payout: ev.revenue || 0,
+    created_at: ev.created_at
+  };
+
+  const result = await sendRedditEvent(mapping, conv, visitor, lead);
+
+  db.prepare(`
+    UPDATE conversion_events SET
+      status = ?, error_message = ?, capi_payload = ?,
+      sent_at = ${result.success ? 'CURRENT_TIMESTAMP' : 'sent_at'}
+    WHERE id = ?
+  `).run(
+    result.success ? 'sent' : 'failed',
+    result.error || null,
+    result.payload ? JSON.stringify(result.payload) : ev.capi_payload,
+    req.params.id
+  );
+
+  res.json(result);
+});
+
+/**
+ * POST /capi/sync — manual sync trigger
+ */
+router.post('/capi/sync', authenticateToken, async (req, res) => {
+  if (!_syncRedditCapi) return res.status(503).json({ error: 'Sync service not loaded yet' });
+  const stats = await _syncRedditCapi();
+  res.json(stats);
 });
 
 module.exports = router;
