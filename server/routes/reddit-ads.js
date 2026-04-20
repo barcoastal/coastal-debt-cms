@@ -280,6 +280,10 @@ router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
  */
 async function sendRedditEvent(mapping, conv, visitor, lead) {
   try {
+    if (!visitor || !visitor.rdt_cid) {
+      return { success: false, error: 'visitor has no rdt_cid — cannot send Reddit CAPI event' };
+    }
+
     const config = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
     if (!config || !config.account_id || !config.client_id || !config.client_secret || !config.refresh_token) {
       return { success: false, error: 'Reddit Ads not configured (missing account_id / OAuth credentials)' };
@@ -305,7 +309,14 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
     if (visitor.user_agent) user.user_agent = visitor.user_agent;
 
     const eventPayload = {
-      event_at: new Date(conv.created_at || Date.now()).toISOString(),
+      event_at: (() => {
+        if (!conv.created_at) return new Date().toISOString();
+        // RedTrack often returns "YYYY-MM-DD HH:MM:SS" (no T, no Z). Force UTC parsing.
+        const s = String(conv.created_at);
+        const normalized = s.includes('T') ? s : s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z');
+        const d = new Date(normalized);
+        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+      })(),
       event_type: {
         tracking_type: mapping.reddit_event_type,
         custom_event_name: mapping.reddit_event_type === 'Custom' ? (mapping.reddit_custom_event_name || null) : null
@@ -313,7 +324,7 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
       click_id: visitor.rdt_cid,
       event_metadata: {
         currency: 'USD',
-        value_decimal: conv.payout != null ? parseFloat(conv.payout) : 0,
+        ...(conv.payout != null ? { value_decimal: parseFloat(conv.payout) } : {}),
         conversion_id: String(conv.id)
       },
       user
