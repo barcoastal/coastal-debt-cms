@@ -237,6 +237,22 @@ try { db.exec(`ALTER TABLE postback_config ADD COLUMN facebook_event_name TEXT`)
 try { db.exec(`ALTER TABLE postback_config ADD COLUMN tiktok_event_name TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE postback_config ADD COLUMN send_to_tiktok INTEGER DEFAULT 0`); } catch (e) {}
 
+// Reddit CAPI — event-name mapping table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reddit_capi_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    redtrack_event_name TEXT NOT NULL UNIQUE,
+    reddit_event_type TEXT NOT NULL,
+    reddit_custom_event_name TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Reddit CAPI — idempotency key column on conversion_events
+try { db.exec(`ALTER TABLE conversion_events ADD COLUMN redtrack_conversion_id TEXT`); } catch (e) {}
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_ce_rt_conv_id ON conversion_events(redtrack_conversion_id, source)`); } catch (e) {}
+
 // Migrate existing rows with send_to_facebook = 1 but no facebook_event_name
 try {
   const INTERNAL_TO_FB = { lead: 'Lead', qualified: 'Lead', appointment: 'Schedule',
