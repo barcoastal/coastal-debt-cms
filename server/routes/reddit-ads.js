@@ -506,7 +506,7 @@ router.post('/capi/events/:id/retry', authenticateToken, async (req, res) => {
     id: ev.redtrack_conversion_id,
     clickid: visitor.rt_clickid,
     type: ev.conversion_action_name,
-    payout: ev.revenue || 0,
+    payout: ev.revenue ?? null,
     created_at: ev.created_at
   };
 
