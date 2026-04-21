@@ -253,6 +253,11 @@ db.exec(`
 try { db.exec(`ALTER TABLE conversion_events ADD COLUMN redtrack_conversion_id TEXT`); } catch (e) {}
 try { db.exec(`CREATE INDEX IF NOT EXISTS idx_ce_rt_conv_id ON conversion_events(redtrack_conversion_id, source)`); } catch (e) {}
 
+// Reddit CAPI — pixel-based auth (dedicated long-lived token + pixel id, separate from Ads API OAuth)
+try { db.exec(`ALTER TABLE reddit_ads_config ADD COLUMN pixel_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE reddit_ads_config ADD COLUMN capi_access_token TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE reddit_ads_config ADD COLUMN capi_test_id TEXT`); } catch (e) {}
+
 // Migrate existing rows with send_to_facebook = 1 but no facebook_event_name
 try {
   const INTERNAL_TO_FB = { lead: 'Lead', qualified: 'Lead', appointment: 'Schedule',

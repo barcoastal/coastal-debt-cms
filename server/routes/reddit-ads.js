@@ -54,6 +54,10 @@ router.get('/config', authenticateToken, (req, res) => {
     client_secret: config.client_secret ? '••••' + config.client_secret.slice(-4) : null,
     has_refresh_token: !!config.refresh_token,
     refresh_token: config.refresh_token ? '••••' + config.refresh_token.slice(-6) : null,
+    pixel_id: config.pixel_id || '',
+    has_capi_access_token: !!config.capi_access_token,
+    capi_access_token: config.capi_access_token ? '••••' + config.capi_access_token.slice(-6) : null,
+    capi_test_id: config.capi_test_id || '',
     connected_at: config.connected_at
   });
 });
@@ -62,7 +66,7 @@ router.get('/config', authenticateToken, (req, res) => {
  * POST /config — Save Reddit Ads config (authenticated)
  */
 router.post('/config', authenticateToken, (req, res) => {
-  const { account_id, client_id, client_secret, refresh_token } = req.body;
+  const { account_id, client_id, client_secret, refresh_token, pixel_id, capi_access_token, capi_test_id } = req.body;
 
   const existing = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
   if (existing) {
@@ -76,13 +80,18 @@ router.post('/config', authenticateToken, (req, res) => {
     if (refresh_token && refresh_token !== '••••' + (existing.refresh_token || '').slice(-6)) {
       updates.push('refresh_token = ?'); params.push(refresh_token);
     }
+    if (pixel_id !== undefined) { updates.push('pixel_id = ?'); params.push(pixel_id); }
+    if (capi_access_token && capi_access_token !== '••••' + (existing.capi_access_token || '').slice(-6)) {
+      updates.push('capi_access_token = ?'); params.push(capi_access_token);
+    }
+    if (capi_test_id !== undefined) { updates.push('capi_test_id = ?'); params.push(capi_test_id); }
     if (updates.length > 0) {
       updates.push('connected_at = CURRENT_TIMESTAMP');
       db.prepare(`UPDATE reddit_ads_config SET ${updates.join(', ')} WHERE id = 1`).run(...params);
     }
   } else {
-    db.prepare(`INSERT INTO reddit_ads_config (id, account_id, client_id, client_secret, refresh_token, connected_at) VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)`)
-      .run(account_id || '', client_id || '', client_secret || '', refresh_token || '');
+    db.prepare(`INSERT INTO reddit_ads_config (id, account_id, client_id, client_secret, refresh_token, pixel_id, capi_access_token, connected_at) VALUES (1, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`)
+      .run(account_id || '', client_id || '', client_secret || '', refresh_token || '', pixel_id || '', capi_access_token || '');
   }
 
   // Clear cached token so new credentials are used
@@ -290,8 +299,8 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
     }
 
     const config = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
-    if (!config || !config.account_id || !config.client_id || !config.client_secret || !config.refresh_token) {
-      return { success: false, error: 'Reddit Ads not configured (missing account_id / OAuth credentials)' };
+    if (!config || !config.pixel_id || !config.capi_access_token) {
+      return { success: false, error: 'Reddit CAPI not configured (missing pixel_id or capi_access_token)' };
     }
 
     const hash = (val) => {
@@ -313,55 +322,61 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
     if (visitor.ip_address) user.ip_address = visitor.ip_address;
     if (visitor.user_agent) user.user_agent = visitor.user_agent;
 
+    // Reddit v3 uses uppercase tracking_type (LEAD, PURCHASE, SIGN_UP, ADD_TO_CART, VIEW_CONTENT, PAGE_VISIT, CUSTOM).
+    const V3_TRACKING_TYPE = {
+      Lead: 'LEAD',
+      Purchase: 'PURCHASE',
+      SignUp: 'SIGN_UP',
+      AddToCart: 'ADD_TO_CART',
+      ViewContent: 'VIEW_CONTENT',
+      PageVisit: 'PAGE_VISIT',
+      Custom: 'CUSTOM'
+    };
+    const trackingType = V3_TRACKING_TYPE[mapping.reddit_event_type] || mapping.reddit_event_type;
+
+    // Reddit v3 wants event_at as Unix epoch MILLISECONDS.
+    const eventAtMs = (() => {
+      if (!conv.created_at) return Date.now();
+      const s = String(conv.created_at);
+      const normalized = s.includes('T') ? s : s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z');
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? Date.now() : d.getTime();
+    })();
+
     const eventPayload = {
-      event_at: (() => {
-        if (!conv.created_at) return new Date().toISOString();
-        // RedTrack often returns "YYYY-MM-DD HH:MM:SS" (no T, no Z). Force UTC parsing.
-        const s = String(conv.created_at);
-        const normalized = s.includes('T') ? s : s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z');
-        const d = new Date(normalized);
-        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-      })(),
-      event_type: {
-        tracking_type: mapping.reddit_event_type,
-        custom_event_name: mapping.reddit_event_type === 'Custom' ? (mapping.reddit_custom_event_name || null) : null
+      event_at: eventAtMs,
+      action_source: 'WEBSITE',
+      type: {
+        tracking_type: trackingType,
+        ...(trackingType === 'CUSTOM' ? { custom_event_name: mapping.reddit_custom_event_name || null } : {})
       },
       click_id: visitor.rdt_cid,
-      event_metadata: {
+      metadata: {
         currency: 'USD',
-        ...(conv.payout != null ? { value_decimal: parseFloat(conv.payout) } : {}),
+        ...(conv.payout != null ? { value: parseFloat(conv.payout) } : {}),
         conversion_id: String(conv.id)
       },
-      user
+      user,
+      ...(mapping._test_mode && config.capi_test_id ? { test_id: config.capi_test_id } : {})
     };
 
     const requestBody = {
-      test_mode: !!mapping._test_mode,
-      events: [eventPayload]
+      data: {
+        events: [eventPayload]
+      }
     };
 
-    const url = `https://ads-api.reddit.com/api/v2.0/conversions/events/${config.account_id}`;
+    const url = `https://ads-api.reddit.com/api/v3/pixels/${config.pixel_id}/conversion_events`;
 
-    const doRequest = async (token) => fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${config.capi_access_token}`,
         'Content-Type': 'application/json',
         'User-Agent': 'CoastalDebtCMS/1.0'
       },
       body: JSON.stringify(requestBody)
     });
-
-    let token = await getRedditAccessToken(config);
-    let response = await doRequest(token);
-
-    // 401 → force token refresh once and retry
-    if (response.status === 401) {
-      cachedToken = null;
-      tokenExpiresAt = 0;
-      token = await getRedditAccessToken(config);
-      response = await doRequest(token);
-    }
 
     const result = await response.json().catch(() => ({}));
 

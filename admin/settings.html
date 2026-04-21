@@ -724,6 +724,21 @@
           <small style="color: #666;">Obtained through the Reddit OAuth2 authorization flow</small>
         </div>
 
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+        <p style="margin-bottom: 12px; font-weight: 600;">Conversions API (separate from Ads API above)</p>
+
+        <div class="form-group">
+          <label>Pixel ID</label>
+          <input type="text" id="rdPixelId" placeholder="e.g. a2_abc123">
+          <small style="color: #666;">From Reddit Ads Manager → Events Manager → Conversions API setup</small>
+        </div>
+
+        <div class="form-group">
+          <label>CAPI Access Token</label>
+          <input type="password" id="rdCapiToken" placeholder="Long-lived JWT from Reddit Conversions API setup">
+          <small style="color: #666;">Generated in the Conversions API wizard → "Generate access token" step</small>
+        </div>
+
         <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" onclick="saveRedditConfig()">Save Configuration</button>
           <button class="btn btn-secondary" onclick="testRedditConnection()">Test Connection</button>
@@ -1311,6 +1326,8 @@
         if (config.client_id) document.getElementById('rdClientId').value = config.client_id;
         if (config.has_client_secret) document.getElementById('rdClientSecret').placeholder = 'Saved (hidden)';
         if (config.has_refresh_token) document.getElementById('rdRefreshToken').placeholder = 'Saved (hidden)';
+        if (config.pixel_id) document.getElementById('rdPixelId').value = config.pixel_id;
+        if (config.has_capi_access_token) document.getElementById('rdCapiToken').placeholder = 'Saved (hidden)';
       } catch (e) { console.error('Failed to load Reddit config:', e); }
     }
 
@@ -1322,7 +1339,9 @@
           account_id: document.getElementById('rdAccountId').value.trim(),
           client_id: document.getElementById('rdClientId').value.trim(),
           client_secret: document.getElementById('rdClientSecret').value.trim() || undefined,
-          refresh_token: document.getElementById('rdRefreshToken').value.trim() || undefined
+          refresh_token: document.getElementById('rdRefreshToken').value.trim() || undefined,
+          pixel_id: document.getElementById('rdPixelId').value.trim(),
+          capi_access_token: document.getElementById('rdCapiToken').value.trim() || undefined
         };
         await api('/api/reddit-ads/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         status.textContent = 'Saved!';
