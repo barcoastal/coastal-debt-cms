@@ -42,8 +42,8 @@ const { sendRedditEvent } = require('../routes/reddit-ads');
  */
 async function syncRedditCapi() {
   const redditConfig = db.prepare('SELECT * FROM reddit_ads_config WHERE id=1').get();
-  if (!redditConfig || !redditConfig.account_id) {
-    return { scanned: 0, sent: 0, failed: 0, skipped: 0, blocked: 0, reason: 'reddit_not_configured' };
+  if (!redditConfig || !redditConfig.pixel_id || !redditConfig.capi_access_token) {
+    return { scanned: 0, sent: 0, failed: 0, skipped: 0, blocked: 0, reason: 'reddit_capi_not_configured' };
   }
 
   const mappings = db.prepare('SELECT * FROM reddit_capi_config WHERE is_active=1').all();
