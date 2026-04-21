@@ -1695,6 +1695,141 @@ try { db.exec(`ALTER TABLE calls ADD COLUMN rt_events TEXT`); } catch (e) {}
   }
 })();
 
+// Affiliate platform migration: add 'affiliate' to platform enum on forms/landing_pages/articles
+(function() {
+  try {
+    const formsSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='forms'").get();
+    const needsMigration = formsSql && !formsSql.sql.includes("'affiliate'");
+    if (!needsMigration) return;
+
+    db.pragma('foreign_keys = OFF');
+
+    db.exec(`
+      DROP TABLE IF EXISTS forms_new;
+      CREATE TABLE forms_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'bing', 'outbrain', 'linkedin', 'reddit', 'affiliate', 'other')),
+        webhook_url TEXT,
+        fields TEXT DEFAULT '[]',
+        submit_button_text TEXT DEFAULT 'Submit',
+        success_message TEXT DEFAULT 'Thank you! We will contact you shortly.',
+        is_active INTEGER DEFAULT 1,
+        skip_pre_qual INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO forms_new SELECT * FROM forms;
+      DROP TABLE forms;
+      ALTER TABLE forms_new RENAME TO forms;
+    `);
+
+    db.exec(`
+      DROP TABLE IF EXISTS landing_pages_new;
+      CREATE TABLE landing_pages_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        platform TEXT DEFAULT 'other' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'affiliate', 'other')),
+        traffic_source TEXT,
+        webhook_url TEXT,
+        form_id INTEGER,
+        content TEXT DEFAULT '{}',
+        sections_visible TEXT DEFAULT '{}',
+        hidden_fields TEXT DEFAULT '{}',
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        template_type TEXT DEFAULT 'form',
+        ab_test_id TEXT,
+        ab_test_variant TEXT,
+        ab_config TEXT DEFAULT '{}',
+        FOREIGN KEY (form_id) REFERENCES forms(id)
+      );
+      INSERT INTO landing_pages_new (id, slug, name, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active, created_at, updated_at, template_type, ab_test_id, ab_test_variant, ab_config)
+        SELECT id, slug, name, platform, traffic_source, webhook_url, form_id, content, sections_visible, hidden_fields, is_active, created_at, updated_at, template_type, ab_test_id, ab_test_variant, ab_config FROM landing_pages;
+      DROP TABLE landing_pages;
+      ALTER TABLE landing_pages_new RENAME TO landing_pages;
+    `);
+
+    db.exec(`
+      DROP TABLE IF EXISTS articles_new;
+      CREATE TABLE articles_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        headline TEXT,
+        subheadline TEXT,
+        body_html TEXT,
+        author_name TEXT DEFAULT 'Sarah Mitchell',
+        author_title TEXT DEFAULT 'Senior Business Correspondent',
+        publish_date TEXT,
+        platform TEXT DEFAULT 'outbrain' CHECK(platform IN ('google', 'meta', 'tiktok', 'linkedin', 'bing', 'outbrain', 'reddit', 'affiliate', 'other')),
+        traffic_source TEXT,
+        form_id INTEGER,
+        content TEXT DEFAULT '{}',
+        meta_title TEXT,
+        meta_description TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (form_id) REFERENCES forms(id)
+      );
+      INSERT INTO articles_new SELECT * FROM articles;
+      DROP TABLE articles;
+      ALTER TABLE articles_new RENAME TO articles;
+    `);
+
+    db.pragma('foreign_keys = ON');
+    console.log('Migration: added affiliate platform to forms/landing_pages/articles');
+  } catch (e) {
+    console.error('Affiliate platform migration error:', e.message);
+    try { db.pragma('foreign_keys = ON'); } catch (_) {}
+  }
+})();
+
+// Affiliate keys table (one row per affiliate account)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS affiliate_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    affiliate_id TEXT UNIQUE NOT NULL,
+    label TEXT NOT NULL,
+    api_key TEXT UNIQUE NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    notes TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME
+  );
+  CREATE INDEX IF NOT EXISTS idx_affiliate_keys_api_key ON affiliate_keys(api_key);
+
+  CREATE TABLE IF NOT EXISTS affiliate_forward_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER,
+    affiliate_id TEXT,
+    target TEXT DEFAULT 'zapier',
+    status TEXT,
+    detail TEXT,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_affiliate_forward_lead ON affiliate_forward_events(lead_id);
+`);
+
+// Affiliate leads hub landing_page (bucket so affiliate leads have a parent)
+{
+  const hub = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get('affiliate-leads-hub');
+  if (!hub) {
+    try {
+      db.prepare(`
+        INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields, template_type, is_active)
+        VALUES ('affiliate-leads-hub', 'Affiliate Leads Hub', 'affiliate', 'Affiliate Network', NULL, '{}', '{}', '{}', 'form', 0)
+      `).run();
+      console.log('Affiliate Leads Hub landing page created');
+    } catch (e) {
+      console.error('Affiliate Leads Hub seed error:', e.message);
+    }
+  }
+}
+
 // Ad Generator: projects and generations
 db.exec(`
   CREATE TABLE IF NOT EXISTS ad_projects (
