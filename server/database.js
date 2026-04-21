@@ -1052,64 +1052,217 @@ if (!obFormExists) {
   const fbForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
   const defaultFormId = fbForm ? fbForm.id : null;
 
-  const baseContent = {
-    badge: "MCA Debt Relief",
-    bulletPoints: [
-      "Increase cashflow immediately",
-      "Get up to 80% off your MCA debt in 6-8 months",
-      "Dedicated expert Debt Settlement Advisor and legal team",
-      "No upfront fees, pay only when we settle"
-    ],
-    formTitle: "See If Your Business Qualifies",
-    formSubtitle: "Only $20K+ MCA Debt. Takes 60 seconds.",
-    formButton: "Get My Free Consultation",
-    trustLabel: "As Seen In & Trusted By",
-    phone: "(888) 961-5338",
-    colors: { primary: "#3052FF", primaryLight: "#4a6aff", navy: "#1a2e4a", navyDark: "#0f1c2e" }
-  };
+  const sharedColors = { primary: "#3052FF", primaryLight: "#4a6aff", navy: "#1a2e4a", navyDark: "#0f1c2e" };
+  const sharedPhone = "(888) 961-5338";
+  const sharedTrustLabel = "As Seen In & Trusted By";
   const baseSections = JSON.stringify({trustBar:true,comparison:true,howItWorks:true,caseStudies:true,empathy:true,testimonials:true,faq:true,cta:true});
 
   const variants = [
     {
       slug: 'mca-attorney',
       name: 'MCA Attorney LP',
-      headline: 'MCA Attorney Defense - Fight Back Against Your Lender',
-      subheadline: 'Stop the lawsuits, UCC liens, and frozen accounts.',
-      pageTitle: 'MCA Attorney Defense - Stop Lawsuits & UCC Liens | Coastal Debt',
-      metaDescription: 'Facing an MCA lawsuit, UCC lien, or frozen account? Talk to an MCA attorney today. Free case review, emergency defense available.'
+      content: {
+        badge: "MCA Legal Defense",
+        headline: "MCA Attorney Defense - Fight Back Against Your Lender",
+        subheadline: "Stop the lawsuits, UCC liens, and frozen accounts. Talk to an MCA attorney today.",
+        bulletPoints: [
+          "Direct access to experienced MCA defense attorneys",
+          "Emergency response for UCC liens and frozen accounts",
+          "Defend against lawsuits and confessions of judgment",
+          "Free case review, no upfront legal fees"
+        ],
+        formTitle: "Free MCA Attorney Case Review",
+        formSubtitle: "Talk to a real attorney about your situation. Takes 60 seconds.",
+        formButton: "Get Free Case Review",
+        comparisonTitle: "Why Business Owners Need an MCA Attorney",
+        comparisonSubtitle: "Going it alone against a lender's legal team is a losing battle",
+        comparisonColBad: "Facing It Alone",
+        comparisonColGood: "With an MCA Attorney",
+        comparisonRows: [
+          { label: "Lender Lawsuits", bad: "Default judgment, wage garnishment", good: "Aggressive legal defense" },
+          { label: "UCC Liens", bad: "Frozen accounts, seized receivables", good: "Lien removal, protection strategy" },
+          { label: "Confession of Judgment", bad: "Enforceable without warning", good: "Attorney challenges validity" },
+          { label: "Negotiation Leverage", bad: "Lenders ignore unrepresented owners", good: "Law firm demands settlement" },
+          { label: "Legal Fees", bad: "$500+/hr typical attorney rates", good: "No upfront fees" },
+          { label: "Your Business", bad: "Shut down by lender action", good: "Protected, still operating" }
+        ],
+        comparisonCtaText: "Talk to an Attorney",
+        howItWorksTitle: "How MCA Attorney Defense Works",
+        howItWorksSubtitle: "Three fast steps to get legal protection on your side",
+        steps: [
+          { title: "Free Case Review", description: "Talk to our attorney team about your lenders, balances, lawsuits, and UCC status. We listen, assess, and recommend a defense strategy." },
+          { title: "Strategic Defense", description: "Our attorneys file responses, challenge confessions of judgment, negotiate with lender counsel, and fight to protect your accounts and receivables." },
+          { title: "Resolution", description: "Most cases resolve in 3 to 6 months with drastically reduced settlements and your business still operating." }
+        ],
+        caseStudiesTitle: "Recent MCA Legal Wins",
+        caseStudiesSubtitle: "Actual settlements our attorneys negotiated for business owners",
+        empathyTitle: "Facing an MCA Lawsuit? You Are Not Alone.",
+        empathyText: [
+          "You signed an MCA contract when your business needed cash. You probably did not read the confession of judgment clause buried in the fine print. Now your lender is threatening to freeze your accounts or garnish your receivables.",
+          "Here is what you need to know: you have legal options. MCA lenders count on business owners not fighting back. When you have an experienced MCA attorney on your side, the leverage shifts.",
+          "Our legal team has defended hundreds of business owners in your exact situation. Most cases settle for a fraction of the claimed balance."
+        ],
+        testimonialsTitle: "What Our Legal Clients Say",
+        testimonialsSubtitle: "Business owners who fought back with our attorneys and won",
+        faqTitle: "Common Questions About MCA Attorney Defense",
+        faqSubtitle: "Get the answers you need before choosing legal representation",
+        faqItems: [
+          { question: "Can an MCA attorney really stop a lawsuit?", answer: "Yes. Experienced MCA attorneys can file responses to challenge confessions of judgment, contest unfair terms, and negotiate with lender counsel to settle before judgment." },
+          { question: "My lender filed a UCC lien. Can you remove it?", answer: "Often yes. We can negotiate lien release as part of a settlement, or challenge the lien if it was filed improperly." },
+          { question: "What if my bank account is frozen?", answer: "Contact us immediately. A frozen account is usually the result of a judgment or lien. Our attorneys can file emergency motions to lift the freeze and negotiate with the lender." },
+          { question: "How much does an MCA attorney cost?", answer: "We charge no upfront legal fees. Our fee is a percentage of the savings we secure for you." },
+          { question: "Will this affect my personal credit?", answer: "MCA debt is business debt, but personal guarantees are common. Our defense strategy includes protecting your personal credit whenever possible." }
+        ],
+        ctaTitle: "Protect Your Business Before It Is Too Late",
+        ctaSubtitle: "Free case review with an experienced MCA attorney. No obligation.",
+        ctaButton: "Get Free Case Review",
+        pageTitle: "MCA Attorney Defense, Stop Lawsuits and UCC Liens | Coastal Debt",
+        metaDescription: "Facing an MCA lawsuit, UCC lien, or frozen account? Talk to an MCA attorney today. Free case review, emergency defense available.",
+        phone: sharedPhone,
+        trustLabel: sharedTrustLabel,
+        colors: sharedColors
+      }
     },
     {
       slug: 'mca-consolidation',
       name: 'MCA Consolidation LP',
-      headline: 'MCA Consolidation - Combine All Your Advances Into One Lower Payment',
-      subheadline: 'One payment. Lower total cost. Better cash flow.',
-      pageTitle: 'MCA Consolidation - Combine Your Advances Into One | Coastal Debt',
-      metaDescription: 'Combine multiple MCAs into one lower monthly payment. Keep cash flow, cut debt, stay in business. Free consultation.'
+      content: {
+        badge: "MCA Consolidation",
+        headline: "MCA Consolidation - Combine All Your Advances Into One Lower Payment",
+        subheadline: "One payment. Lower total cost. Better cash flow.",
+        bulletPoints: [
+          "Combine 2, 3, or more MCAs into one manageable payment",
+          "Reduce total debt by 30 to 80% through negotiation",
+          "Replace daily ACH withdrawals with weekly payments",
+          "Keep your business operating with healthy cash flow"
+        ],
+        formTitle: "See How Much You Can Save",
+        formSubtitle: "Enter your MCA details. Get a consolidation plan in 60 seconds.",
+        formButton: "Get My Consolidation Plan",
+        comparisonTitle: "MCA Consolidation vs Paying Multiple MCAs",
+        comparisonSubtitle: "See why consolidation beats juggling daily ACH withdrawals",
+        comparisonColBad: "Multiple Active MCAs",
+        comparisonColGood: "Consolidated with Coastal",
+        comparisonRows: [
+          { label: "Number of Payments", bad: "2 to 5 daily ACH withdrawals", good: "One weekly payment" },
+          { label: "Monthly Cost", bad: "30 to 50% of revenue gone to MCAs", good: "10 to 20% of revenue, predictable" },
+          { label: "Total Debt", bad: "Full balance plus high factor rates", good: "Reduced by 30 to 80% via settlement" },
+          { label: "Cash Flow", bad: "Always tight, taking new MCAs to pay old", good: "Healthy, able to operate and grow" },
+          { label: "Stress", bad: "Constant worry about ACH bouncing", good: "One predictable payment, peace of mind" },
+          { label: "Your Business", bad: "Trapped in the MCA cycle", good: "Back on stable ground" }
+        ],
+        comparisonCtaText: "See My Consolidation Plan",
+        howItWorksTitle: "How MCA Consolidation Works",
+        howItWorksSubtitle: "A proven process to combine and reduce your MCA debt",
+        steps: [
+          { title: "MCA Debt Audit", description: "We review every MCA contract, daily ACH amount, and remaining balance. Nothing is missed." },
+          { title: "Consolidation Plan", description: "Our negotiators build a custom plan that combines all your MCAs into one affordable weekly payment, often cutting the total by 30 to 80%." },
+          { title: "One Predictable Payment", description: "Stop the daily ACH drain. Replace it with one payment you can plan around, freeing up cash to actually run your business." }
+        ],
+        caseStudiesTitle: "Recent MCA Consolidation Results",
+        caseStudiesSubtitle: "Real business owners who combined and settled their MCAs",
+        empathyTitle: "Drowning in Multiple MCAs? There Is a Way Out.",
+        empathyText: [
+          "You took out one MCA. Then another to cover the first. Then a third to cover the second. Now you are watching 40% of your daily revenue vanish into ACH withdrawals you can barely track.",
+          "Consolidation breaks the cycle. By combining all your MCAs into one negotiated settlement, you cut the total owed and regain control of your cash flow.",
+          "Most business owners see a 30 to 80% reduction in total MCA debt plus weekly, not daily, payments they can actually afford."
+        ],
+        testimonialsTitle: "What Our Consolidation Clients Say",
+        testimonialsSubtitle: "Owners who combined multiple MCAs and got their businesses back",
+        faqTitle: "Common Questions About MCA Consolidation",
+        faqSubtitle: "Everything you need to know before consolidating",
+        faqItems: [
+          { question: "Is MCA consolidation the same as a loan?", answer: "No. We do not issue a new loan. We negotiate directly with your MCA lenders to combine and reduce the balances you already owe." },
+          { question: "How much can consolidation save me?", answer: "Typical savings are 30 to 80% of total MCA debt. The exact amount depends on your lenders, balances, and time outstanding." },
+          { question: "Will the daily ACH withdrawals stop?", answer: "Yes. Once enrolled, we work to stop the daily ACH hits and replace them with one manageable weekly or monthly payment." },
+          { question: "How long does consolidation take?", answer: "Most consolidations complete in 6 to 8 months, significantly faster than paying each MCA in full." },
+          { question: "Do I need to close my business?", answer: "No. Our program is designed to keep your business operating while we negotiate. No bankruptcy required." },
+          { question: "Is there any upfront cost?", answer: "No upfront fees. You only pay when we successfully negotiate the consolidation on your behalf." }
+        ],
+        ctaTitle: "Ready to Consolidate Your MCA Debt?",
+        ctaSubtitle: "Free consultation. See your consolidation plan in 60 seconds.",
+        ctaButton: "Get My Consolidation Plan",
+        pageTitle: "MCA Consolidation, Combine Your Advances Into One | Coastal Debt",
+        metaDescription: "Combine multiple MCAs into one lower monthly payment. Keep cash flow, cut debt, stay in business. Free consultation.",
+        phone: sharedPhone,
+        trustLabel: sharedTrustLabel,
+        colors: sharedColors
+      }
     },
     {
       slug: 'mca-default',
       name: 'MCA Default LP',
-      headline: 'Defaulted On Your MCA? Stop Collections Today',
-      subheadline: 'Emergency help for frozen accounts, UCC liens, and lender lawsuits.',
-      pageTitle: 'MCA Default Help - Stop Collections Now | Coastal Debt',
-      metaDescription: 'Defaulted on your MCA? Stop collections, UCC liens, and lawsuits. Free emergency consultation.'
+      content: {
+        badge: "MCA Default Emergency",
+        headline: "Defaulted On Your MCA? Stop Collections Today",
+        subheadline: "Emergency help for frozen accounts, UCC liens, and lender lawsuits.",
+        bulletPoints: [
+          "Emergency response to frozen bank accounts",
+          "UCC lien and confession of judgment defense",
+          "Stop collection calls and lender harassment",
+          "Negotiate massive debt reduction despite default"
+        ],
+        formTitle: "Emergency MCA Default Help",
+        formSubtitle: "If you defaulted or are about to, act now. 60 seconds.",
+        formButton: "Get Emergency Help Now",
+        comparisonTitle: "Default Without Help vs Coastal Debt Defense",
+        comparisonSubtitle: "What happens when you face MCA default alone vs with us",
+        comparisonColBad: "Default Without Help",
+        comparisonColGood: "Coastal Default Defense",
+        comparisonRows: [
+          { label: "Collection Calls", bad: "Daily harassment, threats", good: "We become the point of contact" },
+          { label: "UCC Liens", bad: "Receivables seized, accounts frozen", good: "Lien removal negotiated" },
+          { label: "Lawsuits", bad: "Default judgment entered quickly", good: "Aggressive legal defense" },
+          { label: "Personal Guarantee", bad: "Personal assets at risk", good: "Strategy to protect personal assets" },
+          { label: "Debt Reduction", bad: "No negotiating power alone", good: "Settle for 30 to 80% of balance" },
+          { label: "Your Business", bad: "Forced to close", good: "Keep operating through the fight" }
+        ],
+        comparisonCtaText: "Get Emergency Help",
+        howItWorksTitle: "How Emergency Default Response Works",
+        howItWorksSubtitle: "Fast action to protect your business after a default",
+        steps: [
+          { title: "Same-Day Intervention", description: "Call us the moment you default or see a lender threat. We step in immediately to stop collection calls and assess the damage." },
+          { title: "Defense and Negotiation", description: "Our attorneys challenge UCC liens, defend against lawsuits, and negotiate hard with lender counsel to settle your defaulted MCAs for a fraction of the balance." },
+          { title: "Business Continuity", description: "Most of our clients keep their doors open throughout the process. We resolve defaults in 3 to 6 months with drastically reduced settlements." }
+        ],
+        caseStudiesTitle: "Defaults We Turned Around",
+        caseStudiesSubtitle: "Real businesses that defaulted, fought back, and survived",
+        empathyTitle: "Defaulted on Your MCA? Act Fast.",
+        empathyText: [
+          "The daily ACH bounced. Your lender is calling. A UCC lien just froze your merchant account. Maybe a lawsuit is already filed.",
+          "A default feels like the end, but it is not. MCA lenders are predictable. They rely on a few legal tools, and every one of them can be fought or negotiated.",
+          "The faster you act, the more leverage you have. We have defended hundreds of business owners who thought they were finished. Most settled for a fraction of what they owed and kept their businesses running."
+        ],
+        testimonialsTitle: "What Default Clients Say",
+        testimonialsSubtitle: "Owners who were in crisis and came out the other side",
+        faqTitle: "Common Questions After an MCA Default",
+        faqSubtitle: "What to do, what not to do, and what happens next",
+        faqItems: [
+          { question: "I just defaulted. What should I do right now?", answer: "Do not ignore the default or agree to any repayment plan with the lender until you talk to us. Every hour matters. Call or submit the form and we will step in today." },
+          { question: "My bank account was frozen. Can you unfreeze it?", answer: "Often yes. An emergency motion can lift a freeze, and negotiation with the lender can release a UCC lien. Contact us now." },
+          { question: "Can I be arrested for defaulting on an MCA?", answer: "No. MCA default is a civil matter, not criminal. But lenders can pursue lawsuits, wage garnishment, and asset seizure, which is why legal defense matters." },
+          { question: "What if there is a confession of judgment against me?", answer: "Confessions of judgment can sometimes be challenged, especially if they were filed improperly. Our attorneys have successfully vacated judgments in many cases." },
+          { question: "Will I lose my business?", answer: "Most of our default clients keep their businesses open. With fast action, UCC liens can be lifted, accounts unfrozen, and debts settled at a deep discount." }
+        ],
+        ctaTitle: "Every Hour Matters After a Default",
+        ctaSubtitle: "Free emergency consultation. Attorneys ready to step in today.",
+        ctaButton: "Get Emergency Help",
+        pageTitle: "MCA Default Help, Stop Collections Now | Coastal Debt",
+        metaDescription: "Defaulted on your MCA? Stop collections, UCC liens, and lawsuits. Free emergency consultation.",
+        phone: sharedPhone,
+        trustLabel: sharedTrustLabel,
+        colors: sharedColors
+      }
     }
   ];
 
   for (const v of variants) {
     const exists = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(v.slug);
     if (exists) continue;
-    const content = JSON.stringify({
-      ...baseContent,
-      headline: v.headline,
-      subheadline: v.subheadline,
-      pageTitle: v.pageTitle,
-      metaDescription: v.metaDescription
-    });
     db.prepare(`
       INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields, template_type)
       VALUES (?, ?, 'google', 'Google Ads - MCA-Debt Desktop', ?, ?, ?, '{}', 'mca-variant')
-    `).run(v.slug, v.name, defaultFormId, content, baseSections);
+    `).run(v.slug, v.name, defaultFormId, JSON.stringify(v.content), baseSections);
     console.log('MCA variant landing page created:', v.slug);
   }
 }
