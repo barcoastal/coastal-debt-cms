@@ -131,7 +131,8 @@ router.post('/test-connection', authenticateToken, async (req, res) => {
  */
 async function fetchRedditDailySpend(config, startDate, endDate) {
   const token = await getRedditAccessToken(config);
-  const reportRes = await fetch(`https://ads-api.reddit.com/api/v3/accounts/${config.account_id}/reports`, {
+  const toIso = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T00:00:00Z' : d;
+  const reportRes = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${config.account_id}/reports`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -139,16 +140,17 @@ async function fetchRedditDailySpend(config, startDate, endDate) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      start_date: startDate,
-      end_date: endDate,
-      level: 'ACCOUNT',
-      metrics: ['spend', 'clicks'],
-      breakdowns: ['date']
+      data: {
+        starts_at: toIso(startDate),
+        ends_at: toIso(endDate),
+        fields: ['spend', 'clicks', 'impressions'],
+        breakdowns: ['DATE']
+      }
     })
   });
   const reportData = await reportRes.json();
   if (!reportRes.ok) {
-    throw new Error(reportData.message || `Reddit API error ${reportRes.status}`);
+    throw new Error(reportData.error?.message || reportData.message || `Reddit API error ${reportRes.status}`);
   }
   return reportData;
 }
@@ -182,21 +184,17 @@ async function fetchRedditMissingCosts() {
 
     const reportData = await fetchRedditDailySpend(config, minDate, maxDate);
 
-    // Build CPC by date
-    // Reddit report response: array of objects with date, spend (in micros or dollars), clicks
+    // Build CPC by date. v3 response shape: { data: { metrics: [{ date, spend, clicks, impressions }, ...] } }
     const cpcByDate = {};
-    const rows = reportData.data || reportData.results || reportData || [];
-    const rowList = Array.isArray(rows) ? rows : [];
-    for (const row of rowList) {
+    const rows = reportData?.data?.metrics || [];
+    for (const row of rows) {
       const date = row.date || row.breakdown_value || '';
       if (!date) continue;
-      // Normalize date to YYYY-MM-DD
-      const normalizedDate = date.substring(0, 10);
+      const normalizedDate = String(date).substring(0, 10);
       if (!cpcByDate[normalizedDate]) cpcByDate[normalizedDate] = { cost: 0, clicks: 0 };
       // Reddit API returns spend in micros (millionths of a dollar)
-      const spend = parseFloat(row.spend || row.metrics?.spend || 0);
-      const clicks = parseInt(row.clicks || row.metrics?.clicks || 0);
-      // If spend looks like micros (> 1000 for any day), convert from micros
+      const spend = parseFloat(row.spend || 0);
+      const clicks = parseInt(row.clicks || 0);
       cpcByDate[normalizedDate].cost += spend > 10000 ? spend / 1000000 : spend;
       cpcByDate[normalizedDate].clicks += clicks;
     }
@@ -256,12 +254,10 @@ async function getRedditTotalSpend(from, to) {
     const startDate = from || new Date(Date.now() - 365 * 86400000).toISOString().split('T')[0];
     const endDate = to || new Date().toISOString().split('T')[0];
     const reportData = await fetchRedditDailySpend(config, startDate, endDate);
-
-    const rows = reportData.data || reportData.results || reportData || [];
-    const rowList = Array.isArray(rows) ? rows : [];
+    const rows = reportData?.data?.metrics || [];
     let total = 0;
-    for (const row of rowList) {
-      const spend = parseFloat(row.spend || row.metrics?.spend || 0);
+    for (const row of rows) {
+      const spend = parseFloat(row.spend || 0);
       total += spend > 10000 ? spend / 1000000 : spend;
     }
     return total;
