@@ -1047,6 +1047,73 @@ if (!obFormExists) {
   }
 }
 
+// Seed mca-variant keyword-targeted landing pages (Google Ads - MCA-Debt exact-Phrase Desktop)
+{
+  const fbForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
+  const defaultFormId = fbForm ? fbForm.id : null;
+
+  const baseContent = {
+    badge: "MCA Debt Relief",
+    bulletPoints: [
+      "Increase cashflow immediately",
+      "Get up to 80% off your MCA debt in 6-8 months",
+      "Dedicated expert Debt Settlement Advisor and legal team",
+      "No upfront fees, pay only when we settle"
+    ],
+    formTitle: "See If Your Business Qualifies",
+    formSubtitle: "Only $20K+ MCA Debt. Takes 60 seconds.",
+    formButton: "Get My Free Consultation",
+    trustLabel: "As Seen In & Trusted By",
+    phone: "(888) 961-5338",
+    colors: { primary: "#3052FF", primaryLight: "#4a6aff", navy: "#1a2e4a", navyDark: "#0f1c2e" }
+  };
+  const baseSections = JSON.stringify({trustBar:true,comparison:true,howItWorks:true,caseStudies:true,empathy:true,testimonials:true,faq:true,cta:true});
+
+  const variants = [
+    {
+      slug: 'mca-attorney',
+      name: 'MCA Attorney LP',
+      headline: 'MCA Attorney Defense - Fight Back Against Your Lender',
+      subheadline: 'Stop the lawsuits, UCC liens, and frozen accounts.',
+      pageTitle: 'MCA Attorney Defense - Stop Lawsuits & UCC Liens | Coastal Debt',
+      metaDescription: 'Facing an MCA lawsuit, UCC lien, or frozen account? Talk to an MCA attorney today. Free case review, emergency defense available.'
+    },
+    {
+      slug: 'mca-consolidation',
+      name: 'MCA Consolidation LP',
+      headline: 'MCA Consolidation - Combine All Your Advances Into One Lower Payment',
+      subheadline: 'One payment. Lower total cost. Better cash flow.',
+      pageTitle: 'MCA Consolidation - Combine Your Advances Into One | Coastal Debt',
+      metaDescription: 'Combine multiple MCAs into one lower monthly payment. Keep cash flow, cut debt, stay in business. Free consultation.'
+    },
+    {
+      slug: 'mca-default',
+      name: 'MCA Default LP',
+      headline: 'Defaulted On Your MCA? Stop Collections Today',
+      subheadline: 'Emergency help for frozen accounts, UCC liens, and lender lawsuits.',
+      pageTitle: 'MCA Default Help - Stop Collections Now | Coastal Debt',
+      metaDescription: 'Defaulted on your MCA? Stop collections, UCC liens, and lawsuits. Free emergency consultation.'
+    }
+  ];
+
+  for (const v of variants) {
+    const exists = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(v.slug);
+    if (exists) continue;
+    const content = JSON.stringify({
+      ...baseContent,
+      headline: v.headline,
+      subheadline: v.subheadline,
+      pageTitle: v.pageTitle,
+      metaDescription: v.metaDescription
+    });
+    db.prepare(`
+      INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields, template_type)
+      VALUES (?, ?, 'google', 'Google Ads - MCA-Debt Desktop', ?, ?, ?, '{}', 'mca-variant')
+    `).run(v.slug, v.name, defaultFormId, content, baseSections);
+    console.log('MCA variant landing page created:', v.slug);
+  }
+}
+
 // Seed article: MCA Debt Relief (Facebook/Social)
 {
   const obForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
