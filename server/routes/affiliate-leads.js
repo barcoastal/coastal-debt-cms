@@ -33,11 +33,15 @@ async function fireZapier(webhookUrl, payload) {
 }
 
 function buildZapierPayload(lead, affiliate, extra) {
+  const hf = (() => { try { return JSON.parse(lead.hidden_fields || '{}'); } catch (e) { return {}; } })();
   return {
     lead_id: lead.id,
     eli_clickid: lead.eli_clickid,
+    rt_clickid: lead.rt_clickid || hf.rt_clickid || hf.click_id || '',
+    click_id: lead.rt_clickid || hf.rt_clickid || hf.click_id || '',
     affiliate_id: affiliate && affiliate.affiliate_id,
     affiliate_label: affiliate && affiliate.label,
+    sub_id: hf.sub_id || '',
     first_name: lead.first_name || '',
     last_name: lead.last_name || '',
     full_name: lead.full_name || '',
@@ -48,8 +52,9 @@ function buildZapierPayload(lead, affiliate, extra) {
     has_mca: lead.has_mca || '',
     considered_bankruptcy: lead.considered_bankruptcy || '',
     gclid: lead.gclid || '',
+    state: hf.state || '',
     created_at: lead.created_at,
-    hidden_fields: (() => { try { return JSON.parse(lead.hidden_fields || '{}'); } catch (e) { return {}; } })(),
+    hidden_fields: hf,
     extra: extra || {}
   };
 }
@@ -104,7 +109,7 @@ router.post('/submit', async (req, res) => {
     landingPageId, fullName, firstName, lastName,
     body.company_name || body.company || '', email, phone,
     body.debt_amount || '', body.has_mca || '', body.considered_bankruptcy || '',
-    body.gclid || '', body.rt_clickid || '', eliClickid,
+    body.gclid || '', body.rt_clickid || body.click_id || '', eliClickid,
     JSON.stringify(hiddenFields)
   );
 
