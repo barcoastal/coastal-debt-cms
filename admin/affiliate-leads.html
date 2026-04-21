@@ -144,10 +144,10 @@
       <div class="card">
         <h3 style="margin:0 0 8px;">Affiliate Submit Endpoint</h3>
         <p style="color:var(--gray-500);font-size:0.85rem;margin:0 0 12px;">Affiliates POST leads to this URL with an API key in the <code>X-API-Key</code> header.</p>
-        <code id="submitUrl" style="display:block;background:var(--gray-100);padding:10px;border-radius:6px;font-size:12px;word-break:break-all;">POST {origin}/api/affiliate-leads/submit</code>
+        <code id="submitUrl" style="display:block;background:var(--gray-100);padding:10px;border-radius:6px;font-size:12px;word-break:break-all;">POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit</code>
         <details style="margin-top:12px;">
           <summary style="cursor:pointer;font-size:0.85rem;color:var(--primary);">Show example payload</summary>
-<pre style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;">curl -X POST https://YOUR-DOMAIN/api/affiliate-leads/submit \
+<pre style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;">curl -X POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit \
   -H "Content-Type: application/json" \
   -H "X-API-Key: affk_..." \
   -d '{
@@ -292,7 +292,8 @@
 
   <script src="assets/js/common.js?v=6"></script>
   <script>
-    document.getElementById('submitUrl').textContent = 'POST ' + window.location.origin + '/api/affiliate-leads/submit';
+    // Keep the affiliate-facing submit URL as the BDI subdomain, not the admin origin
+    document.getElementById('submitUrl').textContent = 'POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit';
 
     async function loadConfig() {
       const res = await fetch('/api/affiliate-leads/config');
