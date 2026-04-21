@@ -739,6 +739,12 @@
           <small style="color: #666;">Generated in the Conversions API wizard → "Generate access token" step</small>
         </div>
 
+        <div class="form-group">
+          <label>CAPI Test ID (optional)</label>
+          <input type="text" id="rdCapiTestId" placeholder="e.g. t2_xxxxxx">
+          <small style="color: #666;">From wizard step "Finish and test" — routes test events to Reddit's test dashboard without polluting live metrics</small>
+        </div>
+
         <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" onclick="saveRedditConfig()">Save Configuration</button>
           <button class="btn btn-secondary" onclick="testRedditConnection()">Test Connection</button>
@@ -1328,6 +1334,7 @@
         if (config.has_refresh_token) document.getElementById('rdRefreshToken').placeholder = 'Saved (hidden)';
         if (config.pixel_id) document.getElementById('rdPixelId').value = config.pixel_id;
         if (config.has_capi_access_token) document.getElementById('rdCapiToken').placeholder = 'Saved (hidden)';
+        if (config.capi_test_id) document.getElementById('rdCapiTestId').value = config.capi_test_id;
       } catch (e) { console.error('Failed to load Reddit config:', e); }
     }
 
@@ -1341,7 +1348,8 @@
           client_secret: document.getElementById('rdClientSecret').value.trim() || undefined,
           refresh_token: document.getElementById('rdRefreshToken').value.trim() || undefined,
           pixel_id: document.getElementById('rdPixelId').value.trim(),
-          capi_access_token: document.getElementById('rdCapiToken').value.trim() || undefined
+          capi_access_token: document.getElementById('rdCapiToken').value.trim() || undefined,
+          capi_test_id: document.getElementById('rdCapiTestId').value.trim()
         };
         await api('/api/reddit-ads/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         status.textContent = 'Saved!';

@@ -356,12 +356,12 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
         ...(conv.payout != null ? { value: parseFloat(conv.payout) } : {}),
         conversion_id: String(conv.id)
       },
-      user,
-      ...(mapping._test_mode && config.capi_test_id ? { test_id: config.capi_test_id } : {})
+      user
     };
 
     const requestBody = {
       data: {
+        ...(mapping._test_mode && config.capi_test_id ? { test_id: config.capi_test_id } : {}),
         events: [eventPayload]
       }
     };
