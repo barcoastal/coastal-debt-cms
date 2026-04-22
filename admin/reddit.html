@@ -298,6 +298,7 @@
               <th style="padding:8px;">When</th>
               <th style="padding:8px;">Lead</th>
               <th style="padding:8px;">RT event</th>
+              <th style="padding:8px;">RDT_CID</th>
               <th style="padding:8px;">Value</th>
               <th style="padding:8px;">Status</th>
               <th style="padding:8px;">Error</th>
@@ -601,11 +602,18 @@
           const statusColor = ev.status === 'sent' ? '#0a0' : (ev.status === 'failed' ? '#c00' : '#888');
           const name = [ev.first_name, ev.last_name].filter(Boolean).join(' ') || ev.email || ev.eli_clickid || '—';
           const errMsg = (ev.error_message || '').replace(/"/g, '&quot;');
+          // Extract rdt_cid from capi_payload (click_id in the sent event)
+          let rdtCid = '';
+          try {
+            const pl = ev.capi_payload ? JSON.parse(ev.capi_payload) : null;
+            rdtCid = pl?.data?.events?.[0]?.click_id || '';
+          } catch (_) {}
           return `
             <tr style="border-bottom:1px solid #eee;">
               <td style="padding:8px;">${ev.created_at}</td>
               <td style="padding:8px;">${name}</td>
               <td style="padding:8px;"><code>${ev.conversion_action_name || '—'}</code></td>
+              <td style="padding:8px;font-family:monospace;font-size:11px;color:${rdtCid ? '#0a0' : '#999'};" title="${rdtCid}">${rdtCid || '—'}</td>
               <td style="padding:8px;">${ev.revenue != null ? '$' + ev.revenue : '—'}</td>
               <td style="padding:8px;color:${statusColor};font-weight:600;">${ev.status}</td>
               <td style="padding:8px;color:#c00;font-size:11px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${errMsg}">${ev.error_message || ''}</td>
@@ -629,7 +637,7 @@
           });
         });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:12px;color:#c00;">Failed to load: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:12px;color:#c00;">Failed to load: ${err.message}</td></tr>`;
       }
     }
 
