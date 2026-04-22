@@ -83,8 +83,12 @@ router.post('/config', authenticateToken, (req, res) => {
       updates.push('refresh_token = ?'); params.push(refresh_token);
     }
     if (pixel_id !== undefined) { updates.push('pixel_id = ?'); params.push(pixel_id); }
-    if (capi_access_token && capi_access_token !== '••••' + (existing.capi_access_token || '').slice(-6)) {
-      updates.push('capi_access_token = ?'); params.push(capi_access_token);
+    if (capi_access_token) {
+      // Strip mask bullets, whitespace, and zero-width chars that can sneak in on paste
+      const cleaned = capi_access_token.replace(/[•\s\u200B-\u200D\uFEFF]/g, '');
+      if (cleaned && cleaned !== '' + (existing.capi_access_token || '').slice(-6)) {
+        updates.push('capi_access_token = ?'); params.push(cleaned);
+      }
     }
     if (capi_test_id !== undefined) { updates.push('capi_test_id = ?'); params.push(capi_test_id); }
     if (updates.length > 0) {
