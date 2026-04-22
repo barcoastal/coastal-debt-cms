@@ -84,6 +84,14 @@ async function syncRedditCapi(hoursLookback = 2) {
         }
       }
       if (!visitor) { stats.skipped++; stats.skip_reasons.no_visitor_match++; continue; }
+
+      // Load full lead (we need rdt_cid fallback + PII for hashing)
+      const lead = db.prepare('SELECT * FROM leads WHERE eli_clickid = ?').get(visitor.eli_clickid) || leadByRt;
+
+      // rdt_cid can live on visitor (from /api/visitors/track) OR lead (from form submission)
+      if (!visitor.rdt_cid && lead?.rdt_cid) {
+        visitor = { ...visitor, rdt_cid: lead.rdt_cid };
+      }
       if (!visitor.rdt_cid) { stats.skipped++; stats.skip_reasons.no_rdt_cid++; continue; }
 
       const existing = db.prepare(`
@@ -91,8 +99,6 @@ async function syncRedditCapi(hoursLookback = 2) {
         WHERE source='reddit_capi' AND redtrack_conversion_id = ? AND status='sent'
       `).get(String(conv.id));
       if (existing) { stats.skipped++; stats.skip_reasons.already_sent++; continue; }
-
-      const lead = db.prepare('SELECT id, email, phone, is_blocked FROM leads WHERE eli_clickid = ?').get(visitor.eli_clickid);
 
       if (lead && lead.is_blocked) {
         db.prepare(`
