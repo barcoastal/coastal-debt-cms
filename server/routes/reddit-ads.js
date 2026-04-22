@@ -377,9 +377,13 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errMsg = result.message || result.error || `Reddit API ${response.status}`;
-      console.error('Reddit CAPI error:', errMsg);
-      return { success: false, error: errMsg, payload: requestBody };
+      const raw = result.error?.message || result.message || result.error || `Reddit API ${response.status}`;
+      const errMsg = typeof raw === 'string' ? raw : JSON.stringify(raw);
+      // If Reddit returned validation fields, surface them so we can diagnose which field is wrong
+      const fields = result.error?.fields || result.fields;
+      const fullErr = fields && fields.length ? `${errMsg} — ${fields.map(f => `${f.field}: ${f.message}`).join('; ')}` : errMsg;
+      console.error('Reddit CAPI error:', fullErr);
+      return { success: false, error: fullErr, payload: requestBody };
     }
 
     console.log(`Reddit CAPI: sent ${mapping.reddit_event_type} for conv ${conv.id} (rdt_cid=${visitor.rdt_cid})`);
