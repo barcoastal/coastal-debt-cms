@@ -236,6 +236,7 @@
     const COLUMNS = [
       { key: 'eli_clickid', label: 'Eli Click ID', default: true },
       { key: 'rt_clickid', label: 'RT Click ID', default: true },
+      { key: 'rdt_cid', label: 'RDT_CID (Reddit)', default: false },
       { key: 'location', label: 'Location', default: true },
       { key: 'device', label: 'Device', default: true },
       { key: 'landing_page', label: 'Landing Page', default: true },
@@ -249,6 +250,7 @@
     const cellRenderers = {
       eli_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + escapeHtml(v.eli_clickid || '-') + '</td>',
       rt_clickid: (v) => '<td style="font-family:monospace;font-size:11px;">' + escapeHtml(v.rt_clickid || '-') + '</td>',
+      rdt_cid: (v) => '<td style="font-family:monospace;font-size:11px;color:' + (v.rdt_cid ? '#0a0' : '#999') + ';">' + escapeHtml(v.rdt_cid || '-') + '</td>',
       location: (v) => '<td>' + escapeHtml([v.city, v.country].filter(Boolean).join(', ') || '-') + '</td>',
       device: (v) => '<td><span class="badge badge-gray">' + escapeHtml(v.device_type || '-') + '</span></td>',
       landing_page: (v) => '<td>' + escapeHtml(v.landing_page || '-') + '</td>',
@@ -373,8 +375,11 @@
       document.getElementById('visitorDetails').innerHTML = `
         <table style="width: 100%;">
           <tr><td><strong>Eli Click ID</strong></td><td style="font-family:monospace;">${v.eli_clickid || '-'}</td></tr>
-          <tr><td><strong>GCLID</strong></td><td>${v.gclid || '-'}</td></tr>
-          <tr><td><strong>RT Click ID</strong></td><td>${v.rt_clickid || '-'}</td></tr>
+          <tr><td><strong>GCLID</strong></td><td style="font-family:monospace;font-size:11px;">${v.gclid || '-'}</td></tr>
+          <tr><td><strong>MSCLKID</strong></td><td style="font-family:monospace;font-size:11px;">${v.msclkid || '-'}</td></tr>
+          <tr><td><strong>FBCLID</strong></td><td style="font-family:monospace;font-size:11px;">${v.fbclid || '-'}</td></tr>
+          <tr><td><strong>RDT_CID (Reddit)</strong></td><td style="font-family:monospace;font-size:11px;color:${v.rdt_cid ? '#0a0' : '#999'};">${v.rdt_cid || '-'}</td></tr>
+          <tr><td><strong>RT Click ID</strong></td><td style="font-family:monospace;font-size:11px;">${v.rt_clickid || '-'}</td></tr>
           <tr><td colspan="2" style="padding-top:15px;"><strong>Location & Network</strong></td></tr>
           <tr><td><strong>IP Address</strong></td><td>${v.ip_address || '-'}</td></tr>
           <tr><td><strong>City</strong></td><td>${v.city || '-'}</td></tr>
