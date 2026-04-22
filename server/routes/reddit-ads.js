@@ -543,7 +543,8 @@ router.post('/capi/events/:id/retry', authenticateToken, async (req, res) => {
  */
 router.post('/capi/sync', authenticateToken, async (req, res) => {
   if (!_syncRedditCapi) return res.status(503).json({ error: 'Sync service not loaded yet' });
-  const stats = await _syncRedditCapi();
+  const hours = req.query.hours || req.body?.hours || 2;
+  const stats = await _syncRedditCapi(hours);
   res.json(stats);
 });
 

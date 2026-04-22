@@ -40,7 +40,7 @@ const { sendRedditEvent } = require('../routes/reddit-ads');
  *
  * Returns { scanned, sent, failed, skipped, blocked }.
  */
-async function syncRedditCapi() {
+async function syncRedditCapi(hoursLookback = 2) {
   const redditConfig = db.prepare('SELECT * FROM reddit_ads_config WHERE id=1').get();
   if (!redditConfig || !redditConfig.pixel_id || !redditConfig.capi_access_token) {
     return { scanned: 0, sent: 0, failed: 0, skipped: 0, blocked: 0, reason: 'reddit_capi_not_configured' };
@@ -52,7 +52,8 @@ async function syncRedditCapi() {
   }
   const eventMap = Object.fromEntries(mappings.map(m => [m.redtrack_event_name.toLowerCase(), m]));
 
-  const fromIso = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+  const hours = Math.min(Math.max(parseFloat(hoursLookback) || 2, 1), 168);
+  const fromIso = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const toIso = new Date().toISOString();
 
   let conversions;
@@ -63,21 +64,25 @@ async function syncRedditCapi() {
     return { scanned: 0, sent: 0, failed: 0, skipped: 0, blocked: 0, reason: 'redtrack_fetch_failed', error: err.message };
   }
 
-  const stats = { scanned: conversions.length, sent: 0, failed: 0, skipped: 0, blocked: 0 };
+  const stats = {
+    scanned: conversions.length, sent: 0, failed: 0, skipped: 0, blocked: 0, window_hours: hours,
+    skip_reasons: { no_mapping: 0, no_visitor_match: 0, no_rdt_cid: 0, already_sent: 0 }
+  };
 
   for (const conv of conversions) {
     try {
       const mapping = eventMap[String(conv.type).toLowerCase()];
-      if (!mapping) { stats.skipped++; continue; }
+      if (!mapping) { stats.skipped++; stats.skip_reasons.no_mapping++; continue; }
 
       const visitor = db.prepare('SELECT * FROM visitors WHERE rt_clickid = ?').get(conv.clickid);
-      if (!visitor || !visitor.rdt_cid) { stats.skipped++; continue; }
+      if (!visitor) { stats.skipped++; stats.skip_reasons.no_visitor_match++; continue; }
+      if (!visitor.rdt_cid) { stats.skipped++; stats.skip_reasons.no_rdt_cid++; continue; }
 
       const existing = db.prepare(`
         SELECT id FROM conversion_events
         WHERE source='reddit_capi' AND redtrack_conversion_id = ? AND status='sent'
       `).get(String(conv.id));
-      if (existing) { stats.skipped++; continue; }
+      if (existing) { stats.skipped++; stats.skip_reasons.already_sent++; continue; }
 
       const lead = db.prepare('SELECT id, email, phone, is_blocked FROM leads WHERE eli_clickid = ?').get(visitor.eli_clickid);
 
