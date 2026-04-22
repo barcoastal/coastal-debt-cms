@@ -57,6 +57,8 @@ router.get('/config', authenticateToken, (req, res) => {
     pixel_id: config.pixel_id || '',
     has_capi_access_token: !!config.capi_access_token,
     capi_access_token: config.capi_access_token ? '••••' + config.capi_access_token.slice(-6) : null,
+    capi_access_token_length: config.capi_access_token ? config.capi_access_token.length : 0,
+    capi_access_token_starts: config.capi_access_token ? config.capi_access_token.slice(0, 20) : null,
     capi_test_id: config.capi_test_id || '',
     connected_at: config.connected_at
   });
