@@ -74,7 +74,15 @@ async function syncRedditCapi(hoursLookback = 2) {
       const mapping = eventMap[String(conv.type).toLowerCase()];
       if (!mapping) { stats.skipped++; stats.skip_reasons.no_mapping++; continue; }
 
-      const visitor = db.prepare('SELECT * FROM visitors WHERE rt_clickid = ?').get(conv.clickid);
+      // Find visitor: try visitors.rt_clickid first, then fall back to leads.rt_clickid → visitor via eli_clickid
+      let visitor = db.prepare('SELECT * FROM visitors WHERE rt_clickid = ?').get(conv.clickid);
+      let leadByRt = null;
+      if (!visitor) {
+        leadByRt = db.prepare('SELECT * FROM leads WHERE rt_clickid = ?').get(conv.clickid);
+        if (leadByRt && leadByRt.eli_clickid) {
+          visitor = db.prepare('SELECT * FROM visitors WHERE eli_clickid = ?').get(leadByRt.eli_clickid);
+        }
+      }
       if (!visitor) { stats.skipped++; stats.skip_reasons.no_visitor_match++; continue; }
       if (!visitor.rdt_cid) { stats.skipped++; stats.skip_reasons.no_rdt_cid++; continue; }
 
