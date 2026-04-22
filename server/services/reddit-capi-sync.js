@@ -74,8 +74,13 @@ async function syncRedditCapi(hoursLookback = 2) {
       const mapping = eventMap[String(conv.type).toLowerCase()];
       if (!mapping) { stats.skipped++; stats.skip_reasons.no_mapping++; continue; }
 
-      // Find visitor: try visitors.rt_clickid first, then fall back to leads.rt_clickid → visitor via eli_clickid
-      let visitor = db.prepare('SELECT * FROM visitors WHERE rt_clickid = ?').get(conv.clickid);
+      // Find visitor. If multiple rows share rt_clickid, prefer the one with rdt_cid set.
+      let visitor = db.prepare(`
+        SELECT * FROM visitors
+        WHERE rt_clickid = ?
+        ORDER BY CASE WHEN rdt_cid IS NOT NULL AND rdt_cid != '' THEN 0 ELSE 1 END, last_visit DESC
+        LIMIT 1
+      `).get(conv.clickid);
       let leadByRt = null;
       if (!visitor) {
         leadByRt = db.prepare('SELECT * FROM leads WHERE rt_clickid = ?').get(conv.clickid);
@@ -88,11 +93,24 @@ async function syncRedditCapi(hoursLookback = 2) {
       // Load full lead (we need rdt_cid fallback + PII for hashing)
       const lead = db.prepare('SELECT * FROM leads WHERE eli_clickid = ?').get(visitor.eli_clickid) || leadByRt;
 
-      // rdt_cid can live on visitor (from /api/visitors/track) OR lead (from form submission)
+      // rdt_cid can live on visitor (from /api/visitors/track) OR lead (from form submission).
+      // Also check other visitor rows that share this eli_clickid (if somehow split).
       if (!visitor.rdt_cid && lead?.rdt_cid) {
         visitor = { ...visitor, rdt_cid: lead.rdt_cid };
       }
-      if (!visitor.rdt_cid) { stats.skipped++; stats.skip_reasons.no_rdt_cid++; continue; }
+      if (!visitor.rdt_cid) {
+        const sibling = db.prepare(`SELECT rdt_cid FROM visitors WHERE eli_clickid = ? AND rdt_cid IS NOT NULL AND rdt_cid != '' LIMIT 1`).get(visitor.eli_clickid);
+        if (sibling?.rdt_cid) visitor = { ...visitor, rdt_cid: sibling.rdt_cid };
+      }
+      if (!visitor.rdt_cid) {
+        stats.skipped++;
+        stats.skip_reasons.no_rdt_cid++;
+        if (!stats.skip_samples) stats.skip_samples = { no_rdt_cid: [] };
+        if (stats.skip_samples.no_rdt_cid.length < 5) {
+          stats.skip_samples.no_rdt_cid.push({ conv_id: String(conv.id), rt_clickid: conv.clickid, eli_clickid: visitor.eli_clickid, type: conv.type });
+        }
+        continue;
+      }
 
       const existing = db.prepare(`
         SELECT id FROM conversion_events
