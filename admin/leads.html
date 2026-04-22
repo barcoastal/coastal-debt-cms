@@ -372,6 +372,7 @@
       { key: 'platform', label: 'Source', default: true },
       { key: 'gclid', label: 'GCLID', default: false },
       { key: 'rt_clickid', label: 'RT Click ID', default: false },
+      { key: 'rdt_cid', label: 'RDT_CID (Reddit)', default: true },
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'fbclid', label: 'FB Click ID', default: false },
       { key: 'msclkid', label: 'MS Click ID', default: false },
@@ -399,6 +400,7 @@
       platform: (lead) => '<td><span class="badge badge-blue">' + escapeHtml(lead.platform || '-') + '</span></td>',
       gclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.gclid) + '">' + escapeHtml(lead.gclid || '-') + '</td>',
       rt_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.rt_clickid) + '">' + escapeHtml(lead.rt_clickid || '-') + '</td>',
+      rdt_cid: (lead) => '<td class="clickid-cell" style="color:' + (lead.rdt_cid ? '#0a0' : '#999') + ';" title="' + escapeHtml(lead.rdt_cid) + '">' + escapeHtml(lead.rdt_cid || '-') + '</td>',
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid) + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid) + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
       msclkid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.msclkid) + '">' + escapeHtml(lead.msclkid || '-') + '</td>',
@@ -571,7 +573,7 @@
       const hf = lead.hidden_fields || {};
 
       const trackingIds = [
-        ['GCLID', lead.gclid], ['RT Click ID', lead.rt_clickid], ['Eli Click ID', lead.eli_clickid],
+        ['GCLID', lead.gclid], ['RT Click ID', lead.rt_clickid], ['RDT_CID (Reddit)', lead.rdt_cid], ['Eli Click ID', lead.eli_clickid],
         ['FB Click ID', lead.fbclid], ['MS Click ID', lead.msclkid]
       ].filter(([, v]) => v && v !== '-');
 
