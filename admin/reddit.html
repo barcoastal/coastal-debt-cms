@@ -283,6 +283,7 @@
             <option value="168">7 days (max backfill)</option>
           </select>
           <button id="syncCapiBtn" class="btn btn-primary">Sync now</button>
+          <button id="testCapiBtn" class="btn btn-secondary">Test Connection</button>
         </div>
         <pre id="syncCapiResult" style="margin-top:12px;background:#f5f5f5;padding:12px;border-radius:4px;display:none;font-size:12px;"></pre>
       </div>
@@ -579,6 +580,18 @@
     });
 
     loadCapiMappings();
+
+    document.getElementById('testCapiBtn').addEventListener('click', async () => {
+      const resultEl = document.getElementById('syncCapiResult');
+      resultEl.style.display = 'block';
+      resultEl.textContent = 'Sending test event…';
+      try {
+        const data = await api('/api/reddit-ads/capi/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ reddit_event_type: 'Lead', rdt_cid: 'capi_test_' + Date.now(), payout: 5 }) });
+        resultEl.textContent = (data.success ? '✅ CAPI WORKING — Reddit accepted test event\n\n' : '❌ CAPI FAILED\n\n') + JSON.stringify(data, null, 2);
+      } catch (err) {
+        resultEl.textContent = '❌ Error: ' + err.message;
+      }
+    });
 
     document.getElementById('syncCapiBtn').addEventListener('click', async () => {
       const resultEl = document.getElementById('syncCapiResult');
