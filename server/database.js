@@ -1272,6 +1272,33 @@ if (!obFormExists) {
   }
 }
 
+// Seed a Rich template demo page so the new template is viewable immediately
+{
+  const exists = db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get('rich-mca-debt-relief');
+  if (!exists) {
+    const fbForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
+    const formId = fbForm ? fbForm.id : null;
+    const content = JSON.stringify({
+      pageTitle: "MCA Debt Relief & Restructuring | Coastal Debt",
+      metaDescription: "Coastal Debt Resolve offers professional MCA debt relief services, including restructuring and settlement, helping businesses regain control of their cash flow.",
+      headline: "MCA Debt Relief Services",
+      subheadline: "Don't let MCA debt control your business. Coastal Debt Resolve empowers small businesses to reclaim control of their cash flow.",
+      phone: "(888) 961-5338",
+      formTitle: "Book A Free Consultation",
+      formButton: "See if you Qualify"
+    });
+    try {
+      db.prepare(`
+        INSERT INTO landing_pages (slug, name, platform, traffic_source, form_id, content, sections_visible, hidden_fields, template_type)
+        VALUES (?, ?, 'google', 'Google Ads - Rich Template Demo', ?, ?, '{}', '{}', 'rich')
+      `).run('rich-mca-debt-relief', 'Rich MCA Debt Relief (Demo)', formId, content);
+      console.log('Rich template demo landing page created: rich-mca-debt-relief');
+    } catch (e) {
+      console.error('Rich demo seed error:', e.message);
+    }
+  }
+}
+
 // Seed article: MCA Debt Relief (Facebook/Social)
 {
   const obForm = db.prepare("SELECT id FROM forms WHERE name = 'Outbrain Business Debt Form'").get();
