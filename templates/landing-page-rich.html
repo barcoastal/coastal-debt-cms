@@ -630,4 +630,62 @@ document.querySelectorAll('.wg-element-wrapper.sw1 [lang]').forEach((link)=>{
 document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 <script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=www.coastaldebt.com&cookieduration=90&defaultcampaignid=685425cdc6ecfb983788b92c&regviewonce=false"></script><script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=www.coastaldebt.com&cookieduration=90&defaultcampaignid=69691189263277b0f1870536&regviewonce=false"></script>{{BODY_SCRIPTS}}
+<script>
+// Override Webflow's form hijacking — submit leads to the CMS /api/leads endpoint
+(function () {
+  function wire() {
+    var form = document.getElementById('lpForm');
+    if (!form) { return setTimeout(wire, 100); }
+    var successEl = document.querySelector('.form_message-success');
+    var errorEl = document.querySelector('.form_message-error');
+    var submitBtn = document.getElementById('formSubmit');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.value = 'Please wait...'; }
+
+      var fd = new FormData(form);
+      var body = {};
+      fd.forEach(function (v, k) { body[k] = v; });
+
+      // Normalize field names for /api/leads
+      if (body['First-Name']) body.first_name = body['First-Name'];
+      if (body['Last-Name']) body.last_name = body['Last-Name'];
+      if (body['Company']) body.company_name = body['Company'];
+      if (body['Email']) body.email = body['Email'];
+      if (body['Phone']) body.phone = body['Phone'];
+      if (body['Debt-amount']) body.debt_amount = body['Debt-amount'];
+
+      try {
+        var res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (res.ok) {
+          form.style.display = 'none';
+          if (successEl) successEl.style.display = 'block';
+          if (errorEl) errorEl.style.display = 'none';
+        } else {
+          if (errorEl) {
+            errorEl.style.display = 'block';
+            var errTxt = errorEl.querySelector('div');
+            if (errTxt) errTxt.textContent = (data.error || 'Submission failed. Please try again.');
+          } else {
+            alert(data.error || 'Submission failed');
+          }
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.value = 'See if you Qualify'; }
+        }
+      } catch (err) {
+        if (errorEl) errorEl.style.display = 'block';
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.value = 'See if you Qualify'; }
+      }
+    }, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
 </body></html>
