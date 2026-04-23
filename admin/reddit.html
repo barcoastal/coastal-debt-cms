@@ -288,6 +288,24 @@
         <pre id="syncCapiResult" style="margin-top:12px;background:#f5f5f5;padding:12px;border-radius:4px;display:none;font-size:12px;"></pre>
       </div>
 
+      <!-- Reddit CAPI — Events by Ad -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+          <h3 class="card-title">Reddit CAPI — Events by Ad</h3>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          <label style="font-size:13px;">Days:</label>
+          <select id="eventsByAdDays" style="padding:6px;">
+            <option value="1">Today</option>
+            <option value="7" selected>Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+          <button id="loadEventsByAdBtn" class="btn">Refresh</button>
+        </div>
+        <div id="eventsByAdTableWrap" style="overflow-x:auto;"></div>
+      </div>
+
       <!-- Reddit CAPI — Recent Events -->
       <div class="card" style="margin-top:24px;">
         <div class="card-header">
@@ -580,6 +598,44 @@
     });
 
     loadCapiMappings();
+
+    async function loadEventsByAd() {
+      const days = document.getElementById('eventsByAdDays').value;
+      const wrap = document.getElementById('eventsByAdTableWrap');
+      wrap.innerHTML = 'Loading…';
+      try {
+        const data = await api('/api/reddit-ads/capi/events-by-ad?days=' + days);
+        const rows = data.rows || [];
+        if (rows.length === 0) { wrap.innerHTML = '<p style="color:#999;">No CAPI events in this period.</p>'; return; }
+        const allEventNames = new Set();
+        rows.forEach(r => Object.keys(r.events).forEach(e => allEventNames.add(e)));
+        const eventCols = [...allEventNames].sort();
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="text-align:left;border-bottom:1px solid #ddd;">';
+        html += '<th style="padding:8px;">Ad</th><th style="padding:8px;">Ad Group</th>';
+        eventCols.forEach(e => html += `<th style="padding:8px;"><code>${e}</code></th>`);
+        html += '<th style="padding:8px;">Total</th><th style="padding:8px;">Sent</th><th style="padding:8px;">Failed</th></tr></thead><tbody>';
+        rows.forEach(r => {
+          html += '<tr style="border-bottom:1px solid #eee;">';
+          html += `<td style="padding:8px;">${r.ad_name || '—'}</td>`;
+          html += `<td style="padding:8px;color:#888;">${r.adgroup_name || '—'}</td>`;
+          eventCols.forEach(e => {
+            const n = r.events[e] || 0;
+            html += `<td style="padding:8px;color:${n > 0 ? '#0a0' : '#ccc'};">${n}</td>`;
+          });
+          html += `<td style="padding:8px;font-weight:600;">${r.total_events}</td>`;
+          html += `<td style="padding:8px;color:#0a0;">${r.sent}</td>`;
+          html += `<td style="padding:8px;color:${r.failed > 0 ? '#c00' : '#ccc'};">${r.failed}</td>`;
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+      } catch (err) {
+        wrap.innerHTML = '<p style="color:#c00;">Error: ' + err.message + '</p>';
+      }
+    }
+    document.getElementById('loadEventsByAdBtn').addEventListener('click', loadEventsByAd);
+    document.getElementById('eventsByAdDays').addEventListener('change', loadEventsByAd);
+    loadEventsByAd();
 
     document.getElementById('testCapiBtn').addEventListener('click', async () => {
       const resultEl = document.getElementById('syncCapiResult');

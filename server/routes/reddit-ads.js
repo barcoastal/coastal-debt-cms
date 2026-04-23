@@ -508,6 +508,43 @@ router.get('/capi/events', authenticateToken, (req, res) => {
 });
 
 /**
+ * GET /capi/events-by-ad — per-ad × per-event-name breakdown from our own data
+ * Query: ?days=7 (default 7)
+ * Uses leads.hidden_fields.sub7 (ad name) + sub5 (adgroup name) from Reddit URL macros.
+ * Returns: [{ ad_name, adgroup_name, events: { call_lead: N, lead: N, ... }, total_events }]
+ */
+router.get('/capi/events-by-ad', authenticateToken, (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days) || 7, 1), 180);
+  const rows = db.prepare(`
+    SELECT ce.conversion_action_name AS event_name,
+           ce.status,
+           l.hidden_fields
+    FROM conversion_events ce
+    LEFT JOIN leads l ON ce.lead_id = l.id
+    WHERE ce.source = 'reddit_capi'
+      AND ce.created_at >= datetime('now', '-' || ? || ' days')
+  `).all(days);
+
+  const byAd = {};
+  for (const r of rows) {
+    let hf = {};
+    try { hf = r.hidden_fields ? JSON.parse(r.hidden_fields) : {}; } catch (_) {}
+    const adName = hf.sub7 || hf.ad_name || hf.utm_content || '(unknown)';
+    const adgroupName = hf.sub5 || hf.adgroup_name || '(unknown)';
+    const key = adName + '|||' + adgroupName;
+    if (!byAd[key]) byAd[key] = { ad_name: adName, adgroup_name: adgroupName, events: {}, total_events: 0, sent: 0, failed: 0 };
+    const e = r.event_name || 'unknown';
+    byAd[key].events[e] = (byAd[key].events[e] || 0) + 1;
+    byAd[key].total_events++;
+    if (r.status === 'sent') byAd[key].sent++;
+    else if (r.status === 'failed') byAd[key].failed++;
+  }
+
+  const result = Object.values(byAd).sort((a, b) => b.total_events - a.total_events);
+  res.json({ days, rows: result });
+});
+
+/**
  * POST /capi/events/:id/retry — retry a failed event
  */
 router.post('/capi/events/:id/retry', authenticateToken, async (req, res) => {
