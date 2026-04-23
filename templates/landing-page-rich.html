@@ -631,11 +631,61 @@ document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 <script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=www.coastaldebt.com&cookieduration=90&defaultcampaignid=685425cdc6ecfb983788b92c&regviewonce=false"></script><script src="https://click.coastaldebt.com/uniclick.js?attribution=lastpaid&cookiedomain=www.coastaldebt.com&cookieduration=90&defaultcampaignid=69691189263277b0f1870536&regviewonce=false"></script>{{BODY_SCRIPTS}}
 <script>
+// Affiliate tracking: capture aff / click_id / sub1-5 from URL, persist 30 days
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var tracked = ['aff', 'click_id', 'clickid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid'];
+    tracked.forEach(function (k) {
+      var v = params.get(k);
+      if (v) {
+        try {
+          localStorage.setItem('aff_' + k, v);
+          localStorage.setItem('aff_' + k + '_ts', String(Date.now()));
+        } catch (e) {}
+      }
+    });
+  } catch (e) {}
+})();
+
 // Override Webflow's form hijacking — submit leads to the CMS /api/leads endpoint
 (function () {
   function wire() {
     var form = document.getElementById('lpForm');
     if (!form) { return setTimeout(wire, 100); }
+
+    // Inject affiliate tracking hidden inputs into the form
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var tracked = ['aff', 'affiliate_id', 'click_id', 'clickid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid'];
+      tracked.forEach(function (k) {
+        var v = params.get(k);
+        if (!v) {
+          try {
+            var ts = parseInt(localStorage.getItem('aff_' + k + '_ts') || '0', 10);
+            if (ts && Date.now() - ts < 30 * 24 * 60 * 60 * 1000) {
+              v = localStorage.getItem('aff_' + k);
+            }
+          } catch (e) {}
+        }
+        if (v && !form.querySelector('[name="' + k + '"]')) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = k;
+          input.value = v;
+          form.appendChild(input);
+        }
+      });
+      // Normalize "aff" -> "affiliate_id" if missing (lead route stores via hidden_fields rest)
+      var affEl = form.querySelector('[name="aff"]');
+      if (affEl && !form.querySelector('[name="affiliate_id"]')) {
+        var aff2 = document.createElement('input');
+        aff2.type = 'hidden';
+        aff2.name = 'affiliate_id';
+        aff2.value = affEl.value;
+        form.appendChild(aff2);
+      }
+    } catch (e) {}
     var successEl = document.querySelector('.form_message-success');
     var errorEl = document.querySelector('.form_message-error');
     var submitBtn = document.getElementById('formSubmit');

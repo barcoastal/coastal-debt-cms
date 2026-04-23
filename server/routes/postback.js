@@ -16,6 +16,7 @@ let uploadConversion = null;
 let sendFacebookEvent = null;
 let uploadBingConversion = null;
 let sendTikTokEvent = null;
+let fireAffiliatePostback = null;
 setTimeout(() => {
   try {
     uploadConversion = require('./google-ads').uploadConversion;
@@ -36,6 +37,11 @@ setTimeout(() => {
     sendTikTokEvent = require('./tiktok-leads').sendTikTokEvent;
   } catch (e) {
     console.log('TikTok module not loaded yet');
+  }
+  try {
+    fireAffiliatePostback = require('./affiliate-leads').fireAffiliatePostback;
+  } catch (e) {
+    console.log('Affiliate leads module not loaded yet');
   }
 }, 0);
 
@@ -354,6 +360,16 @@ router.all('/conversion', async (req, res) => {
     WHERE id = ?
   `).run(event, new Date().toISOString(), lead.id);
 
+  // Fire affiliate postback (out) if lead came from an affiliate with a configured postback URL
+  let affiliatePostback = null;
+  if (fireAffiliatePostback) {
+    try {
+      const freshLead = db.prepare('SELECT * FROM leads WHERE id = ?').get(lead.id);
+      const payoutCents = revenue ? Math.round(parseFloat(revenue) * 100) : undefined;
+      affiliatePostback = await fireAffiliatePostback(freshLead, event, payoutCents);
+    } catch (e) { affiliatePostback = { sent: false, error: e.message }; }
+  }
+
   // Update Salesforce tracking fields if provided
   const sfFields = [];
   const sfParams = [];
@@ -378,7 +394,8 @@ router.all('/conversion', async (req, res) => {
     google_ads_configured: !!(config && config.conversion_action_id),
     facebook_capi_sent: fbResult?.success || false,
     tiktok_capi_sent: ttResult?.success || false,
-    bing_ads_sent: bingResult?.success || false
+    bing_ads_sent: bingResult?.success || false,
+    affiliate_postback: affiliatePostback
   });
 });
 

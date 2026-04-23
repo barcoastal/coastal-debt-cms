@@ -35,6 +35,7 @@ const deepAnalysisRoutes = require('./routes/deep-analysis');
 const inboxRoutes = require('./routes/inbox');
 const engagementRoutes = require('./routes/engagement');
 const affiliateLeadsRoutes = require('./routes/affiliate-leads');
+const affiliatePortalRoutes = require('./routes/affiliate-portal');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -75,6 +76,14 @@ app.use('/assets', express.static(path.join(__dirname, '..', 'public', 'assets')
   maxAge: '7d',
   etag: true
 }));
+
+// Serve affiliate portal static pages
+app.use('/affiliate', (req, res, next) => {
+  if (req.path.endsWith('.html') || req.path === '/' || req.path === '') {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+  next();
+}, express.static(path.join(__dirname, '..', 'public', 'affiliate'), { maxAge: 0, etag: false }));
 
 // Serve uploaded files from persistent volume (survives Railway deploys)
 const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
@@ -230,6 +239,7 @@ app.use('/api/deep-analysis', deepAnalysisRoutes);
 app.use('/api/inbox', inboxRoutes);
 app.use('/api/engagement', engagementRoutes);
 app.use('/api/affiliate-leads', affiliateLeadsRoutes);
+app.use('/api/affiliate', affiliatePortalRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)

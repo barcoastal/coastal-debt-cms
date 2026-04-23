@@ -178,9 +178,15 @@
       <!-- API keys -->
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h3 style="margin:0;">API Keys</h3>
-          <button class="btn btn-primary" onclick="showModal('createKeyModal')">+ New Key</button>
+          <h3 style="margin:0;">Affiliates</h3>
+          <button class="btn btn-primary" onclick="showModal('createKeyModal')">+ New Affiliate</button>
         </div>
+        <p style="color:var(--gray-500);font-size:0.85rem;margin:0 0 12px;">
+          Each affiliate has an API key (for sending us leads), an optional postback URL (for receiving conversions),
+          and an optional login PIN (for access to their portal at <code>/affiliate/</code>).
+          Postback URL supports <code>{clickid}</code>, <code>{sub1}</code>, <code>{sub2}</code>, <code>{sub3}</code>,
+          <code>{payout}</code>, <code>{event}</code>.
+        </p>
         <div class="table-container">
           <table>
             <thead>
@@ -188,13 +194,14 @@
                 <th>Label</th>
                 <th>Affiliate ID</th>
                 <th>API Key</th>
+                <th>Postback URL</th>
+                <th>Portal PIN</th>
                 <th>Status</th>
                 <th>Last Used</th>
-                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="keysTable"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+            <tbody id="keysTable"><tr><td colspan="8" class="loading"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -219,14 +226,15 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Company</th>
                 <th>Debt</th>
-                <th>MCA</th>
-                <th>Sub ID</th>
+                <th>Click ID</th>
+                <th>Sub1</th>
+                <th>Sub2</th>
+                <th>Sub3</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="leadsTable"><tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr></tbody>
+            <tbody id="leadsTable"><tr><td colspan="11" class="loading"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -237,7 +245,7 @@
   <div class="modal-overlay" id="createKeyModal">
     <div class="modal">
       <div class="modal-header">
-        <h2>New Affiliate API Key</h2>
+        <h2>New Affiliate</h2>
         <button class="modal-close" onclick="hideModal('createKeyModal')">&times;</button>
       </div>
       <form id="createKeyForm">
@@ -251,12 +259,73 @@
           <small style="color:var(--gray-500);">Unique short identifier. Lowercase, hyphens/underscores only.</small>
         </div>
         <div class="form-group">
+          <label>Email (optional)</label>
+          <input type="email" id="keyEmail" placeholder="contact@affiliate.com">
+        </div>
+        <div class="form-group">
+          <label>Portal Login PIN (optional)</label>
+          <input type="text" id="keyPin" placeholder="Any short string they'll use to log in">
+          <small style="color:var(--gray-500);">Set this to let the affiliate log in at <code>/affiliate/</code>.</small>
+        </div>
+        <div class="form-group">
+          <label>Postback URL Template (optional)</label>
+          <input type="url" id="keyPostbackUrl" placeholder="https://affiliate.com/postback?clickid={clickid}&payout={payout}&sub1={sub1}">
+          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1}, {sub2}, {sub3}, {sub4}, {sub5}, {payout}, {event}</small>
+        </div>
+        <div class="form-group">
+          <label>Default Payout (cents, optional)</label>
+          <input type="number" id="keyPayoutCents" placeholder="3000" min="0">
+          <small style="color:var(--gray-500);">e.g. 3000 = $30.00 fires as {payout} when no revenue on the event.</small>
+        </div>
+        <div class="form-group">
           <label>Notes (optional)</label>
-          <textarea id="keyNotes" rows="3" placeholder="Contact email, payout terms, etc." style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;"></textarea>
+          <textarea id="keyNotes" rows="2" placeholder="Contact, payout terms, etc." style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;"></textarea>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="hideModal('createKeyModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Key</button>
+          <button type="submit" class="btn btn-primary">Create Affiliate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Key Modal -->
+  <div class="modal-overlay" id="editKeyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Edit Affiliate</h2>
+        <button class="modal-close" onclick="hideModal('editKeyModal')">&times;</button>
+      </div>
+      <form id="editKeyForm">
+        <input type="hidden" id="editKeyId">
+        <div class="form-group">
+          <label>Label</label>
+          <input type="text" id="editKeyLabel">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="editKeyEmail">
+        </div>
+        <div class="form-group">
+          <label>Portal Login PIN</label>
+          <input type="text" id="editKeyPin">
+        </div>
+        <div class="form-group">
+          <label>Postback URL Template</label>
+          <input type="url" id="editKeyPostbackUrl">
+          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1}, {sub2}, {sub3}, {sub4}, {sub5}, {payout}, {event}</small>
+        </div>
+        <div class="form-group">
+          <label>Default Payout (cents)</label>
+          <input type="number" id="editKeyPayoutCents" min="0">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="editKeyNotes" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('editKeyModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
         </div>
       </form>
     </div>
@@ -307,25 +376,29 @@
       alert('Zapier webhook saved.');
     }
 
+    let keysCache = [];
     async function loadKeys() {
       const res = await fetch('/api/affiliate-leads/keys');
       const j = await res.json();
+      keysCache = j.keys || [];
       const tbody = document.getElementById('keysTable');
       const filter = document.getElementById('affiliateFilter');
       filter.innerHTML = '<option value="">All Affiliates</option>';
       if (!j.keys.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No keys yet. Create one to get started.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No affiliates yet. Create one to get started.</td></tr>';
         return;
       }
       tbody.innerHTML = j.keys.map(k => `
         <tr>
-          <td><strong>${escapeHtml(k.label)}</strong>${k.notes ? `<div style="font-size:11px;color:var(--gray-500);">${escapeHtml(k.notes)}</div>` : ''}</td>
+          <td><strong>${escapeHtml(k.label)}</strong>${k.email ? `<div style="font-size:11px;color:var(--gray-500);">${escapeHtml(k.email)}</div>` : ''}${k.notes ? `<div style="font-size:11px;color:var(--gray-500);">${escapeHtml(k.notes)}</div>` : ''}</td>
           <td><code style="font-size:11px;">${escapeHtml(k.affiliate_id)}</code></td>
-          <td style="font-family:monospace;font-size:11px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(k.api_key)}">${escapeHtml(k.api_key.slice(0, 16))}...<button class="btn btn-small btn-secondary" style="margin-left:8px;padding:2px 6px;" onclick="copyText('${escapeHtml(k.api_key)}')">Copy</button></td>
+          <td style="font-family:monospace;font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(k.api_key)}">${escapeHtml(k.api_key.slice(0, 14))}...<button class="btn btn-small btn-secondary" style="margin-left:8px;padding:2px 6px;" onclick="copyText('${escapeHtml(k.api_key)}')">Copy</button></td>
+          <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(k.postback_url_template || '')}">${k.postback_url_template ? escapeHtml(k.postback_url_template.slice(0, 40)) + '…' : '<span style="color:var(--gray-400);">not set</span>'}</td>
+          <td style="font-size:12px;">${k.login_pin ? '<span class="badge badge-green">Set</span>' : '<span class="badge badge-gray">None</span>'}</td>
           <td><span class="badge ${k.is_active ? 'badge-green' : 'badge-gray'}">${k.is_active ? 'Active' : 'Revoked'}</span></td>
           <td style="font-size:11px;color:var(--gray-500);">${k.last_used_at ? formatDate(k.last_used_at) : 'Never'}</td>
-          <td style="font-size:11px;color:var(--gray-500);">${formatDate(k.created_at)}</td>
           <td class="actions">
+            <button class="action-btn action-btn-edit" onclick="openEditKey(${k.id})">Edit</button>
             ${k.is_active
               ? `<button class="action-btn action-btn-delete" onclick="toggleKey(${k.id}, 0)">Revoke</button>`
               : `<button class="action-btn action-btn-edit" onclick="toggleKey(${k.id}, 1)">Reactivate</button>`}
@@ -337,6 +410,37 @@
         filter.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(k.affiliate_id)}">${escapeHtml(k.label)}</option>`);
       }
     }
+
+    function openEditKey(id) {
+      const k = keysCache.find(x => x.id === id);
+      if (!k) return;
+      document.getElementById('editKeyId').value = k.id;
+      document.getElementById('editKeyLabel').value = k.label || '';
+      document.getElementById('editKeyEmail').value = k.email || '';
+      document.getElementById('editKeyPin').value = k.login_pin || '';
+      document.getElementById('editKeyPostbackUrl').value = k.postback_url_template || '';
+      document.getElementById('editKeyPayoutCents').value = k.default_payout_cents || '';
+      document.getElementById('editKeyNotes').value = k.notes || '';
+      showModal('editKeyModal');
+    }
+
+    document.getElementById('editKeyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editKeyId').value;
+      const data = {
+        label: document.getElementById('editKeyLabel').value,
+        email: document.getElementById('editKeyEmail').value,
+        login_pin: document.getElementById('editKeyPin').value,
+        postback_url_template: document.getElementById('editKeyPostbackUrl').value,
+        default_payout_cents: parseInt(document.getElementById('editKeyPayoutCents').value, 10) || 0,
+        notes: document.getElementById('editKeyNotes').value
+      };
+      try {
+        await api(`/api/affiliate-leads/keys/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+        hideModal('editKeyModal');
+        loadKeys();
+      } catch (err) { alert(err.message); }
+    });
 
     async function toggleKey(id, active) {
       await api(`/api/affiliate-leads/keys/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: active }) });
@@ -354,7 +458,11 @@
       const data = {
         label: document.getElementById('keyLabel').value,
         affiliate_id: document.getElementById('keyAffId').value,
-        notes: document.getElementById('keyNotes').value
+        notes: document.getElementById('keyNotes').value,
+        email: document.getElementById('keyEmail').value,
+        login_pin: document.getElementById('keyPin').value,
+        postback_url_template: document.getElementById('keyPostbackUrl').value,
+        default_payout_cents: parseInt(document.getElementById('keyPayoutCents').value, 10) || 0
       };
       try {
         const res = await fetch('/api/affiliate-leads/keys', {
@@ -380,7 +488,7 @@
       const j = await res.json();
       const tbody = document.getElementById('leadsTable');
       if (!j.leads.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No affiliate leads yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No affiliate leads yet.</td></tr>';
         return;
       }
       tbody.innerHTML = j.leads.map(l => {
@@ -393,17 +501,34 @@
             <td>${escapeHtml(l.full_name || ((l.first_name||'') + ' ' + (l.last_name||'')).trim() || '-')}</td>
             <td>${escapeHtml(l.email || '-')}</td>
             <td>${escapeHtml(l.phone || '-')}</td>
-            <td>${escapeHtml(l.company_name || '-')}</td>
             <td>${escapeHtml(l.debt_amount || '-')}</td>
-            <td>${escapeHtml(l.has_mca || '-')}</td>
-            <td>${escapeHtml(hf.sub_id || '-')}</td>
+            <td style="font-family:monospace;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(hf.click_id || hf.clickid || l.rt_clickid || '')}">${escapeHtml((hf.click_id || hf.clickid || l.rt_clickid || '-').slice(0, 16))}</td>
+            <td>${escapeHtml(hf.sub1 || '-')}</td>
+            <td>${escapeHtml(hf.sub2 || '-')}</td>
+            <td>${escapeHtml(hf.sub3 || '-')}</td>
             <td class="actions">
               <button class="action-btn action-btn-edit" onclick='showLead(${JSON.stringify(l)})'>View</button>
               <button class="action-btn action-btn-edit" onclick="resendLead(${l.id})">Resend</button>
+              <button class="action-btn action-btn-edit" onclick="firePostback(${l.id})">Fire PB</button>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    async function firePostback(leadId) {
+      const event = prompt('Event name (e.g. qualified, sold):', 'qualified');
+      if (!event) return;
+      const payoutStr = prompt('Payout in cents (blank = use affiliate default):', '');
+      const body = { event };
+      if (payoutStr) body.payout_cents = parseInt(payoutStr, 10) || 0;
+      try {
+        const res = await fetch(`/api/affiliate-leads/${leadId}/fire-postback`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const j = await res.json();
+        alert(JSON.stringify(j, null, 2));
+      } catch (err) { alert(err.message); }
     }
 
     function showLead(lead) {

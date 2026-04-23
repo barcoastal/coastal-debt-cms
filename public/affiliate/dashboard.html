@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Affiliate Dashboard | Coastal Debt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root { --primary:#3052FF; --bg:#F2F4F9; --gray-100:#f3f4f6; --gray-200:#e5e7eb; --gray-300:#d1d5db; --gray-500:#6b7280; --gray-800:#1f2937; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin:0; background:var(--bg); color:var(--gray-800); min-height:100vh; }
+  header { background:#fff; border-bottom:1px solid var(--gray-200); padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .brand { font-weight:700; font-size:18px; }
+  .brand span { color:var(--primary); }
+  .logout { background:none; border:1px solid var(--gray-300); padding:6px 14px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .logout:hover { background:var(--gray-100); }
+  main { max-width:1400px; margin:24px auto; padding:0 24px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px; }
+  .stat { background:#fff; padding:20px; border-radius:12px; border:1px solid var(--gray-200); }
+  .stat-label { color:var(--gray-500); font-size:12px; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:6px; }
+  .stat-value { font-size:28px; font-weight:700; }
+  .card { background:#fff; padding:20px 24px; border-radius:12px; border:1px solid var(--gray-200); margin-bottom:24px; }
+  .card h3 { margin:0 0 12px; font-size:16px; }
+  .card p { color:var(--gray-500); font-size:13px; margin:0 0 8px; }
+  code { background:var(--gray-100); padding:3px 8px; border-radius:4px; font-size:12px; word-break:break-all; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:10px 8px; background:var(--gray-100); font-weight:600; font-size:11px; text-transform:uppercase; color:var(--gray-500); white-space:nowrap; }
+  td { padding:10px 8px; border-bottom:1px solid var(--gray-200); }
+  tr:hover td { background:var(--gray-100); }
+  .badge { display:inline-block; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:500; }
+  .badge-green { background:#dcfce7; color:#166534; }
+  .badge-gray { background:var(--gray-200); color:var(--gray-500); }
+  .empty { color:var(--gray-500); padding:30px; text-align:center; }
+  .filter-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .filter-row input { padding:6px 10px; border:1px solid var(--gray-300); border-radius:6px; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Coastal Debt <span>Affiliates</span></div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="whoami" style="font-size:13px;color:var(--gray-500);"></span>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="card">
+    <h3>Integration</h3>
+    <p>Send leads to: <code id="submitUrl">https://leads.businessdebtinsider.com/api/affiliate-leads/submit</code></p>
+    <p>Include with each lead: <code>X-API-Key</code> header (contact us for your key)</p>
+    <p>Supported tracking params on the landing page URL:</p>
+    <code>?aff=YOUR_AFF_ID&click_id=XYZ&sub1=...&sub2=...&sub3=...</code>
+    <p style="margin-top:10px;">Your postback URL (fires on conversion): <code id="pbTemplate">not configured</code></p>
+  </div>
+
+  <div class="card">
+    <h3>Leads</h3>
+    <div class="filter-row">
+      <input type="text" id="search" placeholder="Search name / email / phone / sub..." oninput="renderLeads()">
+      <button class="logout" onclick="loadLeads()">Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Debt</th>
+            <th>MCA</th>
+            <th>Click ID</th>
+            <th>Sub1</th>
+            <th>Sub2</th>
+            <th>Sub3</th>
+            <th>Status</th>
+            <th>Events</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTable"><tr><td colspan="12" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+let allLeads = [];
+
+function fmtDate(s) { try { return new Date(s).toLocaleString(); } catch (e) { return s; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function loadMe() {
+  const res = await fetch('/api/affiliate/me', { credentials: 'include' });
+  if (!res.ok) { window.location.href = '/affiliate/'; return; }
+  const me = await res.json();
+  document.getElementById('whoami').textContent = me.label + ' (' + me.affiliate_id + ')';
+  document.getElementById('pbTemplate').textContent = me.postback_url_template || 'not configured';
+}
+
+async function loadStats() {
+  const res = await fetch('/api/affiliate/me/stats', { credentials: 'include' });
+  if (!res.ok) return;
+  const j = await res.json();
+  const t = j.leads || {};
+  const c = j.conversions || {};
+  document.getElementById('stats').innerHTML = [
+    ['Leads today', t.leads_today || 0],
+    ['Leads 7d', t.leads_7d || 0],
+    ['Leads 30d', t.leads_30d || 0],
+    ['Leads all-time', t.leads_total || 0],
+    ['Conversions', c.count || 0],
+    ['Payout (so far)', '$' + (Number(c.total_payout_dollars || 0)).toFixed(2)]
+  ].map(([l, v]) => '<div class="stat"><div class="stat-label">' + l + '</div><div class="stat-value">' + esc(v) + '</div></div>').join('');
+}
+
+async function loadLeads() {
+  const res = await fetch('/api/affiliate/me/leads', { credentials: 'include' });
+  if (!res.ok) { window.location.href = '/affiliate/'; return; }
+  const j = await res.json();
+  allLeads = j.leads || [];
+  renderLeads();
+}
+
+function renderLeads() {
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const filtered = q
+    ? allLeads.filter(l => JSON.stringify(l).toLowerCase().includes(q))
+    : allLeads;
+  const tb = document.getElementById('leadsTable');
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="12" class="empty">No leads yet.</td></tr>'; return; }
+  tb.innerHTML = filtered.map(l => {
+    const statusBadge = l.last_event
+      ? '<span class="badge badge-green">' + esc(l.last_event) + '</span>'
+      : '<span class="badge badge-gray">new</span>';
+    const convCount = (l.conversions || []).length;
+    return '<tr>' +
+      '<td>' + esc(fmtDate(l.created_at)) + '</td>' +
+      '<td>' + esc(l.name || '-') + '</td>' +
+      '<td>' + esc(l.email || '-') + '</td>' +
+      '<td>' + esc(l.phone || '-') + '</td>' +
+      '<td>' + esc(l.debt_amount || '-') + '</td>' +
+      '<td>' + esc(l.has_mca || '-') + '</td>' +
+      '<td><code>' + esc((l.click_id || '').slice(0, 20)) + '</code></td>' +
+      '<td>' + esc(l.sub1 || '-') + '</td>' +
+      '<td>' + esc(l.sub2 || '-') + '</td>' +
+      '<td>' + esc(l.sub3 || '-') + '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td>' + convCount + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function logout() {
+  await fetch('/api/affiliate/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/affiliate/';
+}
+
+loadMe().then(loadStats).then(loadLeads);
+</script>
+</body>
+</html>

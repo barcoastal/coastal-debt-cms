@@ -1833,6 +1833,20 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_affiliate_keys_api_key ON affiliate_keys(api_key);
 
+  CREATE TABLE IF NOT EXISTS affiliate_outbound_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER,
+    affiliate_id TEXT,
+    event TEXT,
+    url TEXT,
+    http_status INTEGER,
+    response_body TEXT,
+    payout REAL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_affiliate_outbound_lead ON affiliate_outbound_events(lead_id);
+
   CREATE TABLE IF NOT EXISTS affiliate_forward_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     lead_id INTEGER,
@@ -1845,6 +1859,12 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_affiliate_forward_lead ON affiliate_forward_events(lead_id);
 `);
+
+// Extend affiliate_keys with portal login + outbound postback fields
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN postback_url_template TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN login_pin TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN email TEXT DEFAULT ''`); } catch (e) {}
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN default_payout_cents INTEGER DEFAULT 0`); } catch (e) {}
 
 // Affiliate leads hub landing_page (bucket so affiliate leads have a parent)
 {

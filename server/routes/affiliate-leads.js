@@ -183,7 +183,7 @@ router.get('/keys', authenticateToken, (req, res) => {
 });
 
 router.post('/keys', authenticateToken, (req, res) => {
-  const { affiliate_id, label, notes } = req.body || {};
+  const { affiliate_id, label, notes, email, postback_url_template, login_pin, default_payout_cents } = req.body || {};
   if (!affiliate_id || !label) return res.status(400).json({ error: 'affiliate_id and label required' });
 
   const safeAffId = String(affiliate_id).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
@@ -192,9 +192,13 @@ router.post('/keys', authenticateToken, (req, res) => {
 
   const apiKey = generateApiKey();
   const info = db.prepare(`
-    INSERT INTO affiliate_keys (affiliate_id, label, api_key, notes)
-    VALUES (?, ?, ?, ?)
-  `).run(safeAffId, label, apiKey, notes || '');
+    INSERT INTO affiliate_keys (affiliate_id, label, api_key, notes, email, postback_url_template, login_pin, default_payout_cents)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    safeAffId, label, apiKey, notes || '',
+    email || '', postback_url_template || '', login_pin || '',
+    parseInt(default_payout_cents, 10) || 0
+  );
 
   res.json({
     id: info.lastInsertRowid,
@@ -205,16 +209,98 @@ router.post('/keys', authenticateToken, (req, res) => {
 });
 
 router.patch('/keys/:id', authenticateToken, (req, res) => {
-  const { is_active, label, notes } = req.body || {};
+  const { is_active, label, notes, email, postback_url_template, login_pin, default_payout_cents } = req.body || {};
   const fields = [];
   const params = [];
   if (typeof is_active !== 'undefined') { fields.push('is_active = ?'); params.push(is_active ? 1 : 0); }
   if (typeof label !== 'undefined') { fields.push('label = ?'); params.push(label); }
   if (typeof notes !== 'undefined') { fields.push('notes = ?'); params.push(notes); }
+  if (typeof email !== 'undefined') { fields.push('email = ?'); params.push(email); }
+  if (typeof postback_url_template !== 'undefined') { fields.push('postback_url_template = ?'); params.push(postback_url_template); }
+  if (typeof login_pin !== 'undefined') { fields.push('login_pin = ?'); params.push(login_pin); }
+  if (typeof default_payout_cents !== 'undefined') { fields.push('default_payout_cents = ?'); params.push(parseInt(default_payout_cents, 10) || 0); }
   if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   db.prepare(`UPDATE affiliate_keys SET ${fields.join(', ')} WHERE id = ?`).run(...params);
   res.json({ status: 'ok' });
+});
+
+// Fire outbound postback to affiliate — called on conversion events
+async function fireAffiliatePostback(lead, event, payoutCents) {
+  let hf = {};
+  try { hf = JSON.parse(lead.hidden_fields || '{}'); } catch (e) {}
+  const affId = hf.affiliate_id || hf.aff;
+  if (!affId) return { skipped: true, reason: 'No affiliate_id on lead' };
+
+  const aff = db.prepare('SELECT * FROM affiliate_keys WHERE affiliate_id = ? AND is_active = 1').get(affId);
+  if (!aff) return { skipped: true, reason: 'Affiliate not found or inactive' };
+  if (!aff.postback_url_template) return { skipped: true, reason: 'No postback URL configured for affiliate' };
+
+  const payout = typeof payoutCents === 'number' ? payoutCents : (aff.default_payout_cents || 0);
+  const payoutDollars = (payout / 100).toFixed(2);
+  const clickId = hf.click_id || hf.clickid || lead.rt_clickid || hf.sub_id || '';
+
+  const replacements = {
+    clickid: clickId,
+    click_id: clickId,
+    sub1: hf.sub1 || '', sub2: hf.sub2 || '', sub3: hf.sub3 || '',
+    sub4: hf.sub4 || '', sub5: hf.sub5 || '',
+    payout: payoutDollars,
+    payout_cents: String(payout),
+    event: event || 'conversion',
+    lead_id: String(lead.id),
+    email: lead.email || '',
+    phone: lead.phone || '',
+    eli_clickid: lead.eli_clickid || ''
+  };
+  let url = aff.postback_url_template;
+  for (const [k, v] of Object.entries(replacements)) {
+    url = url.replace(new RegExp('\\{' + k + '\\}', 'g'), encodeURIComponent(v));
+  }
+
+  try {
+    const res = await fetch(url, { method: 'GET' });
+    const body = await res.text();
+    const truncated = body.slice(0, 500);
+    try {
+      db.prepare(`
+        INSERT INTO affiliate_outbound_events (lead_id, affiliate_id, event, url, http_status, response_body, payout)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(lead.id, affId, event || 'conversion', url, res.status, truncated, payout / 100);
+    } catch (e) {}
+    return { sent: true, http_status: res.status, url, body: truncated };
+  } catch (err) {
+    try {
+      db.prepare(`
+        INSERT INTO affiliate_outbound_events (lead_id, affiliate_id, event, url, http_status, response_body, payout)
+        VALUES (?, ?, ?, ?, 0, ?, ?)
+      `).run(lead.id, affId, event || 'conversion', url, String(err.message).slice(0, 500), payout / 100);
+    } catch (e) {}
+    return { sent: false, error: err.message };
+  }
+}
+
+// Admin: manual fire of affiliate postback
+router.post('/:id/fire-postback', authenticateToken, async (req, res) => {
+  const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+  const { event, payout_cents } = req.body || {};
+  const result = await fireAffiliatePostback(lead, event || 'conversion', typeof payout_cents !== 'undefined' ? parseInt(payout_cents, 10) : undefined);
+  res.json(result);
+});
+
+// Admin: outbound postback events log
+router.get('/outbound-events', authenticateToken, (req, res) => {
+  const leadId = req.query.lead_id;
+  let rows = [];
+  try {
+    if (leadId) {
+      rows = db.prepare('SELECT * FROM affiliate_outbound_events WHERE lead_id = ? ORDER BY sent_at DESC').all(leadId);
+    } else {
+      rows = db.prepare('SELECT * FROM affiliate_outbound_events ORDER BY sent_at DESC LIMIT 200').all();
+    }
+  } catch (e) { rows = []; }
+  res.json({ events: rows });
 });
 
 router.delete('/keys/:id', authenticateToken, (req, res) => {
@@ -277,3 +363,4 @@ router.get('/forwards', authenticateToken, (req, res) => {
 });
 
 module.exports = router;
+module.exports.fireAffiliatePostback = fireAffiliatePostback;
