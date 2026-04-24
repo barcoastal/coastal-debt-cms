@@ -142,9 +142,23 @@
 
       <!-- Endpoint info -->
       <div class="card">
-        <h3 style="margin:0 0 8px;">Affiliate Submit Endpoint</h3>
-        <p style="color:var(--gray-500);font-size:0.85rem;margin:0 0 12px;">Affiliates POST leads to this URL with an API key in the <code>X-API-Key</code> header.</p>
-        <code id="submitUrl" style="display:block;background:var(--gray-100);padding:10px;border-radius:6px;font-size:12px;word-break:break-all;">POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit</code>
+        <h3 style="margin:0 0 8px;">Two Affiliate Integration Paths</h3>
+
+        <div style="margin-bottom:16px;">
+          <strong style="font-size:0.9rem;">1. API-based (server-to-server)</strong>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin:4px 0;">Affiliates POST JSON leads to:</p>
+          <code id="submitUrl" style="display:block;background:var(--gray-100);padding:10px;border-radius:6px;font-size:12px;word-break:break-all;">POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit</code>
+          <p style="color:var(--gray-500);font-size:0.8rem;margin:6px 0 0;">Header: <code>X-API-Key: affk_...</code></p>
+        </div>
+
+        <div>
+          <strong style="font-size:0.9rem;">2. Landing page (send traffic to us)</strong>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin:4px 0;">Affiliates send traffic to any LP with URL params:</p>
+          <code style="display:block;background:var(--gray-100);padding:10px;border-radius:6px;font-size:12px;word-break:break-all;">https://leads.businessdebtinsider.com/lp/rich-mca-debt-relief?aff=AFFILIATE_ID&click_id=XYZ&sub1=...&sub2=...&sub3=...</code>
+          <p style="color:var(--gray-500);font-size:0.8rem;margin:6px 0 0;">Visitor fills our form → lead is tagged with their affiliate_id + subs.</p>
+        </div>
+
+        <p style="color:var(--gray-500);font-size:0.8rem;margin:12px 0 0;">Both paths show leads in this table and in the affiliate's portal at <a href="/affiliate/" target="_blank">/affiliate/</a>.</p>
         <details style="margin-top:12px;">
           <summary style="cursor:pointer;font-size:0.85rem;color:var(--primary);">Show example payload</summary>
 <pre style="background:var(--gray-100);padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;">curl -X POST https://leads.businessdebtinsider.com/api/affiliate-leads/submit \
@@ -223,6 +237,7 @@
               <tr>
                 <th>Created</th>
                 <th>Affiliate</th>
+                <th>Source</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
@@ -234,7 +249,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="leadsTable"><tr><td colspan="11" class="loading"><div class="spinner"></div></td></tr></tbody>
+            <tbody id="leadsTable"><tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -531,16 +546,20 @@ sold=https://affiliate.com/pb?event=sold&clickid={clickid}&payout={payout}" styl
       const j = await res.json();
       const tbody = document.getElementById('leadsTable');
       if (!j.leads.length) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No affiliate leads yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No affiliate leads yet.</td></tr>';
         return;
       }
       tbody.innerHTML = j.leads.map(l => {
         let hf = {};
         try { hf = JSON.parse(l.hidden_fields || '{}'); } catch (e) {}
+        const sourceLabel = l.landing_page_slug === 'affiliate-leads-hub'
+          ? '<span class="badge badge-blue">API</span>'
+          : `<span class="badge badge-green" title="${escapeHtml(l.landing_page_name || '')}">LP: ${escapeHtml((l.landing_page_slug || '-').slice(0, 18))}</span>`;
         return `
           <tr>
             <td style="font-size:11px;">${formatDate(l.created_at)}</td>
             <td><code style="font-size:11px;">${escapeHtml(hf.affiliate_id || '-')}</code></td>
+            <td style="font-size:11px;">${sourceLabel}</td>
             <td>${escapeHtml(l.full_name || ((l.first_name||'') + ' ' + (l.last_name||'')).trim() || '-')}</td>
             <td>${escapeHtml(l.email || '-')}</td>
             <td>${escapeHtml(l.phone || '-')}</td>

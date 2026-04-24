@@ -151,32 +151,31 @@ router.post('/submit', async (req, res) => {
   });
 });
 
-// --- Admin: list affiliate leads ---
+// --- Admin: list affiliate leads (any lead tagged with hidden_fields.affiliate_id) ---
 router.get('/', authenticateToken, (req, res) => {
-  const hub = getHub();
-  if (!hub) return res.json({ leads: [], total: 0 });
-
   const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
   const offset = parseInt(req.query.offset, 10) || 0;
   const affiliateFilter = req.query.affiliate_id;
 
-  let where = 'landing_page_id = ?';
-  const params = [hub.id];
+  let where = `json_extract(l.hidden_fields, '$.affiliate_id') IS NOT NULL AND json_extract(l.hidden_fields, '$.affiliate_id') != ''`;
+  const params = [];
   if (affiliateFilter) {
-    where += ` AND json_extract(hidden_fields, '$.affiliate_id') = ?`;
+    where += ` AND json_extract(l.hidden_fields, '$.affiliate_id') = ?`;
     params.push(affiliateFilter);
   }
 
   const leads = db.prepare(`
-    SELECT id, first_name, last_name, full_name, email, phone, company_name,
-           debt_amount, has_mca, gclid, rt_clickid, eli_clickid, created_at, hidden_fields, payout_cents_override
-    FROM leads
+    SELECT l.id, l.first_name, l.last_name, l.full_name, l.email, l.phone, l.company_name,
+           l.debt_amount, l.has_mca, l.gclid, l.rt_clickid, l.eli_clickid, l.created_at, l.hidden_fields, l.payout_cents_override,
+           lp.slug as landing_page_slug, lp.name as landing_page_name
+    FROM leads l
+    LEFT JOIN landing_pages lp ON l.landing_page_id = lp.id
     WHERE ${where}
-    ORDER BY created_at DESC
+    ORDER BY l.created_at DESC
     LIMIT ? OFFSET ?
   `).all(...params, limit, offset);
 
-  const total = db.prepare(`SELECT COUNT(*) as n FROM leads WHERE ${where}`).get(...params).n;
+  const total = db.prepare(`SELECT COUNT(*) as n FROM leads l WHERE ${where}`).get(...params).n;
   res.json({ leads, total, limit, offset });
 });
 
