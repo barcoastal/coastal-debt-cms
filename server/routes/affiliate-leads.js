@@ -3,6 +3,10 @@ const crypto = require('crypto');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
 
+function sign(secret, message) {
+  return crypto.createHmac('sha256', secret).update(message).digest('hex');
+}
+
 const router = express.Router();
 
 function generateEliClickId() {
@@ -165,7 +169,7 @@ router.get('/', authenticateToken, (req, res) => {
 
   const leads = db.prepare(`
     SELECT id, first_name, last_name, full_name, email, phone, company_name,
-           debt_amount, has_mca, gclid, eli_clickid, created_at, hidden_fields
+           debt_amount, has_mca, gclid, rt_clickid, eli_clickid, created_at, hidden_fields, payout_cents_override
     FROM leads
     WHERE ${where}
     ORDER BY created_at DESC
@@ -183,21 +187,28 @@ router.get('/keys', authenticateToken, (req, res) => {
 });
 
 router.post('/keys', authenticateToken, (req, res) => {
-  const { affiliate_id, label, notes, email, postback_url_template, login_pin, default_payout_cents } = req.body || {};
+  const { affiliate_id, label, notes, email, postback_url_template, login_pin, default_payout_cents, postback_urls_by_event, webhook_secret } = req.body || {};
   if (!affiliate_id || !label) return res.status(400).json({ error: 'affiliate_id and label required' });
 
   const safeAffId = String(affiliate_id).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
   const existing = db.prepare('SELECT id FROM affiliate_keys WHERE affiliate_id = ?').get(safeAffId);
   if (existing) return res.status(400).json({ error: 'affiliate_id already exists' });
 
+  let byEventJson = '{}';
+  if (postback_urls_by_event) {
+    try { byEventJson = JSON.stringify(typeof postback_urls_by_event === 'string' ? JSON.parse(postback_urls_by_event) : postback_urls_by_event); }
+    catch (e) { return res.status(400).json({ error: 'postback_urls_by_event must be valid JSON' }); }
+  }
+
   const apiKey = generateApiKey();
   const info = db.prepare(`
-    INSERT INTO affiliate_keys (affiliate_id, label, api_key, notes, email, postback_url_template, login_pin, default_payout_cents)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO affiliate_keys (affiliate_id, label, api_key, notes, email, postback_url_template, login_pin, default_payout_cents, postback_urls_by_event, webhook_secret)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     safeAffId, label, apiKey, notes || '',
     email || '', postback_url_template || '', login_pin || '',
-    parseInt(default_payout_cents, 10) || 0
+    parseInt(default_payout_cents, 10) || 0,
+    byEventJson, webhook_secret || ''
   );
 
   res.json({
@@ -209,7 +220,7 @@ router.post('/keys', authenticateToken, (req, res) => {
 });
 
 router.patch('/keys/:id', authenticateToken, (req, res) => {
-  const { is_active, label, notes, email, postback_url_template, login_pin, default_payout_cents } = req.body || {};
+  const { is_active, label, notes, email, postback_url_template, login_pin, default_payout_cents, postback_urls_by_event, webhook_secret } = req.body || {};
   const fields = [];
   const params = [];
   if (typeof is_active !== 'undefined') { fields.push('is_active = ?'); params.push(is_active ? 1 : 0); }
@@ -219,13 +230,37 @@ router.patch('/keys/:id', authenticateToken, (req, res) => {
   if (typeof postback_url_template !== 'undefined') { fields.push('postback_url_template = ?'); params.push(postback_url_template); }
   if (typeof login_pin !== 'undefined') { fields.push('login_pin = ?'); params.push(login_pin); }
   if (typeof default_payout_cents !== 'undefined') { fields.push('default_payout_cents = ?'); params.push(parseInt(default_payout_cents, 10) || 0); }
+  if (typeof postback_urls_by_event !== 'undefined') {
+    try {
+      const normalized = typeof postback_urls_by_event === 'string' ? JSON.parse(postback_urls_by_event) : postback_urls_by_event;
+      fields.push('postback_urls_by_event = ?'); params.push(JSON.stringify(normalized || {}));
+    } catch (e) { return res.status(400).json({ error: 'postback_urls_by_event must be valid JSON' }); }
+  }
+  if (typeof webhook_secret !== 'undefined') { fields.push('webhook_secret = ?'); params.push(webhook_secret); }
   if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   db.prepare(`UPDATE affiliate_keys SET ${fields.join(', ')} WHERE id = ?`).run(...params);
   res.json({ status: 'ok' });
 });
 
+// Set / clear per-lead payout override
+router.patch('/leads/:id/payout', authenticateToken, (req, res) => {
+  const { payout_cents } = req.body || {};
+  const lead = db.prepare('SELECT id FROM leads WHERE id = ?').get(req.params.id);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+  if (payout_cents === null || payout_cents === '' || typeof payout_cents === 'undefined') {
+    db.prepare('UPDATE leads SET payout_cents_override = NULL WHERE id = ?').run(req.params.id);
+    return res.json({ status: 'cleared' });
+  }
+  const v = parseInt(payout_cents, 10);
+  if (isNaN(v) || v < 0) return res.status(400).json({ error: 'payout_cents must be a non-negative integer' });
+  db.prepare('UPDATE leads SET payout_cents_override = ? WHERE id = ?').run(v, req.params.id);
+  res.json({ status: 'ok', payout_cents: v });
+});
+
 // Fire outbound postback to affiliate — called on conversion events
+// Resolution order for URL: per-event map → default postback_url_template
+// Resolution order for payout: explicit arg → lead.payout_cents_override → affiliate.default_payout_cents
 async function fireAffiliatePostback(lead, event, payoutCents) {
   let hf = {};
   try { hf = JSON.parse(lead.hidden_fields || '{}'); } catch (e) {}
@@ -234,11 +269,24 @@ async function fireAffiliatePostback(lead, event, payoutCents) {
 
   const aff = db.prepare('SELECT * FROM affiliate_keys WHERE affiliate_id = ? AND is_active = 1').get(affId);
   if (!aff) return { skipped: true, reason: 'Affiliate not found or inactive' };
-  if (!aff.postback_url_template) return { skipped: true, reason: 'No postback URL configured for affiliate' };
 
-  const payout = typeof payoutCents === 'number' ? payoutCents : (aff.default_payout_cents || 0);
+  // Pick URL: event-specific first, then default
+  let urlTemplate = '';
+  try {
+    const byEvent = JSON.parse(aff.postback_urls_by_event || '{}');
+    if (event && byEvent[event]) urlTemplate = byEvent[event];
+  } catch (e) {}
+  if (!urlTemplate) urlTemplate = aff.postback_url_template || '';
+  if (!urlTemplate) return { skipped: true, reason: 'No postback URL configured for this event or default' };
+
+  // Payout: explicit → lead override → affiliate default
+  let payout;
+  if (typeof payoutCents === 'number') payout = payoutCents;
+  else if (lead.payout_cents_override != null) payout = lead.payout_cents_override;
+  else payout = aff.default_payout_cents || 0;
   const payoutDollars = (payout / 100).toFixed(2);
   const clickId = hf.click_id || hf.clickid || lead.rt_clickid || hf.sub_id || '';
+  const ts = Math.floor(Date.now() / 1000);
 
   const replacements = {
     clickid: clickId,
@@ -251,15 +299,32 @@ async function fireAffiliatePostback(lead, event, payoutCents) {
     lead_id: String(lead.id),
     email: lead.email || '',
     phone: lead.phone || '',
-    eli_clickid: lead.eli_clickid || ''
+    eli_clickid: lead.eli_clickid || '',
+    timestamp: String(ts)
   };
-  let url = aff.postback_url_template;
+
+  // First pass: fill all replacements except {sig}
+  let url = urlTemplate;
   for (const [k, v] of Object.entries(replacements)) {
+    if (k === 'sig') continue;
     url = url.replace(new RegExp('\\{' + k + '\\}', 'g'), encodeURIComponent(v));
+  }
+  // Signature: HMAC-SHA256 of clickid|event|payout_cents|timestamp (stable payload)
+  let signature = '';
+  if (aff.webhook_secret) {
+    const signPayload = [clickId, event || 'conversion', String(payout), String(ts)].join('|');
+    signature = sign(aff.webhook_secret, signPayload);
+  }
+  url = url.replace(/\{sig\}/g, encodeURIComponent(signature));
+
+  const headers = {};
+  if (signature) {
+    headers['X-Signature'] = 'sha256=' + signature;
+    headers['X-Signature-Timestamp'] = String(ts);
   }
 
   try {
-    const res = await fetch(url, { method: 'GET' });
+    const res = await fetch(url, { method: 'GET', headers });
     const body = await res.text();
     const truncated = body.slice(0, 500);
     try {
@@ -268,7 +333,7 @@ async function fireAffiliatePostback(lead, event, payoutCents) {
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(lead.id, affId, event || 'conversion', url, res.status, truncated, payout / 100);
     } catch (e) {}
-    return { sent: true, http_status: res.status, url, body: truncated };
+    return { sent: true, http_status: res.status, url, body: truncated, signed: !!signature };
   } catch (err) {
     try {
       db.prepare(`

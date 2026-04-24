@@ -1865,6 +1865,11 @@ try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN postback_url_template TEXT 
 try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN login_pin TEXT DEFAULT ''`); } catch (e) {}
 try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN email TEXT DEFAULT ''`); } catch (e) {}
 try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN default_payout_cents INTEGER DEFAULT 0`); } catch (e) {}
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN postback_urls_by_event TEXT DEFAULT '{}'`); } catch (e) {}
+try { db.exec(`ALTER TABLE affiliate_keys ADD COLUMN webhook_secret TEXT DEFAULT ''`); } catch (e) {}
+
+// Per-lead payout override
+try { db.exec(`ALTER TABLE leads ADD COLUMN payout_cents_override INTEGER`); } catch (e) {}
 
 // Affiliate leads hub landing_page (bucket so affiliate leads have a parent)
 {

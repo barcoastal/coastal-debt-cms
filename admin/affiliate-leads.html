@@ -268,14 +268,25 @@
           <small style="color:var(--gray-500);">Set this to let the affiliate log in at <code>/affiliate/</code>.</small>
         </div>
         <div class="form-group">
-          <label>Postback URL Template (optional)</label>
+          <label>Default Postback URL Template (optional)</label>
           <input type="url" id="keyPostbackUrl" placeholder="https://affiliate.com/postback?clickid={clickid}&payout={payout}&sub1={sub1}">
-          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1}, {sub2}, {sub3}, {sub4}, {sub5}, {payout}, {event}</small>
+          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1-5}, {payout}, {event}, {timestamp}, {sig}</small>
+        </div>
+        <div class="form-group">
+          <label>Per-Event Postback URLs (optional, one per line)</label>
+          <textarea id="keyPostbackUrlsByEvent" rows="4" placeholder="qualified=https://affiliate.com/pb?event=qualified&clickid={clickid}
+sold=https://affiliate.com/pb?event=sold&clickid={clickid}&payout={payout}" style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:monospace;font-size:12px;"></textarea>
+          <small style="color:var(--gray-500);">Format: <code>event=url</code> per line. Takes priority over the default URL.</small>
         </div>
         <div class="form-group">
           <label>Default Payout (cents, optional)</label>
           <input type="number" id="keyPayoutCents" placeholder="3000" min="0">
-          <small style="color:var(--gray-500);">e.g. 3000 = $30.00 fires as {payout} when no revenue on the event.</small>
+          <small style="color:var(--gray-500);">e.g. 3000 = $30.00 fires as {payout} when no revenue/override on the event.</small>
+        </div>
+        <div class="form-group">
+          <label>Webhook Secret (optional)</label>
+          <input type="text" id="keyWebhookSecret" placeholder="shared secret for HMAC signing">
+          <small style="color:var(--gray-500);">If set, every outbound postback includes <code>X-Signature: sha256=...</code> + <code>{sig}</code> placeholder. HMAC message = <code>clickid|event|payout_cents|timestamp</code>.</small>
         </div>
         <div class="form-group">
           <label>Notes (optional)</label>
@@ -311,13 +322,23 @@
           <input type="text" id="editKeyPin">
         </div>
         <div class="form-group">
-          <label>Postback URL Template</label>
+          <label>Default Postback URL Template</label>
           <input type="url" id="editKeyPostbackUrl">
-          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1}, {sub2}, {sub3}, {sub4}, {sub5}, {payout}, {event}</small>
+          <small style="color:var(--gray-500);">Placeholders: {clickid}, {sub1-5}, {payout}, {event}, {timestamp}, {sig}</small>
+        </div>
+        <div class="form-group">
+          <label>Per-Event Postback URLs (one per line)</label>
+          <textarea id="editKeyPostbackUrlsByEvent" rows="4" style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-family:monospace;font-size:12px;"></textarea>
+          <small style="color:var(--gray-500);">Format: <code>event=url</code> per line. Takes priority over default.</small>
         </div>
         <div class="form-group">
           <label>Default Payout (cents)</label>
           <input type="number" id="editKeyPayoutCents" min="0">
+        </div>
+        <div class="form-group">
+          <label>Webhook Secret</label>
+          <input type="text" id="editKeyWebhookSecret">
+          <small style="color:var(--gray-500);">HMAC-SHA256 signature included as X-Signature header + {sig}.</small>
         </div>
         <div class="form-group">
           <label>Notes</label>
@@ -414,12 +435,16 @@
     function openEditKey(id) {
       const k = keysCache.find(x => x.id === id);
       if (!k) return;
+      let byEvent = {};
+      try { byEvent = JSON.parse(k.postback_urls_by_event || '{}'); } catch (e) {}
       document.getElementById('editKeyId').value = k.id;
       document.getElementById('editKeyLabel').value = k.label || '';
       document.getElementById('editKeyEmail').value = k.email || '';
       document.getElementById('editKeyPin').value = k.login_pin || '';
       document.getElementById('editKeyPostbackUrl').value = k.postback_url_template || '';
+      document.getElementById('editKeyPostbackUrlsByEvent').value = formatPerEventUrls(byEvent);
       document.getElementById('editKeyPayoutCents').value = k.default_payout_cents || '';
+      document.getElementById('editKeyWebhookSecret').value = k.webhook_secret || '';
       document.getElementById('editKeyNotes').value = k.notes || '';
       showModal('editKeyModal');
     }
@@ -432,7 +457,9 @@
         email: document.getElementById('editKeyEmail').value,
         login_pin: document.getElementById('editKeyPin').value,
         postback_url_template: document.getElementById('editKeyPostbackUrl').value,
+        postback_urls_by_event: parsePerEventUrls(document.getElementById('editKeyPostbackUrlsByEvent').value),
         default_payout_cents: parseInt(document.getElementById('editKeyPayoutCents').value, 10) || 0,
+        webhook_secret: document.getElementById('editKeyWebhookSecret').value,
         notes: document.getElementById('editKeyNotes').value
       };
       try {
@@ -453,6 +480,20 @@
       loadKeys();
     }
 
+    function parsePerEventUrls(text) {
+      const out = {};
+      (text || '').split('\n').forEach(line => {
+        const m = line.match(/^\s*([a-zA-Z0-9_-]+)\s*=\s*(.+?)\s*$/);
+        if (m) out[m[1]] = m[2];
+      });
+      return out;
+    }
+
+    function formatPerEventUrls(obj) {
+      if (!obj) return '';
+      return Object.entries(obj).map(([k, v]) => k + '=' + v).join('\n');
+    }
+
     document.getElementById('createKeyForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = {
@@ -462,7 +503,9 @@
         email: document.getElementById('keyEmail').value,
         login_pin: document.getElementById('keyPin').value,
         postback_url_template: document.getElementById('keyPostbackUrl').value,
-        default_payout_cents: parseInt(document.getElementById('keyPayoutCents').value, 10) || 0
+        postback_urls_by_event: parsePerEventUrls(document.getElementById('keyPostbackUrlsByEvent').value),
+        default_payout_cents: parseInt(document.getElementById('keyPayoutCents').value, 10) || 0,
+        webhook_secret: document.getElementById('keyWebhookSecret').value
       };
       try {
         const res = await fetch('/api/affiliate-leads/keys', {
@@ -509,17 +552,19 @@
             <td class="actions">
               <button class="action-btn action-btn-edit" onclick='showLead(${JSON.stringify(l)})'>View</button>
               <button class="action-btn action-btn-edit" onclick="resendLead(${l.id})">Resend</button>
-              <button class="action-btn action-btn-edit" onclick="firePostback(${l.id})">Fire PB</button>
+              <button class="action-btn action-btn-edit" onclick="firePostback(${l.id}, ${l.payout_cents_override == null ? 'null' : l.payout_cents_override})">Fire PB</button>
+              <button class="action-btn action-btn-edit" onclick="setPayout(${l.id}, ${l.payout_cents_override == null ? 'null' : l.payout_cents_override})">Payout${l.payout_cents_override != null ? ' ($' + (l.payout_cents_override/100).toFixed(2) + ')' : ''}</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    async function firePostback(leadId) {
+    async function firePostback(leadId, leadOverride) {
       const event = prompt('Event name (e.g. qualified, sold):', 'qualified');
       if (!event) return;
-      const payoutStr = prompt('Payout in cents (blank = use affiliate default):', '');
+      const defaultVal = leadOverride == null ? '' : String(leadOverride);
+      const payoutStr = prompt('Payout in cents (blank = use lead override / affiliate default):', defaultVal);
       const body = { event };
       if (payoutStr) body.payout_cents = parseInt(payoutStr, 10) || 0;
       try {
@@ -528,6 +573,19 @@
         });
         const j = await res.json();
         alert(JSON.stringify(j, null, 2));
+      } catch (err) { alert(err.message); }
+    }
+
+    async function setPayout(leadId, current) {
+      const cur = current == null ? '' : String(current);
+      const v = prompt('Set payout override for this lead (cents). Blank to clear:', cur);
+      if (v === null) return;
+      const body = v === '' ? { payout_cents: null } : { payout_cents: parseInt(v, 10) || 0 };
+      try {
+        await fetch(`/api/affiliate-leads/leads/${leadId}/payout`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        loadLeads();
       } catch (err) { alert(err.message); }
     }
 
