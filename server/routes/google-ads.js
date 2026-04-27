@@ -1358,6 +1358,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
     const qsData = await runQuery(`
       SELECT campaign.id, campaign.name, ad_group.id, ad_group.name,
         ad_group_criterion.keyword.text,
+        ad_group_criterion.keyword.match_type,
         ad_group_criterion.quality_info.quality_score,
         ad_group_criterion.quality_info.post_click_quality_score,
         ad_group_criterion.quality_info.creative_quality_score,
@@ -1385,7 +1386,15 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         const g = qsByAdGroup.get(key);
         const qi = row.adGroupCriterion?.qualityInfo || {};
         const kwText = row.adGroupCriterion?.keyword?.text;
-        if (kwText) g.keywords.push(kwText);
+        const kwMatch = row.adGroupCriterion?.keyword?.matchType;
+        if (kwText) g.keywords.push({
+          text: kwText,
+          match_type: kwMatch || null,
+          quality_score: typeof qi.qualityScore === 'number' ? qi.qualityScore : null,
+          post_click_quality_score: qi.postClickQualityScore || null,
+          creative_quality_score: qi.creativeQualityScore || null,
+          search_predicted_ctr: qi.searchPredictedCtr || null
+        });
         if (typeof qi.qualityScore === 'number') { g.qs_sum += qi.qualityScore; g.qs_count++; }
         const pcq = qi.postClickQualityScore || 'UNKNOWN';
         const cq = qi.creativeQualityScore || 'UNKNOWN';
