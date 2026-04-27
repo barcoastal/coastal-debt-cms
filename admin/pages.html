@@ -561,6 +561,22 @@
               </label>
               <span>Active</span>
             </div>
+
+            <div class="form-row" style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:12px;">
+              <div class="form-group">
+                <label>Campaign (Google Ads folder)</label>
+                <select id="editGadsCampaign" onchange="onEditCampaignChange()">
+                  <option value="">— Unassigned —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ad Group</label>
+                <select id="editGadsAdGroup">
+                  <option value="">— None —</option>
+                </select>
+              </div>
+            </div>
+            <small style="color:#6b7280;display:block;margin-top:-4px;">Pick a campaign and ad group to file this page under in the folder view. Sync Google Ads to refresh the list. Leave blank to keep the page Unassigned.</small>
           </div>
         </div>
 
@@ -1514,6 +1530,42 @@
       icon.textContent = content.classList.contains('hidden') ? '+' : '-';
     }
 
+    function populateEditGadsFolderDropdowns(currentCampaignId, currentAdGroupId) {
+      const cSel = document.getElementById('editGadsCampaign');
+      const agSel = document.getElementById('editGadsAdGroup');
+      const meta = _gadsAdGroupMeta || [];
+
+      // Build campaign list from cached meta (dedupe)
+      const campMap = new Map();
+      for (const m of meta) {
+        if (!campMap.has(String(m.campaign_id))) {
+          campMap.set(String(m.campaign_id), { id: String(m.campaign_id), name: m.campaign_name, is_manual: !!m.is_manual });
+        }
+      }
+      const camps = [...campMap.values()].sort((a, b) => a.name.localeCompare(b.name));
+      cSel.innerHTML = '<option value="">— Unassigned —</option>' +
+        camps.map(c => `<option value="${_esc(c.id)}" data-name="${_esc(c.name)}">${c.is_manual ? '📁 ' : ''}${_esc(c.name)}</option>`).join('');
+      cSel.value = currentCampaignId ? String(currentCampaignId) : '';
+      onEditCampaignChange();
+      if (currentAdGroupId) agSel.value = String(currentAdGroupId);
+    }
+
+    function onEditCampaignChange() {
+      const cSel = document.getElementById('editGadsCampaign');
+      const agSel = document.getElementById('editGadsAdGroup');
+      const cid = cSel.value;
+      if (!cid) {
+        agSel.innerHTML = '<option value="">— None —</option>';
+        agSel.disabled = true;
+        return;
+      }
+      const meta = _gadsAdGroupMeta || [];
+      const matches = meta.filter(m => String(m.campaign_id) === String(cid));
+      agSel.innerHTML = '<option value="">— None —</option>' +
+        matches.map(m => `<option value="${_esc(m.ad_group_id)}" data-name="${_esc(m.ad_group_name)}">${_esc(m.ad_group_name)}</option>`).join('');
+      agSel.disabled = matches.length === 0;
+    }
+
     async function editPage(id) {
       await loadFormsForSelect('editFormId');
       const res = await fetch(`/api/pages/${id}`);
@@ -1532,6 +1584,9 @@
       document.getElementById('editPhone').value = content.phone || '';
       document.getElementById('editMobileCta').value = content.mobileCta || 'call';
       document.getElementById('editActive').checked = page.is_active;
+
+      // Google Ads folder dropdowns (cascading)
+      populateEditGadsFolderDropdowns(page.gads_campaign_id, page.gads_ad_group_id);
 
       // SEO section
       document.getElementById('editPageTitle').value = content.pageTitle || '';
@@ -1681,6 +1736,22 @@
         await api(`/api/pages/${id}`, {
           method: 'PUT',
           body: JSON.stringify(data)
+        });
+
+        // Save Google Ads folder assignment (separate endpoint)
+        const cSel = document.getElementById('editGadsCampaign');
+        const agSel = document.getElementById('editGadsAdGroup');
+        const cOpt = cSel.options[cSel.selectedIndex];
+        const agOpt = agSel.options[agSel.selectedIndex];
+        await fetch(`/api/pages/${id}/gads-link`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaign_id: cSel.value || null,
+            campaign_name: cSel.value ? (cOpt?.dataset?.name || null) : null,
+            ad_group_id: agSel.value || null,
+            ad_group_name: agSel.value ? (agOpt?.dataset?.name || null) : null
+          })
         });
 
         hideModal('editModal');
