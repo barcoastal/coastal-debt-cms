@@ -934,6 +934,74 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
       counts.search_term = 0;
     }
 
+    // Conversion actions — segment metrics by which conversion action fired.
+    // Includes conversions_value (revenue / lead value) so we can answer
+    // "where is the money going / coming from".
+    try {
+      const gaql = `
+        SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+          segments.conversion_action_name, segments.conversion_action_category,
+          metrics.conversions, metrics.conversions_value,
+          metrics.all_conversions, metrics.all_conversions_value,
+          metrics.cost_micros, metrics.clicks, metrics.impressions
+        FROM ad_group
+        WHERE segments.date DURING ${range}
+          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+      `;
+      const data = await runQuery(gaql);
+      const insertConv = db.prepare(`
+        INSERT INTO gads_segments (
+          ad_group_id, ad_group_name, campaign_id, campaign_name,
+          segment_type, segment_value, impressions, clicks, cost_micros,
+          conversions, conversions_value, all_conversions, all_conversions_value,
+          range_label, refreshed_at
+        ) VALUES (?, ?, ?, ?, 'conversion_action', ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      const insertConvMany = db.transaction(rows => { for (const r of rows) insertConv.run(...r); });
+      const rows = [];
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          const m = row.metrics || {};
+          const actionName = row.segments?.conversionActionName || 'UNKNOWN';
+          rows.push([
+            row.adGroup?.id, row.adGroup?.name,
+            row.campaign?.id, row.campaign?.name,
+            actionName,
+            parseInt(m.impressions || 0, 10),
+            parseInt(m.clicks || 0, 10),
+            parseInt(m.costMicros || 0, 10),
+            parseFloat(m.conversions || 0),
+            parseFloat(m.conversionsValue || 0),
+            parseFloat(m.allConversions || 0),
+            parseFloat(m.allConversionsValue || 0),
+            range
+          ]);
+        }
+      }
+      insertConvMany(rows);
+      counts.conversion_action = rows.length;
+    } catch (err) {
+      errors.conversion_action = err.message;
+      counts.conversion_action = 0;
+    }
+
+    // Roll up per-ad-group conversions_value into gads_ad_group_meta
+    try {
+      const aggCols = db.prepare(`
+        SELECT ad_group_id,
+          SUM(COALESCE(conversions_value, 0)) AS conv_val,
+          SUM(COALESCE(all_conversions, 0)) AS all_conv,
+          SUM(COALESCE(all_conversions_value, 0)) AS all_conv_val
+        FROM gads_segments
+        WHERE segment_type = 'conversion_action'
+        GROUP BY ad_group_id
+      `).all();
+      const upd = db.prepare(`UPDATE gads_ad_group_meta SET conversions_value = ?, all_conversions = ?, all_conversions_value = ? WHERE ad_group_id = ?`);
+      for (const r of aggCols) {
+        upd.run(r.conv_val, r.all_conv, r.all_conv_val, String(r.ad_group_id));
+      }
+    } catch (e) { /* ad-group meta enrichment is best-effort */ }
+
     res.json({
       success: true,
       range,
@@ -944,6 +1012,131 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('deep-sync error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// "Where is the money?" — surfaces best ROI vs worst spend-per-conv from cache.
+// Returns: top winners (best ROI), top wasters (high spend, zero/low conv),
+// conversion-action mix, and aggregate totals.
+router.get('/money-map', authenticateToken, (req, res) => {
+  try {
+    const lvl = (req.query.level || 'campaign').toLowerCase(); // 'campaign' | 'ad_group'
+    const groupBy = lvl === 'ad_group' ? 'ad_group_id' : 'campaign_id';
+    const labelCol = lvl === 'ad_group' ? 'ad_group_name' : 'campaign_name';
+
+    const rows = db.prepare(`
+      SELECT
+        ${groupBy} AS key_id,
+        ${labelCol} AS label,
+        campaign_name,
+        SUM(COALESCE(impressions, 0)) AS impressions,
+        SUM(COALESCE(clicks, 0)) AS clicks,
+        SUM(COALESCE(cost_micros, 0)) AS cost_micros,
+        SUM(COALESCE(conversions, 0)) AS conversions,
+        SUM(COALESCE(conversions_value, 0)) AS conv_value,
+        SUM(COALESCE(all_conversions, 0)) AS all_conv,
+        SUM(COALESCE(all_conversions_value, 0)) AS all_conv_value,
+        MAX(range_label) AS range_label,
+        MAX(refreshed_at) AS refreshed_at
+      FROM gads_ad_group_meta
+      WHERE COALESCE(is_manual, 0) = 0
+      GROUP BY ${groupBy}
+    `).all();
+
+    if (rows.length === 0) {
+      return res.json({
+        winners: [], wasters: [], no_conv: [], conv_mix: [],
+        totals: { spend: 0, conv: 0, conv_value: 0, roi: 0, cpa: 0 },
+        notes: 'Cache empty — click Sync Deep Data first.'
+      });
+    }
+
+    const enriched = rows.map(r => {
+      const cost = (r.cost_micros || 0) / 1_000_000;
+      const conv = r.conversions || 0;
+      const value = r.conv_value || 0;
+      return {
+        key_id: r.key_id, label: r.label, campaign_name: r.campaign_name,
+        impressions: r.impressions, clicks: r.clicks,
+        spend: +cost.toFixed(2),
+        conv: +conv.toFixed(2),
+        conv_value: +value.toFixed(2),
+        all_conv: +(r.all_conv || 0).toFixed(2),
+        all_conv_value: +(r.all_conv_value || 0).toFixed(2),
+        cpa: conv > 0 ? +(cost / conv).toFixed(2) : null,
+        cpc: r.clicks > 0 ? +(cost / r.clicks).toFixed(2) : 0,
+        conv_rate: r.clicks > 0 ? +(conv / r.clicks * 100).toFixed(2) : 0,
+        roas: cost > 0 ? +(value / cost).toFixed(2) : 0,
+        net: +(value - cost).toFixed(2),
+        // ROI as "percent return": (value - cost) / cost
+        roi_pct: cost > 0 ? +((value - cost) / cost * 100).toFixed(1) : null
+      };
+    });
+
+    // Filter where spend = 0 — they're noise
+    const withSpend = enriched.filter(r => r.spend > 0.01);
+
+    // Winners: highest ROI %, but only if they have meaningful spend (>= $20)
+    const winners = withSpend
+      .filter(r => r.spend >= 20 && r.roi_pct != null)
+      .sort((a, b) => b.roi_pct - a.roi_pct)
+      .slice(0, 10);
+
+    // Wasters: high spend with zero or near-zero conv
+    const wasters = withSpend
+      .filter(r => r.conv < 1)
+      .sort((a, b) => b.spend - a.spend)
+      .slice(0, 10);
+
+    // No-conv-but-spending watch list (subset of wasters but nicer UX)
+    const noConv = withSpend.filter(r => r.conv === 0).sort((a, b) => b.spend - a.spend).slice(0, 10);
+
+    // Conversion-action mix
+    const convMix = db.prepare(`
+      SELECT segment_value AS action,
+        SUM(COALESCE(conversions, 0)) AS conv,
+        SUM(COALESCE(conversions_value, 0)) AS conv_value,
+        SUM(COALESCE(cost_micros, 0)) AS cost_micros
+      FROM gads_segments
+      WHERE segment_type = 'conversion_action'
+      GROUP BY segment_value
+      ORDER BY conv_value DESC, conv DESC
+    `).all().map(r => ({
+      action: r.action,
+      conversions: +(r.conv || 0).toFixed(2),
+      value: +(r.conv_value || 0).toFixed(2),
+      cost_attributed: +((r.cost_micros || 0) / 1_000_000).toFixed(2)
+    }));
+
+    // Totals across the enriched set
+    const tot = enriched.reduce((acc, r) => ({
+      spend: acc.spend + r.spend,
+      conv: acc.conv + r.conv,
+      conv_value: acc.conv_value + r.conv_value,
+      clicks: acc.clicks + r.clicks
+    }), { spend: 0, conv: 0, conv_value: 0, clicks: 0 });
+    const totals = {
+      spend: +tot.spend.toFixed(2),
+      conv: +tot.conv.toFixed(2),
+      conv_value: +tot.conv_value.toFixed(2),
+      clicks: tot.clicks,
+      cpa: tot.conv > 0 ? +(tot.spend / tot.conv).toFixed(2) : null,
+      roas: tot.spend > 0 ? +(tot.conv_value / tot.spend).toFixed(2) : 0,
+      net: +(tot.conv_value - tot.spend).toFixed(2),
+      roi_pct: tot.spend > 0 ? +((tot.conv_value - tot.spend) / tot.spend * 100).toFixed(1) : null
+    };
+
+    res.json({
+      level: lvl,
+      range: rows[0]?.range_label || 'cached',
+      last_refreshed: rows[0]?.refreshed_at,
+      winners, wasters, no_conv: noConv, conv_mix: convMix,
+      totals,
+      total_groups: enriched.length
+    });
+  } catch (err) {
+    console.error('money-map error:', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -253,6 +253,33 @@
         <div id="deepSyncResult" style="margin-top:10px;display:none;"></div>
       </div>
 
+      <!-- Where's the money — winners & wasters at a glance -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h3 class="card-title" style="margin:0;">💰 Where's the money?</h3>
+            <small style="color:#94a3b8;">Top earners (best ROI) vs wasters (high spend, no conversions). Pulled from the cache populated by Sync Deep Data.</small>
+          </div>
+          <select id="moneyLevel" onchange="loadMoneyMap()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+            <option value="campaign" selected>By Campaign</option>
+            <option value="ad_group">By Ad Group</option>
+          </select>
+        </div>
+        <div id="moneyTotals" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:8px 0 14px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <h4 style="font-size:13px;color:#16a34a;margin:8px 0;">🏆 Top earners (highest ROI, ≥$20 spend)</h4>
+            <div id="moneyWinners" class="table-container" style="max-height:340px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;color:#dc2626;margin:8px 0;">💸 Top wasters (high spend, &lt;1 conversion)</h4>
+            <div id="moneyWasters" class="table-container" style="max-height:340px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
+        </div>
+        <h4 style="font-size:13px;color:#475569;margin:14px 0 6px;">Conversion mix — which actions are firing</h4>
+        <div id="moneyConvMix" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+      </div>
+
       <!-- Google Ads at a glance -->
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header" style="display:flex;align-items:center;gap:10px;">
@@ -609,6 +636,67 @@
       loadCallQuality(qs);
       loadHeatmap(qs);
       loadDeepSyncStatus();
+      loadMoneyMap();
+    }
+
+    async function loadMoneyMap() {
+      try {
+        const lvl = document.getElementById('moneyLevel').value || 'campaign';
+        const r = await fetch('/api/deep-analysis/money-map?level=' + encodeURIComponent(lvl));
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+
+        const t = d.totals || {};
+        const tile = (label, value, hint, color) => `<div style="background:#f8fafc;padding:12px;border-radius:8px;border-left:3px solid ${color || '#3052FF'};">
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700;">${label}</div>
+          <div style="font-size:18px;font-weight:800;color:#1e293b;">${value}</div>
+          ${hint ? `<div style="font-size:10px;color:#94a3b8;">${hint}</div>` : ''}
+        </div>`;
+        const fmt$ = v => '$' + (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('moneyTotals').innerHTML = [
+          tile('Spend', fmt$(t.spend), 'Money out', '#dc2626'),
+          tile('Conv value', fmt$(t.conv_value), 'Money in (Google)', '#16a34a'),
+          tile('Net', fmt$(t.net), (t.net >= 0 ? 'profit' : 'loss'), t.net >= 0 ? '#16a34a' : '#dc2626'),
+          tile('ROI', t.roi_pct == null ? '—' : t.roi_pct + '%', `ROAS ${t.roas || 0}x`, '#7c3aed'),
+          tile('CPA', t.cpa == null ? '—' : fmt$(t.cpa), `${t.conv} conv · ${t.clicks} clicks`, '#3052FF')
+        ].join('');
+
+        const winnerRows = (d.winners || []).map(r => `<tr>
+          <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
+          <td style="text-align:right;">${fmt$(r.spend)}</td>
+          <td style="text-align:right;color:#16a34a;font-weight:600;">${fmt$(r.conv_value)}</td>
+          <td style="text-align:right;font-weight:700;color:#16a34a;">${r.roi_pct}%</td>
+          <td style="text-align:right;">${r.roas}x</td>
+          <td style="text-align:right;">${r.conv}</td>
+          <td style="text-align:right;">${r.cpa == null ? '—' : fmt$(r.cpa)}</td>
+        </tr>`).join('');
+        document.getElementById('moneyWinners').innerHTML = winnerRows
+          ? `<table style="width:100%;font-size:12px;"><thead><tr><th style="text-align:left;">${d.level === 'ad_group' ? 'Ad group' : 'Campaign'}</th><th style="text-align:right;">Spend</th><th style="text-align:right;">Value</th><th style="text-align:right;">ROI</th><th style="text-align:right;">ROAS</th><th style="text-align:right;">Conv</th><th style="text-align:right;">CPA</th></tr></thead><tbody>${winnerRows}</tbody></table>`
+          : '<div style="padding:20px;text-align:center;color:#94a3b8;">No earners yet — sync conversion data and check ROI tracking.</div>';
+
+        const wasterRows = (d.wasters || []).map(r => `<tr>
+          <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
+          <td style="text-align:right;color:#dc2626;font-weight:700;">${fmt$(r.spend)}</td>
+          <td style="text-align:right;">${r.clicks.toLocaleString()}</td>
+          <td style="text-align:right;">${r.conv}</td>
+          <td style="text-align:right;">${fmt$(r.cpc)}</td>
+          <td style="text-align:right;">${r.conv_rate}%</td>
+        </tr>`).join('');
+        document.getElementById('moneyWasters').innerHTML = wasterRows
+          ? `<table style="width:100%;font-size:12px;"><thead><tr><th style="text-align:left;">${d.level === 'ad_group' ? 'Ad group' : 'Campaign'}</th><th style="text-align:right;">Spend</th><th style="text-align:right;">Clicks</th><th style="text-align:right;">Conv</th><th style="text-align:right;">CPC</th><th style="text-align:right;">CR</th></tr></thead><tbody>${wasterRows}</tbody></table>`
+          : '<div style="padding:20px;text-align:center;color:#94a3b8;">No wasters — every spending campaign has at least 1 conversion.</div>';
+
+        const mixRows = (d.conv_mix || []).slice(0, 20).map(c => `<tr>
+          <td><strong>${_esc(c.action)}</strong></td>
+          <td style="text-align:right;">${c.conversions.toFixed(0)}</td>
+          <td style="text-align:right;color:#16a34a;font-weight:600;">${fmt$(c.value)}</td>
+        </tr>`).join('');
+        document.getElementById('moneyConvMix').innerHTML = mixRows
+          ? `<table style="width:100%;font-size:12px;"><thead><tr><th style="text-align:left;">Conversion action</th><th style="text-align:right;">Count</th><th style="text-align:right;">Value</th></tr></thead><tbody>${mixRows}</tbody></table>`
+          : '<div style="padding:20px;text-align:center;color:#94a3b8;">No conversion-action data — Sync Deep Data first, or your Google Ads account is not reporting conversion values.</div>';
+      } catch (err) {
+        document.getElementById('moneyWinners').innerHTML = `<div style="padding:20px;color:#dc2626;font-size:12px;">Error: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
+      }
     }
 
     async function loadDeepSyncStatus() {
