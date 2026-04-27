@@ -527,7 +527,7 @@
     ];
 
     let _pivotFilters = {}; // { age: ['AGE_RANGE_45_54'], gender: ['FEMALE'], ... }
-    let _pivotGroupBy = ['age', 'gender'];
+    let _pivotGroupBy = ['campaign']; // default: show campaigns first so real data appears immediately
 
     function initGoogleAdsPivot() {
       // Filter dimensions
@@ -590,17 +590,40 @@
 
     function renderGoogleAdsPivot(d, metrics, target) {
       const diag = d.diagnostic || {};
-      const diagBlock = `<details style="margin-bottom:8px;font-size:11px;color:#64748b;">
-        <summary style="cursor:pointer;">Show diagnostic (queries run)</summary>
+      const counts = diag.counts || {};
+      const queries = diag.queries || [];
+
+      // Inline diagnostic — always shown when result is empty so Bar can see exactly what came back
+      const inlineDiag = `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;margin-bottom:10px;font-size:12px;color:#9a3412;">
+        <div style="font-weight:700;margin-bottom:8px;">Diagnostic — what Google returned</div>
+        <div style="margin-bottom:8px;">${_esc(diag.notes || '')}</div>
+        <table style="width:100%;font-size:11px;color:#92400e;">
+          <thead><tr><th style="text-align:left;">Dim</th><th style="text-align:left;">View</th><th style="text-align:right;">Rows back</th><th style="text-align:left;">Error</th></tr></thead>
+          <tbody>
+            ${queries.map(q => `<tr>
+              <td>${_esc(q.dim)}</td>
+              <td><code style="font-size:10px;">${_esc(q.view)}</code></td>
+              <td style="text-align:right;font-weight:700;">${counts[q.dim] != null ? counts[q.dim] : '—'}</td>
+              <td style="color:#dc2626;">${_esc(q.error || '')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+      // Expandable detailed GAQL block for power debugging
+      const expandedDiag = `<details style="margin-bottom:8px;font-size:11px;color:#64748b;">
+        <summary style="cursor:pointer;">Show full GAQL queries</summary>
         <div style="background:#f8fafc;padding:8px;border-radius:6px;margin-top:6px;">
-          <div><strong>Notes:</strong> ${_esc(diag.notes || '')}</div>
-          <div style="margin-top:6px;"><strong>Row counts from Google:</strong> ${_esc(JSON.stringify(diag.counts || {}))}</div>
-          ${(diag.queries || []).map(q => `<div style="margin-top:6px;"><strong>${_esc(q.dim)} (${_esc(q.view)}):</strong> <code style="font-size:10px;">${_esc(q.gaql)}</code></div>`).join('')}
+          ${queries.map(q => `<div style="margin-top:6px;"><strong>${_esc(q.dim)} (${_esc(q.view)}):</strong> <code style="font-size:10px;display:block;white-space:pre-wrap;">${_esc(q.gaql)}</code></div>`).join('')}
         </div>
       </details>`;
 
       if (!d.rows || d.rows.length === 0) {
-        target.innerHTML = diagBlock + '<div style="padding:30px;text-align:center;color:#94a3b8;">No data after filters. Open the diagnostic above to see what Google returned. Common reasons: this account doesn\\'t have demographic observations enabled on these campaigns, or the filter combination has 0 traffic.</div>';
+        const hint = (() => {
+          const total = Object.values(counts).reduce((s, n) => s + (n || 0), 0);
+          if (total === 0) return 'Google returned <strong>zero rows for every query</strong>. Most common cause: the connected account has no active campaigns with traffic in this window, or the access token expired. Try changing Period to Last 90 days, or re-connect Google Ads in Integrations.';
+          return 'Some queries returned data but the filter combination removed everything. Try unselecting some filter chips, or pick fewer Group-by dimensions.';
+        })();
+        target.innerHTML = inlineDiag + expandedDiag + `<div style="padding:24px;text-align:center;color:#475569;">${hint}</div>`;
         return;
       }
       const dimLabel = (dim, val) => {
@@ -644,7 +667,7 @@
             `<strong>${PIVOT_DIM_LABELS[dim]?.label || dim}</strong>=${vals.map(v => dimLabel(dim, v)).join(' or ')}`
           ).join(' &nbsp;·&nbsp; ');
 
-      target.innerHTML = diagBlock + `
+      target.innerHTML = expandedDiag + `
         <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
           <strong>${d.range}</strong> &nbsp;·&nbsp; ${filterSummary} &nbsp;·&nbsp; showing top ${d.rows.length} of ${d.total_rows}
         </div>
