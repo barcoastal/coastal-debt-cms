@@ -2007,4 +2007,34 @@ try {
   if (migrated > 0) console.log(`Backfilled visitor_url for ${migrated} calls`);
 } catch (e) {}
 
+// Google Ads campaign / ad group association on landing_pages
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_campaign_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_campaign_name TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_id TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_name TEXT`); } catch (e) {}
+
+// Cache table for Google Ads landing-page metrics (QS, LP experience, landing_page_view stats)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_lp_metrics (
+    landing_page_id INTEGER PRIMARY KEY,
+    quality_score REAL,
+    post_click_quality_score TEXT,
+    creative_quality_score TEXT,
+    search_predicted_ctr TEXT,
+    qs_keyword_count INTEGER DEFAULT 0,
+    qs_breakdown TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost_micros INTEGER DEFAULT 0,
+    conversions REAL DEFAULT 0,
+    ctr REAL DEFAULT 0,
+    avg_cpc_micros INTEGER DEFAULT 0,
+    mobile_friendly_click_rate REAL DEFAULT 0,
+    refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (landing_page_id) REFERENCES landing_pages(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_pages_gads_campaign ON landing_pages(gads_campaign_id);
+  CREATE INDEX IF NOT EXISTS idx_pages_gads_ad_group ON landing_pages(gads_ad_group_id);
+`);
+
 module.exports = db;

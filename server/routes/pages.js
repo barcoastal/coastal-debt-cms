@@ -387,6 +387,10 @@ router.get('/', authenticateToken, (req, res) => {
     visitorCountStmt = db.prepare('SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?');
   }
 
+  // Pull cached gads metrics for all pages in one query
+  const metricsRows = db.prepare('SELECT * FROM gads_lp_metrics').all();
+  const metricsById = new Map(metricsRows.map(r => [r.landing_page_id, r]));
+
   pages.forEach(page => {
     try {
       page.content = JSON.parse(page.content || '{}');
@@ -405,6 +409,26 @@ router.get('/', authenticateToken, (req, res) => {
     } catch (e) {
       page.visitor_count = 0;
       page.conversion_rate = 0;
+    }
+    const m = metricsById.get(page.id);
+    if (m) {
+      page.gads_metrics = {
+        quality_score: m.quality_score,
+        post_click_quality_score: m.post_click_quality_score,
+        creative_quality_score: m.creative_quality_score,
+        search_predicted_ctr: m.search_predicted_ctr,
+        qs_keyword_count: m.qs_keyword_count,
+        impressions: m.impressions,
+        clicks: m.clicks,
+        cost_micros: m.cost_micros,
+        conversions: m.conversions,
+        ctr: m.ctr,
+        avg_cpc_micros: m.avg_cpc_micros,
+        mobile_friendly_click_rate: m.mobile_friendly_click_rate,
+        refreshed_at: m.refreshed_at
+      };
+    } else {
+      page.gads_metrics = null;
     }
   });
 
@@ -621,6 +645,25 @@ router.put('/:id', authenticateToken, (req, res) => {
 
   if (logActivity) logActivity(req.user.id, req.user.name || req.user.email, 'updated', 'page', parseInt(req.params.id), `Updated page: ${name || page.name}`, req.ip);
   res.json({ message: 'Page updated' });
+});
+
+// Set Google Ads campaign / ad_group association
+router.put('/:id/gads-link', authenticateToken, (req, res) => {
+  const { campaign_id, campaign_name, ad_group_id, ad_group_name } = req.body;
+  const page = db.prepare('SELECT id FROM landing_pages WHERE id = ?').get(req.params.id);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+  db.prepare(`
+    UPDATE landing_pages SET
+      gads_campaign_id = ?, gads_campaign_name = ?,
+      gads_ad_group_id = ?, gads_ad_group_name = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(
+    campaign_id || null, campaign_name || null,
+    ad_group_id || null, ad_group_name || null,
+    req.params.id
+  );
+  res.json({ message: 'Linked' });
 });
 
 // Update landing page content only

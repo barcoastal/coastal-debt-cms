@@ -1052,6 +1052,469 @@ router.get('/ad-groups', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── Landing-page intelligence endpoints ──────────────────────────────────
+
+// Get quality-score data per ad_group (aggregated from keyword level)
+// Returns { ad_groups: [{ campaign_id, campaign_name, ad_group_id, ad_group_name,
+//   avg_quality_score, lp_experience_breakdown, ad_relevance_breakdown,
+//   expected_ctr_breakdown, keyword_count }] }
+router.get('/quality-scores', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const query = `
+      SELECT
+        campaign.id, campaign.name,
+        ad_group.id, ad_group.name,
+        ad_group_criterion.criterion_id,
+        ad_group_criterion.quality_info.quality_score,
+        ad_group_criterion.quality_info.post_click_quality_score,
+        ad_group_criterion.quality_info.creative_quality_score,
+        ad_group_criterion.quality_info.search_predicted_ctr
+      FROM keyword_view
+      WHERE ad_group_criterion.status = 'ENABLED'
+        AND ad_group.status = 'ENABLED'
+        AND campaign.status = 'ENABLED'
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        body: JSON.stringify({ query })
+      }
+    );
+    const data = await response.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+
+    // Aggregate per ad_group
+    const groups = new Map();
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        const key = row.adGroup.id;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            campaign_id: row.campaign.id,
+            campaign_name: row.campaign.name,
+            ad_group_id: row.adGroup.id,
+            ad_group_name: row.adGroup.name,
+            qs_sum: 0, qs_count: 0,
+            lp_experience: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+            ad_relevance: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+            expected_ctr: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 }
+          });
+        }
+        const g = groups.get(key);
+        const qi = row.adGroupCriterion?.qualityInfo || {};
+        if (typeof qi.qualityScore === 'number') {
+          g.qs_sum += qi.qualityScore;
+          g.qs_count += 1;
+        }
+        const pcq = qi.postClickQualityScore || 'UNKNOWN';
+        const cq = qi.creativeQualityScore || 'UNKNOWN';
+        const ec = qi.searchPredictedCtr || 'UNKNOWN';
+        if (g.lp_experience[pcq] !== undefined) g.lp_experience[pcq]++;
+        if (g.ad_relevance[cq] !== undefined) g.ad_relevance[cq]++;
+        if (g.expected_ctr[ec] !== undefined) g.expected_ctr[ec]++;
+      }
+    }
+
+    const ad_groups = [...groups.values()].map(g => ({
+      campaign_id: g.campaign_id,
+      campaign_name: g.campaign_name,
+      ad_group_id: g.ad_group_id,
+      ad_group_name: g.ad_group_name,
+      keyword_count: g.qs_count,
+      avg_quality_score: g.qs_count ? +(g.qs_sum / g.qs_count).toFixed(2) : null,
+      lp_experience_breakdown: g.lp_experience,
+      ad_relevance_breakdown: g.ad_relevance,
+      expected_ctr_breakdown: g.expected_ctr
+    }));
+
+    res.json({ ad_groups });
+  } catch (err) {
+    console.error('Error fetching quality scores:', err);
+    res.status(500).json({ error: 'Failed to fetch quality scores: ' + err.message });
+  }
+});
+
+// Get landing_page_view metrics per URL with optional date range
+// query: ?days=30 (default 30)
+// Returns { landing_pages: [{ unexpanded_final_url, clicks, impressions, ctr,
+//   cost_micros, conversions, avg_cpc_micros, mobile_friendly_click_rate }] }
+router.get('/landing-page-stats', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const days = Math.max(1, Math.min(parseInt(req.query.days, 10) || 30, 365));
+    const query = `
+      SELECT
+        landing_page_view.unexpanded_final_url,
+        metrics.clicks,
+        metrics.impressions,
+        metrics.ctr,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.average_cpc,
+        metrics.mobile_friendly_clicks_percentage
+      FROM landing_page_view
+      WHERE segments.date DURING LAST_${days === 7 ? '7_DAYS' : days === 14 ? '14_DAYS' : days === 30 ? '30_DAYS' : '30_DAYS'}
+    `;
+    // landing_page_view doesn't accept arbitrary day ranges; fall back to LAST_30_DAYS for non-standard windows
+    const safeQuery = `
+      SELECT
+        landing_page_view.unexpanded_final_url,
+        metrics.clicks,
+        metrics.impressions,
+        metrics.ctr,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.average_cpc,
+        metrics.mobile_friendly_clicks_percentage
+      FROM landing_page_view
+      WHERE segments.date DURING LAST_30_DAYS
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        body: JSON.stringify({ query: safeQuery })
+      }
+    );
+    const data = await response.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+
+    // Aggregate by URL (one URL can appear in multiple campaigns)
+    const byUrl = new Map();
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        const url = row.landingPageView?.unexpandedFinalUrl || '';
+        if (!url) continue;
+        if (!byUrl.has(url)) {
+          byUrl.set(url, {
+            unexpanded_final_url: url,
+            clicks: 0, impressions: 0, cost_micros: 0, conversions: 0,
+            mobile_clicks_pct_sum: 0, mobile_clicks_pct_count: 0
+          });
+        }
+        const p = byUrl.get(url);
+        const m = row.metrics || {};
+        p.clicks += parseInt(m.clicks || 0, 10);
+        p.impressions += parseInt(m.impressions || 0, 10);
+        p.cost_micros += parseInt(m.costMicros || 0, 10);
+        p.conversions += parseFloat(m.conversions || 0);
+        if (typeof m.mobileFriendlyClicksPercentage === 'number') {
+          p.mobile_clicks_pct_sum += m.mobileFriendlyClicksPercentage;
+          p.mobile_clicks_pct_count += 1;
+        }
+      }
+    }
+
+    const landing_pages = [...byUrl.values()].map(p => ({
+      unexpanded_final_url: p.unexpanded_final_url,
+      clicks: p.clicks,
+      impressions: p.impressions,
+      ctr: p.impressions ? +(p.clicks / p.impressions).toFixed(4) : 0,
+      cost_micros: p.cost_micros,
+      conversions: +p.conversions.toFixed(2),
+      avg_cpc_micros: p.clicks ? Math.round(p.cost_micros / p.clicks) : 0,
+      mobile_friendly_click_rate: p.mobile_clicks_pct_count
+        ? +(p.mobile_clicks_pct_sum / p.mobile_clicks_pct_count).toFixed(4) : 0
+    }));
+
+    res.json({ landing_pages });
+  } catch (err) {
+    console.error('Error fetching landing page stats:', err);
+    res.status(500).json({ error: 'Failed to fetch landing page stats: ' + err.message });
+  }
+});
+
+// Get ads with their final URLs (for auto-linking LPs to campaigns/ad_groups)
+// Returns { ads: [{ campaign_id, campaign_name, ad_group_id, ad_group_name, final_urls: [..] }] }
+router.get('/ads-by-url', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const query = `
+      SELECT
+        campaign.id, campaign.name,
+        ad_group.id, ad_group.name,
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.final_urls
+      FROM ad_group_ad
+      WHERE ad_group_ad.status = 'ENABLED'
+        AND ad_group.status = 'ENABLED'
+        AND campaign.status = 'ENABLED'
+    `;
+
+    const response = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
+        body: JSON.stringify({ query })
+      }
+    );
+    const data = await response.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+
+    const ads = [];
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        ads.push({
+          campaign_id: row.campaign.id,
+          campaign_name: row.campaign.name,
+          ad_group_id: row.adGroup.id,
+          ad_group_name: row.adGroup.name,
+          ad_id: row.adGroupAd?.ad?.id,
+          final_urls: row.adGroupAd?.ad?.finalUrls || []
+        });
+      }
+    }
+
+    res.json({ ads });
+  } catch (err) {
+    console.error('Error fetching ads-by-url:', err);
+    res.status(500).json({ error: 'Failed to fetch ads-by-url: ' + err.message });
+  }
+});
+
+// Refresh LP metrics: combines QS + landing_page_view + ads-by-url
+// Auto-links LPs to campaigns/ad_groups by URL match, populates gads_lp_metrics cache
+router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
+  const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+  if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+    return res.status(400).json({ error: 'Google Ads not connected' });
+  }
+
+  try {
+    const accessToken = await getValidAccessToken(config);
+    const developerToken = getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+    const headers = getApiHeaders(accessToken, developerToken, config.login_customer_id);
+    const url = `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`;
+
+    const runQuery = async (query) => {
+      const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ query }) });
+      const d = await r.json();
+      const apiError = d.error || d[0]?.error;
+      if (apiError) throw new Error(apiError.message || JSON.stringify(apiError));
+      return d;
+    };
+
+    // 1) ads with final URLs → URL → {campaign, ad_group}
+    const adsData = await runQuery(`
+      SELECT campaign.id, campaign.name, ad_group.id, ad_group.name, ad_group_ad.ad.final_urls
+      FROM ad_group_ad
+      WHERE ad_group_ad.status = 'ENABLED' AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+    `);
+    const urlToGroup = new Map(); // url → { campaign_id, campaign_name, ad_group_id, ad_group_name }
+    for (const stream of adsData) {
+      for (const row of (stream.results || [])) {
+        const finalUrls = row.adGroupAd?.ad?.finalUrls || [];
+        for (const u of finalUrls) {
+          if (!urlToGroup.has(u)) {
+            urlToGroup.set(u, {
+              campaign_id: row.campaign.id,
+              campaign_name: row.campaign.name,
+              ad_group_id: row.adGroup.id,
+              ad_group_name: row.adGroup.name
+            });
+          }
+        }
+      }
+    }
+
+    // 2) keyword-level QS → aggregated per ad_group
+    const qsData = await runQuery(`
+      SELECT campaign.id, ad_group.id,
+        ad_group_criterion.quality_info.quality_score,
+        ad_group_criterion.quality_info.post_click_quality_score,
+        ad_group_criterion.quality_info.creative_quality_score,
+        ad_group_criterion.quality_info.search_predicted_ctr
+      FROM keyword_view
+      WHERE ad_group_criterion.status = 'ENABLED'
+        AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+    `);
+    const qsByAdGroup = new Map();
+    for (const stream of qsData) {
+      for (const row of (stream.results || [])) {
+        const key = row.adGroup.id;
+        if (!qsByAdGroup.has(key)) {
+          qsByAdGroup.set(key, {
+            qs_sum: 0, qs_count: 0,
+            lp: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+            ar: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+            ec: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 }
+          });
+        }
+        const g = qsByAdGroup.get(key);
+        const qi = row.adGroupCriterion?.qualityInfo || {};
+        if (typeof qi.qualityScore === 'number') { g.qs_sum += qi.qualityScore; g.qs_count++; }
+        const pcq = qi.postClickQualityScore || 'UNKNOWN';
+        const cq = qi.creativeQualityScore || 'UNKNOWN';
+        const ec = qi.searchPredictedCtr || 'UNKNOWN';
+        if (g.lp[pcq] !== undefined) g.lp[pcq]++;
+        if (g.ar[cq] !== undefined) g.ar[cq]++;
+        if (g.ec[ec] !== undefined) g.ec[ec]++;
+      }
+    }
+
+    // 3) landing_page_view metrics
+    const lpvData = await runQuery(`
+      SELECT
+        landing_page_view.unexpanded_final_url,
+        metrics.clicks, metrics.impressions, metrics.ctr,
+        metrics.cost_micros, metrics.conversions, metrics.average_cpc,
+        metrics.mobile_friendly_clicks_percentage
+      FROM landing_page_view
+      WHERE segments.date DURING LAST_30_DAYS
+    `);
+    const lpvByUrl = new Map();
+    for (const stream of lpvData) {
+      for (const row of (stream.results || [])) {
+        const u = row.landingPageView?.unexpandedFinalUrl;
+        if (!u) continue;
+        if (!lpvByUrl.has(u)) {
+          lpvByUrl.set(u, { clicks: 0, impressions: 0, cost_micros: 0, conversions: 0, mob_sum: 0, mob_count: 0 });
+        }
+        const p = lpvByUrl.get(u);
+        const m = row.metrics || {};
+        p.clicks += parseInt(m.clicks || 0, 10);
+        p.impressions += parseInt(m.impressions || 0, 10);
+        p.cost_micros += parseInt(m.costMicros || 0, 10);
+        p.conversions += parseFloat(m.conversions || 0);
+        if (typeof m.mobileFriendlyClicksPercentage === 'number') {
+          p.mob_sum += m.mobileFriendlyClicksPercentage;
+          p.mob_count++;
+        }
+      }
+    }
+
+    // 4) Match LPs by slug. URL match is "url contains /lp/{slug}".
+    const allLps = db.prepare('SELECT id, slug FROM landing_pages').all();
+    const updatePage = db.prepare(`
+      UPDATE landing_pages
+      SET gads_campaign_id = ?, gads_campaign_name = ?, gads_ad_group_id = ?, gads_ad_group_name = ?
+      WHERE id = ?
+    `);
+    const upsertMetrics = db.prepare(`
+      INSERT INTO gads_lp_metrics (
+        landing_page_id, quality_score, post_click_quality_score, creative_quality_score,
+        search_predicted_ctr, qs_keyword_count, qs_breakdown,
+        impressions, clicks, cost_micros, conversions, ctr, avg_cpc_micros,
+        mobile_friendly_click_rate, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(landing_page_id) DO UPDATE SET
+        quality_score = excluded.quality_score,
+        post_click_quality_score = excluded.post_click_quality_score,
+        creative_quality_score = excluded.creative_quality_score,
+        search_predicted_ctr = excluded.search_predicted_ctr,
+        qs_keyword_count = excluded.qs_keyword_count,
+        qs_breakdown = excluded.qs_breakdown,
+        impressions = excluded.impressions,
+        clicks = excluded.clicks,
+        cost_micros = excluded.cost_micros,
+        conversions = excluded.conversions,
+        ctr = excluded.ctr,
+        avg_cpc_micros = excluded.avg_cpc_micros,
+        mobile_friendly_click_rate = excluded.mobile_friendly_click_rate,
+        refreshed_at = CURRENT_TIMESTAMP
+    `);
+
+    // pickDominant: returns label of bucket with highest count, or null
+    const pickDominant = (b) => {
+      const entries = [['ABOVE_AVERAGE', b.ABOVE_AVERAGE], ['AVERAGE', b.AVERAGE], ['BELOW_AVERAGE', b.BELOW_AVERAGE]];
+      const best = entries.sort((a, b) => b[1] - a[1])[0];
+      return best && best[1] > 0 ? best[0] : null;
+    };
+
+    let linkedCount = 0;
+    let metricsCount = 0;
+    for (const lp of allLps) {
+      const slugMarker = `/lp/${lp.slug}`;
+      let group = null;
+      let lpvStats = null;
+
+      for (const [u, g] of urlToGroup) {
+        if (u.includes(slugMarker)) { group = g; break; }
+      }
+      for (const [u, p] of lpvByUrl) {
+        if (u.includes(slugMarker)) { lpvStats = p; break; }
+      }
+
+      if (group) {
+        updatePage.run(group.campaign_id, group.campaign_name, group.ad_group_id, group.ad_group_name, lp.id);
+        linkedCount++;
+      }
+
+      // Metrics row even when no QS/LPV available, so freshness shows
+      const qs = group ? qsByAdGroup.get(group.ad_group_id) : null;
+      const avgQs = qs && qs.qs_count ? +(qs.qs_sum / qs.qs_count).toFixed(2) : null;
+      const breakdown = qs ? JSON.stringify({ lp: qs.lp, ar: qs.ar, ec: qs.ec }) : null;
+
+      const clicks = lpvStats ? lpvStats.clicks : 0;
+      const impressions = lpvStats ? lpvStats.impressions : 0;
+      const costMicros = lpvStats ? lpvStats.cost_micros : 0;
+
+      upsertMetrics.run(
+        lp.id,
+        avgQs,
+        qs ? pickDominant(qs.lp) : null,
+        qs ? pickDominant(qs.ar) : null,
+        qs ? pickDominant(qs.ec) : null,
+        qs ? qs.qs_count : 0,
+        breakdown,
+        impressions,
+        clicks,
+        costMicros,
+        lpvStats ? lpvStats.conversions : 0,
+        impressions ? +(clicks / impressions).toFixed(4) : 0,
+        clicks ? Math.round(costMicros / clicks) : 0,
+        lpvStats && lpvStats.mob_count ? +(lpvStats.mob_sum / lpvStats.mob_count).toFixed(4) : 0
+      );
+      metricsCount++;
+    }
+
+    res.json({
+      success: true,
+      linked: linkedCount,
+      metrics_updated: metricsCount,
+      total_lps: allLps.length
+    });
+  } catch (err) {
+    console.error('Error refreshing LP metrics:', err);
+    res.status(500).json({ error: 'Failed to refresh LP metrics: ' + err.message });
+  }
+});
+
 // Manual conversion upload from admin
 router.post('/upload-conversion', authenticateToken, async (req, res) => {
   const { lead_id, conversion_action_id, conversion_value } = req.body;
