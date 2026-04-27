@@ -473,4 +473,283 @@ router.get('/heatmap', authenticateToken, (req, res) => {
   }
 });
 
+// ─── Media Buyer Pivot ──────────────────────────────────────────────────────
+// POST /api/deep-analysis/pivot
+// Body: { rows: [...], cols: [...optional], measures: [...], filters: { from, to, platform, country, device, source } }
+// Allowed dimensions: source, medium, campaign, term, content, country, region, city,
+//                     device, browser, os, landing_page, ab_variant, weekday, hour,
+//                     funnel_stage, has_gclid, has_fbclid, has_msclkid, day
+// Allowed measures:   visits, step1_debt, step2_mca_yes, step2_mca_no, leads,
+//                     debt_to_visit_pct, mca_yes_to_debt_pct, lead_to_visit_pct,
+//                     lead_to_mca_yes_pct, total_debt_amount
+
+const DIMENSION_EXPR = {
+  source:        `COALESCE(NULLIF(LOWER(v.utm_source), ''), 'direct/unknown')`,
+  medium:        `COALESCE(NULLIF(LOWER(v.utm_medium), ''), '(none)')`,
+  campaign:      `COALESCE(NULLIF(v.utm_campaign, ''), '(none)')`,
+  term:          `COALESCE(NULLIF(v.utm_term, ''), '(none)')`,
+  content:       `COALESCE(NULLIF(v.utm_content, ''), '(none)')`,
+  country:       `COALESCE(NULLIF(v.country, ''), 'Unknown')`,
+  region:        `COALESCE(NULLIF(v.region, ''), 'Unknown')`,
+  city:          `COALESCE(NULLIF(v.city, ''), 'Unknown')`,
+  device:        `COALESCE(NULLIF(v.device_type, ''), 'Unknown')`,
+  browser:       `COALESCE(NULLIF(v.browser, ''), 'Unknown')`,
+  os:            `COALESCE(NULLIF(v.os, ''), 'Unknown')`,
+  landing_page:  `COALESCE(NULLIF(v.landing_page, ''), '(none)')`,
+  ab_variant:    `COALESCE(NULLIF(v.ab_variant, ''), '(default)')`,
+  weekday:       `CASE strftime('%w', v.first_visit) WHEN '0' THEN 'Sun' WHEN '1' THEN 'Mon' WHEN '2' THEN 'Tue' WHEN '3' THEN 'Wed' WHEN '4' THEN 'Thu' WHEN '5' THEN 'Fri' WHEN '6' THEN 'Sat' END`,
+  hour:          `strftime('%H', v.first_visit)`,
+  day:           `DATE(v.first_visit)`,
+  has_gclid:     `CASE WHEN v.gclid IS NOT NULL AND v.gclid != '' THEN 'Yes' ELSE 'No' END`,
+  has_fbclid:    `CASE WHEN v.fbclid IS NOT NULL AND v.fbclid != '' THEN 'Yes' ELSE 'No' END`,
+  has_msclkid:   `CASE WHEN v.msclkid IS NOT NULL AND v.msclkid != '' THEN 'Yes' ELSE 'No' END`,
+  funnel_stage:  `CASE
+                    WHEN v.converted = 1 THEN '5_lead'
+                    WHEN v.step2_mca_value = 'Yes' THEN '4_mca_yes'
+                    WHEN v.step2_mca_value = 'No'  THEN '3_mca_no'
+                    WHEN v.step1_debt_at IS NOT NULL THEN '2_debt'
+                    ELSE '1_visit_only'
+                  END`
+};
+
+router.post('/pivot', authenticateToken, (req, res) => {
+  try {
+    const { rows = [], cols = [], measures = ['visits', 'step1_debt', 'step2_mca_yes', 'step2_mca_no', 'leads'], filters = {} } = req.body || {};
+    const allDims = [...rows, ...cols].filter(Boolean);
+    if (allDims.length === 0) return res.status(400).json({ error: 'At least one row dimension required' });
+    for (const d of allDims) {
+      if (!DIMENSION_EXPR[d]) return res.status(400).json({ error: `Unknown dimension: ${d}` });
+    }
+
+    const tz = getConfiguredTimezone();
+    const where = [];
+    const params = [];
+    if (filters.from) { where.push(`v.first_visit >= ?`); params.push(localDateToUtcRange(filters.from, tz).start); }
+    if (filters.to)   { where.push(`v.first_visit <= ?`); params.push(localDateToUtcRange(filters.to, tz).end); }
+    if (filters.country) { where.push(`v.country = ?`); params.push(filters.country); }
+    if (filters.device)  { where.push(`v.device_type = ?`); params.push(filters.device); }
+    if (filters.source)  { where.push(`LOWER(v.utm_source) = ?`); params.push(String(filters.source).toLowerCase()); }
+    if (filters.platform) {
+      where.push(`v.landing_page IN (SELECT '/lp/' || slug || '/' FROM landing_pages WHERE platform = ?) OR v.landing_page LIKE '%' || (SELECT '/' || slug || '/' FROM landing_pages WHERE platform = ? LIMIT 1) || '%'`);
+      params.push(filters.platform, filters.platform);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const dimSelect = allDims.map((d, i) => `${DIMENSION_EXPR[d]} AS d${i}`).join(', ');
+    const dimGroup  = allDims.map((d, i) => `d${i}`).join(', ');
+
+    const sql = `
+      WITH base AS (
+        SELECT
+          ${dimSelect},
+          v.id AS visitor_id,
+          v.step1_debt_at, v.step2_mca_value, v.converted,
+          (SELECT SUM(
+            CASE
+              WHEN l.debt_amount LIKE '%,%' THEN
+                CAST(REPLACE(REPLACE(REPLACE(l.debt_amount, '$', ''), ',', ''), '+', '') AS REAL)
+              ELSE CAST(l.debt_amount AS REAL)
+            END
+          ) FROM leads l WHERE l.eli_clickid = v.eli_clickid) AS lead_debt
+        FROM visitors v
+        ${whereSql}
+      )
+      SELECT
+        ${dimGroup},
+        COUNT(*) AS visits,
+        SUM(CASE WHEN step1_debt_at IS NOT NULL THEN 1 ELSE 0 END) AS step1_debt,
+        SUM(CASE WHEN step2_mca_value = 'Yes' THEN 1 ELSE 0 END) AS step2_mca_yes,
+        SUM(CASE WHEN step2_mca_value = 'No'  THEN 1 ELSE 0 END) AS step2_mca_no,
+        SUM(CASE WHEN converted = 1 THEN 1 ELSE 0 END) AS leads,
+        ROUND(COALESCE(SUM(lead_debt), 0)) AS total_debt_amount
+      FROM base
+      GROUP BY ${dimGroup}
+      ORDER BY visits DESC
+      LIMIT 5000
+    `;
+
+    const data = db.prepare(sql).all(...params).map(r => {
+      const dimValues = {};
+      allDims.forEach((d, i) => { dimValues[d] = r[`d${i}`]; });
+      const visits = r.visits || 0;
+      const step1 = r.step1_debt || 0;
+      const yes = r.step2_mca_yes || 0;
+      const leads = r.leads || 0;
+      return {
+        ...dimValues,
+        visits,
+        step1_debt: step1,
+        step2_mca_yes: yes,
+        step2_mca_no: r.step2_mca_no || 0,
+        leads,
+        total_debt_amount: r.total_debt_amount || 0,
+        debt_to_visit_pct: visits ? +(step1 / visits * 100).toFixed(1) : 0,
+        mca_yes_to_debt_pct: step1 ? +(yes / step1 * 100).toFixed(1) : 0,
+        lead_to_visit_pct: visits ? +(leads / visits * 100).toFixed(2) : 0,
+        lead_to_mca_yes_pct: yes ? +(leads / yes * 100).toFixed(1) : 0
+      };
+    });
+
+    res.json({ rows, cols, measures, data, count: data.length });
+  } catch (err) {
+    console.error('Pivot error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Google Ads demographic breakdowns ──────────────────────────────────────
+// Per-demographic clicks / impressions / cost / conversions / CR pulled live
+// from Google Ads. Filter: ?days=7|14|30 (default 30).
+const googleAds = require('./google-ads');
+
+async function runGadsQuery(query, accessToken, developerToken, customerId, loginCustomerId) {
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+    'developer-token': developerToken,
+    'Content-Type': 'application/json'
+  };
+  const lid = loginCustomerId || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+  if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
+  const r = await fetch(
+    `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:searchStream`,
+    { method: 'POST', headers, body: JSON.stringify({ query }) }
+  );
+  const d = await r.json();
+  const apiError = d.error || d[0]?.error;
+  if (apiError) throw new Error(apiError.message || JSON.stringify(apiError));
+  return d;
+}
+
+function dateClause(req) {
+  const days = parseInt(req.query.days, 10);
+  if (days === 7) return 'LAST_7_DAYS';
+  if (days === 14) return 'LAST_14_DAYS';
+  return 'LAST_30_DAYS';
+}
+
+async function pullDemographic(req, res, viewName, idField, valueField, label) {
+  try {
+    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+      return res.status(400).json({ error: 'Google Ads not connected' });
+    }
+    const accessToken = await googleAds.getValidAccessToken(config);
+    if (!accessToken) return res.status(401).json({ error: 'Failed to get Google Ads access token' });
+    const developerToken = googleAds.getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const range = dateClause(req);
+    const query = `
+      SELECT
+        ${valueField},
+        metrics.impressions, metrics.clicks, metrics.cost_micros,
+        metrics.conversions, metrics.average_cpc, metrics.ctr
+      FROM ${viewName}
+      WHERE segments.date DURING ${range}
+    `;
+
+    const data = await runGadsQuery(query, accessToken, developerToken, config.customer_id, config.login_customer_id);
+    const buckets = new Map();
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        // Resolve nested path "ad_group_criterion.gender.type" → row.adGroupCriterion.gender.type
+        const parts = valueField.split('.');
+        let v = row;
+        for (const p of parts) {
+          const camel = p.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+          v = v && v[camel];
+        }
+        const key = String(v || 'UNKNOWN');
+        if (!buckets.has(key)) buckets.set(key, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+        const b = buckets.get(key);
+        const m = row.metrics || {};
+        b.impressions += parseInt(m.impressions || 0, 10);
+        b.clicks += parseInt(m.clicks || 0, 10);
+        b.cost_micros += parseInt(m.costMicros || 0, 10);
+        b.conversions += parseFloat(m.conversions || 0);
+      }
+    }
+    const rows = [...buckets.entries()].map(([key, b]) => ({
+      [label]: key,
+      impressions: b.impressions,
+      clicks: b.clicks,
+      cost: +(b.cost_micros / 1_000_000).toFixed(2),
+      conversions: +b.conversions.toFixed(2),
+      ctr: b.impressions ? +(b.clicks / b.impressions * 100).toFixed(2) : 0,
+      cpc: b.clicks ? +(b.cost_micros / b.clicks / 1_000_000).toFixed(2) : 0,
+      conv_rate: b.clicks ? +(b.conversions / b.clicks * 100).toFixed(2) : 0,
+      cpa: b.conversions ? +(b.cost_micros / b.conversions / 1_000_000).toFixed(2) : 0
+    })).sort((a, b) => b.clicks - a.clicks);
+    res.json({ range, rows });
+  } catch (err) {
+    console.error(`${viewName} error:`, err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+router.get('/demographics/gender', authenticateToken, (req, res) =>
+  pullDemographic(req, res, 'gender_view', 'ad_group_criterion.criterion_id', 'ad_group_criterion.gender.type', 'gender'));
+
+router.get('/demographics/age-range', authenticateToken, (req, res) =>
+  pullDemographic(req, res, 'age_range_view', 'ad_group_criterion.criterion_id', 'ad_group_criterion.age_range.type', 'age_range'));
+
+router.get('/demographics/household-income', authenticateToken, (req, res) =>
+  pullDemographic(req, res, 'income_range_view', 'ad_group_criterion.criterion_id', 'ad_group_criterion.income_range.type', 'income_range'));
+
+router.get('/demographics/parental-status', authenticateToken, (req, res) =>
+  pullDemographic(req, res, 'parental_status_view', 'ad_group_criterion.criterion_id', 'ad_group_criterion.parental_status.type', 'parental_status'));
+
+router.get('/demographics/geo', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+      return res.status(400).json({ error: 'Google Ads not connected' });
+    }
+    const accessToken = await googleAds.getValidAccessToken(config);
+    if (!accessToken) return res.status(401).json({ error: 'Failed to get Google Ads access token' });
+    const developerToken = googleAds.getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const range = dateClause(req);
+    // user_location_view groups by physical location (where the user actually is)
+    const query = `
+      SELECT
+        user_location_view.country_criterion_id,
+        segments.geo_target_region,
+        segments.geo_target_city,
+        metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+      FROM user_location_view
+      WHERE segments.date DURING ${range}
+    `;
+    const data = await runGadsQuery(query, accessToken, developerToken, config.customer_id, config.login_customer_id);
+    const byRegion = new Map();
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        const region = row.segments?.geoTargetRegion || 'Unknown';
+        if (!byRegion.has(region)) byRegion.set(region, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+        const b = byRegion.get(region);
+        const m = row.metrics || {};
+        b.impressions += parseInt(m.impressions || 0, 10);
+        b.clicks += parseInt(m.clicks || 0, 10);
+        b.cost_micros += parseInt(m.costMicros || 0, 10);
+        b.conversions += parseFloat(m.conversions || 0);
+      }
+    }
+    const rows = [...byRegion.entries()].map(([region, b]) => ({
+      region_resource: region,
+      impressions: b.impressions,
+      clicks: b.clicks,
+      cost: +(b.cost_micros / 1_000_000).toFixed(2),
+      conversions: +b.conversions.toFixed(2),
+      ctr: b.impressions ? +(b.clicks / b.impressions * 100).toFixed(2) : 0,
+      cpc: b.clicks ? +(b.cost_micros / b.clicks / 1_000_000).toFixed(2) : 0,
+      cpa: b.conversions ? +(b.cost_micros / b.conversions / 1_000_000).toFixed(2) : 0
+    })).sort((a, b) => b.clicks - a.clicks);
+    res.json({ range, rows });
+  } catch (err) {
+    console.error('geo demographics error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

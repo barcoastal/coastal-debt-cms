@@ -1883,3 +1883,5 @@ module.exports = router;
 module.exports.fetchGclidCost = fetchGclidCost;
 module.exports.fetchMissingCosts = fetchMissingCosts;
 module.exports.uploadConversion = uploadConversion;
+module.exports.getValidAccessToken = getValidAccessToken;
+module.exports.getDeveloperToken = getDeveloperToken;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Deep Analysis | Coastal Debt CMS</title>
+  <title>Google Deep Analysis | Coastal Debt CMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -84,7 +84,7 @@
         </a>
         <a href="/admin/deep-analysis.html" class="active">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
-          Deep Analysis
+          Google Deep Analysis
         </a>
         <a href="/admin/inbox.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -199,7 +199,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Deep Analysis</h1>
+        <h1>Google Deep Analysis</h1>
       </div>
 
       <!-- Filters -->
@@ -231,6 +231,105 @@
             <option value="other">Other</option>
           </select>
           <button class="btn btn-primary" onclick="loadAll()">Apply</button>
+        </div>
+      </div>
+
+      <!-- Pivot Table Builder -->
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 class="card-title" style="margin:0;">Pivot Table</h3>
+            <small style="color:#94a3b8;">Group your visitor + funnel data by any dimension. Built for media buyers.</small>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:12px;align-items:end;padding:12px 0;">
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Row dimension</label>
+            <select id="pivotRow" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="source" selected>Source (utm_source)</option>
+              <option value="medium">Medium (utm_medium)</option>
+              <option value="campaign">Campaign (utm_campaign)</option>
+              <option value="term">Term/Keyword (utm_term)</option>
+              <option value="content">Ad/Content (utm_content)</option>
+              <option value="country">Country</option>
+              <option value="region">State / Region</option>
+              <option value="city">City</option>
+              <option value="device">Device type</option>
+              <option value="browser">Browser</option>
+              <option value="os">OS</option>
+              <option value="landing_page">Landing page</option>
+              <option value="ab_variant">A/B variant</option>
+              <option value="weekday">Weekday</option>
+              <option value="hour">Hour of day</option>
+              <option value="day">Day (date)</option>
+              <option value="funnel_stage">Funnel stage</option>
+              <option value="has_gclid">Has GCLID</option>
+              <option value="has_fbclid">Has FBCLID</option>
+              <option value="has_msclkid">Has MSCLKID</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Column dimension</label>
+            <select id="pivotCol" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="">— None —</option>
+              <option value="device">Device type</option>
+              <option value="country">Country</option>
+              <option value="region">State / Region</option>
+              <option value="weekday">Weekday</option>
+              <option value="funnel_stage">Funnel stage</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Measures</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;">
+              <label><input type="checkbox" class="pivotMeasure" value="visits" checked> Visits</label>
+              <label><input type="checkbox" class="pivotMeasure" value="step1_debt" checked> Debt</label>
+              <label><input type="checkbox" class="pivotMeasure" value="step2_mca_yes" checked> MCA Yes</label>
+              <label><input type="checkbox" class="pivotMeasure" value="step2_mca_no" checked> MCA No</label>
+              <label><input type="checkbox" class="pivotMeasure" value="leads" checked> Leads</label>
+              <label><input type="checkbox" class="pivotMeasure" value="lead_to_visit_pct"> CR%</label>
+              <label><input type="checkbox" class="pivotMeasure" value="debt_to_visit_pct"> Debt%</label>
+              <label><input type="checkbox" class="pivotMeasure" value="mca_yes_to_debt_pct"> Qual%</label>
+              <label><input type="checkbox" class="pivotMeasure" value="total_debt_amount"> Total $ debt</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="loadPivot()" style="white-space:nowrap;">Run Pivot</button>
+        </div>
+        <div id="pivotResult" class="table-container" style="max-height:520px;overflow:auto;">
+          <div style="padding:30px;text-align:center;color:#94a3b8;">Click "Run Pivot" to load.</div>
+        </div>
+      </div>
+
+      <!-- Google Ads Demographics -->
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 class="card-title" style="margin:0;">Google Ads Demographics</h3>
+            <small style="color:#94a3b8;">Aggregate clicks / cost / conv per demographic, pulled live from Google Ads.</small>
+          </div>
+          <select id="demoDays" onchange="loadAllDemographics()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30" selected>Last 30 days</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Gender</h4>
+            <div id="demoGender" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Age range</h4>
+            <div id="demoAge" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Household income</h4>
+            <div id="demoIncome" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
+          <div>
+            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Parental status</h4>
+            <div id="demoParental" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
+          </div>
         </div>
       </div>
 
@@ -426,6 +525,181 @@
       loadLandingPages(qs);
       loadCallQuality(qs);
       loadHeatmap(qs);
+      loadPivot();
+      loadAllDemographics();
+    }
+
+    // --- Pivot Table ---
+    function _pivotFilters() {
+      const params = new URLSearchParams();
+      const range = currentRange === 'custom'
+        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
+        : (typeof getDateRangeFromPreset === 'function' ? getDateRangeFromPreset(currentRange) : {});
+      const filters = {};
+      if (range && range.from) filters.from = range.from;
+      if (range && range.to)   filters.to   = range.to;
+      const platform = document.getElementById('platformFilter').value;
+      if (platform) filters.platform = platform;
+      return filters;
+    }
+
+    function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+    async function loadPivot() {
+      const row = document.getElementById('pivotRow').value;
+      const colVal = document.getElementById('pivotCol').value;
+      const cols = colVal ? [colVal] : [];
+      const measures = [...document.querySelectorAll('.pivotMeasure:checked')].map(c => c.value);
+      const filters = _pivotFilters();
+      const target = document.getElementById('pivotResult');
+      target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Loading…</div>';
+      try {
+        const r = await fetch('/api/deep-analysis/pivot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows: [row], cols, measures, filters })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Pivot failed');
+        if (!d.data || d.data.length === 0) {
+          target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data for this combination.</div>';
+          return;
+        }
+        renderPivotTable(d, row, cols, measures, target);
+      } catch (err) {
+        target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Error: ${_esc(err.message)}</div>`;
+      }
+    }
+
+    function renderPivotTable(d, rowDim, cols, measures, target) {
+      const measureMeta = {
+        visits: { label: 'Visits', fmt: v => (v||0).toLocaleString() },
+        step1_debt: { label: 'Debt', fmt: v => (v||0).toLocaleString() },
+        step2_mca_yes: { label: 'MCA Yes', fmt: v => (v||0).toLocaleString(), color: '#16a34a' },
+        step2_mca_no: { label: 'MCA No', fmt: v => (v||0).toLocaleString(), color: '#dc2626' },
+        leads: { label: 'Leads', fmt: v => (v||0).toLocaleString(), color: '#3052FF' },
+        lead_to_visit_pct: { label: 'CR%', fmt: v => (v||0).toFixed(2)+'%' },
+        debt_to_visit_pct: { label: 'Debt%', fmt: v => (v||0).toFixed(1)+'%' },
+        mca_yes_to_debt_pct: { label: 'Qual%', fmt: v => (v||0).toFixed(1)+'%' },
+        total_debt_amount: { label: 'Total $ debt', fmt: v => '$' + (v||0).toLocaleString() }
+      };
+
+      // No column dim → flat group-by
+      if (cols.length === 0) {
+        const tot = { visits:0, step1_debt:0, step2_mca_yes:0, step2_mca_no:0, leads:0, total_debt_amount:0 };
+        for (const r of d.data) for (const k of Object.keys(tot)) tot[k] += r[k] || 0;
+        const headers = `<tr><th>${_esc(rowDim)}</th>${measures.map(m => `<th style="text-align:right;">${measureMeta[m].label}</th>`).join('')}</tr>`;
+        const rowsHtml = d.data.map(r => `<tr>
+          <td><strong>${_esc(r[rowDim] || '—')}</strong></td>
+          ${measures.map(m => {
+            const meta = measureMeta[m];
+            const c = meta.color || 'inherit';
+            return `<td style="text-align:right;color:${c};">${meta.fmt(r[m])}</td>`;
+          }).join('')}
+        </tr>`).join('');
+        const totHtml = `<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
+          <td>Total</td>
+          ${measures.map(m => {
+            const meta = measureMeta[m];
+            // Pct measures don't sum cleanly; recompute or hide
+            if (m === 'lead_to_visit_pct') return `<td style="text-align:right;">${tot.visits>0?(tot.leads/tot.visits*100).toFixed(2):0}%</td>`;
+            if (m === 'debt_to_visit_pct') return `<td style="text-align:right;">${tot.visits>0?(tot.step1_debt/tot.visits*100).toFixed(1):0}%</td>`;
+            if (m === 'mca_yes_to_debt_pct') return `<td style="text-align:right;">${tot.step1_debt>0?(tot.step2_mca_yes/tot.step1_debt*100).toFixed(1):0}%</td>`;
+            return `<td style="text-align:right;color:${meta.color||'inherit'};">${meta.fmt(tot[m])}</td>`;
+          }).join('')}
+        </tr>`;
+        target.innerHTML = `<table><thead>${headers}</thead><tbody>${rowsHtml}${totHtml}</tbody></table>`;
+        return;
+      }
+
+      // Column dim → cross-tab. Pivot: rows of rowDim × columns of colDim, cell = sum of measure[0]
+      const colDim = cols[0];
+      const colValues = [...new Set(d.data.map(r => r[colDim]))].sort();
+      const rowMap = new Map();
+      for (const r of d.data) {
+        const rk = r[rowDim];
+        if (!rowMap.has(rk)) rowMap.set(rk, {});
+        rowMap.get(rk)[r[colDim]] = r;
+      }
+      // For each measure, render its own table
+      target.innerHTML = measures.map(m => {
+        const meta = measureMeta[m];
+        const headers = `<tr><th>${_esc(rowDim)} \\ ${_esc(colDim)}</th>${colValues.map(c => `<th style="text-align:right;">${_esc(c)}</th>`).join('')}<th style="text-align:right;">Total</th></tr>`;
+        const rowsHtml = [...rowMap.entries()].map(([rk, byCol]) => {
+          let rowTotal = 0;
+          const cells = colValues.map(cv => {
+            const cell = byCol[cv];
+            const v = cell ? (cell[m] || 0) : 0;
+            rowTotal += v;
+            return `<td style="text-align:right;color:${meta.color||'inherit'};">${cell ? meta.fmt(v) : '—'}</td>`;
+          }).join('');
+          return `<tr><td><strong>${_esc(rk || '—')}</strong></td>${cells}<td style="text-align:right;font-weight:700;">${meta.fmt(rowTotal)}</td></tr>`;
+        }).join('');
+        return `<div style="margin-bottom:18px;"><h4 style="font-size:13px;color:#475569;margin:8px 0;">${meta.label}</h4><table style="width:100%;border-collapse:collapse;"><thead>${headers}</thead><tbody>${rowsHtml}</tbody></table></div>`;
+      }).join('');
+    }
+
+    // --- Google Ads Demographics ---
+    async function loadAllDemographics() {
+      const days = document.getElementById('demoDays').value || 30;
+      const qs = '?days=' + days;
+      loadDemoTable(qs, '/api/deep-analysis/demographics/gender', 'gender', 'demoGender');
+      loadDemoTable(qs, '/api/deep-analysis/demographics/age-range', 'age_range', 'demoAge');
+      loadDemoTable(qs, '/api/deep-analysis/demographics/household-income', 'income_range', 'demoIncome');
+      loadDemoTable(qs, '/api/deep-analysis/demographics/parental-status', 'parental_status', 'demoParental');
+    }
+
+    async function loadDemoTable(qs, url, label, mountId) {
+      const target = document.getElementById(mountId);
+      target.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;">Loading…</div>';
+      try {
+        const r = await fetch(url + qs);
+        const d = await r.json();
+        if (!r.ok) {
+          target.innerHTML = `<div style="padding:20px;text-align:center;color:#dc2626;font-size:12px;">${_esc(d.error || 'Failed')}</div>`;
+          return;
+        }
+        if (!d.rows || d.rows.length === 0) {
+          target.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;">No data</div>';
+          return;
+        }
+        const totals = d.rows.reduce((acc, r) => ({
+          impressions: acc.impressions + r.impressions,
+          clicks: acc.clicks + r.clicks,
+          cost: acc.cost + r.cost,
+          conversions: acc.conversions + r.conversions
+        }), { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
+        const niceLabel = s => String(s).replace(/^[A-Z_]+:/, '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()).toLowerCase().replace(/^./, c => c.toUpperCase());
+        target.innerHTML = `<table style="width:100%;font-size:12px;">
+          <thead><tr>
+            <th style="text-align:left;">${label}</th>
+            <th style="text-align:right;">Clicks</th>
+            <th style="text-align:right;">Cost</th>
+            <th style="text-align:right;">Conv</th>
+            <th style="text-align:right;">CR</th>
+            <th style="text-align:right;">CPA</th>
+          </tr></thead>
+          <tbody>
+            ${d.rows.map(r => `<tr>
+              <td><strong>${_esc(niceLabel(r[label]))}</strong></td>
+              <td style="text-align:right;">${r.clicks.toLocaleString()}</td>
+              <td style="text-align:right;">$${r.cost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td style="text-align:right;">${r.conversions.toFixed(0)}</td>
+              <td style="text-align:right;">${r.conv_rate}%</td>
+              <td style="text-align:right;">$${r.cpa}</td>
+            </tr>`).join('')}
+            <tr style="background:#f8fafc;font-weight:700;">
+              <td>Total</td>
+              <td style="text-align:right;">${totals.clicks.toLocaleString()}</td>
+              <td style="text-align:right;">$${totals.cost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td style="text-align:right;">${totals.conversions.toFixed(0)}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tbody>
+        </table>`;
+      } catch (err) {
+        target.innerHTML = `<div style="padding:20px;text-align:center;color:#dc2626;font-size:12px;">${_esc(err.message)}</div>`;
+      }
     }
 
     // --- Section 1: Scorecard ---
