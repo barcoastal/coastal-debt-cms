@@ -264,6 +264,32 @@
         </div>
       </div>
 
+      <!-- Funnel by Source -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Funnel by Source</h3>
+          <small style="color:#94a3b8;">visits → answered debt size → answered MCA → lead</small>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th style="text-align:right;">Visits</th>
+                <th style="text-align:right;">Debt size</th>
+                <th style="text-align:right;">MCA Q</th>
+                <th style="text-align:right;">MCA = Yes</th>
+                <th style="text-align:right;">Leads</th>
+                <th style="text-align:right;">CR</th>
+              </tr>
+            </thead>
+            <tbody id="funnelBySourceTable">
+              <tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Charts Row 1: Leads & Cost + Revenue & Profit -->
       <div class="charts-grid">
         <div class="card">
@@ -721,6 +747,61 @@
         } catch (pfErr) {
           console.error('Error loading platform financials:', pfErr);
           document.getElementById('platformFinancialsTable').innerHTML = '<tr><td colspan="7" class="empty-state">Failed to load</td></tr>';
+        }
+
+        // Funnel by source
+        try {
+          const fbsRes = await fetch('/api/analytics/funnel-by-source' + qs);
+          const fbs = await fbsRes.json();
+          const fbsBody = document.getElementById('funnelBySourceTable');
+          if (!fbs || fbs.length === 0) {
+            fbsBody.innerHTML = '<tr><td colspan="7" class="empty-state">No visits in this range</td></tr>';
+          } else {
+            const sourceColors = {
+              google: '#4285F4', facebook: '#1877F2', meta: '#1877F2',
+              tiktok: '#000', reddit: '#FF4500', bing: '#00809D',
+              outbrain: '#E8590C', linkedin: '#0A66C2', email: '#EA4335',
+              direct: '#94a3b8', 'direct/unknown': '#94a3b8'
+            };
+            const sourceLabel = s => {
+              const map = { google: 'Google', facebook: 'Facebook', meta: 'Meta', tiktok: 'TikTok', reddit: 'Reddit', bing: 'Bing', outbrain: 'Outbrain', linkedin: 'LinkedIn' };
+              return map[s] || (s.charAt(0).toUpperCase() + s.slice(1));
+            };
+            const tot = fbs.reduce((acc, r) => {
+              acc.visits += r.visits; acc.step1_debt += r.step1_debt;
+              acc.step2_mca += r.step2_mca; acc.step2_mca_yes += r.step2_mca_yes; acc.leads += r.leads;
+              return acc;
+            }, { visits: 0, step1_debt: 0, step2_mca: 0, step2_mca_yes: 0, leads: 0 });
+            const cell = (count, base) => {
+              const pct = base > 0 ? Math.round(count / base * 100) : 0;
+              return `<td style="text-align:right;"><strong>${count.toLocaleString()}</strong> <span style="color:#94a3b8;font-size:11px;">(${pct}%)</span></td>`;
+            };
+            const rows = fbs.map(r => {
+              const color = sourceColors[r.source] || '#94a3b8';
+              return `<tr>
+                <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:8px;"></span><strong>${sourceLabel(r.source)}</strong></td>
+                <td style="text-align:right;"><strong>${r.visits.toLocaleString()}</strong></td>
+                ${cell(r.step1_debt, r.visits)}
+                ${cell(r.step2_mca, r.visits)}
+                ${cell(r.step2_mca_yes, r.visits)}
+                <td style="text-align:right;"><strong style="color:#3052FF;">${r.leads.toLocaleString()}</strong></td>
+                <td style="text-align:right;">${r.rates.visit_to_lead}%</td>
+              </tr>`;
+            }).join('');
+            const totalRow = `<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
+              <td>Total</td>
+              <td style="text-align:right;">${tot.visits.toLocaleString()}</td>
+              ${cell(tot.step1_debt, tot.visits)}
+              ${cell(tot.step2_mca, tot.visits)}
+              ${cell(tot.step2_mca_yes, tot.visits)}
+              <td style="text-align:right;color:#3052FF;">${tot.leads.toLocaleString()}</td>
+              <td style="text-align:right;">${tot.visits > 0 ? Math.round(tot.leads / tot.visits * 1000) / 10 : 0}%</td>
+            </tr>`;
+            fbsBody.innerHTML = rows + totalRow;
+          }
+        } catch (fbsErr) {
+          console.error('Error loading funnel by source:', fbsErr);
+          document.getElementById('funnelBySourceTable').innerHTML = '<tr><td colspan="7" class="empty-state">Failed to load</td></tr>';
         }
 
       } catch (err) {

@@ -252,6 +252,50 @@ router.get('/by-source', authenticateToken, (req, res) => {
   res.json(data);
 });
 
+// Funnel breakdown by traffic source: visits → debt size → MCA → leads
+// per channel (utm_source). Date filter (from/to) applies to first_visit.
+router.get('/funnel-by-source', authenticateToken, (req, res) => {
+  const { from, to } = req.query;
+  const tz = getConfiguredTimezone();
+  const conditions = [];
+  const params = [];
+  if (from) { conditions.push(`first_visit >= ?`); params.push(localDateToUtcRange(from, tz).start); }
+  if (to)   { conditions.push(`first_visit <= ?`); params.push(localDateToUtcRange(to, tz).end); }
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  const rows = db.prepare(`
+    SELECT
+      COALESCE(NULLIF(LOWER(utm_source), ''), 'direct/unknown') AS source,
+      COUNT(*) AS visits,
+      SUM(CASE WHEN step1_debt_at IS NOT NULL THEN 1 ELSE 0 END) AS step1_debt,
+      SUM(CASE WHEN step2_mca_at  IS NOT NULL THEN 1 ELSE 0 END) AS step2_mca,
+      SUM(CASE WHEN step2_mca_value = 'Yes' THEN 1 ELSE 0 END)  AS step2_mca_yes,
+      SUM(CASE WHEN converted = 1 THEN 1 ELSE 0 END)            AS leads
+    FROM visitors
+    ${where}
+    GROUP BY source
+    ORDER BY visits DESC
+  `).all(...params);
+
+  // Add conversion rates per row
+  const data = rows.map(r => ({
+    source: r.source,
+    visits: r.visits,
+    step1_debt: r.step1_debt,
+    step2_mca: r.step2_mca,
+    step2_mca_yes: r.step2_mca_yes,
+    leads: r.leads,
+    rates: {
+      visit_to_debt: r.visits > 0 ? Math.round(r.step1_debt / r.visits * 1000) / 10 : 0,
+      debt_to_mca: r.step1_debt > 0 ? Math.round(r.step2_mca / r.step1_debt * 1000) / 10 : 0,
+      mca_to_lead: r.step2_mca_yes > 0 ? Math.round(r.leads / r.step2_mca_yes * 1000) / 10 : 0,
+      visit_to_lead: r.visits > 0 ? Math.round(r.leads / r.visits * 1000) / 10 : 0
+    }
+  }));
+
+  res.json(data);
+});
+
 // Leads by platform
 router.get('/by-platform', authenticateToken, (req, res) => {
   const { conditions, params } = buildFilters(req);
