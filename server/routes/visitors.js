@@ -126,8 +126,17 @@ router.post('/funnel-step', async (req, res) => {
   if (step !== 'debt' && step !== 'mca') {
     return res.status(400).json({ error: 'step must be "debt" or "mca"' });
   }
-  const visitor = db.prepare('SELECT id, step1_debt_at, step2_mca_at FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
-  if (!visitor) return res.status(404).json({ error: 'Visitor not found — track first' });
+  // Self-heal: if /track hasn't fired yet (race), insert a stub row so the
+  // step value isn't lost. /track later will fill in the rest of the fields.
+  let visitor = db.prepare('SELECT id, step1_debt_at, step2_mca_at FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+  if (!visitor) {
+    try {
+      db.prepare(`INSERT INTO visitors (eli_clickid, ip_address, first_visit, last_visit) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`)
+        .run(eli_clickid, req.ip || '');
+    } catch (e) { /* unique race — ignore */ }
+    visitor = db.prepare('SELECT id, step1_debt_at, step2_mca_at FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+    if (!visitor) return res.status(500).json({ error: 'Could not create visitor row' });
+  }
 
   if (step === 'debt' && !visitor.step1_debt_at) {
     db.prepare(`UPDATE visitors SET step1_debt_at = CURRENT_TIMESTAMP, step1_debt_value = ? WHERE eli_clickid = ?`)
@@ -137,6 +146,29 @@ router.post('/funnel-step', async (req, res) => {
       .run(String(value || ''), eli_clickid);
   }
   res.json({ success: true });
+});
+
+// Diagnostic — most-recent funnel-step events. Lets Bar verify writes are happening.
+router.get('/funnel-step/recent', authenticateToken, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 30, 200);
+  const rows = db.prepare(`
+    SELECT eli_clickid, landing_page, utm_source,
+      step1_debt_at, step1_debt_value, step2_mca_at, step2_mca_value,
+      converted, first_visit, last_visit
+    FROM visitors
+    WHERE step1_debt_at IS NOT NULL OR step2_mca_at IS NOT NULL
+    ORDER BY COALESCE(step2_mca_at, step1_debt_at) DESC
+    LIMIT ?
+  `).all(limit);
+  const counts = db.prepare(`
+    SELECT
+      SUM(CASE WHEN step1_debt_at IS NOT NULL THEN 1 ELSE 0 END) AS step1_count,
+      SUM(CASE WHEN step2_mca_at  IS NOT NULL THEN 1 ELSE 0 END) AS step2_count,
+      SUM(CASE WHEN step1_debt_at >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS step1_24h,
+      SUM(CASE WHEN step2_mca_at  >= datetime('now', '-1 day') THEN 1 ELSE 0 END) AS step2_24h
+    FROM visitors
+  `).get();
+  res.json({ counts, recent: rows });
 });
 
 // Track visitor (public endpoint - called from landing pages)
