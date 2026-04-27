@@ -2017,6 +2017,9 @@ try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_name TEXT`); }
 try { db.exec(`ALTER TABLE gads_lp_metrics ADD COLUMN range_label TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN range_label TEXT`); } catch (e) {}
 
+// Manual folders (campaigns/ad groups Bar creates without Google Ads). Sync skips these.
+try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN is_manual INTEGER DEFAULT 0`); } catch (e) {}
+
 // Cache table for Google Ads ad-group meta (keywords + QS aggregated per ad group)
 db.exec(`
   CREATE TABLE IF NOT EXISTS gads_ad_group_meta (

@@ -1649,13 +1649,14 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       adGroupCount++;
     }
 
-    // Drop ad groups that are no longer enabled (so cache stays accurate)
+    // Drop ad groups that are no longer enabled (so cache stays accurate).
+    // Manual folders (is_manual=1) are preserved across syncs.
     const liveIds = [...qsByAdGroup.keys()].map(String);
     if (liveIds.length) {
       const placeholders = liveIds.map(() => '?').join(',');
-      db.prepare(`DELETE FROM gads_ad_group_meta WHERE ad_group_id NOT IN (${placeholders})`).run(...liveIds);
+      db.prepare(`DELETE FROM gads_ad_group_meta WHERE COALESCE(is_manual, 0) = 0 AND ad_group_id NOT IN (${placeholders})`).run(...liveIds);
     } else {
-      db.prepare('DELETE FROM gads_ad_group_meta').run();
+      db.prepare('DELETE FROM gads_ad_group_meta WHERE COALESCE(is_manual, 0) = 0').run();
     }
 
     res.json({
@@ -1680,7 +1681,8 @@ router.get('/ad-group-meta', authenticateToken, (req, res) => {
     SELECT ad_group_id, ad_group_name, campaign_id, campaign_name,
       keywords, keyword_count, avg_quality_score,
       post_click_quality_score, creative_quality_score, search_predicted_ctr,
-      qs_breakdown, impressions, clicks, cost_micros, conversions, range_label, refreshed_at
+      qs_breakdown, impressions, clicks, cost_micros, conversions, range_label,
+      COALESCE(is_manual, 0) AS is_manual, refreshed_at
     FROM gads_ad_group_meta
     ORDER BY campaign_name, ad_group_name
   `).all();
@@ -1690,6 +1692,99 @@ router.get('/ad-group-meta', authenticateToken, (req, res) => {
     qs_breakdown: (() => { try { return JSON.parse(r.qs_breakdown || '{}'); } catch (e) { return {}; } })()
   }));
   res.json({ ad_groups });
+});
+
+// Create a manual folder: a synthetic campaign + first ad group not tied to Google Ads.
+// Survives syncs (is_manual = 1). Bar uses this when the real campaign isn't live yet.
+router.post('/manual-folder', authenticateToken, (req, res) => {
+  const { campaign_name, ad_group_name } = req.body || {};
+  if (!campaign_name || !ad_group_name) {
+    return res.status(400).json({ error: 'campaign_name and ad_group_name required' });
+  }
+  const slugify = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+  const stamp = Date.now().toString(36);
+  // If the campaign_name already exists as a manual folder, reuse its synthetic id
+  const existing = db.prepare(`
+    SELECT campaign_id FROM gads_ad_group_meta
+    WHERE COALESCE(is_manual, 0) = 1 AND campaign_name = ?
+    LIMIT 1
+  `).get(campaign_name);
+  const campaignId = existing ? existing.campaign_id : `manual:${slugify(campaign_name)}-${stamp}`;
+  const adGroupId = `manual:${slugify(campaign_name)}-${slugify(ad_group_name)}-${stamp}`;
+
+  // Reject duplicate ad-group name within the same manual campaign
+  const dup = db.prepare(`
+    SELECT 1 FROM gads_ad_group_meta
+    WHERE campaign_id = ? AND ad_group_name = ?
+  `).get(campaignId, ad_group_name);
+  if (dup) return res.status(409).json({ error: 'Ad group with that name already exists in this folder' });
+
+  db.prepare(`
+    INSERT INTO gads_ad_group_meta (
+      ad_group_id, ad_group_name, campaign_id, campaign_name,
+      keywords, keyword_count, is_manual, refreshed_at
+    ) VALUES (?, ?, ?, ?, '[]', 0, 1, CURRENT_TIMESTAMP)
+  `).run(adGroupId, ad_group_name, campaignId, campaign_name);
+
+  res.json({
+    success: true,
+    campaign_id: campaignId,
+    campaign_name,
+    ad_group_id: adGroupId,
+    ad_group_name
+  });
+});
+
+// Add another ad group to an existing manual campaign.
+router.post('/manual-ad-group', authenticateToken, (req, res) => {
+  const { campaign_id, ad_group_name } = req.body || {};
+  if (!campaign_id || !ad_group_name) {
+    return res.status(400).json({ error: 'campaign_id and ad_group_name required' });
+  }
+  const camp = db.prepare(`
+    SELECT campaign_name, COALESCE(is_manual, 0) AS is_manual
+    FROM gads_ad_group_meta WHERE campaign_id = ? LIMIT 1
+  `).get(campaign_id);
+  if (!camp) return res.status(404).json({ error: 'Campaign not found' });
+  if (!camp.is_manual) return res.status(400).json({ error: 'Cannot add ad group to a Google Ads-synced campaign — manage in Google Ads' });
+
+  const dup = db.prepare(`
+    SELECT 1 FROM gads_ad_group_meta WHERE campaign_id = ? AND ad_group_name = ?
+  `).get(campaign_id, ad_group_name);
+  if (dup) return res.status(409).json({ error: 'Ad group with that name already exists in this folder' });
+
+  const slugify = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+  const stamp = Date.now().toString(36);
+  const adGroupId = `manual:${slugify(camp.campaign_name)}-${slugify(ad_group_name)}-${stamp}`;
+
+  db.prepare(`
+    INSERT INTO gads_ad_group_meta (
+      ad_group_id, ad_group_name, campaign_id, campaign_name,
+      keywords, keyword_count, is_manual, refreshed_at
+    ) VALUES (?, ?, ?, ?, '[]', 0, 1, CURRENT_TIMESTAMP)
+  `).run(adGroupId, ad_group_name, campaign_id, camp.campaign_name);
+
+  res.json({ success: true, ad_group_id: adGroupId, ad_group_name, campaign_id, campaign_name: camp.campaign_name });
+});
+
+// Delete a manual folder (campaign + all its ad groups). Only manual ones — Google Ads
+// rows are managed by sync. LPs tagged to the folder become Unassigned.
+router.delete('/manual-folder/:campaign_id', authenticateToken, (req, res) => {
+  const cid = req.params.campaign_id;
+  const camp = db.prepare(`
+    SELECT COALESCE(is_manual, 0) AS is_manual FROM gads_ad_group_meta WHERE campaign_id = ? LIMIT 1
+  `).get(cid);
+  if (!camp) return res.status(404).json({ error: 'Folder not found' });
+  if (!camp.is_manual) return res.status(400).json({ error: 'Cannot delete a Google Ads-synced folder' });
+
+  // Unlink LPs tagged to this manual folder so they fall back to Unassigned
+  db.prepare(`
+    UPDATE landing_pages
+    SET gads_campaign_id = NULL, gads_campaign_name = NULL, gads_ad_group_id = NULL, gads_ad_group_name = NULL
+    WHERE gads_campaign_id = ?
+  `).run(cid);
+  const result = db.prepare(`DELETE FROM gads_ad_group_meta WHERE campaign_id = ?`).run(cid);
+  res.json({ success: true, ad_groups_deleted: result.changes });
 });
 
 // Manual conversion upload from admin

@@ -197,6 +197,11 @@
 
     .clone-camp-btn { padding: 4px 12px; background: linear-gradient(135deg,#7c3aed 0%,#3052FF 100%); color: #fff; border: none; border-radius: 99px; font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(124,58,237,0.3); }
     .clone-camp-btn:hover { box-shadow: 0 2px 6px rgba(124,58,237,0.5); }
+
+    .manual-add-ag-btn { padding: 3px 10px; background: #eef2ff; color: #4338ca; border: 1px dashed #c7d2fe; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .manual-add-ag-btn:hover { background: #e0e7ff; border-style: solid; }
+    .manual-del-btn { padding: 3px 8px; background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+    .manual-del-btn:hover { background: #fecaca; }
   </style>
 </head>
 <body>
@@ -339,6 +344,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 113.51 9"/></svg>
             Sync Google Ads
           </button>
+          <button class="btn btn-secondary" onclick="showNewFolderModal()" title="Create a manual folder for a campaign that isn't live in Google Ads yet">+ New folder</button>
           <button class="btn btn-primary" onclick="showModal('createModal')">+ Create New Page</button>
         </div>
       </div>
@@ -1149,6 +1155,7 @@
       // Seed structure from Google Ads meta
       for (const m of meta) {
         const camp = ensureCampaign(String(m.campaign_id), m.campaign_name || 'Unnamed campaign');
+        camp.is_manual = !!m.is_manual;
         const ag = ensureAdGroup(camp, String(m.ad_group_id), m.ad_group_name || 'Unnamed ad group');
         ag.keywords = m.keywords || [];
         ag.avg_qs = m.avg_quality_score;
@@ -1200,16 +1207,27 @@
         });
         const isUnassigned = cid === UNASSIGNED;
         const isPending = String(cid).startsWith('pending:');
-        const cloneBtn = (!isUnassigned && !isPending && adGroupEntries.length > 0)
+        const isManual = !!camp.is_manual;
+        const cloneBtn = (!isUnassigned && !isPending && !isManual && adGroupEntries.length > 0)
           ? `<button class="clone-camp-btn" data-cid="${_esc(cid)}" data-cname="${_esc(camp.name)}" onclick="event.stopPropagation();showCloneCampaign(this)" title="Create one LP per ad group, optimized for the highest-QS keyword in each">⚡ Clone as LPs</button>`
           : '';
+        const manualControls = isManual
+          ? `
+            <button class="manual-add-ag-btn" data-cid="${_esc(cid)}" data-cname="${_esc(camp.name)}" onclick="event.stopPropagation();showAddAdGroupModal(this)" title="Add another ad group to this folder">+ Ad group</button>
+            <button class="manual-del-btn" data-cid="${_esc(cid)}" data-cname="${_esc(camp.name)}" onclick="event.stopPropagation();confirmDeleteManualFolder(this)" title="Delete this manual folder">🗑</button>`
+          : '';
+        const camName = isUnassigned ? '⚠ Unassigned' :
+          isPending ? '🟡 ' + camp.name :
+          isManual ? '📁 ' + camp.name :
+          camp.name;
         return `
           <div class="folder-campaign">
             <div class="folder-campaign-header ${isCollapsed ? 'collapsed' : ''}" onclick="toggleFolder(this, '${collapsedKey}')">
               <svg class="folder-chevron ${isCollapsed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              <div class="folder-campaign-name">${camp.name === 'Unassigned' ? '⚠ Unassigned' : (isPending ? '🟡 ' + camp.name : camp.name)}</div>
+              <div class="folder-campaign-name">${camName}</div>
               <div class="folder-campaign-stats">
                 ${cloneBtn}
+                ${manualControls}
                 <span><strong>${camp.pages_total}</strong> LPs</span>
                 <span><strong>${(camp.gads_clicks_total || camp.clicks_total).toLocaleString()}</strong> clicks</span>
                 <span><strong>${camp.leads_total}</strong> leads</span>
@@ -2513,6 +2531,149 @@
         status.textContent = err.message;
       } finally {
         btn.disabled = false;
+      }
+    }
+  </script>
+
+  <!-- New Manual Folder Modal -->
+  <div class="kw-modal-overlay" id="newFolderModal">
+    <div class="kw-modal" style="max-width:500px;">
+      <button type="button" onclick="closeNewFolderModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>
+      <div class="kw-modal-top" style="background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);">
+        <h2>New Folder</h2>
+        <p style="font-size:13px;opacity:0.95;">Create a folder for a campaign that isn't live in Google Ads yet. Survives every sync.</p>
+      </div>
+      <div class="kw-modal-body">
+        <label>Campaign name</label>
+        <input type="text" id="nfCampaignName" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:14px;" placeholder="e.g. Business Debt Relief — Desktop">
+        <div style="height:14px;"></div>
+        <label>First ad group name</label>
+        <input type="text" id="nfAdGroupName" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:14px;" placeholder="e.g. Bankruptcy for Business">
+        <small style="font-size:11px;color:#9ca3af;display:block;margin-top:4px;">You can add more ad groups later from the folder header.</small>
+        <div class="kw-modal-actions">
+          <button type="button" class="kw-skip" onclick="closeNewFolderModal()">Cancel</button>
+          <button type="button" class="kw-gen" id="nfCreateBtn" onclick="createNewFolder()">Create Folder</button>
+        </div>
+        <div class="kw-modal-status" id="nfStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Ad Group to Manual Folder Modal -->
+  <div class="kw-modal-overlay" id="addAgModal">
+    <div class="kw-modal" style="max-width:480px;">
+      <button type="button" onclick="closeAddAdGroupModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>
+      <div class="kw-modal-top" style="background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);">
+        <h2>Add Ad Group</h2>
+        <p id="addAgSubtitle" style="font-size:13px;opacity:0.95;"></p>
+      </div>
+      <div class="kw-modal-body">
+        <label>Ad group name</label>
+        <input type="text" id="addAgName" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:14px;" placeholder="e.g. MCA Settlement">
+        <div class="kw-modal-actions">
+          <button type="button" class="kw-skip" onclick="closeAddAdGroupModal()">Cancel</button>
+          <button type="button" class="kw-gen" id="addAgBtn" onclick="createAdGroup()">Add Ad Group</button>
+        </div>
+        <div class="kw-modal-status" id="addAgStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showNewFolderModal() {
+      document.getElementById('nfCampaignName').value = '';
+      document.getElementById('nfAdGroupName').value = '';
+      document.getElementById('nfStatus').style.display = 'none';
+      document.getElementById('newFolderModal').classList.add('active');
+      setTimeout(() => document.getElementById('nfCampaignName').focus(), 50);
+    }
+
+    function closeNewFolderModal() {
+      document.getElementById('newFolderModal').classList.remove('active');
+    }
+
+    async function createNewFolder() {
+      const cname = document.getElementById('nfCampaignName').value.trim();
+      const agname = document.getElementById('nfAdGroupName').value.trim();
+      if (!cname || !agname) { alert('Both fields required'); return; }
+      const status = document.getElementById('nfStatus');
+      const btn = document.getElementById('nfCreateBtn');
+      btn.disabled = true;
+      status.style.display = 'block';
+      status.classList.remove('error');
+      status.textContent = 'Creating…';
+      try {
+        const r = await fetch('/api/google-ads/manual-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaign_name: cname, ad_group_name: agname })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        closeNewFolderModal();
+        await loadPages();
+      } catch (err) {
+        status.classList.add('error');
+        status.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    let _addAgCampaignId = null;
+    function showAddAdGroupModal(btn) {
+      _addAgCampaignId = btn.dataset.cid;
+      document.getElementById('addAgSubtitle').textContent = `Folder: ${btn.dataset.cname}`;
+      document.getElementById('addAgName').value = '';
+      document.getElementById('addAgStatus').style.display = 'none';
+      document.getElementById('addAgModal').classList.add('active');
+      setTimeout(() => document.getElementById('addAgName').focus(), 50);
+    }
+
+    function closeAddAdGroupModal() {
+      document.getElementById('addAgModal').classList.remove('active');
+      _addAgCampaignId = null;
+    }
+
+    async function createAdGroup() {
+      if (!_addAgCampaignId) return;
+      const name = document.getElementById('addAgName').value.trim();
+      if (!name) { alert('Name required'); return; }
+      const status = document.getElementById('addAgStatus');
+      const btn = document.getElementById('addAgBtn');
+      btn.disabled = true;
+      status.style.display = 'block';
+      status.classList.remove('error');
+      status.textContent = 'Adding…';
+      try {
+        const r = await fetch('/api/google-ads/manual-ad-group', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaign_id: _addAgCampaignId, ad_group_name: name })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        closeAddAdGroupModal();
+        await loadPages();
+      } catch (err) {
+        status.classList.add('error');
+        status.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function confirmDeleteManualFolder(btn) {
+      const cid = btn.dataset.cid;
+      const cname = btn.dataset.cname;
+      if (!confirm(`Delete folder "${cname}"?\n\nLandingpages tagged to it will become Unassigned (not deleted).`)) return;
+      try {
+        const r = await fetch('/api/google-ads/manual-folder/' + encodeURIComponent(cid), { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        await loadPages();
+      } catch (err) {
+        alert(err.message);
       }
     }
   </script>
