@@ -832,10 +832,14 @@ router.get('/gads-test', authenticateToken, async (req, res) => {
   }
 });
 
+// Pivot pulls from the local gads_ad_group_meta cache that Bar populates with
+// "Sync Google Ads" on the LP folder view. Instant data, no API round-trip.
+// Demographic dims (age, gender, income, parental) require a live API call —
+// merged in only when those dims are requested.
 router.post('/google-pivot', authenticateToken, async (req, res) => {
   try {
     const {
-      dimensions = ['age'],
+      dimensions = ['campaign'],
       filters = {},
       metrics = ['clicks', 'cost', 'conversions', 'conv_rate', 'cpa'],
       sort = { metric: 'clicks', dir: 'desc' },
@@ -843,6 +847,90 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       limit = 200
     } = req.body || {};
     if (!dimensions.length) return res.status(400).json({ error: 'At least one dimension required' });
+
+    // ─── Cache-backed path ─────────────────────────────────────────────
+    // For non-demographic dims, hit the local cache. Always fast, always works
+    // (assuming the user has run "Sync Google Ads" at least once).
+    const allDemoDims = [...new Set([...dimensions, ...Object.keys(filters || {})])].filter(d => DEMO_VIEWS[d]);
+    const useCache = allDemoDims.length === 0;
+
+    if (useCache) {
+      const cached = db.prepare(`
+        SELECT campaign_id, campaign_name, ad_group_id, ad_group_name,
+          impressions, clicks, cost_micros, conversions, range_label, refreshed_at
+        FROM gads_ad_group_meta
+      `).all();
+
+      if (cached.length === 0) {
+        return res.json({
+          dimensions, filters, metrics, range: 'cache',
+          rows: [], total_rows: 0, totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0 },
+          diagnostic: { source: 'cache', notes: 'gads_ad_group_meta cache is empty. Go to Landing Pages and click "Sync Google Ads" first.' }
+        });
+      }
+
+      // Aggregate rows by selected dimensions
+      const groups = new Map();
+      for (const r of cached) {
+        const dimVals = {};
+        for (const d of dimensions) {
+          if (d === 'campaign') dimVals[d] = r.campaign_name || 'Unknown';
+          else if (d === 'ad_group') dimVals[d] = r.ad_group_name || 'Unknown';
+          else dimVals[d] = 'N/A';
+        }
+        const key = dimensions.map(d => dimVals[d]).join('||');
+        if (!groups.has(key)) groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+        const g = groups.get(key);
+        g.impressions += r.impressions || 0;
+        g.clicks += r.clicks || 0;
+        g.cost_micros += r.cost_micros || 0;
+        g.conversions += r.conversions || 0;
+      }
+
+      const rows = [...groups.values()].map(g => {
+        const cost = g.cost_micros / 1_000_000;
+        const dimVals = {};
+        dimensions.forEach(d => { dimVals[d] = g[d]; });
+        return {
+          ...dimVals,
+          impressions: g.impressions, clicks: g.clicks,
+          cost: +cost.toFixed(2), conversions: +g.conversions.toFixed(2),
+          ctr: g.impressions ? +(g.clicks / g.impressions * 100).toFixed(2) : 0,
+          cpc: g.clicks ? +(cost / g.clicks).toFixed(2) : 0,
+          conv_rate: g.clicks ? +(g.conversions / g.clicks * 100).toFixed(2) : 0,
+          cpa: g.conversions ? +(cost / g.conversions).toFixed(2) : 0
+        };
+      });
+
+      const sortMetric = sort && sort.metric || 'clicks';
+      const sortDir = (sort && sort.dir) === 'asc' ? 1 : -1;
+      rows.sort((a, b) => ((a[sortMetric] || 0) - (b[sortMetric] || 0)) * sortDir);
+      const limited = rows.slice(0, Math.min(parseInt(limit, 10) || 200, 1000));
+      const totals = rows.reduce((acc, r) => ({
+        impressions: acc.impressions + r.impressions,
+        clicks: acc.clicks + r.clicks,
+        cost: +(acc.cost + r.cost).toFixed(2),
+        conversions: +(acc.conversions + r.conversions).toFixed(2)
+      }), { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
+      totals.ctr = totals.impressions ? +(totals.clicks / totals.impressions * 100).toFixed(2) : 0;
+      totals.cpc = totals.clicks ? +(totals.cost / totals.clicks).toFixed(2) : 0;
+      totals.conv_rate = totals.clicks ? +(totals.conversions / totals.clicks * 100).toFixed(2) : 0;
+      totals.cpa = totals.conversions ? +(totals.cost / totals.conversions).toFixed(2) : 0;
+
+      return res.json({
+        dimensions, filters, metrics,
+        range: cached[0]?.range_label || 'cached',
+        rows: limited, total_rows: rows.length, totals,
+        diagnostic: {
+          source: 'gads_ad_group_meta cache',
+          cached_rows: cached.length,
+          last_refreshed: cached[0]?.refreshed_at,
+          notes: 'Pulled from local cache populated by "Sync Google Ads" on the Landing Pages page. Hit Sync to refresh.'
+        }
+      });
+    }
+
+    // ─── Live API path (for demographic dims) ───────────────────────────────
 
     const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
     if (!config || !config.refresh_token_encrypted || !config.customer_id) {
@@ -858,7 +946,6 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
 
     // Step 1: pull each requested DEMOGRAPHIC dimension from its own view.
     // Result: demoData[dim] = Map<adGroupId, Map<demoValue, {imp,clicks,cost,conv}>>
-    const allDemoDims = [...new Set([...dimensions, ...Object.keys(filters || {})])].filter(d => DEMO_VIEWS[d]);
     const demoData = {};
     for (const dim of allDemoDims) {
       const view = DEMO_VIEWS[dim].view;
