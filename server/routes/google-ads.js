@@ -1352,9 +1352,12 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       }
     }
 
-    // 2) keyword-level QS → aggregated per ad_group
+    // 2) keyword-level QS + keyword text → aggregated per ad_group
+    //     Pulls all enabled keywords across all enabled campaigns/ad groups,
+    //     not just ones tied to system LPs.
     const qsData = await runQuery(`
-      SELECT campaign.id, ad_group.id,
+      SELECT campaign.id, campaign.name, ad_group.id, ad_group.name,
+        ad_group_criterion.keyword.text,
         ad_group_criterion.quality_info.quality_score,
         ad_group_criterion.quality_info.post_click_quality_score,
         ad_group_criterion.quality_info.creative_quality_score,
@@ -1369,6 +1372,10 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         const key = row.adGroup.id;
         if (!qsByAdGroup.has(key)) {
           qsByAdGroup.set(key, {
+            campaign_id: row.campaign.id,
+            campaign_name: row.campaign.name,
+            ad_group_name: row.adGroup.name,
+            keywords: [],
             qs_sum: 0, qs_count: 0,
             lp: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
             ar: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
@@ -1377,6 +1384,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         }
         const g = qsByAdGroup.get(key);
         const qi = row.adGroupCriterion?.qualityInfo || {};
+        const kwText = row.adGroupCriterion?.keyword?.text;
+        if (kwText) g.keywords.push(kwText);
         if (typeof qi.qualityScore === 'number') { g.qs_sum += qi.qualityScore; g.qs_count++; }
         const pcq = qi.postClickQualityScore || 'UNKNOWN';
         const cq = qi.creativeQualityScore || 'UNKNOWN';
@@ -1384,6 +1393,53 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         if (g.lp[pcq] !== undefined) g.lp[pcq]++;
         if (g.ar[cq] !== undefined) g.ar[cq]++;
         if (g.ec[ec] !== undefined) g.ec[ec]++;
+      }
+    }
+
+    // 2b) Pull all enabled ad groups (in case some have no keywords yet, e.g.
+    //     Performance Max) so they still appear in the folder view.
+    const allAgData = await runQuery(`
+      SELECT campaign.id, campaign.name, ad_group.id, ad_group.name
+      FROM ad_group
+      WHERE ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+    `);
+    for (const stream of allAgData) {
+      for (const row of (stream.results || [])) {
+        if (qsByAdGroup.has(row.adGroup.id)) continue;
+        qsByAdGroup.set(row.adGroup.id, {
+          campaign_id: row.campaign.id,
+          campaign_name: row.campaign.name,
+          ad_group_name: row.adGroup.name,
+          keywords: [],
+          qs_sum: 0, qs_count: 0,
+          lp: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+          ar: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 },
+          ec: { ABOVE_AVERAGE: 0, AVERAGE: 0, BELOW_AVERAGE: 0, UNKNOWN: 0 }
+        });
+      }
+    }
+
+    // 2c) Ad-group level metrics (impressions/clicks/cost/conversions for the
+    //     last 30 days) so the folder view can show spend per ad group even
+    //     when no LP is linked.
+    const agStatsData = await runQuery(`
+      SELECT ad_group.id,
+        metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+      FROM ad_group
+      WHERE ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+        AND segments.date DURING LAST_30_DAYS
+    `);
+    const agStatsById = new Map();
+    for (const stream of agStatsData) {
+      for (const row of (stream.results || [])) {
+        const key = row.adGroup.id;
+        if (!agStatsById.has(key)) agStatsById.set(key, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+        const s = agStatsById.get(key);
+        const m = row.metrics || {};
+        s.impressions += parseInt(m.impressions || 0, 10);
+        s.clicks += parseInt(m.clicks || 0, 10);
+        s.cost_micros += parseInt(m.costMicros || 0, 10);
+        s.conversions += parseFloat(m.conversions || 0);
       }
     }
 
@@ -1503,16 +1559,95 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       metricsCount++;
     }
 
+    // 5) Populate gads_ad_group_meta with all enabled ad groups
+    const upsertAgMeta = db.prepare(`
+      INSERT INTO gads_ad_group_meta (
+        ad_group_id, ad_group_name, campaign_id, campaign_name,
+        keywords, keyword_count, avg_quality_score,
+        post_click_quality_score, creative_quality_score, search_predicted_ctr,
+        qs_breakdown, impressions, clicks, cost_micros, conversions, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(ad_group_id) DO UPDATE SET
+        ad_group_name = excluded.ad_group_name,
+        campaign_id = excluded.campaign_id,
+        campaign_name = excluded.campaign_name,
+        keywords = excluded.keywords,
+        keyword_count = excluded.keyword_count,
+        avg_quality_score = excluded.avg_quality_score,
+        post_click_quality_score = excluded.post_click_quality_score,
+        creative_quality_score = excluded.creative_quality_score,
+        search_predicted_ctr = excluded.search_predicted_ctr,
+        qs_breakdown = excluded.qs_breakdown,
+        impressions = excluded.impressions,
+        clicks = excluded.clicks,
+        cost_micros = excluded.cost_micros,
+        conversions = excluded.conversions,
+        refreshed_at = CURRENT_TIMESTAMP
+    `);
+    let adGroupCount = 0;
+    for (const [adGroupId, g] of qsByAdGroup) {
+      const stats = agStatsById.get(adGroupId) || { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 };
+      const avgQs = g.qs_count ? +(g.qs_sum / g.qs_count).toFixed(2) : null;
+      upsertAgMeta.run(
+        String(adGroupId),
+        g.ad_group_name,
+        String(g.campaign_id),
+        g.campaign_name,
+        JSON.stringify(g.keywords),
+        g.keywords.length,
+        avgQs,
+        pickDominant(g.lp),
+        pickDominant(g.ar),
+        pickDominant(g.ec),
+        JSON.stringify({ lp: g.lp, ar: g.ar, ec: g.ec }),
+        stats.impressions,
+        stats.clicks,
+        stats.cost_micros,
+        stats.conversions
+      );
+      adGroupCount++;
+    }
+
+    // Drop ad groups that are no longer enabled (so cache stays accurate)
+    const liveIds = [...qsByAdGroup.keys()].map(String);
+    if (liveIds.length) {
+      const placeholders = liveIds.map(() => '?').join(',');
+      db.prepare(`DELETE FROM gads_ad_group_meta WHERE ad_group_id NOT IN (${placeholders})`).run(...liveIds);
+    } else {
+      db.prepare('DELETE FROM gads_ad_group_meta').run();
+    }
+
     res.json({
       success: true,
       linked: linkedCount,
       metrics_updated: metricsCount,
+      ad_groups_cached: adGroupCount,
       total_lps: allLps.length
     });
   } catch (err) {
     console.error('Error refreshing LP metrics:', err);
     res.status(500).json({ error: 'Failed to refresh LP metrics: ' + err.message });
   }
+});
+
+// Read cached ad-group meta (campaigns + ad groups + keywords + QS + spend)
+// This is what the LP folder view uses to show ALL active campaigns,
+// including ones not currently linked to any system LP.
+router.get('/ad-group-meta', authenticateToken, (req, res) => {
+  const rows = db.prepare(`
+    SELECT ad_group_id, ad_group_name, campaign_id, campaign_name,
+      keywords, keyword_count, avg_quality_score,
+      post_click_quality_score, creative_quality_score, search_predicted_ctr,
+      qs_breakdown, impressions, clicks, cost_micros, conversions, refreshed_at
+    FROM gads_ad_group_meta
+    ORDER BY campaign_name, ad_group_name
+  `).all();
+  const ad_groups = rows.map(r => ({
+    ...r,
+    keywords: (() => { try { return JSON.parse(r.keywords || '[]'); } catch (e) { return []; } })(),
+    qs_breakdown: (() => { try { return JSON.parse(r.qs_breakdown || '{}'); } catch (e) { return {}; } })()
+  }));
+  res.json({ ad_groups });
 });
 
 // Manual conversion upload from admin

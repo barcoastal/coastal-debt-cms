@@ -2013,6 +2013,29 @@ try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_campaign_name TEXT`); }
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_name TEXT`); } catch (e) {}
 
+// Cache table for Google Ads ad-group meta (keywords + QS aggregated per ad group)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_ad_group_meta (
+    ad_group_id TEXT PRIMARY KEY,
+    ad_group_name TEXT,
+    campaign_id TEXT,
+    campaign_name TEXT,
+    keywords TEXT,
+    keyword_count INTEGER DEFAULT 0,
+    avg_quality_score REAL,
+    post_click_quality_score TEXT,
+    creative_quality_score TEXT,
+    search_predicted_ctr TEXT,
+    qs_breakdown TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost_micros INTEGER DEFAULT 0,
+    conversions REAL DEFAULT 0,
+    refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_adgroup_meta_campaign ON gads_ad_group_meta(campaign_id);
+`);
+
 // Cache table for Google Ads landing-page metrics (QS, LP experience, landing_page_view stats)
 db.exec(`
   CREATE TABLE IF NOT EXISTS gads_lp_metrics (

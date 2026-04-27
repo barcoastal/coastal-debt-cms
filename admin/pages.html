@@ -143,6 +143,12 @@
     .lpx-na { background: #f1f5f9; color: #94a3b8; }
 
     #pagesView.hidden, #foldersView.hidden { display: none; }
+
+    .folder-adgroup-header { flex-wrap: wrap; }
+    .folder-adgroup-stats { flex-wrap: wrap; align-items: center; }
+    .ag-keywords { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 10px 8px 24px; }
+    .ag-kw { display: inline-block; padding: 2px 7px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 500; }
+    .ag-kw-more { background: #f1f5f9; color: #64748b; font-style: italic; }
   </style>
 </head>
 <body>
@@ -899,9 +905,16 @@
         else if (range.from) labelEl.textContent = 'Since ' + range.from.toLocaleDateString();
       }
 
-      const res = await fetch(url);
-      const pages = await res.json();
+      const [pagesRes, metaRes] = await Promise.all([
+        fetch(url),
+        fetch('/api/google-ads/ad-group-meta').catch(() => null)
+      ]);
+      const pages = await pagesRes.json();
       _pagesData = pages;
+      try {
+        const metaJson = metaRes ? await metaRes.json() : { ad_groups: [] };
+        _gadsAdGroupMeta = metaJson.ad_groups || [];
+      } catch (e) { _gadsAdGroupMeta = []; }
 
       // Re-apply sort if active
       if (_sortKey) {
@@ -913,6 +926,8 @@
       renderPagesTable(pages);
       renderPagesFolders(pages);
     }
+
+    var _gadsAdGroupMeta = [];
 
     // Current view: 'folders' (default) or 'flat'
     var _currentView = (function(){
@@ -1005,35 +1020,77 @@
 
     function renderPagesFolders(pages) {
       const root = document.getElementById('foldersView');
-      if (!pages || pages.length === 0) {
-        root.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;">No landing pages yet.</div>';
+      const meta = _gadsAdGroupMeta || [];
+
+      if ((!pages || pages.length === 0) && meta.length === 0) {
+        root.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;">No landing pages yet. Sync Google Ads to see all campaigns.</div>';
         return;
       }
 
-      // Group: campaign → ad_group → [pages]
       const UNASSIGNED = '__unassigned__';
+
+      // Build campaign → ad_group structure from cached meta first
+      // (so every active Google Ads campaign appears, even with no system LP)
       const campaigns = new Map();
-      for (const p of pages) {
-        const cid = p.gads_campaign_id || UNASSIGNED;
-        const cname = p.gads_campaign_name || 'Unassigned';
-        if (!campaigns.has(cid)) campaigns.set(cid, { name: cname, ad_groups: new Map(), pages_total: 0, clicks_total: 0, leads_total: 0, cost_total: 0 });
-        const camp = campaigns.get(cid);
-        const agid = p.gads_ad_group_id || UNASSIGNED;
-        const agname = p.gads_ad_group_name || 'No ad group';
-        if (!camp.ad_groups.has(agid)) camp.ad_groups.set(agid, { name: agname, pages: [], clicks: 0, leads: 0, cost: 0 });
-        const ag = camp.ad_groups.get(agid);
-        ag.pages.push(p);
-        const m = p.gads_metrics || {};
-        ag.clicks += m.clicks || 0;
-        ag.leads += p.lead_count || 0;
-        ag.cost += m.cost_micros || 0;
-        camp.pages_total++;
-        camp.clicks_total += m.clicks || 0;
-        camp.leads_total += p.lead_count || 0;
-        camp.cost_total += m.cost_micros || 0;
+      function ensureCampaign(cid, cname) {
+        if (!campaigns.has(cid)) campaigns.set(cid, {
+          name: cname, ad_groups: new Map(),
+          pages_total: 0, clicks_total: 0, leads_total: 0, cost_total: 0,
+          gads_clicks_total: 0, gads_cost_total: 0
+        });
+        return campaigns.get(cid);
+      }
+      function ensureAdGroup(camp, agid, agname) {
+        if (!camp.ad_groups.has(agid)) camp.ad_groups.set(agid, {
+          name: agname, pages: [],
+          clicks: 0, leads: 0, cost: 0,
+          gads_clicks: 0, gads_cost: 0,
+          gads_impressions: 0, gads_conversions: 0,
+          keywords: null,
+          avg_qs: null, lp_experience: null, ad_relevance: null, expected_ctr: null,
+          has_meta: false
+        });
+        return camp.ad_groups.get(agid);
       }
 
-      // Sort: Unassigned last, others by name
+      // Seed structure from Google Ads meta
+      for (const m of meta) {
+        const camp = ensureCampaign(String(m.campaign_id), m.campaign_name || 'Unnamed campaign');
+        const ag = ensureAdGroup(camp, String(m.ad_group_id), m.ad_group_name || 'Unnamed ad group');
+        ag.keywords = m.keywords || [];
+        ag.avg_qs = m.avg_quality_score;
+        ag.lp_experience = m.post_click_quality_score;
+        ag.ad_relevance = m.creative_quality_score;
+        ag.expected_ctr = m.search_predicted_ctr;
+        ag.gads_impressions = m.impressions || 0;
+        ag.gads_clicks = m.clicks || 0;
+        ag.gads_cost = m.cost_micros || 0;
+        ag.gads_conversions = m.conversions || 0;
+        ag.has_meta = true;
+        camp.gads_clicks_total += m.clicks || 0;
+        camp.gads_cost_total += m.cost_micros || 0;
+      }
+
+      // Slot LPs into the structure (creating Unassigned bucket as needed)
+      for (const p of pages) {
+        const cid = p.gads_campaign_id ? String(p.gads_campaign_id) : UNASSIGNED;
+        const cname = p.gads_campaign_name || 'Unassigned';
+        const camp = ensureCampaign(cid, cname);
+        const agid = p.gads_ad_group_id ? String(p.gads_ad_group_id) : UNASSIGNED;
+        const agname = p.gads_ad_group_name || 'No ad group';
+        const ag = ensureAdGroup(camp, agid, agname);
+        ag.pages.push(p);
+        const pm = p.gads_metrics || {};
+        ag.clicks += pm.clicks || 0;
+        ag.leads += p.lead_count || 0;
+        ag.cost += pm.cost_micros || 0;
+        camp.pages_total++;
+        camp.clicks_total += pm.clicks || 0;
+        camp.leads_total += p.lead_count || 0;
+        camp.cost_total += pm.cost_micros || 0;
+      }
+
+      // Sort: Unassigned last
       const campEntries = [...campaigns.entries()].sort((a, b) => {
         if (a[0] === UNASSIGNED) return 1;
         if (b[0] === UNASSIGNED) return -1;
@@ -1048,6 +1105,7 @@
           if (b[0] === UNASSIGNED) return -1;
           return a[1].name.localeCompare(b[1].name);
         });
+        const showSpend = camp.gads_cost_total || camp.cost_total;
         return `
           <div class="folder-campaign">
             <div class="folder-campaign-header ${isCollapsed ? 'collapsed' : ''}" onclick="toggleFolder(this, '${collapsedKey}')">
@@ -1055,28 +1113,46 @@
               <div class="folder-campaign-name">${camp.name === 'Unassigned' ? '⚠ Unassigned' : camp.name}</div>
               <div class="folder-campaign-stats">
                 <span><strong>${camp.pages_total}</strong> LPs</span>
-                <span><strong>${camp.clicks_total.toLocaleString()}</strong> clicks</span>
+                <span><strong>${(camp.gads_clicks_total || camp.clicks_total).toLocaleString()}</strong> clicks</span>
                 <span><strong>${camp.leads_total}</strong> leads</span>
-                <span><strong>${_money(camp.cost_total)}</strong> spend</span>
+                <span><strong>${_money(camp.gads_cost_total || camp.cost_total)}</strong> spend</span>
               </div>
             </div>
             <div class="folder-body ${isCollapsed ? 'hidden' : ''}">
-              ${adGroupEntries.map(([agid, ag]) => `
-                <div class="folder-adgroup">
-                  <div class="folder-adgroup-header">
-                    <div class="folder-adgroup-name">${ag.name === 'No ad group' ? '↳ No ad group' : '↳ ' + ag.name}</div>
-                    <div class="folder-adgroup-stats">
-                      <span>${ag.pages.length} LP${ag.pages.length === 1 ? '' : 's'}</span>
-                      <span>${ag.clicks.toLocaleString()} clicks</span>
-                      <span>${ag.leads} leads</span>
-                    </div>
-                  </div>
-                  ${ag.pages.map(_lpCardHtml).join('')}
-                </div>
-              `).join('')}
+              ${adGroupEntries.map(([agid, ag]) => _adGroupHtml(agid, ag)).join('')}
             </div>
           </div>`;
       }).join('');
+    }
+
+    function _adGroupHtml(agid, ag) {
+      const noLp = ag.has_meta && ag.pages.length === 0;
+      const kwHtml = ag.keywords && ag.keywords.length
+        ? `<div class="ag-keywords">${ag.keywords.slice(0, 30).map(k => `<span class="ag-kw">${_esc(k)}</span>`).join('')}${ag.keywords.length > 30 ? `<span class="ag-kw ag-kw-more">+${ag.keywords.length - 30} more</span>` : ''}</div>`
+        : '';
+      const statsLine = ag.has_meta
+        ? `<span>${ag.gads_clicks.toLocaleString()} clicks · ${_money(ag.gads_cost)} · ${(ag.gads_conversions || 0).toFixed(0)} conv (30d)</span>`
+        : `<span>${ag.clicks.toLocaleString()} clicks · ${ag.leads} leads</span>`;
+      return `
+        <div class="folder-adgroup">
+          <div class="folder-adgroup-header">
+            <div class="folder-adgroup-name">
+              ${ag.name === 'No ad group' ? '↳ No ad group' : '↳ ' + ag.name}
+              ${noLp ? '<span class="badge badge-orange" style="margin-left:8px;font-size:9px;">⚠ Not using system LP</span>' : ''}
+            </div>
+            <div class="folder-adgroup-stats">
+              ${ag.has_meta ? `${_qsPill(ag.avg_qs)} ${_lpxPill(ag.lp_experience)}` : ''}
+              <span>${ag.pages.length} LP${ag.pages.length === 1 ? '' : 's'}</span>
+              ${statsLine}
+            </div>
+          </div>
+          ${kwHtml}
+          ${ag.pages.map(_lpCardHtml).join('')}
+        </div>`;
+    }
+
+    function _esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     function toggleFolder(headerEl, storageKey) {
