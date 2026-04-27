@@ -1144,10 +1144,26 @@
       });
     });
 
+    // Funnel tracking helper — idempotent server-side per (visitor, step)
+    function trackFunnelStep(step, value) {
+      try {
+        var eli = (document.getElementById('eli_clickid') || {}).value || '';
+        if (!eli) return;
+        var blob = JSON.stringify({ eli_clickid: eli, step: step, value: value });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/visitors/funnel-step', new Blob([blob], { type: 'application/json' }));
+        } else {
+          fetch('/api/visitors/funnel-step', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: blob, keepalive: true }).catch(function(){});
+        }
+      } catch (e) {}
+    }
+
     // Step 1: Auto-advance on debt amount selection
     debtSelect.addEventListener('change', function() {
       const debtValue = debtSelect.value;
       if (!debtValue) return;
+
+      trackFunnelStep('debt', debtValue);
 
       setTimeout(function() {
         step1.classList.remove('active');
@@ -1164,6 +1180,7 @@
     document.querySelectorAll('input[name="mca_check"]').forEach(function(radio) {
       radio.addEventListener('change', function() {
         const mcaValue = this.value;
+        trackFunnelStep('mca', mcaValue);
         setTimeout(function() {
           stepMca.classList.remove('active');
           if (mcaValue === 'No') {
@@ -1187,6 +1204,7 @@
         setTimeout(() => debtSelect.style.borderColor = '#eee', 2000);
         return;
       }
+      trackFunnelStep('debt', debtValue);
       step1.classList.remove('active');
       if (debtValue === 'under-20000') {
         stepSorry.classList.add('active');

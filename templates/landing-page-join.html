@@ -2329,10 +2329,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
   c.innerHTML = step1 + step2 + step3 + notEligible;
 
+  // Funnel tracking helper (idempotent server-side)
+  function _trackFunnelStep(step, value) {
+    try {
+      var eli = (document.getElementById('eli_clickid') || {}).value || '';
+      if (!eli) return;
+      var blob = JSON.stringify({ eli_clickid: eli, step: step, value: value });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/visitors/funnel-step', new Blob([blob], { type: 'application/json' }));
+      } else {
+        fetch('/api/visitors/funnel-step', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: blob, keepalive: true }).catch(function(){});
+      }
+    } catch (e) {}
+  }
+
   // Step 1 → Step 2 (triggers on dropdown change)
   document.getElementById('jfDebt').addEventListener('change', function() {
     var debt = this.value;
     if (!debt) return;
+    _trackFunnelStep('debt', debt);
     // Visual feedback: highlight dropdown border blue
     this.style.borderColor = '#3052FF';
     this.style.boxShadow = '0 0 0 2px rgba(48,82,255,0.15)';
@@ -2358,6 +2373,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Step 2 → Step 3 (on radio click)
   document.querySelectorAll('input[name="has_mca"]').forEach(function(r) {
     r.addEventListener('change', function() {
+      _trackFunnelStep('mca', this.value);
       // Style selected
       document.getElementById('jfMcaYes').style.cssText = 'display:block;padding:12px;border:1px solid ' + (this.value === 'Yes' ? '#3052FF' : '#eee') + ';border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:' + (this.value === 'Yes' ? 'rgba(48,82,255,0.06)' : '#fff') + ';color:' + (this.value === 'Yes' ? '#3052FF' : '#112337');
       document.getElementById('jfMcaNo').style.cssText = 'display:block;padding:12px;border:1px solid ' + (this.value === 'No' ? '#3052FF' : '#eee') + ';border-radius:500px;text-align:center;font-weight:600;cursor:pointer;background:' + (this.value === 'No' ? 'rgba(48,82,255,0.06)' : '#fff') + ';color:' + (this.value === 'No' ? '#3052FF' : '#112337');

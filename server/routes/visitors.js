@@ -114,6 +114,31 @@ router.get('/ip', (req, res) => {
   res.json({ ip });
 });
 
+// Track funnel pre-qual step (public endpoint, called from LP forms when user
+// picks debt size or answers MCA question). Body: { eli_clickid, step, value }
+// step = 'debt' | 'mca'. Idempotent — only writes the FIRST time per visitor
+// per step (so stats reflect "people who reached this step", not last-touch).
+router.post('/funnel-step', async (req, res) => {
+  const { eli_clickid, step, value } = req.body || {};
+  if (!eli_clickid || !step) {
+    return res.status(400).json({ error: 'eli_clickid and step required' });
+  }
+  if (step !== 'debt' && step !== 'mca') {
+    return res.status(400).json({ error: 'step must be "debt" or "mca"' });
+  }
+  const visitor = db.prepare('SELECT id, step1_debt_at, step2_mca_at FROM visitors WHERE eli_clickid = ?').get(eli_clickid);
+  if (!visitor) return res.status(404).json({ error: 'Visitor not found — track first' });
+
+  if (step === 'debt' && !visitor.step1_debt_at) {
+    db.prepare(`UPDATE visitors SET step1_debt_at = CURRENT_TIMESTAMP, step1_debt_value = ? WHERE eli_clickid = ?`)
+      .run(String(value || ''), eli_clickid);
+  } else if (step === 'mca' && !visitor.step2_mca_at) {
+    db.prepare(`UPDATE visitors SET step2_mca_at = CURRENT_TIMESTAMP, step2_mca_value = ? WHERE eli_clickid = ?`)
+      .run(String(value || ''), eli_clickid);
+  }
+  res.json({ success: true });
+});
+
 // Track visitor (public endpoint - called from landing pages)
 router.post('/track', async (req, res) => {
   const {

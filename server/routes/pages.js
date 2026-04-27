@@ -391,6 +391,17 @@ router.get('/', authenticateToken, (req, res) => {
   const metricsRows = db.prepare('SELECT * FROM gads_lp_metrics').all();
   const metricsById = new Map(metricsRows.map(r => [r.landing_page_id, r]));
 
+  // Funnel counts per slug (one row per slug found, joined client-side)
+  const funnelRows = db.prepare(`
+    SELECT landing_page,
+      COUNT(*) AS visits,
+      SUM(CASE WHEN step1_debt_at IS NOT NULL THEN 1 ELSE 0 END) AS step1,
+      SUM(CASE WHEN step2_mca_at IS NOT NULL THEN 1 ELSE 0 END) AS step2,
+      SUM(CASE WHEN step2_mca_value = 'Yes' THEN 1 ELSE 0 END) AS step2_yes
+    FROM visitors WHERE landing_page IS NOT NULL
+    GROUP BY landing_page
+  `).all();
+
   pages.forEach(page => {
     try {
       page.content = JSON.parse(page.content || '{}');
@@ -410,6 +421,21 @@ router.get('/', authenticateToken, (req, res) => {
       page.visitor_count = 0;
       page.conversion_rate = 0;
     }
+    // Aggregate funnel rows whose landing_page contains this page's slug
+    const slugMatches = funnelRows.filter(r => (r.landing_page || '').includes(page.slug));
+    const funnelTotals = slugMatches.reduce((acc, r) => {
+      acc.visits += r.visits || 0;
+      acc.step1 += r.step1 || 0;
+      acc.step2 += r.step2 || 0;
+      acc.step2_yes += r.step2_yes || 0;
+      return acc;
+    }, { visits: 0, step1: 0, step2: 0, step2_yes: 0 });
+    page.funnel = {
+      step1_debt: funnelTotals.step1,
+      step2_mca: funnelTotals.step2,
+      step2_mca_yes: funnelTotals.step2_yes
+    };
+
     const m = metricsById.get(page.id);
     if (m) {
       page.gads_metrics = {
@@ -467,6 +493,34 @@ router.get('/:id/stats', authenticateToken, (req, res) => {
   const totalLeads = leads.length;
   const conversionRate = totalVisitors > 0 ? Math.round((totalLeads / totalVisitors) * 1000) / 10 : 0;
 
+  // Funnel: visits → answered debt size (step1) → answered MCA (step2) → lead
+  const slugLike = '%' + page.slug + '%';
+  const step1 = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND step1_debt_at IS NOT NULL`).get(slugLike).c;
+  const step2 = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND step2_mca_at IS NOT NULL`).get(slugLike).c;
+  const step2Yes = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND step2_mca_value = 'Yes'`).get(slugLike).c;
+  const step2No = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND step2_mca_value = 'No'`).get(slugLike).c;
+  const debtBreakdown = db.prepare(`
+    SELECT step1_debt_value as value, COUNT(*) as c
+    FROM visitors WHERE landing_page LIKE ? AND step1_debt_value IS NOT NULL AND step1_debt_value != ''
+    GROUP BY step1_debt_value ORDER BY c DESC
+  `).all(slugLike);
+
+  const funnel = {
+    visits: totalVisitors,
+    step1_debt: step1,
+    step2_mca: step2,
+    step2_mca_yes: step2Yes,
+    step2_mca_no: step2No,
+    leads: totalLeads,
+    debt_breakdown: debtBreakdown,
+    rates: {
+      visit_to_debt: totalVisitors > 0 ? Math.round((step1 / totalVisitors) * 1000) / 10 : 0,
+      debt_to_mca: step1 > 0 ? Math.round((step2 / step1) * 1000) / 10 : 0,
+      mca_to_lead: step2Yes > 0 ? Math.round((totalLeads / step2Yes) * 1000) / 10 : 0,
+      visit_to_lead: conversionRate
+    }
+  };
+
   // By UTM source
   const bySource = db.prepare(`
     SELECT utm_source, COUNT(*) as visitors, SUM(converted) as leads
@@ -496,6 +550,7 @@ router.get('/:id/stats', authenticateToken, (req, res) => {
         B: { visitors: visitors.filter(v => v.ab_variant === 'B').length, leads: leads.filter(l => l.ab_variant === 'B').length }
       }
     },
+    funnel,
     leads,
     visitors,
     by_source: bySource,

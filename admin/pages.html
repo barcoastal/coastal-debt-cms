@@ -1096,7 +1096,14 @@
           </div>
           <div class="lp-metric">
             <strong>${(page.visitor_count || 0).toLocaleString()} visits · ${page.lead_count || 0} leads</strong>
-            <span class="lp-metric-sub">CR ${page.conversion_rate || 0}%${m.refreshed_at ? ' · synced ' + new Date(m.refreshed_at).toLocaleDateString() : ''}</span>
+            <span class="lp-metric-sub">${(() => {
+              const f = page.funnel || {};
+              const v = page.visitor_count || 0;
+              if (!v) return `CR ${page.conversion_rate || 0}%`;
+              const s1Pct = v ? Math.round((f.step1_debt || 0) / v * 100) : 0;
+              const s2Pct = v ? Math.round((f.step2_mca || 0) / v * 100) : 0;
+              return `Q1 ${f.step1_debt || 0} (${s1Pct}%) · Q2 ${f.step2_mca || 0} (${s2Pct}%) · CR ${page.conversion_rate || 0}%`;
+            })()}</span>
           </div>
           <div class="lp-actions">
             <button style="background:#dcfce7;color:#166534;" onclick="showPageStats(${page.id})">Stats</button>
@@ -1974,6 +1981,56 @@
                 </div>
               </div>
             </div>
+
+            <!-- Funnel breakdown -->
+            ${data.funnel ? (() => {
+              const f = data.funnel;
+              const r = f.rates || {};
+              const bar = (count, of) => {
+                const pct = of > 0 ? Math.round((count / of) * 100) : 0;
+                return `<div style="position:relative;height:32px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin-top:4px;">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:linear-gradient(90deg,#3052FF,#7FB2FF);"></div>
+                  <div style="position:relative;display:flex;align-items:center;height:100%;padding:0 10px;font-size:12px;font-weight:700;color:#1e293b;">
+                    ${count.toLocaleString()} <span style="margin-left:8px;font-weight:500;color:#475569;">(${pct}%)</span>
+                  </div>
+                </div>`;
+              };
+              return `
+              <div style="margin-bottom:24px;">
+                <h3 style="font-size:14px;font-weight:700;margin:0 0 10px;color:#1e293b;">Funnel — visit → debt size → MCA → lead</h3>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+                  <div style="display:grid;grid-template-columns:200px 1fr 80px;gap:10px;align-items:center;font-size:13px;">
+                    <div style="font-weight:600;color:#475569;">Visited the page</div>
+                    ${bar(f.visits, f.visits)}
+                    <div style="text-align:right;color:#94a3b8;font-size:11px;">100%</div>
+
+                    <div style="font-weight:600;color:#475569;">Picked debt size</div>
+                    ${bar(f.step1_debt, f.visits)}
+                    <div style="text-align:right;color:#94a3b8;font-size:11px;">${r.visit_to_debt}% of visits</div>
+
+                    <div style="font-weight:600;color:#475569;">Answered MCA Q</div>
+                    ${bar(f.step2_mca, f.visits)}
+                    <div style="text-align:right;color:#94a3b8;font-size:11px;">${r.debt_to_mca}% of debt</div>
+
+                    <div style="font-weight:600;color:#475569;">Left a lead</div>
+                    ${bar(f.leads, f.visits)}
+                    <div style="text-align:right;color:#94a3b8;font-size:11px;">${r.mca_to_lead}% of qualified</div>
+                  </div>
+                  ${f.step2_mca > 0 ? `
+                  <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:12px;color:#475569;display:flex;gap:18px;flex-wrap:wrap;">
+                    <span>Has MCA <strong style="color:#16a34a;">${f.step2_mca_yes}</strong></span>
+                    <span>No MCA <strong style="color:#dc2626;">${f.step2_mca_no}</strong></span>
+                  </div>` : ''}
+                  ${f.debt_breakdown && f.debt_breakdown.length > 0 ? `
+                  <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                    <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">Debt size distribution</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                      ${f.debt_breakdown.map(d => `<span style="background:#eef2ff;color:#4338ca;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;">${esc(d.value)} · ${d.c}</span>`).join('')}
+                    </div>
+                  </div>` : ''}
+                </div>
+              </div>`;
+            })() : ''}
 
             <!-- Traffic by Source -->
             ${data.by_source && data.by_source.length > 0 ? `
