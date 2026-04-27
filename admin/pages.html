@@ -1054,6 +1054,10 @@
         if (unlinkedLps.length > 0) {
           line += `<br><span style="color:#9a3412;">⚠ ${unlinkedLps.length} LP${unlinkedLps.length === 1 ? '' : 's'} not running in any active ad: ${unlinkedLps.slice(0,5).map(s => '<code>' + _esc(s) + '</code>').join(', ')}${unlinkedLps.length > 5 ? '…' : ''}</span>`;
         }
+        const unmatchedSamples = diag.unmatched_ad_urls_sample || [];
+        if (unmatchedSamples.length > 0) {
+          line += `<br><span style="color:#9a3412;">⚠ ${unmatchedSamples.length} ad URL${unmatchedSamples.length === 1 ? '' : 's'} couldn't be parsed (likely tracking redirects): ${unmatchedSamples.slice(0,3).map(s => '<code title="' + _esc(s.campaign + ' / ' + s.ad_group) + '">' + _esc((s.url || '').slice(0, 60)) + '</code>').join(', ')}</span>`;
+        }
         status.innerHTML = line;
         await loadPages();
       } catch (err) {

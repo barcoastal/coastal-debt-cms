@@ -1356,17 +1356,45 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       return d;
     };
 
+    // Pre-build LP slug set so we can match any URL that contains one of our
+    // slugs as a path segment (works regardless of prefix: /lp/X/, /X/, etc).
+    const lpsForMatching = db.prepare('SELECT id, slug FROM landing_pages').all();
+    const lpSlugSetLower = new Set(lpsForMatching.map(lp => String(lp.slug || '').toLowerCase()));
+
+    // Returns the LP slug found in a URL (any path segment), or null.
+    // Tries /lp/{slug} first, then /a/{slug}, then any path segment that exactly
+    // matches an LP slug in our DB. Tracking-redirect URLs (click.coastaldebt.com
+    // etc.) often won't have the slug — those just stay unmatched.
+    function extractLpSlug(rawUrl) {
+      if (!rawUrl) return null;
+      // Strip query/hash and split
+      const cleaned = String(rawUrl).split('#')[0].split('?')[0];
+      // Try common prefixes first for precision
+      const m = cleaned.match(/\/(?:lp|a|landing|page)\/([^\/]+)/i);
+      if (m && m[1]) {
+        const slug = decodeURIComponent(m[1]).toLowerCase();
+        if (lpSlugSetLower.has(slug)) return slug;
+      }
+      // Fall back: any path segment that matches a known LP slug
+      let path;
+      try { path = new URL(cleaned, 'https://placeholder.local').pathname; }
+      catch (e) { path = cleaned; }
+      const segs = path.split('/').filter(Boolean);
+      for (const seg of segs) {
+        const slug = decodeURIComponent(seg).toLowerCase();
+        if (lpSlugSetLower.has(slug)) return slug;
+      }
+      return null;
+    }
+
     // 1) ads with final URLs → exact slug → {campaign, ad_group}
     const adsData = await runQuery(`
       SELECT campaign.id, campaign.name, ad_group.id, ad_group.name, ad_group_ad.ad.final_urls
       FROM ad_group_ad
       WHERE ad_group_ad.status = 'ENABLED' AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
     `);
-    // slug-based map: extract /lp/{slug} from each final_url so we can do an
-    // exact lookup later (no substring collisions between similar slugs).
     const slugToGroup = new Map();
     const unmatchedAdUrls = [];
-    const SLUG_RE = /\/lp\/([^\/?#\s]+)/i;
     for (const stream of adsData) {
       for (const row of (stream.results || [])) {
         const finalUrls = row.adGroupAd?.ad?.finalUrls || [];
@@ -1377,9 +1405,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
           ad_group_name: row.adGroup.name
         };
         for (const u of finalUrls) {
-          const m = (u || '').match(SLUG_RE);
-          if (m && m[1]) {
-            const slug = decodeURIComponent(m[1]).toLowerCase();
+          const slug = extractLpSlug(u);
+          if (slug) {
             if (!slugToGroup.has(slug)) slugToGroup.set(slug, group);
           } else {
             unmatchedAdUrls.push({ url: u, campaign: row.campaign.name, ad_group: row.adGroup.name });
@@ -1387,7 +1414,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         }
       }
     }
-    console.log(`[refresh-lp-metrics] Slugs in Google Ads: ${slugToGroup.size}, unmatched URLs: ${unmatchedAdUrls.length}`);
+    console.log(`[refresh-lp-metrics] LPs matched from Google Ads: ${slugToGroup.size}, unmatched URLs: ${unmatchedAdUrls.length}`);
 
     // 2) keyword-level QS + keyword text → aggregated per ad_group
     //     Pulls all enabled keywords across all enabled campaigns/ad groups,
@@ -1500,16 +1527,15 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       FROM landing_page_view
       WHERE ${dateFilter.clause}
     `);
-    // Aggregate landing_page_view metrics by slug (exact extraction, multiple
-    // URLs that resolve to the same slug merge their metrics)
+    // Aggregate landing_page_view metrics by slug (multiple URLs that resolve
+    // to the same slug merge their metrics)
     const lpvBySlug = new Map();
     for (const stream of lpvData) {
       for (const row of (stream.results || [])) {
         const u = row.landingPageView?.unexpandedFinalUrl;
         if (!u) continue;
-        const sm = u.match(SLUG_RE);
-        if (!sm || !sm[1]) continue;
-        const slug = decodeURIComponent(sm[1]).toLowerCase();
+        const slug = extractLpSlug(u);
+        if (!slug) continue;
         if (!lpvBySlug.has(slug)) {
           lpvBySlug.set(slug, { clicks: 0, impressions: 0, cost_micros: 0, conversions: 0, mob_sum: 0, mob_count: 0 });
         }
@@ -1526,8 +1552,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       }
     }
 
-    // 4) Match LPs by slug. URL match is "url contains /lp/{slug}".
-    const allLps = db.prepare('SELECT id, slug FROM landing_pages').all();
+    // 4) Match LPs by slug (re-use the slug set built earlier for matching)
+    const allLps = lpsForMatching;
     const updatePage = db.prepare(`
       UPDATE landing_pages
       SET gads_campaign_id = ?, gads_campaign_name = ?, gads_ad_group_id = ?, gads_ad_group_name = ?
