@@ -194,6 +194,14 @@
             <option value="1">Converted Only</option>
             <option value="0">Not Converted</option>
           </select>
+          <select id="funnelStepFilter">
+            <option value="">Any funnel step</option>
+            <option value="debt">Answered debt size</option>
+            <option value="mca">Answered MCA Q</option>
+            <option value="mca_yes">Answered MCA = Yes</option>
+            <option value="mca_no">Answered MCA = No</option>
+            <option value="dropped_at_debt">Dropped after debt</option>
+          </select>
           <button class="btn btn-primary" onclick="loadVisitors()">Apply</button>
         </div>
 
@@ -235,14 +243,16 @@
   <script>
     const COLUMNS = [
       { key: 'eli_clickid', label: 'Eli Click ID', default: true },
-      { key: 'rt_clickid', label: 'RT Click ID', default: true },
-      { key: 'rdt_cid', label: 'RDT_CID (Reddit)', default: true },
+      { key: 'rt_clickid', label: 'RT Click ID', default: false },
+      { key: 'rdt_cid', label: 'RDT_CID (Reddit)', default: false },
       { key: 'location', label: 'Location', default: true },
       { key: 'device', label: 'Device', default: true },
       { key: 'landing_page', label: 'Landing Page', default: true },
       { key: 'utm_source', label: 'UTM Source', default: true },
-      { key: 'visit_count', label: 'Visits', default: true },
-      { key: 'converted', label: 'Converted', default: true },
+      { key: 'debt_size', label: 'Debt Size', default: true },
+      { key: 'has_mca', label: 'MCA?', default: true },
+      { key: 'visit_count', label: 'Visits', default: false },
+      { key: 'converted', label: 'Lead', default: true },
       { key: 'last_visit', label: 'Last Visit', default: true },
       { key: 'actions', label: 'Actions', locked: true }
     ];
@@ -255,6 +265,16 @@
       device: (v) => '<td><span class="badge badge-gray">' + escapeHtml(v.device_type || '-') + '</span></td>',
       landing_page: (v) => '<td>' + escapeHtml(v.landing_page || '-') + '</td>',
       utm_source: (v) => '<td>' + escapeHtml(v.utm_source || '-') + '</td>',
+      debt_size: (v) => {
+        if (!v.step1_debt_value) return '<td style="color:#cbd5e1;">—</td>';
+        return '<td><span class="badge badge-blue" style="font-size:10px;">' + escapeHtml(v.step1_debt_value) + '</span></td>';
+      },
+      has_mca: (v) => {
+        if (!v.step2_mca_value) return '<td style="color:#cbd5e1;">—</td>';
+        const isYes = v.step2_mca_value === 'Yes';
+        const cls = isYes ? 'badge-green' : 'badge-gray';
+        return '<td><span class="badge ' + cls + '" style="font-size:10px;">' + escapeHtml(v.step2_mca_value) + '</span></td>';
+      },
       visit_count: (v) => '<td>' + (v.visit_count || 1) + '</td>',
       converted: (v) => '<td class="' + (v.converted ? 'converted' : 'not-converted') + '">' + (v.converted ? 'Yes' : 'No') + '</td>',
       last_visit: (v) => '<td>' + formatDate(v.last_visit) + '</td>',
@@ -325,6 +345,8 @@
       if (converted !== '') params.append('converted', converted);
       if (dateRange.from) params.append('from_date', dateRange.from);
       if (dateRange.to) params.append('to_date', dateRange.to);
+      const funnelStep = document.getElementById('funnelStepFilter').value;
+      if (funnelStep) params.append('funnel_step', funnelStep);
 
       const res = await fetch(`/api/visitors?${params}`);
       const data = await res.json();
@@ -393,6 +415,9 @@
           <tr><td><strong>OS</strong></td><td>${v.os || '-'} ${v.os_version || ''}</td></tr>
           <tr><td><strong>Screen</strong></td><td>${v.screen_width}x${v.screen_height}</td></tr>
           <tr><td><strong>Language</strong></td><td>${v.language || '-'}</td></tr>
+          <tr><td colspan="2" style="padding-top:15px;"><strong>Funnel Steps</strong></td></tr>
+          <tr><td><strong>Picked Debt Size</strong></td><td>${v.step1_debt_value ? '<span class="badge badge-blue">' + v.step1_debt_value + '</span> at ' + formatDate(v.step1_debt_at) : '<span style="color:#cbd5e1;">— not answered</span>'}</td></tr>
+          <tr><td><strong>Has MCA?</strong></td><td>${v.step2_mca_value ? '<span class="badge ' + (v.step2_mca_value === 'Yes' ? 'badge-green' : 'badge-gray') + '">' + v.step2_mca_value + '</span> at ' + formatDate(v.step2_mca_at) : '<span style="color:#cbd5e1;">— not answered</span>'}</td></tr>
           <tr><td colspan="2" style="padding-top:15px;"><strong>Traffic Source</strong></td></tr>
           <tr><td><strong>Landing Page</strong></td><td>${v.landing_page || '-'}</td></tr>
           <tr><td><strong>Referrer</strong></td><td style="word-break:break-all;">${v.referrer_url || '-'}</td></tr>

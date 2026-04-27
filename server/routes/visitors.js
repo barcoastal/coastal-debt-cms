@@ -299,7 +299,7 @@ async function fetchGeoInfo(ip, visitorId) {
 router.get('/', authenticateToken, (req, res) => {
   const tz = getConfiguredTimezone();
   const offsetStr = getSqliteOffsetStr(tz);
-  const { page = 1, limit = 50, converted, search, from_date, to_date } = req.query;
+  const { page = 1, limit = 50, converted, search, from_date, to_date, funnel_step } = req.query;
   const offset = (page - 1) * limit;
 
   let query = `SELECT * FROM visitors WHERE 1=1`;
@@ -328,6 +328,19 @@ router.get('/', authenticateToken, (req, res) => {
     query += ` AND DATE(last_visit, '${offsetStr}') <= DATE(?)`;
     countQuery += ` AND DATE(last_visit, '${offsetStr}') <= DATE(?)`;
     params.push(to_date);
+  }
+
+  // Funnel step filter
+  const funnelClauses = {
+    debt: `AND step1_debt_at IS NOT NULL`,
+    mca: `AND step2_mca_at IS NOT NULL`,
+    mca_yes: `AND step2_mca_value = 'Yes'`,
+    mca_no: `AND step2_mca_value = 'No'`,
+    dropped_at_debt: `AND step1_debt_at IS NOT NULL AND step2_mca_at IS NULL`
+  };
+  if (funnel_step && funnelClauses[funnel_step]) {
+    query += ` ${funnelClauses[funnel_step]}`;
+    countQuery += ` ${funnelClauses[funnel_step]}`;
   }
 
   const total = db.prepare(countQuery).get(...params).total;
