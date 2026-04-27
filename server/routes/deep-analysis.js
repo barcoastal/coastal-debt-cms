@@ -803,27 +803,34 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
         WHERE segments.date DURING ${range}
       `;
       debug.queries.push({ dim, view, gaql: gaql.replace(/\s+/g, ' ').trim() });
-      const data = await gadsQuery(config, accessToken, developerToken, gaql);
-      const byAdGroup = new Map();
-      let cnt = 0;
-      for (const stream of data) {
-        for (const row of (stream.results || [])) {
-          cnt++;
-          const agId = pickPath(row, ['adGroup', 'id']);
-          const val = pickPath(row, DEMO_VIEWS[dim].segPath);
-          if (!byAdGroup.has(agId)) byAdGroup.set(agId, new Map());
-          const inner = byAdGroup.get(agId);
-          if (!inner.has(val)) inner.set(val, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
-          const cell = inner.get(val);
-          const m = row.metrics || {};
-          cell.impressions += parseInt(m.impressions || 0, 10);
-          cell.clicks += parseInt(m.clicks || 0, 10);
-          cell.cost_micros += parseInt(m.costMicros || 0, 10);
-          cell.conversions += parseFloat(m.conversions || 0);
+      try {
+        const data = await gadsQuery(config, accessToken, developerToken, gaql);
+        const byAdGroup = new Map();
+        let cnt = 0;
+        for (const stream of data) {
+          for (const row of (stream.results || [])) {
+            cnt++;
+            const agId = pickPath(row, ['adGroup', 'id']);
+            const val = pickPath(row, DEMO_VIEWS[dim].segPath);
+            if (!byAdGroup.has(agId)) byAdGroup.set(agId, new Map());
+            const inner = byAdGroup.get(agId);
+            if (!inner.has(val)) inner.set(val, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+            const cell = inner.get(val);
+            const m = row.metrics || {};
+            cell.impressions += parseInt(m.impressions || 0, 10);
+            cell.clicks += parseInt(m.clicks || 0, 10);
+            cell.cost_micros += parseInt(m.costMicros || 0, 10);
+            cell.conversions += parseFloat(m.conversions || 0);
+          }
         }
+        demoData[dim] = byAdGroup;
+        debug.counts[dim] = cnt;
+      } catch (err) {
+        // One view failing (e.g. income_range_view requires special access) shouldn't kill the whole pivot
+        debug.counts[dim] = 0;
+        debug.queries[debug.queries.length - 1].error = err.message;
+        console.warn(`[google-pivot] ${view} failed:`, err.message);
       }
-      demoData[dim] = byAdGroup;
-      debug.counts[dim] = cnt;
     }
 
     // Step 2: pull non-demographic dims from ad_group, segmented

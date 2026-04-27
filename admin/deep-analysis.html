@@ -1283,7 +1283,9 @@
       }
     }
 
-    // Initial load
+    // Initial load — render pivot UI immediately, then fire data fetches
+    initGoogleAdsPivot();
+    window._pivotInited = true;
     loadAll();
   </script>
 </body>
