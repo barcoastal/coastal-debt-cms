@@ -194,6 +194,9 @@
 
     .add-lp-btn { padding: 2px 10px; background: #ecfdf5; color: #065f46; border: 1px dashed #6ee7b7; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; }
     .add-lp-btn:hover { background: #d1fae5; border-style: solid; }
+
+    .clone-camp-btn { padding: 4px 12px; background: linear-gradient(135deg,#7c3aed 0%,#3052FF 100%); color: #fff; border: none; border-radius: 99px; font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(124,58,237,0.3); }
+    .clone-camp-btn:hover { box-shadow: 0 2px 6px rgba(124,58,237,0.5); }
   </style>
 </head>
 <body>
@@ -1195,13 +1198,18 @@
           if (b[0] === UNASSIGNED) return -1;
           return a[1].name.localeCompare(b[1].name);
         });
-        const showSpend = camp.gads_cost_total || camp.cost_total;
+        const isUnassigned = cid === UNASSIGNED;
+        const isPending = String(cid).startsWith('pending:');
+        const cloneBtn = (!isUnassigned && !isPending && adGroupEntries.length > 0)
+          ? `<button class="clone-camp-btn" data-cid="${_esc(cid)}" data-cname="${_esc(camp.name)}" onclick="event.stopPropagation();showCloneCampaign(this)" title="Create one LP per ad group, optimized for the highest-QS keyword in each">⚡ Clone as LPs</button>`
+          : '';
         return `
           <div class="folder-campaign">
             <div class="folder-campaign-header ${isCollapsed ? 'collapsed' : ''}" onclick="toggleFolder(this, '${collapsedKey}')">
               <svg class="folder-chevron ${isCollapsed ? '' : 'open'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              <div class="folder-campaign-name">${camp.name === 'Unassigned' ? '⚠ Unassigned' : camp.name}</div>
+              <div class="folder-campaign-name">${camp.name === 'Unassigned' ? '⚠ Unassigned' : (isPending ? '🟡 ' + camp.name : camp.name)}</div>
               <div class="folder-campaign-stats">
+                ${cloneBtn}
                 <span><strong>${camp.pages_total}</strong> LPs</span>
                 <span><strong>${(camp.gads_clicks_total || camp.clicks_total).toLocaleString()}</strong> clicks</span>
                 <span><strong>${camp.leads_total}</strong> leads</span>
@@ -2500,6 +2508,146 @@
         if (!r.ok) throw new Error(d.error || 'Save failed');
         closeLinkCampaign();
         await loadPages();
+      } catch (err) {
+        status.classList.add('error');
+        status.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+
+  <!-- Clone Campaign as LPs Modal -->
+  <div class="kw-modal-overlay" id="cloneCampaignModal">
+    <div class="kw-modal" style="max-width:560px;">
+      <button type="button" onclick="closeCloneCampaign()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>
+      <div class="kw-modal-top" style="background:linear-gradient(135deg,#7c3aed 0%,#3052FF 100%);">
+        <h2>Clone Campaign as LPs</h2>
+        <p id="cloneCampaignSubtitle" style="font-size:13px;opacity:0.95;"></p>
+      </div>
+      <div class="kw-modal-body">
+        <label>New campaign label (placeholder until live)</label>
+        <input type="text" id="cloneTargetLabel" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:14px;" placeholder="e.g. Business Debt Relief — Desktop">
+        <small style="font-size:11px;color:#9ca3af;display:block;margin-top:4px;">LPs will be tagged to this label and grouped under a "🟡 (pending)" folder. Real campaign id auto-replaces it on next sync once ads point to the LP URLs.</small>
+
+        <div style="height:14px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label>Slug prefix</label>
+            <input type="text" id="cloneSlugPrefix" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="business-debt-relief">
+          </div>
+          <div>
+            <label>Slug suffix</label>
+            <input type="text" id="cloneSlugSuffix" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="-desktop">
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label>Template</label>
+            <select id="cloneTemplate" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;">
+              <option value="join">Join (Form-First Lead Gen)</option>
+              <option value="form">Form (Lead Capture)</option>
+              <option value="call">Call Now</option>
+              <option value="article">Article</option>
+              <option value="authority">Authority</option>
+              <option value="rich">Rich</option>
+              <option value="leadgen">Lead Gen</option>
+              <option value="mca-variant">MCA Variant</option>
+            </select>
+          </div>
+          <div>
+            <label>Form</label>
+            <select id="cloneFormId" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;">
+              <option value="">— Select form —</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+        <label>Traffic source label</label>
+        <input type="text" id="cloneTrafficSource" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;" placeholder="Google PPC - Desktop">
+
+        <div style="height:14px;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="cloneGenerateContent" checked>
+          <label for="cloneGenerateContent" style="font-size:13px;font-weight:600;margin:0;cursor:pointer;">Auto-generate AI content per LP using top-QS keywords (runs in background)</label>
+        </div>
+
+        <div class="kw-modal-actions">
+          <button type="button" class="kw-skip" onclick="closeCloneCampaign()">Cancel</button>
+          <button type="button" class="kw-gen" id="cloneRunBtn" onclick="runCloneCampaign()">Create LPs</button>
+        </div>
+        <div class="kw-modal-status" id="cloneStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _cloneSourceCampaignId = null;
+
+    function showCloneCampaign(btn) {
+      _cloneSourceCampaignId = btn.dataset.cid;
+      const cname = btn.dataset.cname;
+      document.getElementById('cloneCampaignSubtitle').textContent = `Source: ${cname} — one LP will be created per ad group`;
+      document.getElementById('cloneTargetLabel').value = `${cname} — Desktop`;
+      document.getElementById('cloneSlugPrefix').value = '';
+      document.getElementById('cloneSlugSuffix').value = '-desktop';
+      document.getElementById('cloneTrafficSource').value = 'Google PPC - Desktop';
+      document.getElementById('cloneGenerateContent').checked = true;
+      document.getElementById('cloneStatus').style.display = 'none';
+      // Load forms list
+      fetch('/api/forms').then(r => r.json()).then(forms => {
+        const sel = document.getElementById('cloneFormId');
+        sel.innerHTML = '<option value="">— Select form —</option>' +
+          forms.map(f => `<option value="${f.id}">${_esc(f.name)} (${f.platform})</option>`).join('');
+      }).catch(() => {});
+      document.getElementById('cloneCampaignModal').classList.add('active');
+    }
+
+    function closeCloneCampaign() {
+      document.getElementById('cloneCampaignModal').classList.remove('active');
+      _cloneSourceCampaignId = null;
+    }
+
+    async function runCloneCampaign() {
+      if (!_cloneSourceCampaignId) return;
+      const targetLabel = document.getElementById('cloneTargetLabel').value.trim();
+      if (!targetLabel) { alert('Enter a campaign label'); return; }
+      const payload = {
+        source_campaign_id: _cloneSourceCampaignId,
+        target_campaign_label: targetLabel,
+        template_type: document.getElementById('cloneTemplate').value,
+        slug_prefix: document.getElementById('cloneSlugPrefix').value.trim(),
+        slug_suffix: document.getElementById('cloneSlugSuffix').value.trim(),
+        platform: 'google',
+        traffic_source: document.getElementById('cloneTrafficSource').value.trim(),
+        form_id: parseInt(document.getElementById('cloneFormId').value, 10) || null,
+        generate_content: document.getElementById('cloneGenerateContent').checked
+      };
+      const btn = document.getElementById('cloneRunBtn');
+      const status = document.getElementById('cloneStatus');
+      btn.disabled = true;
+      status.style.display = 'block';
+      status.classList.remove('error');
+      status.textContent = 'Creating LPs…';
+      try {
+        const r = await fetch('/api/pages/bulk-create-from-campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        status.style.color = '#166534';
+        const aiNote = d.generate_content_started
+          ? ' AI content generation kicked off in the background — refresh in a couple of minutes.'
+          : '';
+        status.innerHTML = `Created <strong>${d.created.length}</strong> LPs in folder "${_esc(d.target_campaign_label)}".${aiNote}` +
+          (d.skipped && d.skipped.length ? `<br><span style="color:#9a3412;">Skipped ${d.skipped.length}: ${d.skipped.map(s => _esc(s.ad_group_name) + ' (' + _esc(s.error) + ')').join(', ')}</span>` : '');
+        await loadPages();
+        // keep modal open for ~2s so user sees the result, then close
+        setTimeout(closeCloneCampaign, 2500);
       } catch (err) {
         status.classList.add('error');
         status.textContent = err.message;

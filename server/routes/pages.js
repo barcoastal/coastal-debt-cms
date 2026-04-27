@@ -648,6 +648,232 @@ router.put('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Page updated' });
 });
 
+// Bulk-create one LP per ad group of a Google Ads campaign.
+// Each LP is tagged to a pending placeholder campaign + the source ad group,
+// so the folder view shows them under a new "(pending)" campaign folder.
+// If generate_content=true, AI fills in keyword-optimized copy per LP using
+// the highest-QS keywords in each ad group.
+router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) => {
+  const {
+    source_campaign_id,
+    target_campaign_label,
+    template_type = 'join',
+    slug_prefix = '',
+    slug_suffix = '',
+    platform = 'google',
+    traffic_source = '',
+    form_id = null,
+    generate_content = false
+  } = req.body || {};
+
+  if (!source_campaign_id) return res.status(400).json({ error: 'source_campaign_id required' });
+  if (!target_campaign_label) return res.status(400).json({ error: 'target_campaign_label required' });
+
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form'];
+  const validType = validTypes.includes(template_type) ? template_type : 'join';
+
+  // Pull ad groups for the source campaign from the cached meta
+  const adGroups = db.prepare(`
+    SELECT ad_group_id, ad_group_name, campaign_id, campaign_name, keywords
+    FROM gads_ad_group_meta
+    WHERE campaign_id = ?
+    ORDER BY ad_group_name
+  `).all(String(source_campaign_id));
+
+  if (adGroups.length === 0) {
+    return res.status(404).json({ error: 'No ad groups found for that campaign in cache. Sync Google Ads first.' });
+  }
+
+  function slugify(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .replace(/-{2,}/g, '-')
+      .slice(0, 60);
+  }
+
+  function pickTopKeywords(rawKeywords, n = 5) {
+    let kws = [];
+    try { kws = JSON.parse(rawKeywords || '[]'); } catch (e) { kws = []; }
+    const objs = kws.map(k => typeof k === 'string' ? { text: k } : k);
+    objs.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+    return objs.slice(0, n);
+  }
+
+  // Helper: pick a unique slug, appending -2/-3/... if needed
+  function uniqueSlug(base) {
+    let s = base, i = 2;
+    while (db.prepare('SELECT id FROM landing_pages WHERE slug = ?').get(s)) {
+      s = `${base}-${i++}`;
+      if (i > 50) break;
+    }
+    return s;
+  }
+
+  const created = [];
+  const skipped = [];
+
+  for (const ag of adGroups) {
+    const topKeywords = pickTopKeywords(ag.keywords, 8);
+    const topKw = topKeywords[0];
+
+    const baseSlug = [slug_prefix, slugify(ag.ad_group_name), slug_suffix]
+      .filter(Boolean)
+      .join('-')
+      .replace(/-{2,}/g, '-');
+    const slug = uniqueSlug(baseSlug);
+    const name = `${target_campaign_label} — ${ag.ad_group_name}`;
+
+    try {
+      const result = db.prepare(`
+        INSERT INTO landing_pages (
+          name, slug, platform, traffic_source, form_id,
+          content, sections_visible, hidden_fields, template_type,
+          gads_campaign_id, gads_campaign_name, gads_ad_group_id, gads_ad_group_name
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        name, slug, platform, traffic_source, form_id || null,
+        JSON.stringify(validType === 'authority' ? defaultContentAuthority : defaultContent),
+        JSON.stringify(validType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
+        JSON.stringify({}),
+        validType,
+        // Use a synthetic pending campaign id so the folder view groups them together
+        // and Bar can identify them. When the real campaign goes live and ads point
+        // at /lp/{slug}, the next sync will overwrite with the real campaign id.
+        `pending:${slugify(target_campaign_label)}`,
+        target_campaign_label,
+        String(ag.ad_group_id),
+        ag.ad_group_name
+      );
+
+      generateLandingPage(result.lastInsertRowid);
+
+      created.push({
+        id: result.lastInsertRowid,
+        slug,
+        name,
+        ad_group_id: ag.ad_group_id,
+        ad_group_name: ag.ad_group_name,
+        top_keywords: topKeywords.map(k => k.text),
+        top_qs: topKw && topKw.quality_score != null ? topKw.quality_score : null
+      });
+    } catch (err) {
+      skipped.push({ ad_group_name: ag.ad_group_name, error: err.message });
+    }
+  }
+
+  if (logActivity && created.length) {
+    logActivity(req.user.id, req.user.name || req.user.email, 'bulk-created', 'pages', null,
+      `Bulk-created ${created.length} LPs from campaign "${adGroups[0].campaign_name}" → ${target_campaign_label}`, req.ip);
+  }
+
+  // Optional: trigger AI content generation for each created LP in the background.
+  if (generate_content && created.length) {
+    // Fire-and-forget loop; updates happen via internal HTTP self-call.
+    setImmediate(() => generateContentForCreatedLps(created, req.headers.cookie || ''));
+  }
+
+  res.json({
+    success: true,
+    created,
+    skipped,
+    target_campaign_label,
+    source_campaign_id,
+    generate_content_started: !!generate_content
+  });
+});
+
+// Map nested AI response to the flat content shape that landing_pages.content uses.
+// Mirrors the field mapping in admin/pages.html generateAI().
+function flattenAIContent(ai, baseContent) {
+  const out = { ...baseContent };
+  if (ai.seo) {
+    if (ai.seo.pageTitle) out.pageTitle = ai.seo.pageTitle;
+    if (ai.seo.metaDescription) out.metaDescription = ai.seo.metaDescription;
+  }
+  if (ai.hero) {
+    if (ai.hero.badge) out.badge = ai.hero.badge;
+    if (ai.hero.headline) out.headline = ai.hero.headline;
+    if (ai.hero.headlineLine2) out.headlineLine2 = ai.hero.headlineLine2;
+    if (ai.hero.headlineHighlight) out.headlineHighlight = ai.hero.headlineHighlight;
+    if (ai.hero.subheadline) out.subheadline = ai.hero.subheadline;
+    if (Array.isArray(ai.hero.bulletPoints)) out.bulletPoints = ai.hero.bulletPoints;
+    if (ai.hero.formTitle) out.formTitle = ai.hero.formTitle;
+    if (ai.hero.formSubtitle) out.formSubtitle = ai.hero.formSubtitle;
+    if (ai.hero.cta) out.formButton = ai.hero.cta;
+  }
+  if (ai.howItWorks) {
+    if (ai.howItWorks.title) out.howItWorksTitle = ai.howItWorks.title;
+    if (ai.howItWorks.subtitle) out.howItWorksSubtitle = ai.howItWorks.subtitle;
+    if (Array.isArray(ai.howItWorks.steps)) out.steps = ai.howItWorks.steps;
+  }
+  if (ai.comparison) {
+    if (ai.comparison.title) out.comparisonTitle = ai.comparison.title;
+    if (ai.comparison.subtitle) out.comparisonSubtitle = ai.comparison.subtitle;
+    if (ai.comparison.colBad) out.comparisonColBad = ai.comparison.colBad;
+    if (ai.comparison.colGood) out.comparisonColGood = ai.comparison.colGood;
+    if (ai.comparison.ctaText) out.comparisonCtaText = ai.comparison.ctaText;
+  }
+  if (ai.empathy) {
+    if (ai.empathy.title) out.empathyTitle = ai.empathy.title;
+    if (Array.isArray(ai.empathy.paragraphs)) out.empathyText = ai.empathy.paragraphs;
+  }
+  if (ai.testimonials) {
+    if (ai.testimonials.title) out.testimonialsTitle = ai.testimonials.title;
+    if (ai.testimonials.subtitle) out.testimonialsSubtitle = ai.testimonials.subtitle;
+    if (Array.isArray(ai.testimonials.items)) out.testimonials = ai.testimonials.items;
+  }
+  if (ai.faq) {
+    if (ai.faq.title) out.faqTitle = ai.faq.title;
+    if (ai.faq.subtitle) out.faqSubtitle = ai.faq.subtitle;
+    if (Array.isArray(ai.faq.items)) out.faqItems = ai.faq.items;
+  }
+  if (ai.cta) {
+    if (ai.cta.title) out.ctaTitle = ai.cta.title;
+    if (ai.cta.subtitle) out.ctaSubtitle = ai.cta.subtitle;
+    if (ai.cta.button) out.ctaButton = ai.cta.button;
+  }
+  return out;
+}
+
+// Background helper: kick off AI content generation per LP using its top keywords.
+// Each call hits /api/ai/generate-content (already wired) and writes the result via
+// the page's /content endpoint. We pass through the admin's cookie so authenticateToken
+// passes — same as if Bar clicked Generate himself.
+async function generateContentForCreatedLps(createdLps, cookieHeader) {
+  const port = process.env.PORT || 3000;
+  const base = `http://127.0.0.1:${port}`;
+  for (const lp of createdLps) {
+    if (!lp.top_keywords || lp.top_keywords.length === 0) continue;
+    try {
+      const aiRes = await fetch(`${base}/api/ai/generate-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: cookieHeader },
+        body: JSON.stringify({ keywords: lp.top_keywords, platform: 'google' })
+      });
+      if (!aiRes.ok) continue;
+      const aiData = await aiRes.json();
+      if (!aiData || !aiData.content) continue;
+
+      // Read current content, merge AI fields into the flat shape, save back
+      const page = db.prepare('SELECT content FROM landing_pages WHERE id = ?').get(lp.id);
+      let current = {};
+      try { current = JSON.parse(page?.content || '{}'); } catch (e) {}
+      const merged = flattenAIContent(aiData.content, current);
+
+      await fetch(`${base}/api/pages/${lp.id}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', cookie: cookieHeader },
+        body: JSON.stringify({ content: merged })
+      });
+    } catch (e) {
+      console.error(`AI content gen failed for LP ${lp.id}:`, e.message);
+    }
+  }
+}
+
 // Set Google Ads campaign / ad_group association
 router.put('/:id/gads-link', authenticateToken, (req, res) => {
   const { campaign_id, campaign_name, ad_group_id, ad_group_name } = req.body;
