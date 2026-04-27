@@ -2013,6 +2013,10 @@ try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_campaign_name TEXT`); }
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_id TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE landing_pages ADD COLUMN gads_ad_group_name TEXT`); } catch (e) {}
 
+// Range label tracks which date window the cached cost/clicks/conversions represent
+try { db.exec(`ALTER TABLE gads_lp_metrics ADD COLUMN range_label TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN range_label TEXT`); } catch (e) {}
+
 // Cache table for Google Ads ad-group meta (keywords + QS aggregated per ad group)
 db.exec(`
   CREATE TABLE IF NOT EXISTS gads_ad_group_meta (

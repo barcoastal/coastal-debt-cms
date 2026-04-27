@@ -425,6 +425,7 @@ router.get('/', authenticateToken, (req, res) => {
         ctr: m.ctr,
         avg_cpc_micros: m.avg_cpc_micros,
         mobile_friendly_click_rate: m.mobile_friendly_click_rate,
+        range_label: m.range_label,
         refreshed_at: m.refreshed_at
       };
     } else {

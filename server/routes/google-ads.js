@@ -1306,6 +1306,30 @@ router.get('/ads-by-url', authenticateToken, async (req, res) => {
   }
 });
 
+// Build a Google Ads "DURING" / "BETWEEN" date filter from the request body.
+// Accepts: { days: 7|14|30|... } OR { range: 'today'|'yesterday'|'mtd'|'all' }
+//          OR { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' }.
+// Defaults to LAST_30_DAYS. Returns { clause: 'segments.date DURING ...', label: '30d' }.
+function buildGadsDateClause(body) {
+  const { range, days, from, to } = body || {};
+  if (range === 'today') return { clause: "segments.date DURING TODAY", label: 'Today' };
+  if (range === 'yesterday') return { clause: "segments.date DURING YESTERDAY", label: 'Yesterday' };
+  if (range === 'mtd') return { clause: "segments.date DURING THIS_MONTH", label: 'MTD' };
+  if (range === 'last_month') return { clause: "segments.date DURING LAST_MONTH", label: 'Last month' };
+  if (range === 'all') {
+    // Google Ads has no "all time" — use widest practical window
+    return { clause: "segments.date DURING LAST_30_DAYS", label: 'Last 30 days (max window)' };
+  }
+  if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return { clause: `segments.date BETWEEN '${from}' AND '${to}'`, label: `${from} → ${to}` };
+  }
+  const d = parseInt(days, 10);
+  if (d === 7) return { clause: "segments.date DURING LAST_7_DAYS", label: 'Last 7 days' };
+  if (d === 14) return { clause: "segments.date DURING LAST_14_DAYS", label: 'Last 14 days' };
+  if (d === 30) return { clause: "segments.date DURING LAST_30_DAYS", label: 'Last 30 days' };
+  return { clause: "segments.date DURING LAST_30_DAYS", label: 'Last 30 days' };
+}
+
 // Refresh LP metrics: combines QS + landing_page_view + ads-by-url
 // Auto-links LPs to campaigns/ad_groups by URL match, populates gads_lp_metrics cache
 router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
@@ -1313,6 +1337,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
   if (!config || !config.refresh_token_encrypted || !config.customer_id) {
     return res.status(400).json({ error: 'Google Ads not connected' });
   }
+
+  const dateFilter = buildGadsDateClause(req.body);
 
   try {
     const accessToken = await getValidAccessToken(config);
@@ -1436,7 +1462,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
       FROM ad_group
       WHERE ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
-        AND segments.date DURING LAST_30_DAYS
+        AND ${dateFilter.clause}
     `);
     const agStatsById = new Map();
     for (const stream of agStatsData) {
@@ -1460,7 +1486,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         metrics.cost_micros, metrics.conversions, metrics.average_cpc,
         metrics.mobile_friendly_clicks_percentage
       FROM landing_page_view
-      WHERE segments.date DURING LAST_30_DAYS
+      WHERE ${dateFilter.clause}
     `);
     const lpvByUrl = new Map();
     for (const stream of lpvData) {
@@ -1495,8 +1521,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         landing_page_id, quality_score, post_click_quality_score, creative_quality_score,
         search_predicted_ctr, qs_keyword_count, qs_breakdown,
         impressions, clicks, cost_micros, conversions, ctr, avg_cpc_micros,
-        mobile_friendly_click_rate, refreshed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        mobile_friendly_click_rate, range_label, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(landing_page_id) DO UPDATE SET
         quality_score = excluded.quality_score,
         post_click_quality_score = excluded.post_click_quality_score,
@@ -1511,6 +1537,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         ctr = excluded.ctr,
         avg_cpc_micros = excluded.avg_cpc_micros,
         mobile_friendly_click_rate = excluded.mobile_friendly_click_rate,
+        range_label = excluded.range_label,
         refreshed_at = CURRENT_TIMESTAMP
     `);
 
@@ -1563,7 +1590,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         lpvStats ? lpvStats.conversions : 0,
         impressions ? +(clicks / impressions).toFixed(4) : 0,
         clicks ? Math.round(costMicros / clicks) : 0,
-        lpvStats && lpvStats.mob_count ? +(lpvStats.mob_sum / lpvStats.mob_count).toFixed(4) : 0
+        lpvStats && lpvStats.mob_count ? +(lpvStats.mob_sum / lpvStats.mob_count).toFixed(4) : 0,
+        dateFilter.label
       );
       metricsCount++;
     }
@@ -1574,8 +1602,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         ad_group_id, ad_group_name, campaign_id, campaign_name,
         keywords, keyword_count, avg_quality_score,
         post_click_quality_score, creative_quality_score, search_predicted_ctr,
-        qs_breakdown, impressions, clicks, cost_micros, conversions, refreshed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        qs_breakdown, impressions, clicks, cost_micros, conversions, range_label, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(ad_group_id) DO UPDATE SET
         ad_group_name = excluded.ad_group_name,
         campaign_id = excluded.campaign_id,
@@ -1591,6 +1619,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         clicks = excluded.clicks,
         cost_micros = excluded.cost_micros,
         conversions = excluded.conversions,
+        range_label = excluded.range_label,
         refreshed_at = CURRENT_TIMESTAMP
     `);
     let adGroupCount = 0;
@@ -1612,7 +1641,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         stats.impressions,
         stats.clicks,
         stats.cost_micros,
-        stats.conversions
+        stats.conversions,
+        dateFilter.label
       );
       adGroupCount++;
     }
@@ -1631,7 +1661,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       linked: linkedCount,
       metrics_updated: metricsCount,
       ad_groups_cached: adGroupCount,
-      total_lps: allLps.length
+      total_lps: allLps.length,
+      range_label: dateFilter.label
     });
   } catch (err) {
     console.error('Error refreshing LP metrics:', err);
@@ -1647,7 +1678,7 @@ router.get('/ad-group-meta', authenticateToken, (req, res) => {
     SELECT ad_group_id, ad_group_name, campaign_id, campaign_name,
       keywords, keyword_count, avg_quality_score,
       post_click_quality_score, creative_quality_score, search_predicted_ctr,
-      qs_breakdown, impressions, clicks, cost_micros, conversions, refreshed_at
+      qs_breakdown, impressions, clicks, cost_micros, conversions, range_label, refreshed_at
     FROM gads_ad_group_meta
     ORDER BY campaign_name, ad_group_name
   `).all();

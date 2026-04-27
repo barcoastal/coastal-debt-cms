@@ -180,6 +180,12 @@
 
     .kw-expand { margin-top: 4px; align-self: flex-start; padding: 4px 10px; font-size: 11px; font-weight: 600; background: transparent; color: #3052FF; border: 1px dashed #c7d2fe; border-radius: 6px; cursor: pointer; }
     .kw-expand:hover { background: #eef2ff; }
+
+    .gads-range-banner { margin: 4px 16px 8px; padding: 6px 12px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 12px; }
+    .gads-range-banner strong { color: #1e293b; }
+    .gads-stale-banner { margin: 4px 16px 8px; padding: 8px 12px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 10px; }
+    .gads-stale-banner button { padding: 4px 10px; background: #ea580c; color: #fff; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .gads-stale-banner button:hover { background: #c2410c; }
   </style>
 </head>
 <body>
@@ -974,18 +980,38 @@
       document.getElementById('pagesView').classList.toggle('hidden', view !== 'flat');
     }
 
+    function _gadsRangePayload() {
+      const r = getDateRange();
+      // Map page date-range UI → Google Ads-friendly request
+      if (r.range === 'today') return { range: 'today' };
+      if (r.range === 'yesterday') return { range: 'yesterday' };
+      if (r.range === '7') return { days: 7 };
+      if (r.range === '30') return { days: 30 };
+      if (r.range === 'mtd') return { range: 'mtd' };
+      if (r.range === 'custom' && r.from && r.to) {
+        const fmt = d => d.toISOString().slice(0, 10);
+        return { from: fmt(r.from), to: fmt(r.to) };
+      }
+      return { range: 'all' }; // "All time" → falls back to LAST_30_DAYS server-side
+    }
+
     async function refreshGadsMetrics() {
       const btn = document.getElementById('gadsRefreshBtn');
       const status = document.getElementById('gadsRefreshStatus');
+      const payload = _gadsRangePayload();
       btn.disabled = true;
       status.textContent = 'Pulling campaigns, ads, quality scores, and landing-page metrics from Google Ads…';
       status.style.color = '#64748b';
       try {
-        const r = await fetch('/api/google-ads/refresh-lp-metrics', { method: 'POST' });
+        const r = await fetch('/api/google-ads/refresh-lp-metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Refresh failed');
         status.style.color = '#166534';
-        status.textContent = `Synced. Linked ${d.linked} of ${d.total_lps} pages to campaigns. ${d.metrics_updated} metrics rows updated.`;
+        status.textContent = `Synced (${d.range_label}). Linked ${d.linked} of ${d.total_lps} pages. ${d.ad_groups_cached || 0} ad groups, ${d.metrics_updated} metrics rows.`;
         await loadPages();
       } catch (err) {
         status.style.color = '#dc2626';
@@ -1049,6 +1075,21 @@
         </div>`;
     }
 
+    function _expectedRangeLabel() {
+      // Mirrors buildGadsDateClause on the server
+      const r = getDateRange();
+      if (r.range === 'today') return 'Today';
+      if (r.range === 'yesterday') return 'Yesterday';
+      if (r.range === '7') return 'Last 7 days';
+      if (r.range === '30') return 'Last 30 days';
+      if (r.range === 'mtd') return 'MTD';
+      if (r.range === 'custom' && r.from && r.to) {
+        const fmt = d => d.toISOString().slice(0, 10);
+        return `${fmt(r.from)} → ${fmt(r.to)}`;
+      }
+      return 'Last 30 days (max window)';
+    }
+
     function renderPagesFolders(pages) {
       const root = document.getElementById('foldersView');
       const meta = _gadsAdGroupMeta || [];
@@ -1057,6 +1098,16 @@
         root.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;">No landing pages yet. Sync Google Ads to see all campaigns.</div>';
         return;
       }
+
+      // Stale-cache warning: cached range vs page filter
+      const cachedRange = (meta[0] && meta[0].range_label) || null;
+      const expected = _expectedRangeLabel();
+      const stale = cachedRange && cachedRange !== expected;
+      const banner = stale
+        ? `<div class="gads-stale-banner">⚠ Google Ads spend below is cached for <strong>${cachedRange}</strong> — current filter is <strong>${expected}</strong>. <button onclick="refreshGadsMetrics()">Sync now</button></div>`
+        : (cachedRange
+            ? `<div class="gads-range-banner">Google Ads spend / clicks shown for: <strong>${cachedRange}</strong></div>`
+            : '');
 
       const UNASSIGNED = '__unassigned__';
 
@@ -1128,7 +1179,7 @@
         return a[1].name.localeCompare(b[1].name);
       });
 
-      root.innerHTML = campEntries.map(([cid, camp]) => {
+      root.innerHTML = banner + campEntries.map(([cid, camp]) => {
         const collapsedKey = 'fold_camp_' + cid;
         const isCollapsed = (function(){ try { return localStorage.getItem(collapsedKey) === '1'; } catch(e) { return false; } })();
         const adGroupEntries = [...camp.ad_groups.entries()].sort((a, b) => {
@@ -1159,8 +1210,9 @@
     function _adGroupHtml(agid, ag) {
       const noLp = ag.has_meta && ag.pages.length === 0;
       const kwHtml = _keywordRowsHtml(agid, ag.keywords);
+      const cachedRange = (_gadsAdGroupMeta && _gadsAdGroupMeta[0] && _gadsAdGroupMeta[0].range_label) || '30d';
       const statsLine = ag.has_meta
-        ? `<span>${ag.gads_clicks.toLocaleString()} clicks · ${_money(ag.gads_cost)} · ${(ag.gads_conversions || 0).toFixed(0)} conv (30d)</span>`
+        ? `<span title="Time frame: ${cachedRange}">${ag.gads_clicks.toLocaleString()} clicks · ${_money(ag.gads_cost)} · ${(ag.gads_conversions || 0).toFixed(0)} conv</span>`
         : `<span>${ag.clicks.toLocaleString()} clicks · ${ag.leads} leads</span>`;
       return `
         <div class="folder-adgroup">
@@ -1215,19 +1267,14 @@
 
     function _keywordRowsHtml(agid, keywords) {
       if (!keywords || keywords.length === 0) return '';
-      // Legacy: array of strings — convert
       const kws = keywords.map(k => typeof k === 'string' ? { text: k } : k);
-      // Sort: lowest QS first (so problems surface), nulls last
+      // Sort: lowest QS first so problem keywords surface, nulls last
       kws.sort((a, b) => {
         const av = a.quality_score == null ? 99 : a.quality_score;
         const bv = b.quality_score == null ? 99 : b.quality_score;
         return av - bv;
       });
-      const limit = 50;
-      const collapsedKey = 'kw_open_' + agid;
-      const isOpen = (function(){ try { return localStorage.getItem(collapsedKey) === '1'; } catch(e) { return false; } })();
-      const visible = isOpen ? kws : kws.slice(0, 8);
-      const rows = visible.map(k => `
+      const rows = kws.map(k => `
         <div class="kw-row">
           <div class="kw-text">${_esc(k.text)}${_matchPill(k.match_type)}</div>
           <div class="kw-badges">
@@ -1238,18 +1285,7 @@
           </div>
         </div>
       `).join('');
-      const toggle = kws.length > 8
-        ? `<button class="kw-expand" onclick="toggleKwList('${agid}', this)">${isOpen ? 'Show less' : `Show all ${kws.length} keywords`}</button>`
-        : '';
-      return `<div class="ag-keywords-list" id="kw-list-${agid}">${rows}${toggle}</div>`;
-    }
-
-    function toggleKwList(agid, btn) {
-      const key = 'kw_open_' + agid;
-      const isOpen = (function(){ try { return localStorage.getItem(key) === '1'; } catch(e) { return false; } })();
-      try { localStorage.setItem(key, isOpen ? '0' : '1'); } catch(e) {}
-      // Re-render folders to apply
-      renderPagesFolders(_pagesData || []);
+      return `<div class="ag-keywords-list" id="kw-list-${agid}">${rows}</div>`;
     }
 
     function toggleFolder(headerEl, storageKey) {
