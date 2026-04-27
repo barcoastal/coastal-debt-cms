@@ -1086,6 +1086,7 @@
             <button style="background:#dcfce7;color:#166534;" onclick="showPageStats(${page.id})">Stats</button>
             <a href="/lp/${page.slug}/" target="_blank" class="pg-act-view">View</a>
             <button class="pg-act-edit" onclick="editPage(${page.id})">Edit</button>
+            ${page.gads_ad_group_id ? `<button style="background:linear-gradient(135deg,#f59e0b 0%,#7c3aed 100%);color:#fff;" onclick="regenAiFromFolder(${page.id}, this)" title="Regenerate AI content using this ad group's top-QS keywords">🤖 Regen</button>` : ''}
             <button style="background:#fef3c7;color:#92400e;" onclick="showLinkCampaign(${page.id})" title="Link to Google Ads campaign / ad group">Link</button>
             <button style="background:#ede9fe;color:#7c3aed" onclick="showAbTest(${page.id})">A/B</button>
           </div>
@@ -1286,6 +1287,25 @@
           ${kwHtml}
           ${ag.pages.map(_lpCardHtml).join('')}
         </div>`;
+    }
+
+    async function regenAiFromFolder(pageId, btn) {
+      if (!confirm('Regenerate AI content for this LP using the top-QS keywords from its linked ad group? This overwrites current copy.')) return;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        const r = await fetch(`/api/pages/${pageId}/regen-ai-from-folder`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Regen failed');
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+        await loadPages();
+      } catch (err) {
+        btn.textContent = orig;
+        btn.disabled = false;
+        alert('Regen failed: ' + err.message);
+      }
     }
 
     function toggleKwFold(agid, ev) {

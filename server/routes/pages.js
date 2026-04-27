@@ -845,34 +845,91 @@ function flattenAIContent(ai, baseContent) {
 async function generateContentForCreatedLps(createdLps, cookieHeader) {
   const port = process.env.PORT || 3000;
   const base = `http://127.0.0.1:${port}`;
+  console.log(`[bulk-create] Starting AI content gen for ${createdLps.length} LPs`);
   for (const lp of createdLps) {
-    if (!lp.top_keywords || lp.top_keywords.length === 0) continue;
+    if (!lp.top_keywords || lp.top_keywords.length === 0) {
+      console.log(`[bulk-create] LP ${lp.id} (${lp.slug}) has no keywords, skipping AI`);
+      continue;
+    }
     try {
+      console.log(`[bulk-create] Generating AI for LP ${lp.id} (${lp.slug}) using ${lp.top_keywords.length} keywords`);
       const aiRes = await fetch(`${base}/api/ai/generate-content`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', cookie: cookieHeader },
         body: JSON.stringify({ keywords: lp.top_keywords, platform: 'google' })
       });
-      if (!aiRes.ok) continue;
+      if (!aiRes.ok) {
+        const errText = await aiRes.text().catch(() => '');
+        console.error(`[bulk-create] AI gen ${aiRes.status} for LP ${lp.id}: ${errText.slice(0, 200)}`);
+        continue;
+      }
       const aiData = await aiRes.json();
-      if (!aiData || !aiData.content) continue;
+      if (!aiData || !aiData.content) {
+        console.error(`[bulk-create] AI returned empty content for LP ${lp.id}`);
+        continue;
+      }
 
-      // Read current content, merge AI fields into the flat shape, save back
+      // Read current content, merge AI fields into the flat shape, save back directly
+      // (skip the HTTP self-call to avoid auth issues — write straight to DB)
       const page = db.prepare('SELECT content FROM landing_pages WHERE id = ?').get(lp.id);
       let current = {};
       try { current = JSON.parse(page?.content || '{}'); } catch (e) {}
       const merged = flattenAIContent(aiData.content, current);
 
-      await fetch(`${base}/api/pages/${lp.id}/content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', cookie: cookieHeader },
-        body: JSON.stringify({ content: merged })
-      });
+      db.prepare('UPDATE landing_pages SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(JSON.stringify(merged), lp.id);
+      generateLandingPage(lp.id);
+      console.log(`[bulk-create] ✓ LP ${lp.id}: headline="${merged.headline || ''}"`);
     } catch (e) {
-      console.error(`AI content gen failed for LP ${lp.id}:`, e.message);
+      console.error(`[bulk-create] AI content gen failed for LP ${lp.id}:`, e.message);
     }
   }
+  console.log(`[bulk-create] AI content gen complete`);
 }
+
+// Regenerate AI content for a single LP using the linked ad group's top keywords.
+// Writes result inline so the user knows when it's done.
+router.post('/:id/regen-ai-from-folder', authenticateToken, async (req, res) => {
+  const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+  if (!page.gads_ad_group_id) return res.status(400).json({ error: 'LP is not linked to an ad group. Use the Link button first.' });
+
+  const meta = db.prepare(`SELECT keywords FROM gads_ad_group_meta WHERE ad_group_id = ?`).get(page.gads_ad_group_id);
+  if (!meta) return res.status(400).json({ error: 'Ad group has no cached keywords. Sync Google Ads first.' });
+
+  let kws = [];
+  try { kws = JSON.parse(meta.keywords || '[]'); } catch (e) {}
+  const objs = kws.map(k => typeof k === 'string' ? { text: k } : k);
+  objs.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+  const topKeywords = objs.slice(0, 8).map(k => k.text).filter(Boolean);
+  if (!topKeywords.length) return res.status(400).json({ error: 'No keywords found for this ad group.' });
+
+  try {
+    const port = process.env.PORT || 3000;
+    const base = `http://127.0.0.1:${port}`;
+    const aiRes = await fetch(`${base}/api/ai/generate-content`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: req.headers.cookie || '' },
+      body: JSON.stringify({ keywords: topKeywords, platform: page.platform || 'google' })
+    });
+    const aiData = await aiRes.json();
+    if (!aiRes.ok) throw new Error(aiData.error || 'AI generation failed');
+    if (!aiData.content) throw new Error('AI returned empty content');
+
+    let current = {};
+    try { current = JSON.parse(page.content || '{}'); } catch (e) {}
+    const merged = flattenAIContent(aiData.content, current);
+
+    db.prepare('UPDATE landing_pages SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(JSON.stringify(merged), page.id);
+    generateLandingPage(page.id);
+
+    res.json({ success: true, top_keywords: topKeywords, headline: merged.headline });
+  } catch (err) {
+    console.error('regen-ai-from-folder failed:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Set Google Ads campaign / ad_group association
 router.put('/:id/gads-link', authenticateToken, (req, res) => {
