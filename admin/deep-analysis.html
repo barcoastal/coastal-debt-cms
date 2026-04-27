@@ -250,104 +250,95 @@
         .kpi-value { font-size: 20px; font-weight: 800; color: #1e293b; margin-top: 2px; }
       </style>
 
-      <!-- Pivot Table Builder -->
+      <!-- Google Ads Multi-Filter Pivot -->
       <div class="card" style="margin-bottom: 16px;">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="card-header">
           <div>
-            <h3 class="card-title" style="margin:0;">Pivot Table</h3>
-            <small style="color:#94a3b8;">Group your visitor + funnel data by any dimension. Built for media buyers.</small>
+            <h3 class="card-title" style="margin:0;">Google Ads Pivot</h3>
+            <small style="color:#94a3b8;">Stack any filters and group by any dimensions. Example: filter Age = 45-54 + Gender = Female + Income = Top 10%, group by Campaign, sort by conversions.</small>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:12px;align-items:end;padding:12px 0;">
+
+        <!-- Filters Panel -->
+        <div style="background:#f8fafc;border-radius:10px;padding:14px;margin:8px 0;">
+          <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Filters — click values to include</div>
+          <div id="pivotFilters" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;"></div>
+        </div>
+
+        <!-- Group + Metrics + Run -->
+        <div style="display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:12px;align-items:end;padding:8px 0;">
           <div>
-            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Row dimension</label>
-            <select id="pivotRow" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-              <option value="source" selected>Source (utm_source)</option>
-              <option value="medium">Medium (utm_medium)</option>
-              <option value="campaign">Campaign (utm_campaign)</option>
-              <option value="term">Term/Keyword (utm_term)</option>
-              <option value="content">Ad/Content (utm_content)</option>
-              <option value="country">Country</option>
-              <option value="region">State / Region</option>
-              <option value="city">City</option>
-              <option value="device">Device type</option>
-              <option value="browser">Browser</option>
-              <option value="os">OS</option>
-              <option value="landing_page">Landing page</option>
-              <option value="ab_variant">A/B variant</option>
-              <option value="weekday">Weekday</option>
-              <option value="hour">Hour of day</option>
-              <option value="day">Day (date)</option>
-              <option value="funnel_stage">Funnel stage</option>
-              <option value="has_gclid">Has GCLID</option>
-              <option value="has_fbclid">Has FBCLID</option>
-              <option value="has_msclkid">Has MSCLKID</option>
-            </select>
+            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Group by (rows)</label>
+            <div id="pivotGroupBy" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
           </div>
           <div>
-            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Column dimension</label>
-            <select id="pivotCol" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-              <option value="">— None —</option>
-              <option value="device">Device type</option>
-              <option value="country">Country</option>
-              <option value="region">State / Region</option>
-              <option value="weekday">Weekday</option>
-              <option value="funnel_stage">Funnel stage</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Measures</label>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;">
-              <label><input type="checkbox" class="pivotMeasure" value="visits" checked> Visits</label>
-              <label><input type="checkbox" class="pivotMeasure" value="step1_debt" checked> Debt</label>
-              <label><input type="checkbox" class="pivotMeasure" value="step2_mca_yes" checked> MCA Yes</label>
-              <label><input type="checkbox" class="pivotMeasure" value="step2_mca_no" checked> MCA No</label>
-              <label><input type="checkbox" class="pivotMeasure" value="leads" checked> Leads</label>
-              <label><input type="checkbox" class="pivotMeasure" value="lead_to_visit_pct"> CR%</label>
-              <label><input type="checkbox" class="pivotMeasure" value="debt_to_visit_pct"> Debt%</label>
-              <label><input type="checkbox" class="pivotMeasure" value="mca_yes_to_debt_pct"> Qual%</label>
-              <label><input type="checkbox" class="pivotMeasure" value="total_debt_amount"> Total $ debt</label>
+            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Show metrics</label>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;font-size:12px;">
+              <label><input type="checkbox" class="pivotMetric" value="impressions"> Impressions</label>
+              <label><input type="checkbox" class="pivotMetric" value="clicks" checked> Clicks</label>
+              <label><input type="checkbox" class="pivotMetric" value="cost" checked> Cost</label>
+              <label><input type="checkbox" class="pivotMetric" value="conversions" checked> Conversions</label>
+              <label><input type="checkbox" class="pivotMetric" value="ctr"> CTR</label>
+              <label><input type="checkbox" class="pivotMetric" value="cpc"> CPC</label>
+              <label><input type="checkbox" class="pivotMetric" value="conv_rate" checked> Conv rate</label>
+              <label><input type="checkbox" class="pivotMetric" value="cpa" checked> CPA</label>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="loadPivot()" style="white-space:nowrap;">Run Pivot</button>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Period</label>
+            <select id="pivotDays" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;">Run Pivot</button>
         </div>
-        <div id="pivotResult" class="table-container" style="max-height:520px;overflow:auto;">
-          <div style="padding:30px;text-align:center;color:#94a3b8;">Click "Run Pivot" to load.</div>
+
+        <div style="display:flex;gap:14px;align-items:end;margin-top:8px;font-size:13px;">
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Sort by</label>
+            <select id="pivotSortMetric" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="conversions" selected>Conversions</option>
+              <option value="clicks">Clicks</option>
+              <option value="cost">Cost</option>
+              <option value="conv_rate">Conv rate</option>
+              <option value="cpa">CPA</option>
+              <option value="ctr">CTR</option>
+            </select>
+            <select id="pivotSortDir" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="desc" selected>↓ High to low</option>
+              <option value="asc">↑ Low to high</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Top</label>
+            <select id="pivotLimit" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="10" selected>Top 10</option>
+              <option value="25">Top 25</option>
+              <option value="50">Top 50</option>
+              <option value="100">Top 100</option>
+              <option value="1000">All</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="googlePivotResult" class="table-container" style="max-height:600px;overflow:auto;margin-top:12px;">
+          <div style="padding:30px;text-align:center;color:#94a3b8;">Pick filters / group-by / metrics, then click "Run Pivot".</div>
         </div>
       </div>
 
-      <!-- Google Ads Demographics -->
-      <div class="card" style="margin-bottom: 16px;">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <h3 class="card-title" style="margin:0;">Google Ads Demographics</h3>
-            <small style="color:#94a3b8;">Aggregate clicks / cost / conv per demographic, pulled live from Google Ads.</small>
-          </div>
-          <select id="demoDays" onchange="loadAllDemographics()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-            <option value="7">Last 7 days</option>
-            <option value="14">Last 14 days</option>
-            <option value="30" selected>Last 30 days</option>
-          </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div>
-            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Gender</h4>
-            <div id="demoGender" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-          <div>
-            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Age range</h4>
-            <div id="demoAge" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-          <div>
-            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Household income</h4>
-            <div id="demoIncome" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-          <div>
-            <h4 style="font-size:13px;color:#475569;margin:8px 0;">Parental status</h4>
-            <div id="demoParental" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-        </div>
-      </div>
+      <style>
+        .filter-dim { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
+        .filter-dim-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+        .filter-chip { display: inline-block; padding: 3px 9px; margin: 2px 3px 2px 0; border: 1px solid #e2e8f0; background: #fff; border-radius: 99px; font-size: 11px; cursor: pointer; user-select: none; color: #475569; }
+        .filter-chip:hover { background: #f1f5f9; }
+        .filter-chip.selected { background: #3052FF; color: #fff; border-color: #3052FF; }
+        .group-chip { display: inline-block; padding: 4px 10px; border: 1px solid #c7d2fe; background: #eef2ff; color: #4338ca; border-radius: 99px; font-size: 12px; cursor: pointer; user-select: none; font-weight: 600; }
+        .group-chip:hover { background: #e0e7ff; }
+        .group-chip.selected { background: #3052FF; color: #fff; border-color: #3052FF; }
+      </style>
 
       <!-- Section 2: Funnel Analysis -->
       <div class="card">
@@ -515,8 +506,142 @@
       loadLandingPages(qs);
       loadCallQuality(qs);
       loadHeatmap(qs);
-      loadPivot();
-      loadAllDemographics();
+      // Google Ads pivot is user-triggered; just render the filter chips on first load
+      if (!window._pivotInited) { initGoogleAdsPivot(); window._pivotInited = true; }
+    }
+
+    // ─── Google Ads Pivot ──────────────────────────────────────────────────
+    const PIVOT_DIM_LABELS = {
+      age:         { label: 'Age',          values: [['AGE_RANGE_18_24','18-24'],['AGE_RANGE_25_34','25-34'],['AGE_RANGE_35_44','35-44'],['AGE_RANGE_45_54','45-54'],['AGE_RANGE_55_64','55-64'],['AGE_RANGE_65_UP','65+'],['AGE_RANGE_UNDETERMINED','Undetermined']] },
+      gender:      { label: 'Gender',       values: [['MALE','Male'],['FEMALE','Female'],['UNDETERMINED','Undetermined']] },
+      income:      { label: 'Household income', values: [['INCOME_RANGE_0_50','Lower 50%'],['INCOME_RANGE_50_60','41-50%'],['INCOME_RANGE_60_70','31-40%'],['INCOME_RANGE_70_80','21-30%'],['INCOME_RANGE_80_90','11-20%'],['INCOME_RANGE_90_UP','Top 10%'],['INCOME_RANGE_UNDETERMINED','Undetermined']] },
+      parental:    { label: 'Parental status', values: [['PARENT','Parent'],['NOT_A_PARENT','Not a parent'],['UNDETERMINED','Undetermined']] },
+      device:      { label: 'Device',       values: [['MOBILE','Mobile'],['DESKTOP','Desktop'],['TABLET','Tablet'],['CONNECTED_TV','Connected TV'],['OTHER','Other']] },
+      day_of_week: { label: 'Day of week',  values: [['MONDAY','Mon'],['TUESDAY','Tue'],['WEDNESDAY','Wed'],['THURSDAY','Thu'],['FRIDAY','Fri'],['SATURDAY','Sat'],['SUNDAY','Sun']] },
+      hour:        { label: 'Hour of day',  values: Array.from({length:24}, (_,i)=>[String(i),i+':00']) }
+    };
+    const PIVOT_GROUP_OPTIONS = [
+      ['campaign','Campaign'], ['ad_group','Ad group'],
+      ['age','Age'], ['gender','Gender'], ['income','Income'], ['parental','Parental'],
+      ['device','Device'], ['day_of_week','Weekday'], ['hour','Hour'], ['region','Region']
+    ];
+
+    let _pivotFilters = {}; // { age: ['AGE_RANGE_45_54'], gender: ['FEMALE'], ... }
+    let _pivotGroupBy = ['age', 'gender'];
+
+    function initGoogleAdsPivot() {
+      // Filter dimensions
+      const fEl = document.getElementById('pivotFilters');
+      fEl.innerHTML = Object.entries(PIVOT_DIM_LABELS).map(([dim, meta]) => `
+        <div class="filter-dim">
+          <div class="filter-dim-title">${meta.label}</div>
+          <div data-dim="${dim}">${meta.values.map(([val, lbl]) => `<span class="filter-chip" data-dim="${dim}" data-val="${val}" onclick="togglePivotFilter('${dim}', '${val}', this)">${lbl}</span>`).join('')}</div>
+        </div>
+      `).join('');
+
+      // Group-by chips
+      const gEl = document.getElementById('pivotGroupBy');
+      gEl.innerHTML = PIVOT_GROUP_OPTIONS.map(([dim, lbl]) =>
+        `<span class="group-chip ${_pivotGroupBy.includes(dim) ? 'selected' : ''}" data-dim="${dim}" onclick="togglePivotGroupBy('${dim}', this)">${lbl}</span>`
+      ).join('');
+    }
+
+    function togglePivotFilter(dim, val, el) {
+      _pivotFilters[dim] = _pivotFilters[dim] || [];
+      const i = _pivotFilters[dim].indexOf(val);
+      if (i === -1) { _pivotFilters[dim].push(val); el.classList.add('selected'); }
+      else { _pivotFilters[dim].splice(i, 1); el.classList.remove('selected'); if (_pivotFilters[dim].length === 0) delete _pivotFilters[dim]; }
+    }
+
+    function togglePivotGroupBy(dim, el) {
+      const i = _pivotGroupBy.indexOf(dim);
+      if (i === -1) { _pivotGroupBy.push(dim); el.classList.add('selected'); }
+      else { _pivotGroupBy.splice(i, 1); el.classList.remove('selected'); }
+    }
+
+    async function runGoogleAdsPivot() {
+      if (_pivotGroupBy.length === 0) { alert('Pick at least one Group by dimension.'); return; }
+      const metrics = [...document.querySelectorAll('.pivotMetric:checked')].map(c => c.value);
+      const days = parseInt(document.getElementById('pivotDays').value, 10) || 30;
+      const sortMetric = document.getElementById('pivotSortMetric').value;
+      const sortDir = document.getElementById('pivotSortDir').value;
+      const limit = parseInt(document.getElementById('pivotLimit').value, 10) || 10;
+      const target = document.getElementById('googlePivotResult');
+      target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Pulling from Google Ads…</div>';
+      try {
+        const r = await fetch('/api/deep-analysis/google-pivot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dimensions: _pivotGroupBy,
+            filters: _pivotFilters,
+            metrics,
+            sort: { metric: sortMetric, dir: sortDir },
+            days, limit
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        renderGoogleAdsPivot(d, metrics, target);
+      } catch (err) {
+        target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Error: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
+      }
+    }
+
+    function renderGoogleAdsPivot(d, metrics, target) {
+      if (!d.rows || d.rows.length === 0) {
+        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data for this combination — Google may not have surfaced that demographic for these campaigns.</div>';
+        return;
+      }
+      const dimLabel = (dim, val) => {
+        const meta = PIVOT_DIM_LABELS[dim];
+        if (!meta) return val;
+        const found = meta.values.find(([v]) => v === val);
+        return found ? found[1] : val;
+      };
+      const metricLabels = {
+        impressions: 'Impressions', clicks: 'Clicks', cost: 'Cost', conversions: 'Conversions',
+        ctr: 'CTR', cpc: 'CPC', conv_rate: 'Conv %', cpa: 'CPA'
+      };
+      const metricFmt = {
+        impressions: v => (v||0).toLocaleString(),
+        clicks: v => (v||0).toLocaleString(),
+        cost: v => '$' + (v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+        conversions: v => (v||0).toFixed(2),
+        ctr: v => (v||0).toFixed(2)+'%',
+        cpc: v => '$' + (v||0).toFixed(2),
+        conv_rate: v => (v||0).toFixed(2)+'%',
+        cpa: v => '$' + (v||0).toFixed(2)
+      };
+
+      const dimHeaders = d.dimensions.map(dim => `<th>${PIVOT_DIM_LABELS[dim]?.label || dim}</th>`).join('');
+      const metricHeaders = metrics.map(m => `<th style="text-align:right;">${metricLabels[m]}</th>`).join('');
+
+      const rows = d.rows.map(r => `<tr>
+        ${d.dimensions.map(dim => `<td><strong>${_esc(dimLabel(dim, r[dim]))}</strong></td>`).join('')}
+        ${metrics.map(m => `<td style="text-align:right;">${metricFmt[m](r[m])}</td>`).join('')}
+      </tr>`).join('');
+
+      const tot = d.totals || {};
+      const totalRow = `<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
+        <td colspan="${d.dimensions.length}">Total (${d.total_rows} groups)</td>
+        ${metrics.map(m => `<td style="text-align:right;">${metricFmt[m](tot[m])}</td>`).join('')}
+      </tr>`;
+
+      const filterSummary = Object.keys(d.filters).length === 0
+        ? '<span style="color:#94a3b8;">no filters</span>'
+        : Object.entries(d.filters).map(([dim, vals]) =>
+            `<strong>${PIVOT_DIM_LABELS[dim]?.label || dim}</strong>=${vals.map(v => dimLabel(dim, v)).join(' or ')}`
+          ).join(' &nbsp;·&nbsp; ');
+
+      target.innerHTML = `
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
+          <strong>${d.range}</strong> &nbsp;·&nbsp; ${filterSummary} &nbsp;·&nbsp; showing top ${d.rows.length} of ${d.total_rows}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr>${dimHeaders}${metricHeaders}</tr></thead>
+          <tbody>${rows}${totalRow}</tbody>
+        </table>`;
     }
 
     async function loadGoogleKpis(qs) {
