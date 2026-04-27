@@ -878,23 +878,10 @@
       } catch (e) {}
     }
 
-    // --- Pivot Table ---
-    function _pivotFilters() {
-      const params = new URLSearchParams();
-      const range = currentRange === 'custom'
-        ? { from: document.getElementById('fromDate').value, to: document.getElementById('toDate').value }
-        : (typeof getDateRangeFromPreset === 'function' ? getDateRangeFromPreset(currentRange) : {});
-      const filters = {};
-      if (range && range.from) filters.from = range.from;
-      if (range && range.to)   filters.to   = range.to;
-      const platform = document.getElementById('platformFilter').value;
-      if (platform) filters.platform = platform;
-      return filters;
-    }
-
     function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-    async function loadPivot() {
+    // --- Legacy visitor pivot (dead, kept guarded so old callers don't crash) ---
+    async function loadPivotDEAD() {
       const row = document.getElementById('pivotRow').value;
       const colVal = document.getElementById('pivotCol').value;
       const cols = colVal ? [colVal] : [];
@@ -914,13 +901,13 @@
           target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data for this combination.</div>';
           return;
         }
-        renderPivotTable(d, row, cols, measures, target);
+        renderPivotTableDEAD(d, row, cols, measures, target);
       } catch (err) {
         target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Error: ${_esc(err.message)}</div>`;
       }
     }
 
-    function renderPivotTable(d, rowDim, cols, measures, target) {
+    function renderPivotTableDEAD(d, rowDim, cols, measures, target) {
       const measureMeta = {
         visits: { label: 'Visits', fmt: v => (v||0).toLocaleString() },
         step1_debt: { label: 'Debt', fmt: v => (v||0).toLocaleString() },
