@@ -856,7 +856,11 @@ async function generateContentForCreatedLps(createdLps, cookieHeader) {
       const aiRes = await fetch(`${base}/api/ai/generate-content`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', cookie: cookieHeader },
-        body: JSON.stringify({ keywords: lp.top_keywords, platform: 'google' })
+        body: JSON.stringify({
+          keywords: lp.top_keywords,
+          primary_keyword: lp.top_keywords[0],
+          platform: 'google'
+        })
       });
       if (!aiRes.ok) {
         const errText = await aiRes.text().catch(() => '');
@@ -910,7 +914,11 @@ router.post('/:id/regen-ai-from-folder', authenticateToken, async (req, res) => 
     const aiRes = await fetch(`${base}/api/ai/generate-content`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', cookie: req.headers.cookie || '' },
-      body: JSON.stringify({ keywords: topKeywords, platform: page.platform || 'google' })
+      body: JSON.stringify({
+        keywords: topKeywords,
+        primary_keyword: topKeywords[0],
+        platform: page.platform || 'google'
+      })
     });
     const aiData = await aiRes.json();
     if (!aiRes.ok) throw new Error(aiData.error || 'AI generation failed');

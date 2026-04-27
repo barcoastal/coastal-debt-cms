@@ -53,7 +53,7 @@ const platformGuidance = {
 // POST /api/ai/generate-content
 router.post('/generate-content', authenticateToken, async (req, res) => {
   try {
-    const { keywords, platform, currentContent } = req.body;
+    const { keywords, platform, currentContent, primary_keyword } = req.body;
 
     if (!keywords || !keywords.length) {
       return res.status(400).json({ error: 'Keywords are required' });
@@ -69,12 +69,26 @@ router.post('/generate-content', authenticateToken, async (req, res) => {
 
     const platformGuide = platformGuidance[platform] || platformGuidance.other;
 
+    // The primary keyword is what we want to dominate the H1 / page title for
+    // Quality Score. If not given, fall back to the first item in keywords.
+    const primaryKw = (primary_keyword || keywords[0] || '').toString().trim();
+
     const prompt = `You are a direct-response copywriter for a debt relief company called Coastal Debt.
 
-TARGET KEYWORDS: ${keywords.join(', ')}
+PRIMARY KEYWORD (the user typed this into Google): ${primaryKw}
+ALL TARGET KEYWORDS: ${keywords.join(', ')}
 PLATFORM: ${platform || 'general'}
 
 ${platformGuide}
+
+CRITICAL HEADLINE RULES — these directly affect Google Quality Score:
+- The H1 (composed of "headline" + "headlineLine2" + "headlineHighlight") MUST contain the primary keyword "${primaryKw}" verbatim or in a near-exact close variant (singular/plural is fine).
+- "pageTitle" MUST start with or prominently feature "${primaryKw}".
+- "metaDescription" MUST mention "${primaryKw}" within the first 90 characters.
+- Do NOT replace the keyword with a synonym in the H1 or page title — Google needs the exact keyword match.
+- Headline shape: "headline" = 4-6 words containing the keyword, "headlineLine2" = short connector (1-3 words), "headlineHighlight" = the value prop (e.g. "Up to 80% Less.").
+- Example: if primary keyword is "company bankruptcies", the H1 could read: "Avoid Company Bankruptcies — Settle Debt for Up to 80% Less." So headline="Avoid Company Bankruptcies", headlineLine2="Settle Debt for", headlineHighlight="Up to 80% Less."
+- If the primary keyword would sound forced or grammatically off in an H1 (e.g. single-word "lawyers"), use the closest natural phrase that still contains it (e.g. "Talk to Bankruptcy Lawyers Free — Save 80% Without Court").
 
 Generate COMPLETE landing page content optimized for these keywords and platform. The page helps business owners settle their debt without filing bankruptcy. Every field must be fully written, keyword-relevant content — no placeholders.
 
