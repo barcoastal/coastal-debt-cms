@@ -259,17 +259,91 @@
           </div>
         </div>
 
-        <!-- Filters Panel -->
+        <!-- Filters Panel — chips rendered as static HTML so they always show -->
         <div style="background:#f8fafc;border-radius:10px;padding:14px;margin:8px 0;">
           <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Filters — click values to include</div>
-          <div id="pivotFilters" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;"></div>
+          <div id="pivotFilters" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+            <div class="filter-dim">
+              <div class="filter-dim-title">Age</div>
+              <div data-dim="age">
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_18_24',this)">18-24</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_25_34',this)">25-34</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_35_44',this)">35-44</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_45_54',this)">45-54</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_55_64',this)">55-64</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_65_UP',this)">65+</span>
+                <span class="filter-chip" onclick="togglePivotFilter('age','AGE_RANGE_UNDETERMINED',this)">Undetermined</span>
+              </div>
+            </div>
+            <div class="filter-dim">
+              <div class="filter-dim-title">Gender</div>
+              <div data-dim="gender">
+                <span class="filter-chip" onclick="togglePivotFilter('gender','MALE',this)">Male</span>
+                <span class="filter-chip" onclick="togglePivotFilter('gender','FEMALE',this)">Female</span>
+                <span class="filter-chip" onclick="togglePivotFilter('gender','UNDETERMINED',this)">Undetermined</span>
+              </div>
+            </div>
+            <div class="filter-dim">
+              <div class="filter-dim-title">Household income</div>
+              <div data-dim="income">
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_0_50',this)">Lower 50%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_50_60',this)">41-50%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_60_70',this)">31-40%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_70_80',this)">21-30%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_80_90',this)">11-20%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_90_UP',this)">Top 10%</span>
+                <span class="filter-chip" onclick="togglePivotFilter('income','INCOME_RANGE_UNDETERMINED',this)">Undetermined</span>
+              </div>
+            </div>
+            <div class="filter-dim">
+              <div class="filter-dim-title">Parental status</div>
+              <div data-dim="parental">
+                <span class="filter-chip" onclick="togglePivotFilter('parental','PARENT',this)">Parent</span>
+                <span class="filter-chip" onclick="togglePivotFilter('parental','NOT_A_PARENT',this)">Not a parent</span>
+                <span class="filter-chip" onclick="togglePivotFilter('parental','UNDETERMINED',this)">Undetermined</span>
+              </div>
+            </div>
+            <div class="filter-dim">
+              <div class="filter-dim-title">Device</div>
+              <div data-dim="device">
+                <span class="filter-chip" onclick="togglePivotFilter('device','MOBILE',this)">Mobile</span>
+                <span class="filter-chip" onclick="togglePivotFilter('device','DESKTOP',this)">Desktop</span>
+                <span class="filter-chip" onclick="togglePivotFilter('device','TABLET',this)">Tablet</span>
+                <span class="filter-chip" onclick="togglePivotFilter('device','CONNECTED_TV',this)">Connected TV</span>
+                <span class="filter-chip" onclick="togglePivotFilter('device','OTHER',this)">Other</span>
+              </div>
+            </div>
+            <div class="filter-dim">
+              <div class="filter-dim-title">Day of week</div>
+              <div data-dim="day_of_week">
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','MONDAY',this)">Mon</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','TUESDAY',this)">Tue</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','WEDNESDAY',this)">Wed</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','THURSDAY',this)">Thu</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','FRIDAY',this)">Fri</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','SATURDAY',this)">Sat</span>
+                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','SUNDAY',this)">Sun</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Group + Metrics + Run -->
         <div style="display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:12px;align-items:end;padding:8px 0;">
           <div>
             <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Group by (rows)</label>
-            <div id="pivotGroupBy" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
+            <div id="pivotGroupBy" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
+              <span class="group-chip selected" onclick="togglePivotGroupBy('campaign',this)">Campaign</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('ad_group',this)">Ad group</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('age',this)">Age</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('gender',this)">Gender</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('income',this)">Income</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('parental',this)">Parental</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('device',this)">Device</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('day_of_week',this)">Weekday</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('hour',this)">Hour</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('region',this)">Region</span>
+            </div>
           </div>
           <div>
             <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Show metrics</label>
@@ -506,8 +580,6 @@
       loadLandingPages(qs);
       loadCallQuality(qs);
       loadHeatmap(qs);
-      // Google Ads pivot is user-triggered; just render the filter chips on first load
-      if (!window._pivotInited) { initGoogleAdsPivot(); window._pivotInited = true; }
     }
 
     // ─── Google Ads Pivot ──────────────────────────────────────────────────
@@ -528,23 +600,6 @@
 
     let _pivotFilters = {}; // { age: ['AGE_RANGE_45_54'], gender: ['FEMALE'], ... }
     let _pivotGroupBy = ['campaign']; // default: show campaigns first so real data appears immediately
-
-    function initGoogleAdsPivot() {
-      // Filter dimensions
-      const fEl = document.getElementById('pivotFilters');
-      fEl.innerHTML = Object.entries(PIVOT_DIM_LABELS).map(([dim, meta]) => `
-        <div class="filter-dim">
-          <div class="filter-dim-title">${meta.label}</div>
-          <div data-dim="${dim}">${meta.values.map(([val, lbl]) => `<span class="filter-chip" data-dim="${dim}" data-val="${val}" onclick="togglePivotFilter('${dim}', '${val}', this)">${lbl}</span>`).join('')}</div>
-        </div>
-      `).join('');
-
-      // Group-by chips
-      const gEl = document.getElementById('pivotGroupBy');
-      gEl.innerHTML = PIVOT_GROUP_OPTIONS.map(([dim, lbl]) =>
-        `<span class="group-chip ${_pivotGroupBy.includes(dim) ? 'selected' : ''}" data-dim="${dim}" onclick="togglePivotGroupBy('${dim}', this)">${lbl}</span>`
-      ).join('');
-    }
 
     function togglePivotFilter(dim, val, el) {
       _pivotFilters[dim] = _pivotFilters[dim] || [];
@@ -1306,9 +1361,7 @@
       }
     }
 
-    // Initial load — render pivot UI immediately, then fire data fetches
-    initGoogleAdsPivot();
-    window._pivotInited = true;
+    // Initial load
     loadAll();
   </script>
 </body>
