@@ -191,6 +191,9 @@
     .kw-toggle:hover { background: #e0e7ff; }
     .kw-toggle .kw-toggle-chev { width: 11px; height: 11px; transition: transform 0.15s; }
     .kw-toggle.open .kw-toggle-chev { transform: rotate(90deg); }
+
+    .add-lp-btn { padding: 2px 10px; background: #ecfdf5; color: #065f46; border: 1px dashed #6ee7b7; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .add-lp-btn:hover { background: #d1fae5; border-style: solid; }
   </style>
 </head>
 <body>
@@ -1206,13 +1209,19 @@
               </div>
             </div>
             <div class="folder-body ${isCollapsed ? 'hidden' : ''}">
-              ${adGroupEntries.map(([agid, ag]) => _adGroupHtml(agid, ag)).join('')}
+              ${adGroupEntries.map(([agid, ag]) => _adGroupHtml(agid, ag, cid, camp.name)).join('')}
             </div>
           </div>`;
       }).join('');
     }
 
-    function _adGroupHtml(agid, ag) {
+    function _campaignNameForAg(agid) {
+      // Find which campaign this ad group belongs to in the cached data
+      const meta = (_gadsAdGroupMeta || []).find(m => String(m.ad_group_id) === String(agid));
+      return meta ? { campaign_id: meta.campaign_id, campaign_name: meta.campaign_name, ad_group_name: meta.ad_group_name } : null;
+    }
+
+    function _adGroupHtml(agid, ag, campaignId, campaignName) {
       const noLp = ag.has_meta && ag.pages.length === 0;
       const kwCount = (ag.keywords || []).length;
       const kwFoldKey = 'kw_fold_' + agid;
@@ -1223,6 +1232,11 @@
              <svg class="kw-toggle-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
              ${kwCount} keyword${kwCount === 1 ? '' : 's'}
            </button>`
+        : '';
+      // "+ Add LP" only available for actual Google Ads ad groups (skip Unassigned bucket)
+      const canAdd = campaignId && campaignId !== '__unassigned__' && agid && agid !== '__unassigned__';
+      const addBtn = canAdd
+        ? `<button class="add-lp-btn" data-cid="${_esc(campaignId)}" data-cname="${_esc(campaignName || '')}" data-agid="${_esc(agid)}" data-agname="${_esc(ag.name || '')}" onclick="showAddLpToFolder(this)">+ Add LP</button>`
         : '';
       const cachedRange = (_gadsAdGroupMeta && _gadsAdGroupMeta[0] && _gadsAdGroupMeta[0].range_label) || '30d';
       const statsLine = ag.has_meta
@@ -1238,6 +1252,7 @@
             <div class="folder-adgroup-stats">
               ${ag.has_meta ? `${_qsPill(ag.avg_qs)} ${_lpxPill(ag.lp_experience)}` : ''}
               ${kwToggle}
+              ${addBtn}
               <span>${ag.pages.length} LP${ag.pages.length === 1 ? '' : 's'}</span>
               ${statsLine}
             </div>
@@ -1387,6 +1402,23 @@
           method: 'POST',
           body: JSON.stringify(data)
         });
+
+        // If launched from "Add LP to folder", link the new page now
+        if (_pendingFolder && result && result.id) {
+          try {
+            await fetch(`/api/pages/${result.id}/gads-link`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                campaign_id: _pendingFolder.campaign_id,
+                campaign_name: _pendingFolder.campaign_name,
+                ad_group_id: _pendingFolder.ad_group_id,
+                ad_group_name: _pendingFolder.ad_group_name
+              })
+            });
+          } catch (e) { /* non-fatal */ }
+          _pendingFolder = null;
+        }
 
         hideModal('createModal');
         document.getElementById('createForm').reset();
@@ -2474,6 +2506,124 @@
       } finally {
         btn.disabled = false;
       }
+    }
+  </script>
+
+  <!-- Add LP to Folder Modal -->
+  <div class="kw-modal-overlay" id="addLpModal">
+    <div class="kw-modal" style="max-width:640px;">
+      <button type="button" onclick="closeAddLpToFolder()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;line-height:1">&times;</button>
+      <div class="kw-modal-top" style="background:linear-gradient(135deg,#3052FF 0%,#7FB2FF 100%);">
+        <h2>Add LP to Folder</h2>
+        <p id="addLpFolderLabel" style="font-size:13px;opacity:0.95;"></p>
+      </div>
+      <div class="kw-modal-body">
+        <button type="button" onclick="addLp_createNew()" style="width:100%;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);color:white;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;">
+          ✨ Create new LP in this folder
+        </button>
+        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Or pick an existing landing page</label>
+        <input type="text" id="addLpSearch" placeholder="Search by name or slug…" style="width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px;" oninput="renderAddLpList()">
+        <div id="addLpList" style="max-height:340px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;"></div>
+        <div class="kw-modal-status" id="addLpStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _pendingFolder = null; // { campaign_id, campaign_name, ad_group_id, ad_group_name }
+
+    function showAddLpToFolder(btnOrCid, campaignName, adGroupId, adGroupName) {
+      // Accept either a button element (preferred, via data-attrs) or 4 args (legacy)
+      let cid, cname, agid, agname;
+      if (btnOrCid && typeof btnOrCid === 'object' && btnOrCid.dataset) {
+        cid = btnOrCid.dataset.cid;
+        cname = btnOrCid.dataset.cname;
+        agid = btnOrCid.dataset.agid;
+        agname = btnOrCid.dataset.agname;
+      } else {
+        cid = btnOrCid; cname = campaignName; agid = adGroupId; agname = adGroupName;
+      }
+      _pendingFolder = { campaign_id: cid, campaign_name: cname, ad_group_id: agid, ad_group_name: agname };
+      document.getElementById('addLpFolderLabel').textContent = `${cname} → ${agname}`;
+      document.getElementById('addLpSearch').value = '';
+      document.getElementById('addLpStatus').style.display = 'none';
+      document.getElementById('addLpModal').classList.add('active');
+      renderAddLpList();
+    }
+
+    function closeAddLpToFolder() {
+      document.getElementById('addLpModal').classList.remove('active');
+      _pendingFolder = null;
+    }
+
+    function renderAddLpList() {
+      const list = document.getElementById('addLpList');
+      const q = (document.getElementById('addLpSearch').value || '').toLowerCase();
+      const allPages = _pagesData || [];
+      const filtered = allPages.filter(p => {
+        if (q && !((p.name || '').toLowerCase().includes(q) || (p.slug || '').toLowerCase().includes(q))) return false;
+        return true;
+      });
+      if (filtered.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">No pages match.</div>';
+        return;
+      }
+      list.innerHTML = filtered.map(p => {
+        const inThisFolder = _pendingFolder && String(p.gads_ad_group_id || '') === String(_pendingFolder.ad_group_id);
+        const currentFolder = (p.gads_campaign_name || p.gads_ad_group_name)
+          ? `<span style="font-size:11px;color:#64748b;">currently in: ${p.gads_campaign_name || '—'}${p.gads_ad_group_name ? ' / ' + p.gads_ad_group_name : ''}</span>`
+          : '<span style="font-size:11px;color:#94a3b8;font-style:italic;">unassigned</span>';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f1f5f9;${inThisFolder ? 'opacity:0.5;' : ''}">
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:13px;font-weight:600;color:#1e293b;">${_esc(p.name)}</div>
+              <div style="font-size:11px;color:#64748b;font-family:monospace;">/lp/${p.slug}/</div>
+              <div>${currentFolder}</div>
+            </div>
+            <button onclick="addLp_assignExisting(${p.id})" ${inThisFolder ? 'disabled' : ''} style="padding:6px 12px;background:${inThisFolder ? '#e5e7eb' : '#3052FF'};color:${inThisFolder ? '#94a3b8' : '#fff'};border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:${inThisFolder ? 'default' : 'pointer'};white-space:nowrap;margin-left:10px;">
+              ${inThisFolder ? 'Already here' : 'Move here'}
+            </button>
+          </div>`;
+      }).join('');
+    }
+
+    async function addLp_assignExisting(pageId) {
+      if (!_pendingFolder) return;
+      const status = document.getElementById('addLpStatus');
+      status.style.display = 'block';
+      status.classList.remove('error');
+      status.textContent = 'Assigning…';
+      try {
+        const r = await fetch(`/api/pages/${pageId}/gads-link`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaign_id: _pendingFolder.campaign_id,
+            campaign_name: _pendingFolder.campaign_name,
+            ad_group_id: _pendingFolder.ad_group_id,
+            ad_group_name: _pendingFolder.ad_group_name
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        closeAddLpToFolder();
+        await loadPages();
+      } catch (err) {
+        status.classList.add('error');
+        status.textContent = err.message;
+      }
+    }
+
+    function addLp_createNew() {
+      if (!_pendingFolder) return;
+      // Hand off to the existing Create modal; remember the pending folder so the
+      // submit handler links the new page after creation.
+      const pf = _pendingFolder;
+      closeAddLpToFolder();
+      _pendingFolder = pf; // closeAddLpToFolder cleared it; restore for the submit handler
+      loadFormsForSelect('createFormId');
+      showModal('createModal');
+      document.getElementById('createName').focus();
     }
   </script>
 
