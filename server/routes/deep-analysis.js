@@ -715,6 +715,54 @@ const PIVOT_DIM_MAP = {
   ad_group:   { gads: 'adGroup.name',               path: ['adGroup', 'name'], gadsField: 'ad_group.name' }
 };
 
+// Each demographic dimension lives on its OWN view in Google Ads. You can't
+// cross-segment them in a single query (gender × age in one query returns
+// nothing for Search campaigns). We pull each demographic separately, keyed
+// by ad_group, then "join" client-side using percentage distribution.
+//
+// Non-demographic dims (device, hour, day_of_week, region) DO support
+// multi-segment queries on `ad_group`.
+const DEMO_VIEWS = {
+  age:      { view: 'age_range_view',       segPath: ['adGroupCriterion', 'ageRange', 'type'] },
+  gender:   { view: 'gender_view',          segPath: ['adGroupCriterion', 'gender', 'type'] },
+  income:   { view: 'income_range_view',    segPath: ['adGroupCriterion', 'incomeRange', 'type'] },
+  parental: { view: 'parental_status_view', segPath: ['adGroupCriterion', 'parentalStatus', 'type'] }
+};
+const SEGMENT_DIMS = {
+  device:      { gads: 'segments.device',            path: ['segments', 'device'] },
+  day_of_week: { gads: 'segments.day_of_week',       path: ['segments', 'dayOfWeek'] },
+  hour:        { gads: 'segments.hour',              path: ['segments', 'hour'] },
+  region:      { gads: 'segments.geo_target_region', path: ['segments', 'geoTargetRegion'] }
+};
+const RESOURCE_DIMS = {
+  campaign:  { gads: 'campaign.name',  id: 'campaign.id',  path: ['campaign', 'name'],  idPath: ['campaign', 'id'] },
+  ad_group:  { gads: 'ad_group.name',  id: 'ad_group.id',  path: ['adGroup', 'name'],   idPath: ['adGroup', 'id'] }
+};
+
+function pickPath(row, path) {
+  let v = row;
+  for (const p of path) { v = v && v[p]; if (v === undefined) break; }
+  return v == null ? 'UNKNOWN' : String(v);
+}
+
+async function gadsQuery(config, accessToken, developerToken, gaql) {
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+    'developer-token': developerToken,
+    'Content-Type': 'application/json'
+  };
+  const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+  if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
+  const r = await fetch(
+    `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+    { method: 'POST', headers, body: JSON.stringify({ query: gaql }) }
+  );
+  const data = await r.json();
+  const apiError = data.error || data[0]?.error;
+  if (apiError) throw new Error(apiError.message || JSON.stringify(apiError));
+  return data;
+}
+
 router.post('/google-pivot', authenticateToken, async (req, res) => {
   try {
     const {
@@ -725,14 +773,7 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       days = 30,
       limit = 200
     } = req.body || {};
-
     if (!dimensions.length) return res.status(400).json({ error: 'At least one dimension required' });
-    for (const d of dimensions) {
-      if (!PIVOT_DIM_MAP[d]) return res.status(400).json({ error: `Unknown dimension: ${d}` });
-    }
-    for (const d of Object.keys(filters || {})) {
-      if (!PIVOT_DIM_MAP[d]) return res.status(400).json({ error: `Unknown filter dimension: ${d}` });
-    }
 
     const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
     if (!config || !config.refresh_token_encrypted || !config.customer_id) {
@@ -743,78 +784,201 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
     const developerToken = googleAds.getDeveloperToken(config);
     if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
 
-    // Build SELECT — every dimension we'll group by OR filter on must be in SELECT
-    const allDims = [...new Set([...dimensions, ...Object.keys(filters || {})])];
-    const dimSelect = allDims.map(d => PIVOT_DIM_MAP[d].gadsField || PIVOT_DIM_MAP[d].gads);
-    const metricSelect = ['metrics.impressions', 'metrics.clicks', 'metrics.cost_micros', 'metrics.conversions'];
     const range = ({ 7: 'LAST_7_DAYS', 14: 'LAST_14_DAYS', 30: 'LAST_30_DAYS', 90: 'LAST_90_DAYS' })[parseInt(days, 10)] || 'LAST_30_DAYS';
+    const debug = { queries: [], counts: {} };
 
-    // FROM clause: campaign gives best segment combination support
-    const query = `
-      SELECT ${[...dimSelect, ...metricSelect].join(', ')}
-      FROM campaign
-      WHERE segments.date DURING ${range}
-        AND campaign.status = 'ENABLED'
-    `;
+    // Step 1: pull each requested DEMOGRAPHIC dimension from its own view.
+    // Result: demoData[dim] = Map<adGroupId, Map<demoValue, {imp,clicks,cost,conv}>>
+    const allDemoDims = [...new Set([...dimensions, ...Object.keys(filters || {})])].filter(d => DEMO_VIEWS[d]);
+    const demoData = {};
+    for (const dim of allDemoDims) {
+      const view = DEMO_VIEWS[dim].view;
+      const gaql = `
+        SELECT ad_group.id, ${dim === 'age' ? 'ad_group_criterion.age_range.type' :
+                              dim === 'gender' ? 'ad_group_criterion.gender.type' :
+                              dim === 'income' ? 'ad_group_criterion.income_range.type' :
+                              'ad_group_criterion.parental_status.type'},
+          metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+        FROM ${view}
+        WHERE segments.date DURING ${range}
+      `;
+      debug.queries.push({ dim, view, gaql: gaql.replace(/\s+/g, ' ').trim() });
+      const data = await gadsQuery(config, accessToken, developerToken, gaql);
+      const byAdGroup = new Map();
+      let cnt = 0;
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          cnt++;
+          const agId = pickPath(row, ['adGroup', 'id']);
+          const val = pickPath(row, DEMO_VIEWS[dim].segPath);
+          if (!byAdGroup.has(agId)) byAdGroup.set(agId, new Map());
+          const inner = byAdGroup.get(agId);
+          if (!inner.has(val)) inner.set(val, { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+          const cell = inner.get(val);
+          const m = row.metrics || {};
+          cell.impressions += parseInt(m.impressions || 0, 10);
+          cell.clicks += parseInt(m.clicks || 0, 10);
+          cell.cost_micros += parseInt(m.costMicros || 0, 10);
+          cell.conversions += parseFloat(m.conversions || 0);
+        }
+      }
+      demoData[dim] = byAdGroup;
+      debug.counts[dim] = cnt;
+    }
 
-    // Run query
-    const headers = {
-      'Authorization': `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-      'Content-Type': 'application/json'
-    };
-    const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
-    if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
-    const r = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
-      { method: 'POST', headers, body: JSON.stringify({ query }) }
-    );
-    const data = await r.json();
-    const apiError = data.error || data[0]?.error;
-    if (apiError) return res.status(400).json({ error: apiError.message || JSON.stringify(apiError) });
+    // Step 2: pull non-demographic dims from ad_group, segmented
+    const allOtherDims = [...new Set([...dimensions, ...Object.keys(filters || {})])].filter(d => !DEMO_VIEWS[d]);
+    const otherSegments = allOtherDims.filter(d => SEGMENT_DIMS[d]);
+    const otherResource = allOtherDims.filter(d => RESOURCE_DIMS[d]);
+    const adGroupRows = new Map(); // adGroupId → array of segment rows {device, hour, region, …, metrics}
+    if (otherSegments.length || otherResource.length || allDemoDims.length === 0) {
+      const selectFields = [
+        'ad_group.id', 'ad_group.name', 'campaign.id', 'campaign.name',
+        ...otherSegments.map(d => SEGMENT_DIMS[d].gads),
+        'metrics.impressions', 'metrics.clicks', 'metrics.cost_micros', 'metrics.conversions'
+      ];
+      const gaql = `
+        SELECT ${selectFields.join(', ')}
+        FROM ad_group
+        WHERE segments.date DURING ${range}
+          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+      `;
+      debug.queries.push({ dim: 'base', view: 'ad_group', gaql: gaql.replace(/\s+/g, ' ').trim() });
+      const data = await gadsQuery(config, accessToken, developerToken, gaql);
+      let cnt = 0;
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          cnt++;
+          const agId = pickPath(row, ['adGroup', 'id']);
+          if (!adGroupRows.has(agId)) adGroupRows.set(agId, []);
+          const baseRow = {
+            campaign: pickPath(row, ['campaign', 'name']),
+            ad_group: pickPath(row, ['adGroup', 'name'])
+          };
+          for (const d of otherSegments) baseRow[d] = pickPath(row, SEGMENT_DIMS[d].path);
+          const m = row.metrics || {};
+          baseRow._m = {
+            impressions: parseInt(m.impressions || 0, 10),
+            clicks: parseInt(m.clicks || 0, 10),
+            cost_micros: parseInt(m.costMicros || 0, 10),
+            conversions: parseFloat(m.conversions || 0)
+          };
+          adGroupRows.get(agId).push(baseRow);
+        }
+      }
+      debug.counts.base = cnt;
+    }
 
-    // Pull dim value via path
-    const getDim = (row, dim) => {
-      const path = PIVOT_DIM_MAP[dim].path;
-      let v = row;
-      for (const p of path) { v = v && v[p]; if (v === undefined) break; }
-      return v == null ? 'UNKNOWN' : String(v);
-    };
+    // Step 3: build the cross-product. For each ad_group:
+    //   - take its base segment rows (or one fake row if only demographics asked)
+    //   - take each demographic dim's distribution for that ad_group
+    //   - emit synthetic rows = baseRow × demo combos, weighting metrics by demo share
+    function rowsForAdGroup(agId) {
+      const baseList = adGroupRows.get(agId) && adGroupRows.get(agId).length ? adGroupRows.get(agId)
+        : [{ campaign: '', ad_group: '', _m: null }];
 
-    // Apply filters and aggregate
-    const groups = new Map();
-    for (const stream of data) {
-      for (const row of (stream.results || [])) {
-        // Filters
+      // For each demo dim, get this ad_group's distribution
+      const demoDists = allDemoDims.map(dim => {
+        const adMap = demoData[dim] && demoData[dim].get(agId);
+        if (!adMap || adMap.size === 0) return null;
+        const total = [...adMap.values()].reduce((s, c) => s + c.impressions, 0);
+        return {
+          dim,
+          buckets: [...adMap.entries()].map(([val, c]) => ({
+            value: val,
+            share: total > 0 ? c.impressions / total : 0,
+            // Also keep absolute when there are no base rows (pure demographic query)
+            abs: c
+          })),
+          totalImp: total
+        };
+      }).filter(Boolean);
+
+      const out = [];
+      for (const base of baseList) {
+        if (demoDists.length === 0) {
+          if (base._m) out.push({ ...base, _metrics: base._m });
+          continue;
+        }
+        // Cartesian product across demo dims
+        const stack = [{ row: { ...base }, weight: 1, absMetrics: null }];
+        for (const dist of demoDists) {
+          const next = [];
+          for (const s of stack) {
+            for (const b of dist.buckets) {
+              const newRow = { ...s.row, [dist.dim]: b.value };
+              const newWeight = s.weight * b.share;
+              // If pure demographic (no base metrics), use absolute metrics from first dim
+              const absMetrics = s.absMetrics || (s.row._m == null && demoDists.length === 1
+                ? { impressions: b.abs.impressions, clicks: b.abs.clicks, cost_micros: b.abs.cost_micros, conversions: b.abs.conversions }
+                : s.absMetrics);
+              next.push({ row: newRow, weight: newWeight, absMetrics });
+            }
+          }
+          stack.length = 0;
+          stack.push(...next);
+        }
+        for (const s of stack) {
+          if (base._m) {
+            // Distribute base metrics by combined demographic weight
+            s.row._metrics = {
+              impressions: base._m.impressions * s.weight,
+              clicks: base._m.clicks * s.weight,
+              cost_micros: base._m.cost_micros * s.weight,
+              conversions: base._m.conversions * s.weight
+            };
+          } else if (s.absMetrics) {
+            s.row._metrics = s.absMetrics;
+          }
+          if (s.row._metrics) out.push(s.row);
+        }
+      }
+      return out;
+    }
+
+    // Walk every ad_group seen in any pulled view
+    const allAgIds = new Set();
+    for (const m of Object.values(demoData)) for (const k of m.keys()) allAgIds.add(k);
+    for (const k of adGroupRows.keys()) allAgIds.add(k);
+
+    const allRows = [];
+    for (const agId of allAgIds) {
+      for (const r of rowsForAdGroup(agId)) {
+        // Apply filters
         let pass = true;
         for (const [d, allowed] of Object.entries(filters || {})) {
           if (!allowed || allowed.length === 0) continue;
-          if (!allowed.includes(getDim(row, d))) { pass = false; break; }
+          if (!allowed.includes(String(r[d]))) { pass = false; break; }
         }
         if (!pass) continue;
-
-        const key = dimensions.map(d => getDim(row, d)).join('||');
-        if (!groups.has(key)) {
-          const dimVals = {};
-          dimensions.forEach(d => { dimVals[d] = getDim(row, d); });
-          groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
-        }
-        const g = groups.get(key);
-        const m = row.metrics || {};
-        g.impressions += parseInt(m.impressions || 0, 10);
-        g.clicks      += parseInt(m.clicks || 0, 10);
-        g.cost_micros += parseInt(m.costMicros || 0, 10);
-        g.conversions += parseFloat(m.conversions || 0);
+        allRows.push(r);
       }
     }
 
-    // Compute derived metrics
+    // Step 4: aggregate by selected `dimensions`
+    const groups = new Map();
+    for (const r of allRows) {
+      const key = dimensions.map(d => r[d] != null ? String(r[d]) : 'UNKNOWN').join('||');
+      if (!groups.has(key)) {
+        const dimVals = {};
+        dimensions.forEach(d => { dimVals[d] = r[d] != null ? String(r[d]) : 'UNKNOWN'; });
+        groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+      }
+      const g = groups.get(key);
+      g.impressions += r._metrics.impressions;
+      g.clicks += r._metrics.clicks;
+      g.cost_micros += r._metrics.cost_micros;
+      g.conversions += r._metrics.conversions;
+    }
+
     const rows = [...groups.values()].map(g => {
       const cost = g.cost_micros / 1_000_000;
+      const dimVals = {};
+      dimensions.forEach(d => { dimVals[d] = g[d]; });
       return {
-        ...dimensions.reduce((acc, d) => ({ ...acc, [d]: g[d] }), {}),
-        impressions: g.impressions,
-        clicks: g.clicks,
+        ...dimVals,
+        impressions: Math.round(g.impressions),
+        clicks: Math.round(g.clicks),
         cost: +cost.toFixed(2),
         conversions: +g.conversions.toFixed(2),
         ctr: g.impressions ? +(g.clicks / g.impressions * 100).toFixed(2) : 0,
@@ -824,13 +988,11 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       };
     });
 
-    // Sort + limit
     const sortMetric = sort && sort.metric || 'clicks';
     const sortDir = (sort && sort.dir) === 'asc' ? 1 : -1;
     rows.sort((a, b) => ((a[sortMetric] || 0) - (b[sortMetric] || 0)) * sortDir);
     const limited = rows.slice(0, Math.min(parseInt(limit, 10) || 200, 1000));
 
-    // Totals (for the un-limited filtered set so user sees the real total)
     const totals = rows.reduce((acc, r) => ({
       impressions: acc.impressions + r.impressions,
       clicks: acc.clicks + r.clicks,
@@ -843,13 +1005,16 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
     totals.cpa = totals.conversions ? +(totals.cost / totals.conversions).toFixed(2) : 0;
 
     res.json({
-      dimensions,
-      filters,
-      metrics,
-      range,
-      rows: limited,
-      total_rows: rows.length,
-      totals
+      dimensions, filters, metrics, range,
+      rows: limited, total_rows: rows.length, totals,
+      diagnostic: {
+        ...debug,
+        notes: allDemoDims.length > 1
+          ? 'Multiple demographic dimensions combined via per-view distribution × ad-group base metrics. Numbers are estimates because Google Ads does not expose true age × gender × income cross-tabs for Search campaigns.'
+          : (allDemoDims.length === 1
+            ? 'Single demographic dimension pulled directly from its view (exact).'
+            : 'No demographic dimensions — exact metrics from ad_group segments.')
+      }
     });
   } catch (err) {
     console.error('google-pivot error:', err);

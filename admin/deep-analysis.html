@@ -589,8 +589,18 @@
     }
 
     function renderGoogleAdsPivot(d, metrics, target) {
+      const diag = d.diagnostic || {};
+      const diagBlock = `<details style="margin-bottom:8px;font-size:11px;color:#64748b;">
+        <summary style="cursor:pointer;">Show diagnostic (queries run)</summary>
+        <div style="background:#f8fafc;padding:8px;border-radius:6px;margin-top:6px;">
+          <div><strong>Notes:</strong> ${_esc(diag.notes || '')}</div>
+          <div style="margin-top:6px;"><strong>Row counts from Google:</strong> ${_esc(JSON.stringify(diag.counts || {}))}</div>
+          ${(diag.queries || []).map(q => `<div style="margin-top:6px;"><strong>${_esc(q.dim)} (${_esc(q.view)}):</strong> <code style="font-size:10px;">${_esc(q.gaql)}</code></div>`).join('')}
+        </div>
+      </details>`;
+
       if (!d.rows || d.rows.length === 0) {
-        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data for this combination — Google may not have surfaced that demographic for these campaigns.</div>';
+        target.innerHTML = diagBlock + '<div style="padding:30px;text-align:center;color:#94a3b8;">No data after filters. Open the diagnostic above to see what Google returned. Common reasons: this account doesn\\'t have demographic observations enabled on these campaigns, or the filter combination has 0 traffic.</div>';
         return;
       }
       const dimLabel = (dim, val) => {
@@ -634,7 +644,7 @@
             `<strong>${PIVOT_DIM_LABELS[dim]?.label || dim}</strong>=${vals.map(v => dimLabel(dim, v)).join(' or ')}`
           ).join(' &nbsp;·&nbsp; ');
 
-      target.innerHTML = `
+      target.innerHTML = diagBlock + `
         <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
           <strong>${d.range}</strong> &nbsp;·&nbsp; ${filterSummary} &nbsp;·&nbsp; showing top ${d.rows.length} of ${d.total_rows}
         </div>
