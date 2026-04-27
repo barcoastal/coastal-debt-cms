@@ -1356,28 +1356,38 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       return d;
     };
 
-    // 1) ads with final URLs → URL → {campaign, ad_group}
+    // 1) ads with final URLs → exact slug → {campaign, ad_group}
     const adsData = await runQuery(`
       SELECT campaign.id, campaign.name, ad_group.id, ad_group.name, ad_group_ad.ad.final_urls
       FROM ad_group_ad
       WHERE ad_group_ad.status = 'ENABLED' AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
     `);
-    const urlToGroup = new Map(); // url → { campaign_id, campaign_name, ad_group_id, ad_group_name }
+    // slug-based map: extract /lp/{slug} from each final_url so we can do an
+    // exact lookup later (no substring collisions between similar slugs).
+    const slugToGroup = new Map();
+    const unmatchedAdUrls = [];
+    const SLUG_RE = /\/lp\/([^\/?#\s]+)/i;
     for (const stream of adsData) {
       for (const row of (stream.results || [])) {
         const finalUrls = row.adGroupAd?.ad?.finalUrls || [];
+        const group = {
+          campaign_id: row.campaign.id,
+          campaign_name: row.campaign.name,
+          ad_group_id: row.adGroup.id,
+          ad_group_name: row.adGroup.name
+        };
         for (const u of finalUrls) {
-          if (!urlToGroup.has(u)) {
-            urlToGroup.set(u, {
-              campaign_id: row.campaign.id,
-              campaign_name: row.campaign.name,
-              ad_group_id: row.adGroup.id,
-              ad_group_name: row.adGroup.name
-            });
+          const m = (u || '').match(SLUG_RE);
+          if (m && m[1]) {
+            const slug = decodeURIComponent(m[1]).toLowerCase();
+            if (!slugToGroup.has(slug)) slugToGroup.set(slug, group);
+          } else {
+            unmatchedAdUrls.push({ url: u, campaign: row.campaign.name, ad_group: row.adGroup.name });
           }
         }
       }
     }
+    console.log(`[refresh-lp-metrics] Slugs in Google Ads: ${slugToGroup.size}, unmatched URLs: ${unmatchedAdUrls.length}`);
 
     // 2) keyword-level QS + keyword text → aggregated per ad_group
     //     Pulls all enabled keywords across all enabled campaigns/ad groups,
@@ -1490,15 +1500,20 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       FROM landing_page_view
       WHERE ${dateFilter.clause}
     `);
-    const lpvByUrl = new Map();
+    // Aggregate landing_page_view metrics by slug (exact extraction, multiple
+    // URLs that resolve to the same slug merge their metrics)
+    const lpvBySlug = new Map();
     for (const stream of lpvData) {
       for (const row of (stream.results || [])) {
         const u = row.landingPageView?.unexpandedFinalUrl;
         if (!u) continue;
-        if (!lpvByUrl.has(u)) {
-          lpvByUrl.set(u, { clicks: 0, impressions: 0, cost_micros: 0, conversions: 0, mob_sum: 0, mob_count: 0 });
+        const sm = u.match(SLUG_RE);
+        if (!sm || !sm[1]) continue;
+        const slug = decodeURIComponent(sm[1]).toLowerCase();
+        if (!lpvBySlug.has(slug)) {
+          lpvBySlug.set(slug, { clicks: 0, impressions: 0, cost_micros: 0, conversions: 0, mob_sum: 0, mob_count: 0 });
         }
-        const p = lpvByUrl.get(u);
+        const p = lpvBySlug.get(slug);
         const m = row.metrics || {};
         p.clicks += parseInt(m.clicks || 0, 10);
         p.impressions += parseInt(m.impressions || 0, 10);
@@ -1553,16 +1568,9 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
     let linkedCount = 0;
     let metricsCount = 0;
     for (const lp of allLps) {
-      const slugMarker = `/lp/${lp.slug}`;
-      let group = null;
-      let lpvStats = null;
-
-      for (const [u, g] of urlToGroup) {
-        if (u.includes(slugMarker)) { group = g; break; }
-      }
-      for (const [u, p] of lpvByUrl) {
-        if (u.includes(slugMarker)) { lpvStats = p; break; }
-      }
+      const slugLower = String(lp.slug || '').toLowerCase();
+      const group = slugToGroup.get(slugLower) || null;
+      const lpvStats = lpvBySlug.get(slugLower) || null;
 
       if (group) {
         updatePage.run(group.campaign_id, group.campaign_name, group.ad_group_id, group.ad_group_name, lp.id);
@@ -1659,13 +1667,25 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
       db.prepare('DELETE FROM gads_ad_group_meta WHERE COALESCE(is_manual, 0) = 0').run();
     }
 
+    // Diagnostic: which slugs in Google Ads have NO matching LP in our DB,
+    // and which LPs didn't get linked. Helps Bar spot URL mismatches.
+    const lpSlugSet = new Set(allLps.map(lp => String(lp.slug || '').toLowerCase()));
+    const orphanGoogleSlugs = [...slugToGroup.keys()].filter(s => !lpSlugSet.has(s));
+    const unlinkedLps = allLps.filter(lp => !slugToGroup.has(String(lp.slug || '').toLowerCase())).map(lp => lp.slug);
+
     res.json({
       success: true,
       linked: linkedCount,
       metrics_updated: metricsCount,
       ad_groups_cached: adGroupCount,
       total_lps: allLps.length,
-      range_label: dateFilter.label
+      range_label: dateFilter.label,
+      diagnostic: {
+        google_ads_slugs_seen: slugToGroup.size,
+        google_ads_slugs_no_lp: orphanGoogleSlugs.slice(0, 20),
+        lps_without_match: unlinkedLps.slice(0, 20),
+        unmatched_ad_urls_sample: unmatchedAdUrls.slice(0, 10)
+      }
     });
   } catch (err) {
     console.error('Error refreshing LP metrics:', err);

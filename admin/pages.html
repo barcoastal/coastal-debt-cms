@@ -1044,7 +1044,17 @@
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Refresh failed');
         status.style.color = '#166534';
-        status.textContent = `Synced (${d.range_label}). Linked ${d.linked} of ${d.total_lps} pages. ${d.ad_groups_cached || 0} ad groups, ${d.metrics_updated} metrics rows.`;
+        let line = `Synced (${d.range_label}). Linked ${d.linked} of ${d.total_lps} pages. ${d.ad_groups_cached || 0} ad groups, ${d.metrics_updated} metrics rows.`;
+        const diag = d.diagnostic || {};
+        const orphanSlugs = diag.google_ads_slugs_no_lp || [];
+        const unlinkedLps = diag.lps_without_match || [];
+        if (orphanSlugs.length > 0) {
+          line += `<br><span style="color:#9a3412;">⚠ ${orphanSlugs.length} slug${orphanSlugs.length === 1 ? '' : 's'} in Google Ads ads without a matching LP here: ${orphanSlugs.slice(0,5).map(s => '<code>' + _esc(s) + '</code>').join(', ')}${orphanSlugs.length > 5 ? '…' : ''}</span>`;
+        }
+        if (unlinkedLps.length > 0) {
+          line += `<br><span style="color:#9a3412;">⚠ ${unlinkedLps.length} LP${unlinkedLps.length === 1 ? '' : 's'} not running in any active ad: ${unlinkedLps.slice(0,5).map(s => '<code>' + _esc(s) + '</code>').join(', ')}${unlinkedLps.length > 5 ? '…' : ''}</span>`;
+        }
+        status.innerHTML = line;
         await loadPages();
       } catch (err) {
         status.style.color = '#dc2626';
