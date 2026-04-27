@@ -1395,6 +1395,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
     `);
     const slugToGroup = new Map();
     const unmatchedAdUrls = [];
+    // adGroupId → Set<url> — every unique final URL the ads in that ad group use
+    const urlsByAdGroup = new Map();
     for (const stream of adsData) {
       for (const row of (stream.results || [])) {
         const finalUrls = row.adGroupAd?.ad?.finalUrls || [];
@@ -1404,7 +1406,11 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
           ad_group_id: row.adGroup.id,
           ad_group_name: row.adGroup.name
         };
+        const agId = String(row.adGroup.id);
+        if (!urlsByAdGroup.has(agId)) urlsByAdGroup.set(agId, new Set());
+        const urlSet = urlsByAdGroup.get(agId);
         for (const u of finalUrls) {
+          if (u) urlSet.add(u);
           const slug = extractLpSlug(u);
           if (slug) {
             if (!slugToGroup.has(slug)) slugToGroup.set(slug, group);
@@ -1638,8 +1644,9 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         ad_group_id, ad_group_name, campaign_id, campaign_name,
         keywords, keyword_count, avg_quality_score,
         post_click_quality_score, creative_quality_score, search_predicted_ctr,
-        qs_breakdown, impressions, clicks, cost_micros, conversions, range_label, refreshed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        qs_breakdown, impressions, clicks, cost_micros, conversions,
+        ad_urls, range_label, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(ad_group_id) DO UPDATE SET
         ad_group_name = excluded.ad_group_name,
         campaign_id = excluded.campaign_id,
@@ -1655,6 +1662,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         clicks = excluded.clicks,
         cost_micros = excluded.cost_micros,
         conversions = excluded.conversions,
+        ad_urls = excluded.ad_urls,
         range_label = excluded.range_label,
         refreshed_at = CURRENT_TIMESTAMP
     `);
@@ -1662,6 +1670,8 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
     for (const [adGroupId, g] of qsByAdGroup) {
       const stats = agStatsById.get(adGroupId) || { impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 };
       const avgQs = g.qs_count ? +(g.qs_sum / g.qs_count).toFixed(2) : null;
+      const adUrlSet = urlsByAdGroup.get(String(adGroupId));
+      const adUrlsJson = adUrlSet ? JSON.stringify([...adUrlSet]) : '[]';
       upsertAgMeta.run(
         String(adGroupId),
         g.ad_group_name,
@@ -1678,6 +1688,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         stats.clicks,
         stats.cost_micros,
         stats.conversions,
+        adUrlsJson,
         dateFilter.label
       );
       adGroupCount++;
@@ -1728,14 +1739,15 @@ router.get('/ad-group-meta', authenticateToken, (req, res) => {
       keywords, keyword_count, avg_quality_score,
       post_click_quality_score, creative_quality_score, search_predicted_ctr,
       qs_breakdown, impressions, clicks, cost_micros, conversions, range_label,
-      COALESCE(is_manual, 0) AS is_manual, refreshed_at
+      ad_urls, COALESCE(is_manual, 0) AS is_manual, refreshed_at
     FROM gads_ad_group_meta
     ORDER BY campaign_name, ad_group_name
   `).all();
   const ad_groups = rows.map(r => ({
     ...r,
     keywords: (() => { try { return JSON.parse(r.keywords || '[]'); } catch (e) { return []; } })(),
-    qs_breakdown: (() => { try { return JSON.parse(r.qs_breakdown || '{}'); } catch (e) { return {}; } })()
+    qs_breakdown: (() => { try { return JSON.parse(r.qs_breakdown || '{}'); } catch (e) { return {}; } })(),
+    ad_urls: (() => { try { return JSON.parse(r.ad_urls || '[]'); } catch (e) { return []; } })()
   }));
   res.json({ ad_groups });
 });

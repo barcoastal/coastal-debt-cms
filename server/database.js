@@ -2020,6 +2020,10 @@ try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN range_label TEXT`); } c
 // Manual folders (campaigns/ad groups Bar creates without Google Ads). Sync skips these.
 try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN is_manual INTEGER DEFAULT 0`); } catch (e) {}
 
+// Cache the unique ad final URLs per ad group so the folder view can show
+// every URL Google Ads is actively running, including external ones we don't host
+try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN ad_urls TEXT`); } catch (e) {}
+
 // Funnel tracking on visitors: pre-qualification step answers
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_at DATETIME`); } catch (e) {}
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_value TEXT`); } catch (e) {}

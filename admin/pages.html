@@ -150,6 +150,18 @@
     .ag-kw { display: inline-block; padding: 2px 7px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 10px; font-weight: 500; }
     .ag-kw-more { background: #f1f5f9; color: #64748b; font-style: italic; }
 
+    .ag-urls { padding: 4px 10px 8px 24px; display: flex; flex-direction: column; gap: 4px; }
+    .ag-url { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 6px; font-size: 12px; text-decoration: none; border: 1px solid transparent; }
+    .ag-url-icon { font-size: 11px; flex-shrink: 0; }
+    .ag-url-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-weight: 500; }
+    .ag-url-tag { font-size: 10px; font-weight: 600; opacity: 0.7; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.3px; }
+    .ag-url-linked { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+    .ag-url-linked:hover { background: #d1fae5; }
+    .ag-url-system { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+    .ag-url-system:hover { background: #e0e7ff; }
+    .ag-url-external { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+    .ag-url-external:hover { background: #ffedd5; }
+
     .ag-keywords-list { padding: 4px 10px 8px 24px; display: flex; flex-direction: column; gap: 3px; }
     .kw-row { display: flex; align-items: center; gap: 8px; padding: 4px 10px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; }
     .kw-row:hover { background: #f1f5f9; }
@@ -1196,6 +1208,7 @@
         camp.is_manual = !!m.is_manual;
         const ag = ensureAdGroup(camp, String(m.ad_group_id), m.ad_group_name || 'Unnamed ad group');
         ag.keywords = m.keywords || [];
+        ag.ad_urls = m.ad_urls || [];
         ag.avg_qs = m.avg_quality_score;
         ag.lp_experience = m.post_click_quality_score;
         ag.ad_relevance = m.creative_quality_score;
@@ -1306,6 +1319,7 @@
       const statsLine = ag.has_meta
         ? `<span title="Time frame: ${cachedRange}">${ag.gads_clicks.toLocaleString()} clicks · ${_money(ag.gads_cost)} · ${(ag.gads_conversions || 0).toFixed(0)} conv</span>`
         : `<span>${ag.clicks.toLocaleString()} clicks · ${ag.leads} leads</span>`;
+      const adUrlsHtml = _adUrlsHtml(ag.ad_urls || [], ag.pages);
       return `
         <div class="folder-adgroup">
           <div class="folder-adgroup-header">
@@ -1321,9 +1335,61 @@
               ${statsLine}
             </div>
           </div>
+          ${adUrlsHtml}
           ${kwHtml}
           ${ag.pages.map(_lpCardHtml).join('')}
         </div>`;
+    }
+
+    // Extract path segment that matches an existing system LP slug
+    function _extractSystemSlug(url, systemSlugs) {
+      if (!url) return null;
+      const cleaned = String(url).split('#')[0].split('?')[0];
+      const m = cleaned.match(/\/(?:lp|a|landing|page)\/([^\/]+)/i);
+      if (m && m[1] && systemSlugs.has(m[1].toLowerCase())) return m[1].toLowerCase();
+      let path;
+      try { path = new URL(cleaned, 'https://placeholder.local').pathname; }
+      catch (e) { path = cleaned; }
+      const segs = path.split('/').filter(Boolean);
+      for (const seg of segs) {
+        const slug = decodeURIComponent(seg).toLowerCase();
+        if (systemSlugs.has(slug)) return slug;
+      }
+      return null;
+    }
+
+    function _hostFromUrl(u) {
+      try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return null; }
+    }
+
+    function _adUrlsHtml(urls, lpsInGroup) {
+      if (!urls || urls.length === 0) return '';
+      const systemSlugs = new Set((_pagesData || []).map(p => String(p.slug || '').toLowerCase()));
+      const lpsByslug = new Map((lpsInGroup || []).map(p => [String(p.slug).toLowerCase(), p]));
+      const items = urls.map(u => {
+        const slug = _extractSystemSlug(u, systemSlugs);
+        const isSystem = !!slug;
+        const linkedHere = slug && lpsByslug.has(slug);
+        return { url: u, slug, isSystem, linkedHere, host: _hostFromUrl(u) };
+      });
+      // Sort: linked-here first, then other system, then external
+      items.sort((a, b) => {
+        const score = it => it.linkedHere ? 0 : (it.isSystem ? 1 : 2);
+        return score(a) - score(b);
+      });
+      return `<div class="ag-urls">
+        ${items.map(it => {
+          const cls = it.linkedHere ? 'ag-url-linked' : (it.isSystem ? 'ag-url-system' : 'ag-url-external');
+          const icon = it.linkedHere ? '✓' : (it.isSystem ? '↪' : '🌐');
+          const label = it.linkedHere ? `system · /lp/${_esc(it.slug)}` : (it.isSystem ? `not in this folder · /lp/${_esc(it.slug)}` : 'external');
+          const display = it.isSystem ? `/lp/${it.slug}/` : (it.host || it.url);
+          return `<a class="ag-url ${cls}" href="${_esc(it.url)}" target="_blank" rel="noopener" title="${_esc(it.url)}">
+            <span class="ag-url-icon">${icon}</span>
+            <span class="ag-url-text">${_esc(display)}</span>
+            <span class="ag-url-tag">${label}</span>
+          </a>`;
+        }).join('')}
+      </div>`;
     }
 
     async function regenAiFromFolder(pageId, btn) {
