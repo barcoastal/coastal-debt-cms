@@ -1080,6 +1080,7 @@ router.get('/quality-scores', authenticateToken, async (req, res) => {
         ad_group_criterion.quality_info.search_predicted_ctr
       FROM keyword_view
       WHERE ad_group_criterion.status = 'ENABLED'
+        AND ad_group_criterion.negative = FALSE
         AND ad_group.status = 'ENABLED'
         AND campaign.status = 'ENABLED'
     `;
@@ -1391,6 +1392,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
         ad_group_criterion.quality_info.search_predicted_ctr
       FROM keyword_view
       WHERE ad_group_criterion.status = 'ENABLED'
+        AND ad_group_criterion.negative = FALSE
         AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
     `);
     const qsByAdGroup = new Map();

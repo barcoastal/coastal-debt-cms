@@ -186,6 +186,11 @@
     .gads-stale-banner { margin: 4px 16px 8px; padding: 8px 12px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; border-radius: 6px; font-size: 12px; display: flex; align-items: center; gap: 10px; }
     .gads-stale-banner button { padding: 4px 10px; background: #ea580c; color: #fff; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
     .gads-stale-banner button:hover { background: #c2410c; }
+
+    .kw-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 99px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .kw-toggle:hover { background: #e0e7ff; }
+    .kw-toggle .kw-toggle-chev { width: 11px; height: 11px; transition: transform 0.15s; }
+    .kw-toggle.open .kw-toggle-chev { transform: rotate(90deg); }
   </style>
 </head>
 <body>
@@ -1209,7 +1214,16 @@
 
     function _adGroupHtml(agid, ag) {
       const noLp = ag.has_meta && ag.pages.length === 0;
-      const kwHtml = _keywordRowsHtml(agid, ag.keywords);
+      const kwCount = (ag.keywords || []).length;
+      const kwFoldKey = 'kw_fold_' + agid;
+      const kwOpen = (function(){ try { return localStorage.getItem(kwFoldKey) === '1'; } catch(e) { return false; } })();
+      const kwHtml = (kwOpen && kwCount > 0) ? _keywordRowsHtml(agid, ag.keywords) : '';
+      const kwToggle = kwCount > 0
+        ? `<button class="kw-toggle ${kwOpen ? 'open' : ''}" onclick="toggleKwFold('${agid}', event)" title="${kwOpen ? 'Hide' : 'Show'} keywords">
+             <svg class="kw-toggle-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+             ${kwCount} keyword${kwCount === 1 ? '' : 's'}
+           </button>`
+        : '';
       const cachedRange = (_gadsAdGroupMeta && _gadsAdGroupMeta[0] && _gadsAdGroupMeta[0].range_label) || '30d';
       const statsLine = ag.has_meta
         ? `<span title="Time frame: ${cachedRange}">${ag.gads_clicks.toLocaleString()} clicks · ${_money(ag.gads_cost)} · ${(ag.gads_conversions || 0).toFixed(0)} conv</span>`
@@ -1223,6 +1237,7 @@
             </div>
             <div class="folder-adgroup-stats">
               ${ag.has_meta ? `${_qsPill(ag.avg_qs)} ${_lpxPill(ag.lp_experience)}` : ''}
+              ${kwToggle}
               <span>${ag.pages.length} LP${ag.pages.length === 1 ? '' : 's'}</span>
               ${statsLine}
             </div>
@@ -1230,6 +1245,14 @@
           ${kwHtml}
           ${ag.pages.map(_lpCardHtml).join('')}
         </div>`;
+    }
+
+    function toggleKwFold(agid, ev) {
+      if (ev) ev.stopPropagation();
+      const key = 'kw_fold_' + agid;
+      const isOpen = (function(){ try { return localStorage.getItem(key) === '1'; } catch(e) { return false; } })();
+      try { localStorage.setItem(key, isOpen ? '0' : '1'); } catch(e) {}
+      renderPagesFolders(_pagesData || []);
     }
 
     function _esc(s) {
