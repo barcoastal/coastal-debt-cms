@@ -229,6 +229,30 @@
         </div>
       </div>
 
+      <!-- Deep Sync card — populates the cache that all pivots use -->
+      <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0f4ff 0%,#fff 60%);border:1px solid #c7d2fe;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h3 class="card-title" style="margin:0;display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4285F4;"></span>
+              Sync Deep Data from Google Ads
+            </h3>
+            <small style="color:#475569;">Pulls every per-ad-group segment — age, gender, household income, parental status, device, hour, day-of-week, region, search terms — into the local cache. Run this first, then build pivots below.</small>
+            <div id="deepSyncStatus" style="margin-top:6px;font-size:12px;color:#94a3b8;">Loading status…</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="deepSyncDays" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+            <button id="deepSyncBtn" onclick="runDeepSync()" style="padding:10px 18px;background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">⬇ Sync Deep Data</button>
+          </div>
+        </div>
+        <div id="deepSyncResult" style="margin-top:10px;display:none;"></div>
+      </div>
+
       <!-- Google Ads at a glance -->
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header" style="display:flex;align-items:center;gap:10px;">
@@ -584,6 +608,57 @@
       loadLandingPages(qs);
       loadCallQuality(qs);
       loadHeatmap(qs);
+      loadDeepSyncStatus();
+    }
+
+    async function loadDeepSyncStatus() {
+      try {
+        const r = await fetch('/api/deep-analysis/deep-sync-status');
+        const d = await r.json();
+        const el = document.getElementById('deepSyncStatus');
+        if (!d.total) { el.textContent = '⚠ Cache empty — click "Sync Deep Data" to pull from Google Ads.'; el.style.color = '#9a3412'; return; }
+        const ts = d.last_refreshed ? new Date(d.last_refreshed).toLocaleString() : 'unknown';
+        const breakdown = (d.by_type || []).map(b => `${b.segment_type}:${b.n}`).join(' · ');
+        el.innerHTML = `Last synced: <strong>${ts}</strong> · Total rows: <strong>${d.total}</strong> · ${breakdown}`;
+        el.style.color = '#475569';
+      } catch (e) {}
+    }
+
+    async function runDeepSync() {
+      const btn = document.getElementById('deepSyncBtn');
+      const result = document.getElementById('deepSyncResult');
+      const days = document.getElementById('deepSyncDays').value || 30;
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.textContent = '⏳ Syncing…';
+      result.style.display = 'block';
+      result.innerHTML = '<div style="padding:14px;background:#eef2ff;border-radius:8px;color:#4338ca;font-size:13px;">Pulling demographics, segments, and search terms from Google Ads. This can take 30-60 seconds…</div>';
+      try {
+        const r = await fetch('/api/deep-analysis/deep-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: parseInt(days, 10) })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Sync failed');
+        const counts = d.counts || {};
+        const errors = d.errors || {};
+        const items = Object.entries(counts).map(([k, v]) => {
+          const err = errors[k] ? ` <span style="color:#dc2626;">(${err})</span>` : '';
+          const color = errors[k] ? '#dc2626' : (v > 0 ? '#166534' : '#94a3b8');
+          return `<div style="padding:6px 10px;background:#fff;border-radius:6px;border:1px solid #e2e8f0;"><strong style="color:${color};">${v.toLocaleString()}</strong> rows · ${k}${err}</div>`;
+        }).join('');
+        result.innerHTML = `<div style="padding:14px;background:#dcfce7;border-radius:8px;color:#166534;border:1px solid #86efac;">
+          <div style="font-weight:700;">✓ Synced ${d.total_rows.toLocaleString()} rows in ${(d.duration_ms/1000).toFixed(1)}s (${d.range})</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:10px;font-size:12px;">${items}</div>
+        </div>`;
+        loadDeepSyncStatus();
+      } catch (err) {
+        result.innerHTML = `<div style="padding:14px;background:#fee2e2;border-radius:8px;color:#991b1b;">❌ Sync failed: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     }
 
     // ─── Google Ads Pivot ──────────────────────────────────────────────────

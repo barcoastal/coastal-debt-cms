@@ -763,6 +763,206 @@ async function gadsQuery(config, accessToken, developerToken, gaql) {
   return data;
 }
 
+// Deep sync — pulls every segment Google Ads exposes per ad group and writes
+// to the gads_segments cache. Run from the Google Deep Analysis page.
+router.post('/deep-sync', authenticateToken, async (req, res) => {
+  const t0 = Date.now();
+  try {
+    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+      return res.status(400).json({ error: 'Google Ads not connected' });
+    }
+    const accessToken = await googleAds.getValidAccessToken(config);
+    if (!accessToken) return res.status(401).json({ error: 'Failed to get Google Ads access token' });
+    const developerToken = googleAds.getDeveloperToken(config);
+    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
+
+    const days = parseInt(req.body?.days, 10);
+    const range = ({ 7: 'LAST_7_DAYS', 14: 'LAST_14_DAYS', 30: 'LAST_30_DAYS', 90: 'LAST_90_DAYS' })[days] || 'LAST_30_DAYS';
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'developer-token': developerToken,
+      'Content-Type': 'application/json'
+    };
+    const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+    if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
+    const url = `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`;
+
+    const runQuery = async (gaql) => {
+      const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ query: gaql }) });
+      const d = await r.json();
+      const apiError = d.error || d[0]?.error;
+      if (apiError) throw new Error(apiError.message || JSON.stringify(apiError));
+      return d;
+    };
+
+    // Wipe segments table — this is a full refresh
+    db.prepare('DELETE FROM gads_segments').run();
+
+    const insert = db.prepare(`
+      INSERT INTO gads_segments (
+        ad_group_id, ad_group_name, campaign_id, campaign_name,
+        segment_type, segment_value, impressions, clicks, cost_micros, conversions,
+        range_label, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+    const insertMany = db.transaction((rows) => {
+      for (const r of rows) insert.run(...r);
+    });
+
+    const counts = {};
+    const errors = {};
+
+    // Helper to pull from a *_view that's keyed on ad_group + criterion
+    const syncDemoView = async (segType, viewName, valueField) => {
+      try {
+        const gaql = `
+          SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+            ${valueField},
+            metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+          FROM ${viewName}
+          WHERE segments.date DURING ${range}
+        `;
+        const data = await runQuery(gaql);
+        const rows = [];
+        for (const stream of data) {
+          for (const row of (stream.results || [])) {
+            const m = row.metrics || {};
+            // Resolve nested path "ad_group_criterion.gender.type" → row.adGroupCriterion.gender.type
+            const camelPath = valueField.split('.').map(p => p.replace(/_([a-z])/g, (_, c) => c.toUpperCase()));
+            let segVal = row;
+            for (const p of camelPath) { segVal = segVal && segVal[p]; if (segVal === undefined) break; }
+            rows.push([
+              row.adGroup?.id, row.adGroup?.name,
+              row.campaign?.id, row.campaign?.name,
+              segType, String(segVal || 'UNKNOWN'),
+              parseInt(m.impressions || 0, 10),
+              parseInt(m.clicks || 0, 10),
+              parseInt(m.costMicros || 0, 10),
+              parseFloat(m.conversions || 0),
+              range
+            ]);
+          }
+        }
+        insertMany(rows);
+        counts[segType] = rows.length;
+      } catch (err) {
+        errors[segType] = err.message;
+        counts[segType] = 0;
+      }
+    };
+
+    // Helper to pull from ad_group with a single segment
+    const syncAdGroupSegment = async (segType, gadsField, jsonPath) => {
+      try {
+        const gaql = `
+          SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+            ${gadsField},
+            metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+          FROM ad_group
+          WHERE segments.date DURING ${range}
+            AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+        `;
+        const data = await runQuery(gaql);
+        const rows = [];
+        for (const stream of data) {
+          for (const row of (stream.results || [])) {
+            const m = row.metrics || {};
+            let segVal = row;
+            for (const p of jsonPath) { segVal = segVal && segVal[p]; if (segVal === undefined) break; }
+            rows.push([
+              row.adGroup?.id, row.adGroup?.name,
+              row.campaign?.id, row.campaign?.name,
+              segType, String(segVal != null ? segVal : 'UNKNOWN'),
+              parseInt(m.impressions || 0, 10),
+              parseInt(m.clicks || 0, 10),
+              parseInt(m.costMicros || 0, 10),
+              parseFloat(m.conversions || 0),
+              range
+            ]);
+          }
+        }
+        insertMany(rows);
+        counts[segType] = rows.length;
+      } catch (err) {
+        errors[segType] = err.message;
+        counts[segType] = 0;
+      }
+    };
+
+    // Demographics
+    await syncDemoView('age',      'age_range_view',       'ad_group_criterion.age_range.type');
+    await syncDemoView('gender',   'gender_view',          'ad_group_criterion.gender.type');
+    await syncDemoView('income',   'income_range_view',    'ad_group_criterion.income_range.type');
+    await syncDemoView('parental', 'parental_status_view', 'ad_group_criterion.parental_status.type');
+    // Device, hour, day-of-week, geo
+    await syncAdGroupSegment('device',   'segments.device',            ['segments', 'device']);
+    await syncAdGroupSegment('hour',     'segments.hour',              ['segments', 'hour']);
+    await syncAdGroupSegment('dow',      'segments.day_of_week',       ['segments', 'dayOfWeek']);
+    await syncAdGroupSegment('geo',      'segments.geo_target_region', ['segments', 'geoTargetRegion']);
+
+    // Search terms (per ad group)
+    try {
+      const gaql = `
+        SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+          search_term_view.search_term,
+          metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+        FROM search_term_view
+        WHERE segments.date DURING ${range}
+      `;
+      const data = await runQuery(gaql);
+      const rows = [];
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          const m = row.metrics || {};
+          rows.push([
+            row.adGroup?.id, row.adGroup?.name,
+            row.campaign?.id, row.campaign?.name,
+            'search_term', row.searchTermView?.searchTerm || 'UNKNOWN',
+            parseInt(m.impressions || 0, 10),
+            parseInt(m.clicks || 0, 10),
+            parseInt(m.costMicros || 0, 10),
+            parseFloat(m.conversions || 0),
+            range
+          ]);
+        }
+      }
+      insertMany(rows);
+      counts.search_term = rows.length;
+    } catch (err) {
+      errors.search_term = err.message;
+      counts.search_term = 0;
+    }
+
+    res.json({
+      success: true,
+      range,
+      duration_ms: Date.now() - t0,
+      counts,
+      errors,
+      total_rows: Object.values(counts).reduce((s, n) => s + (n || 0), 0)
+    });
+  } catch (err) {
+    console.error('deep-sync error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Quick status — when was deep sync last run, how many rows per segment type
+router.get('/deep-sync-status', authenticateToken, (req, res) => {
+  const rows = db.prepare(`
+    SELECT segment_type, COUNT(*) AS n, MIN(refreshed_at) AS oldest, MAX(refreshed_at) AS newest, MIN(range_label) AS range_label
+    FROM gads_segments
+    GROUP BY segment_type
+  `).all();
+  const total = rows.reduce((s, r) => s + r.n, 0);
+  res.json({
+    total,
+    by_type: rows,
+    last_refreshed: rows[0]?.newest || null
+  });
+});
+
 // Simplest possible "is the Google Ads pipe working?" probe.
 // Pulls every campaign (any status) with its 30-day metrics. No segments,
 // no joins, no filters beyond date.
@@ -836,7 +1036,212 @@ router.get('/gads-test', authenticateToken, async (req, res) => {
 // "Sync Google Ads" on the LP folder view. Instant data, no API round-trip.
 // Demographic dims (age, gender, income, parental) require a live API call —
 // merged in only when those dims are requested.
+// ─── Cache-only pivot ──────────────────────────────────────────────────
+// Reads gads_ad_group_meta + gads_segments, no live API calls.
+// Supports any combo of: campaign, ad_group, age, gender, income, parental,
+// device, hour, dow, geo, search_term. Multi-segment combos use distribution
+// weighting (Google Ads doesn't expose true cross-tabs for Search campaigns).
+const SEG_TYPES = new Set(['age', 'gender', 'income', 'parental', 'device', 'hour', 'dow', 'geo', 'search_term']);
+
 router.post('/google-pivot', authenticateToken, async (req, res) => {
+  try {
+    const {
+      dimensions = ['campaign'],
+      filters = {},
+      metrics = ['clicks', 'cost', 'conversions', 'conv_rate', 'cpa'],
+      sort = { metric: 'clicks', dir: 'desc' },
+      limit = 200
+    } = req.body || {};
+    if (!dimensions.length) return res.status(400).json({ error: 'At least one dimension required' });
+
+    // Detect what kind of dim each one is
+    const allDims = [...new Set([...dimensions, ...Object.keys(filters || {})])];
+    const segDims = allDims.filter(d => SEG_TYPES.has(d));
+    const flatDims = allDims.filter(d => d === 'campaign' || d === 'ad_group');
+    const unknownDims = allDims.filter(d => !SEG_TYPES.has(d) && d !== 'campaign' && d !== 'ad_group');
+    if (unknownDims.length) return res.status(400).json({ error: `Unknown dim(s): ${unknownDims.join(', ')}` });
+
+    // Pull cached meta (per ad-group totals) + segment rows
+    const meta = db.prepare(`
+      SELECT campaign_id, campaign_name, ad_group_id, ad_group_name,
+        impressions, clicks, cost_micros, conversions, refreshed_at, range_label
+      FROM gads_ad_group_meta
+      WHERE COALESCE(is_manual, 0) = 0
+    `).all();
+
+    if (meta.length === 0) {
+      return res.json({
+        dimensions, filters, metrics, range: 'cache',
+        rows: [], total_rows: 0,
+        totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0 },
+        diagnostic: {
+          source: 'gads_ad_group_meta cache',
+          notes: 'Cache empty — click "Sync Deep Data" above first.'
+        }
+      });
+    }
+
+    // segData[segType] = Map<ad_group_id, [{value, impressions, clicks, cost_micros, conversions}, ...]>
+    const segData = {};
+    for (const segType of segDims) {
+      const rows = db.prepare(`
+        SELECT ad_group_id, segment_value, impressions, clicks, cost_micros, conversions
+        FROM gads_segments WHERE segment_type = ?
+      `).all(segType);
+      const byAg = new Map();
+      for (const r of rows) {
+        if (!byAg.has(r.ad_group_id)) byAg.set(r.ad_group_id, []);
+        byAg.get(r.ad_group_id).push({
+          value: r.segment_value,
+          impressions: r.impressions || 0,
+          clicks: r.clicks || 0,
+          cost_micros: r.cost_micros || 0,
+          conversions: r.conversions || 0
+        });
+      }
+      segData[segType] = byAg;
+    }
+
+    // For each ad_group meta row, expand to cross-product of requested segments
+    const expanded = [];
+    for (const m of meta) {
+      const baseDims = { campaign: m.campaign_name, ad_group: m.ad_group_name };
+      const baseMetrics = {
+        impressions: m.impressions || 0,
+        clicks: m.clicks || 0,
+        cost_micros: m.cost_micros || 0,
+        conversions: m.conversions || 0
+      };
+
+      // Compute distribution per requested seg dim for this ad_group
+      const dists = segDims.map(segType => {
+        const list = (segData[segType] && segData[segType].get(m.ad_group_id)) || [];
+        if (!list.length) return null;
+        const total = list.reduce((s, x) => s + x.impressions, 0);
+        return {
+          segType,
+          buckets: list.map(x => ({
+            value: x.value,
+            share: total > 0 ? x.impressions / total : 0,
+            absMetrics: { impressions: x.impressions, clicks: x.clicks, cost_micros: x.cost_micros, conversions: x.conversions }
+          }))
+        };
+      }).filter(Boolean);
+
+      // No seg dims → emit one row with base metrics
+      if (dists.length === 0) {
+        if (segDims.length > 0) continue; // requested seg but no data for this ad_group
+        expanded.push({ ...baseDims, _metrics: baseMetrics });
+        continue;
+      }
+
+      // Cartesian product over seg dims, weight base metrics by combined share
+      let stack = [{ row: { ...baseDims }, weight: 1, abs: null }];
+      for (const dist of dists) {
+        const next = [];
+        for (const s of stack) {
+          for (const b of dist.buckets) {
+            next.push({
+              row: { ...s.row, [dist.segType]: b.value },
+              weight: s.weight * b.share,
+              abs: dists.length === 1 ? b.absMetrics : null
+            });
+          }
+        }
+        stack = next;
+      }
+
+      for (const s of stack) {
+        const m_out = s.abs ? s.abs : {
+          impressions: baseMetrics.impressions * s.weight,
+          clicks: baseMetrics.clicks * s.weight,
+          cost_micros: baseMetrics.cost_micros * s.weight,
+          conversions: baseMetrics.conversions * s.weight
+        };
+        expanded.push({ ...s.row, _metrics: m_out });
+      }
+    }
+
+    // Apply filters
+    const filtered = expanded.filter(r => {
+      for (const [d, allowed] of Object.entries(filters || {})) {
+        if (!allowed || allowed.length === 0) continue;
+        if (!allowed.includes(String(r[d]))) return false;
+      }
+      return true;
+    });
+
+    // Aggregate by selected dimensions
+    const groups = new Map();
+    for (const r of filtered) {
+      const dimVals = {};
+      for (const d of dimensions) dimVals[d] = r[d] != null ? String(r[d]) : 'UNKNOWN';
+      const key = dimensions.map(d => dimVals[d]).join('||');
+      if (!groups.has(key)) {
+        groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+      }
+      const g = groups.get(key);
+      g.impressions += r._metrics.impressions;
+      g.clicks += r._metrics.clicks;
+      g.cost_micros += r._metrics.cost_micros;
+      g.conversions += r._metrics.conversions;
+    }
+
+    const rows = [...groups.values()].map(g => {
+      const cost = g.cost_micros / 1_000_000;
+      const dimVals = {};
+      dimensions.forEach(d => { dimVals[d] = g[d]; });
+      return {
+        ...dimVals,
+        impressions: Math.round(g.impressions),
+        clicks: Math.round(g.clicks),
+        cost: +cost.toFixed(2),
+        conversions: +g.conversions.toFixed(2),
+        ctr: g.impressions ? +(g.clicks / g.impressions * 100).toFixed(2) : 0,
+        cpc: g.clicks ? +(cost / g.clicks).toFixed(2) : 0,
+        conv_rate: g.clicks ? +(g.conversions / g.clicks * 100).toFixed(2) : 0,
+        cpa: g.conversions ? +(cost / g.conversions).toFixed(2) : 0
+      };
+    });
+
+    const sortMetric = sort && sort.metric || 'clicks';
+    const sortDir = (sort && sort.dir) === 'asc' ? 1 : -1;
+    rows.sort((a, b) => ((a[sortMetric] || 0) - (b[sortMetric] || 0)) * sortDir);
+    const limited = rows.slice(0, Math.min(parseInt(limit, 10) || 200, 5000));
+
+    const totals = rows.reduce((acc, r) => ({
+      impressions: acc.impressions + r.impressions,
+      clicks: acc.clicks + r.clicks,
+      cost: +(acc.cost + r.cost).toFixed(2),
+      conversions: +(acc.conversions + r.conversions).toFixed(2)
+    }), { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
+    totals.ctr = totals.impressions ? +(totals.clicks / totals.impressions * 100).toFixed(2) : 0;
+    totals.cpc = totals.clicks ? +(totals.cost / totals.clicks).toFixed(2) : 0;
+    totals.conv_rate = totals.clicks ? +(totals.conversions / totals.clicks * 100).toFixed(2) : 0;
+    totals.cpa = totals.conversions ? +(totals.cost / totals.conversions).toFixed(2) : 0;
+
+    return res.json({
+      dimensions, filters, metrics,
+      range: meta[0]?.range_label || 'cached',
+      rows: limited, total_rows: rows.length, totals,
+      diagnostic: {
+        source: 'gads_ad_group_meta + gads_segments cache',
+        ad_groups_in_cache: meta.length,
+        seg_types_used: segDims,
+        last_refreshed: meta[0]?.refreshed_at,
+        notes: segDims.length > 1
+          ? 'Multi-segment combo — numbers are weighted estimates because Google Ads does not expose true cross-tabs.'
+          : (segDims.length === 1 ? 'Single segment — exact numbers from cache.' : 'Aggregated from ad-group totals.')
+      }
+    });
+  } catch (err) {
+    console.error('google-pivot error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Old code below kept dead but unused — TODO clean up
+router.post('/google-pivot-legacy-DEAD', authenticateToken, async (req, res) => {
   try {
     const {
       dimensions = ['campaign'],

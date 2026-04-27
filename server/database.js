@@ -2024,6 +2024,29 @@ try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN is_manual INTEGER DEFAU
 // every URL Google Ads is actively running, including external ones we don't host
 try { db.exec(`ALTER TABLE gads_ad_group_meta ADD COLUMN ad_urls TEXT`); } catch (e) {}
 
+// gads_segments — one cache row per (ad_group_id, segment_type, segment_value).
+// segment_type ∈ {age, gender, income, parental, device, hour, dow, geo, search_term}
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_segments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad_group_id TEXT,
+    ad_group_name TEXT,
+    campaign_id TEXT,
+    campaign_name TEXT,
+    segment_type TEXT NOT NULL,
+    segment_value TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost_micros INTEGER DEFAULT 0,
+    conversions REAL DEFAULT 0,
+    range_label TEXT,
+    refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_gads_seg_type ON gads_segments(segment_type);
+  CREATE INDEX IF NOT EXISTS idx_gads_seg_ag ON gads_segments(ad_group_id);
+  CREATE INDEX IF NOT EXISTS idx_gads_seg_camp ON gads_segments(campaign_id);
+`);
+
 // Funnel tracking on visitors: pre-qualification step answers
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_at DATETIME`); } catch (e) {}
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_value TEXT`); } catch (e) {}
