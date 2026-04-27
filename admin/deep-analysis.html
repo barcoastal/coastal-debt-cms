@@ -247,7 +247,7 @@
               <option value="30" selected>Last 30 days</option>
               <option value="90">Last 90 days</option>
             </select>
-            <button id="deepSyncBtn" onclick="runDeepSync()" style="padding:10px 18px;background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">⬇ Sync Deep Data</button>
+            <button type="button" id="deepSyncBtn" onclick="runDeepSync()" style="padding:10px 18px;background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;pointer-events:auto;position:relative;z-index:10;">⬇ Sync Deep Data</button>
           </div>
         </div>
         <div id="deepSyncResult" style="margin-top:10px;display:none;"></div>
@@ -624,7 +624,17 @@
       } catch (e) {}
     }
 
+    // Belt and suspenders: bind click handler explicitly in case inline onclick fails
+    document.addEventListener('DOMContentLoaded', function() {
+      var b = document.getElementById('deepSyncBtn');
+      if (b && !b._bound) {
+        b._bound = true;
+        b.addEventListener('click', function(e) { e.preventDefault(); runDeepSync(); });
+      }
+    });
+
     async function runDeepSync() {
+      console.log('[deep-sync] click handler fired');
       const btn = document.getElementById('deepSyncBtn');
       const result = document.getElementById('deepSyncResult');
       const days = document.getElementById('deepSyncDays').value || 30;
