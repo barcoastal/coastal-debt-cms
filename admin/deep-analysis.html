@@ -369,6 +369,10 @@
           </div>
           <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;">Run Pivot</button>
         </div>
+        <div style="margin:6px 0 0;font-size:12px;">
+          <button onclick="testGoogleAdsConnection()" style="padding:6px 12px;background:#fff;color:#3052FF;border:1px dashed #c7d2fe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🩺 Test Google Ads connection</button>
+          <span style="color:#94a3b8;margin-left:8px;">If pivot is empty, click this to see what Google Ads actually returns.</span>
+        </div>
 
         <div style="display:flex;gap:14px;align-items:end;margin-top:8px;font-size:13px;">
           <div>
@@ -612,6 +616,42 @@
       const i = _pivotGroupBy.indexOf(dim);
       if (i === -1) { _pivotGroupBy.push(dim); el.classList.add('selected'); }
       else { _pivotGroupBy.splice(i, 1); el.classList.remove('selected'); }
+    }
+
+    async function testGoogleAdsConnection() {
+      const target = document.getElementById('googlePivotResult');
+      target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Testing Google Ads connection…</div>';
+      try {
+        const r = await fetch('/api/deep-analysis/gads-test');
+        const d = await r.json();
+        if (!d.ok) {
+          target.innerHTML = `<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:16px;color:#991b1b;">
+            <div style="font-weight:700;margin-bottom:8px;">❌ Failed at step: ${_esc(d.step)}</div>
+            <div>${_esc(d.error)}</div>
+            ${d.customer_id ? `<div style="margin-top:8px;font-family:monospace;font-size:11px;">customer_id=${_esc(d.customer_id)} login_customer_id=${_esc(d.login_customer_id || '—')}</div>` : ''}
+            ${d.gaql ? `<details style="margin-top:8px;"><summary>Failing GAQL</summary><code style="font-size:10px;display:block;white-space:pre-wrap;">${_esc(d.gaql)}</code></details>` : ''}
+          </div>`;
+          return;
+        }
+        target.innerHTML = `<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:16px;color:#166534;margin-bottom:10px;">
+          <div style="font-weight:700;">✅ Connection works</div>
+          <div style="margin-top:6px;font-size:13px;">customer_id=${_esc(d.customer_id)} · login_customer_id=${_esc(d.login_customer_id || '—')}</div>
+          <div style="margin-top:6px;font-size:13px;">Last 30 days: <strong>${d.total_campaigns}</strong> campaigns, <strong>${d.total_clicks.toLocaleString()}</strong> clicks, <strong>$${d.total_cost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong> spend</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr><th style="text-align:left;">Campaign</th><th style="text-align:left;">Status</th><th style="text-align:right;">Impressions</th><th style="text-align:right;">Clicks</th><th style="text-align:right;">Cost</th><th style="text-align:right;">Conv</th></tr></thead>
+          <tbody>${d.campaigns.map(c => `<tr>
+            <td><strong>${_esc(c.name || '')}</strong></td>
+            <td><span class="badge badge-${c.status === 'ENABLED' ? 'green' : 'gray'}">${_esc(c.status || '')}</span></td>
+            <td style="text-align:right;">${c.impressions.toLocaleString()}</td>
+            <td style="text-align:right;">${c.clicks.toLocaleString()}</td>
+            <td style="text-align:right;">$${c.cost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            <td style="text-align:right;">${c.conversions.toFixed(2)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+      } catch (err) {
+        target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Network error: ${_esc(err.message)}</div>`;
+      }
     }
 
     async function runGoogleAdsPivot() {

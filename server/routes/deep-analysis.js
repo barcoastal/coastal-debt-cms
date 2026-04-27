@@ -763,6 +763,75 @@ async function gadsQuery(config, accessToken, developerToken, gaql) {
   return data;
 }
 
+// Simplest possible "is the Google Ads pipe working?" probe.
+// Pulls every campaign (any status) with its 30-day metrics. No segments,
+// no joins, no filters beyond date.
+router.get('/gads-test', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!config) return res.json({ ok: false, step: 'config', error: 'No google_ads_config row' });
+    if (!config.customer_id) return res.json({ ok: false, step: 'customer_id', error: 'customer_id not set' });
+    if (!config.refresh_token_encrypted) return res.json({ ok: false, step: 'refresh_token', error: 'Not connected — go to Integrations and connect Google Ads' });
+
+    const accessToken = await googleAds.getValidAccessToken(config);
+    if (!accessToken) return res.json({ ok: false, step: 'access_token', error: 'getValidAccessToken returned null', customer_id: config.customer_id, login_customer_id: config.login_customer_id });
+
+    const developerToken = googleAds.getDeveloperToken(config);
+    if (!developerToken) return res.json({ ok: false, step: 'developer_token', error: 'developer token not configured' });
+
+    const gaql = `
+      SELECT campaign.id, campaign.name, campaign.status,
+        metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+      FROM campaign
+      WHERE segments.date DURING LAST_30_DAYS
+    `;
+
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'developer-token': developerToken,
+      'Content-Type': 'application/json'
+    };
+    const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+    if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
+    const r = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      { method: 'POST', headers, body: JSON.stringify({ query: gaql }) }
+    );
+    const data = await r.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.json({ ok: false, step: 'gaql', error: apiError.message || JSON.stringify(apiError), gaql });
+
+    const campaigns = [];
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        const m = row.metrics || {};
+        campaigns.push({
+          id: row.campaign?.id,
+          name: row.campaign?.name,
+          status: row.campaign?.status,
+          impressions: parseInt(m.impressions || 0, 10),
+          clicks: parseInt(m.clicks || 0, 10),
+          cost: +(parseInt(m.costMicros || 0, 10) / 1_000_000).toFixed(2),
+          conversions: +parseFloat(m.conversions || 0).toFixed(2)
+        });
+      }
+    }
+    campaigns.sort((a, b) => b.clicks - a.clicks);
+
+    res.json({
+      ok: true,
+      customer_id: config.customer_id,
+      login_customer_id: config.login_customer_id,
+      total_campaigns: campaigns.length,
+      total_clicks: campaigns.reduce((s, c) => s + c.clicks, 0),
+      total_cost: +campaigns.reduce((s, c) => s + c.cost, 0).toFixed(2),
+      campaigns: campaigns.slice(0, 50)
+    });
+  } catch (err) {
+    res.json({ ok: false, step: 'exception', error: err.message });
+  }
+});
+
 router.post('/google-pivot', authenticateToken, async (req, res) => {
   try {
     const {
