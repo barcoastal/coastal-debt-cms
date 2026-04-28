@@ -366,7 +366,9 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     });
 
     campaigns.sort((a, b) => (b.spend_30d || 0) - (a.spend_30d || 0));
-    res.json({ campaigns, reportError, raw_campaigns_count: campaignsRes?.data?.campaigns?.length || 0 });
+    const out = { campaigns, reportError, raw_campaigns_count: campaignsRes?.data?.campaigns?.length || 0 };
+    if (debug) out.raw_campaigns_response = campaignsRes;
+    res.json(out);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
