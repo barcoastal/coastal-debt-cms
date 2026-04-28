@@ -422,18 +422,48 @@
           </div>
           <div>
             <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Period</label>
-            <select id="pivotDays" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+            <select id="pivotDays" onchange="onPivotPeriodChange()" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
               <option value="7">Last 7 days</option>
               <option value="14">Last 14 days</option>
               <option value="30" selected>Last 30 days</option>
               <option value="90">Last 90 days</option>
+              <option value="180">Last 180 days</option>
+              <option value="365">Last 365 days</option>
+              <option value="custom">Custom…</option>
             </select>
+            <div id="pivotCustomDates" style="display:none;margin-top:6px;display:flex;gap:4px;">
+              <input type="date" id="pivotFromDate" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;">
+              <input type="date" id="pivotToDate" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;">
+            </div>
           </div>
           <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;">Run Pivot</button>
         </div>
         <div style="margin:6px 0 0;font-size:12px;">
           <button onclick="testGoogleAdsConnection()" style="padding:6px 12px;background:#fff;color:#3052FF;border:1px dashed #c7d2fe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🩺 Test Google Ads connection</button>
           <span style="color:#94a3b8;margin-left:8px;">If pivot is empty, click this to see what Google Ads actually returns.</span>
+        </div>
+
+        <div style="margin-top:8px;font-size:13px;">
+          <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Spread as columns (optional)</label>
+          <select id="pivotColumnDim" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+            <option value="">— None (flat) —</option>
+            <option value="conversion_action">Event (each event = its own column)</option>
+            <option value="device">Device</option>
+            <option value="dow">Weekday</option>
+            <option value="age">Age</option>
+            <option value="gender">Gender</option>
+            <option value="income">Income</option>
+            <option value="parental">Parental</option>
+          </select>
+          <select id="pivotColumnMetric" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-left:6px;">
+            <option value="conversions" selected>Cells: Conversions</option>
+            <option value="value">Cells: $ Value</option>
+            <option value="clicks">Cells: Clicks</option>
+            <option value="cost">Cells: Cost</option>
+            <option value="cpa">Cells: CPA</option>
+            <option value="conv_rate">Cells: Conv rate</option>
+          </select>
+          <small style="color:#94a3b8;margin-left:8px;">Pick "Event" to see each conversion event as its own column.</small>
         </div>
 
         <div style="display:flex;gap:14px;align-items:end;margin-top:8px;font-size:13px;">
@@ -855,33 +885,150 @@
       }
     }
 
+    function onPivotPeriodChange() {
+      const v = document.getElementById('pivotDays').value;
+      document.getElementById('pivotCustomDates').style.display = v === 'custom' ? 'flex' : 'none';
+    }
+
     async function runGoogleAdsPivot() {
       if (_pivotGroupBy.length === 0) { alert('Pick at least one Group by dimension.'); return; }
       const metrics = [...document.querySelectorAll('.pivotMetric:checked')].map(c => c.value);
-      const days = parseInt(document.getElementById('pivotDays').value, 10) || 30;
+      const periodVal = document.getElementById('pivotDays').value;
       const sortMetric = document.getElementById('pivotSortMetric').value;
       const sortDir = document.getElementById('pivotSortDir').value;
       const limit = parseInt(document.getElementById('pivotLimit').value, 10) || 10;
+      const columnDim = document.getElementById('pivotColumnDim').value;
+      const columnMetric = document.getElementById('pivotColumnMetric').value || 'conversions';
+
+      // Build group-by including the column dim if any (so backend returns all bucket combos)
+      const dimensionsForRequest = columnDim
+        ? [..._pivotGroupBy.filter(d => d !== columnDim), columnDim]
+        : [..._pivotGroupBy];
+
+      // Date params
+      const body = {
+        dimensions: dimensionsForRequest,
+        filters: _pivotFilters,
+        metrics,
+        sort: { metric: sortMetric, dir: sortDir },
+        limit: columnDim ? limit * 50 : limit  // need more rows when transposing
+      };
+      if (periodVal === 'custom') {
+        body.from_date = document.getElementById('pivotFromDate').value;
+        body.to_date = document.getElementById('pivotToDate').value;
+        if (!body.from_date || !body.to_date) { alert('Pick both From and To dates.'); return; }
+      } else {
+        body.days = parseInt(periodVal, 10) || 30;
+      }
+
       const target = document.getElementById('googlePivotResult');
       target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Pulling from Google Ads…</div>';
       try {
         const r = await fetch('/api/deep-analysis/google-pivot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dimensions: _pivotGroupBy,
-            filters: _pivotFilters,
-            metrics,
-            sort: { metric: sortMetric, dir: sortDir },
-            days, limit
-          })
+          body: JSON.stringify(body)
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Failed');
-        renderGoogleAdsPivot(d, metrics, target);
+        if (columnDim) {
+          renderGoogleAdsPivotCrosstab(d, metrics, columnDim, columnMetric, target, limit);
+        } else {
+          renderGoogleAdsPivot(d, metrics, target);
+        }
       } catch (err) {
         target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Error: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
       }
+    }
+
+    // Cross-tab renderer: spreads `columnDim` values as columns, cells = chosen metric
+    function renderGoogleAdsPivotCrosstab(d, metrics, columnDim, columnMetric, target, limit) {
+      if (!d.rows || d.rows.length === 0) {
+        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data for this combination.</div>';
+        return;
+      }
+      const rowDims = d.dimensions.filter(x => x !== columnDim);
+      const dimLabel = (dim, val) => {
+        const meta = PIVOT_DIM_LABELS[dim];
+        if (!meta) return val;
+        const found = (meta.values || []).find(([v]) => v === val);
+        return found ? found[1] : val;
+      };
+      const metricFmt = {
+        impressions: v => (v||0).toLocaleString(),
+        clicks: v => (v||0).toLocaleString(),
+        cost: v => '$' + (v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+        conversions: v => (v||0).toFixed(2),
+        value: v => '$' + (v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+        roas: v => (v||0).toFixed(2)+'x',
+        ctr: v => (v||0).toFixed(2)+'%',
+        cpc: v => '$' + (v||0).toFixed(2),
+        conv_rate: v => (v||0).toFixed(2)+'%',
+        cpa: v => '$' + (v||0).toFixed(2)
+      };
+
+      // Group rows by the row dimensions; collect all column values seen
+      const grouped = new Map();
+      const colValuesSet = new Set();
+      for (const row of d.rows) {
+        const colVal = String(row[columnDim] || 'UNKNOWN');
+        colValuesSet.add(colVal);
+        const key = rowDims.map(rd => row[rd]).join('||');
+        if (!grouped.has(key)) {
+          const rowDimVals = {};
+          rowDims.forEach(rd => { rowDimVals[rd] = row[rd]; });
+          grouped.set(key, { dims: rowDimVals, cells: {}, totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 } });
+        }
+        const g = grouped.get(key);
+        g.cells[colVal] = (g.cells[colVal] || 0) + (row[columnMetric] || 0);
+        g.totals.impressions += row.impressions || 0;
+        g.totals.clicks += row.clicks || 0;
+        g.totals.cost += row.cost || 0;
+        g.totals.conversions += row.conversions || 0;
+        g.totals.value += row.value || 0;
+      }
+      const colValues = [...colValuesSet].sort();
+
+      // Sort grouped rows by sum of row's column-cells (desc)
+      const allRows = [...grouped.values()].map(g => ({
+        ...g,
+        rowSum: colValues.reduce((s, c) => s + (g.cells[c] || 0), 0)
+      })).sort((a, b) => b.rowSum - a.rowSum).slice(0, limit);
+
+      const headers = `<tr>
+        ${rowDims.map(rd => `<th>${PIVOT_DIM_LABELS[rd]?.label || rd}</th>`).join('')}
+        ${colValues.map(c => `<th style="text-align:right;background:#eef2ff;">${_esc(dimLabel(columnDim, c))}</th>`).join('')}
+        <th style="text-align:right;background:#dbeafe;">Total</th>
+        ${metrics.filter(m => m !== columnMetric).map(m => `<th style="text-align:right;color:#64748b;">${m}</th>`).join('')}
+      </tr>`;
+
+      const bodyRows = allRows.map(g => {
+        const cellTotal = colValues.reduce((s, c) => s + (g.cells[c] || 0), 0);
+        return `<tr>
+          ${rowDims.map(rd => `<td><strong>${_esc(g.dims[rd] || '—')}</strong></td>`).join('')}
+          ${colValues.map(c => `<td style="text-align:right;${(g.cells[c] || 0) > 0 ? 'color:#1e293b;font-weight:600;' : 'color:#cbd5e1;'}">${(g.cells[c] || 0) ? metricFmt[columnMetric](g.cells[c]) : '—'}</td>`).join('')}
+          <td style="text-align:right;font-weight:700;">${metricFmt[columnMetric](cellTotal)}</td>
+          ${metrics.filter(m => m !== columnMetric).map(m => `<td style="text-align:right;color:#475569;">${metricFmt[m](g.totals[m === 'cost' ? 'cost' : (m === 'value' ? 'value' : m)] || 0)}</td>`).join('')}
+        </tr>`;
+      }).join('');
+
+      // Column totals
+      const colTotals = colValues.map(c => allRows.reduce((s, g) => s + (g.cells[c] || 0), 0));
+      const grandTotal = colTotals.reduce((s, t) => s + t, 0);
+      const totalRow = `<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
+        <td colspan="${rowDims.length}">Total (${allRows.length} groups)</td>
+        ${colTotals.map(t => `<td style="text-align:right;">${metricFmt[columnMetric](t)}</td>`).join('')}
+        <td style="text-align:right;">${metricFmt[columnMetric](grandTotal)}</td>
+        ${metrics.filter(m => m !== columnMetric).map(() => '<td></td>').join('')}
+      </tr>`;
+
+      target.innerHTML = `<div style="font-size:12px;color:#64748b;margin-bottom:8px;">
+        ${_esc(d.range || '')} · cells = <strong>${columnMetric}</strong> by <strong>${PIVOT_DIM_LABELS[columnDim]?.label || columnDim}</strong> · ${colValues.length} columns · ${allRows.length} of ${grouped.size} rows
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>${headers}</thead>
+        <tbody>${bodyRows}${totalRow}</tbody>
+      </table>`;
     }
 
     function renderGoogleAdsPivot(d, metrics, target) {

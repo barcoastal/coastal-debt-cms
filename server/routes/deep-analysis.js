@@ -645,7 +645,7 @@ async function pullDemographic(req, res, viewName, idField, valueField, label) {
         metrics.impressions, metrics.clicks, metrics.cost_micros,
         metrics.conversions, metrics.average_cpc, metrics.ctr
       FROM ${viewName}
-      WHERE segments.date DURING ${range}
+      WHERE segments.date ${dateClause}
     `;
 
     const data = await runGadsQuery(query, accessToken, developerToken, config.customer_id, config.login_customer_id);
@@ -778,7 +778,20 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
     if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
 
     const days = parseInt(req.body?.days, 10);
-    const range = ({ 7: 'LAST_7_DAYS', 14: 'LAST_14_DAYS', 30: 'LAST_30_DAYS', 90: 'LAST_90_DAYS' })[days] || 'LAST_30_DAYS';
+    const fromDate = (req.body?.from_date || '').trim();
+    const toDate = (req.body?.to_date || '').trim();
+    // dateClause goes into the WHERE; rangeLabel is the human-friendly form stored alongside cached rows
+    let dateClause, rangeLabel;
+    if (fromDate && toDate && /^\d{4}-\d{2}-\d{2}$/.test(fromDate) && /^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      dateClause = `BETWEEN '${fromDate}' AND '${toDate}'`;
+      rangeLabel = `${fromDate} → ${toDate}`;
+    } else {
+      const dur = ({ 7: 'LAST_7_DAYS', 14: 'LAST_14_DAYS', 30: 'LAST_30_DAYS', 90: 'LAST_90_DAYS', 180: 'LAST_180_DAYS', 365: 'LAST_365_DAYS' })[days] || 'LAST_30_DAYS';
+      dateClause = `DURING ${dur}`;
+      rangeLabel = dur;
+    }
+    // Backwards-compat: many internal queries still reference `range` and write it as range_label
+    const range = rangeLabel;
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'developer-token': developerToken,
@@ -821,7 +834,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
             ${valueField},
             metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
           FROM ${viewName}
-          WHERE segments.date DURING ${range}
+          WHERE segments.date ${dateClause}
         `;
         const data = await runQuery(gaql);
         const rows = [];
@@ -860,7 +873,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
             ${gadsField},
             metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
           FROM ad_group
-          WHERE segments.date DURING ${range}
+          WHERE segments.date ${dateClause}
             AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
         `;
         const data = await runQuery(gaql);
@@ -908,7 +921,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
           search_term_view.search_term,
           metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
         FROM search_term_view
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
       `;
       const data = await runQuery(gaql);
       const rows = [];
@@ -945,7 +958,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
           metrics.all_conversions, metrics.all_conversions_value,
           metrics.cost_micros, metrics.clicks, metrics.impressions
         FROM ad_group
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
           AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
       `;
       const data = await runQuery(gaql);
@@ -993,7 +1006,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
           metrics.impressions, metrics.clicks, metrics.cost_micros,
           metrics.conversions, metrics.conversions_value
         FROM ad_group
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
           AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
       `;
       const data = await runQuery(gaql);
@@ -1043,7 +1056,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
           metrics.impressions, metrics.clicks, metrics.cost_micros,
           metrics.conversions, metrics.conversions_value
         FROM keyword_view
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
           AND ad_group_criterion.status = 'ENABLED'
           AND ad_group_criterion.negative = FALSE
           AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
@@ -1102,7 +1115,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
           metrics.impressions, metrics.clicks, metrics.cost_micros,
           metrics.conversions, metrics.conversions_value
         FROM ad_group_ad
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
           AND ad_group_ad.status = 'ENABLED'
           AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
       `;
@@ -1807,7 +1820,7 @@ router.post('/google-pivot-legacy-DEAD', authenticateToken, async (req, res) => 
                               'ad_group_criterion.parental_status.type'},
           metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
         FROM ${view}
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
       `;
       debug.queries.push({ dim, view, gaql: gaql.replace(/\s+/g, ' ').trim() });
       try {
@@ -1854,7 +1867,7 @@ router.post('/google-pivot-legacy-DEAD', authenticateToken, async (req, res) => 
       const gaql = `
         SELECT ${selectFields.join(', ')}
         FROM ad_group
-        WHERE segments.date DURING ${range}
+        WHERE segments.date ${dateClause}
           AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
       `;
       debug.queries.push({ dim: 'base', view: 'ad_group', gaql: gaql.replace(/\s+/g, ' ').trim() });
@@ -2068,7 +2081,7 @@ router.get('/demographics/geo', authenticateToken, async (req, res) => {
         segments.geo_target_city,
         metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
       FROM user_location_view
-      WHERE segments.date DURING ${range}
+      WHERE segments.date ${dateClause}
     `;
     const data = await runGadsQuery(query, accessToken, developerToken, config.customer_id, config.login_customer_id);
     const byRegion = new Map();
