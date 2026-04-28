@@ -344,7 +344,7 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
       if (debug) return res.status(500).json({ error: e.message, reqBody: e.reqBody, respBody: e.respBody });
     }
 
-    const campaigns = (campaignsRes?.data?.campaigns || []).map(c => {
+    const campaigns = (campaignsRes?.data || []).map(c => {
       const id = c.id;
       const r30 = report30[id] || { spend: 0, clicks: 0, impressions: 0 };
       const r7 = report7[id] || { spend: 0, clicks: 0, impressions: 0 };
@@ -366,7 +366,7 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     });
 
     campaigns.sort((a, b) => (b.spend_30d || 0) - (a.spend_30d || 0));
-    const out = { campaigns, reportError, raw_campaigns_count: campaignsRes?.data?.campaigns?.length || 0 };
+    const out = { campaigns, reportError, raw_campaigns_count: campaignsRes?.data?.length || 0 };
     if (debug) out.raw_campaigns_response = campaignsRes;
     res.json(out);
   } catch (err) {
