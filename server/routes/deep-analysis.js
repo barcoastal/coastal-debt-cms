@@ -1448,7 +1448,7 @@ router.get('/gads-test', authenticateToken, async (req, res) => {
 // Supports any combo of: campaign, ad_group, age, gender, income, parental,
 // device, hour, dow, geo, search_term. Multi-segment combos use distribution
 // weighting (Google Ads doesn't expose true cross-tabs for Search campaigns).
-const SEG_TYPES = new Set(['age', 'gender', 'income', 'parental', 'device', 'hour', 'dow', 'geo', 'search_term']);
+const SEG_TYPES = new Set(['age', 'gender', 'income', 'parental', 'device', 'hour', 'dow', 'geo', 'search_term', 'conversion_action', 'date']);
 
 router.post('/google-pivot', authenticateToken, async (req, res) => {
   try {
@@ -1488,84 +1488,118 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       });
     }
 
-    // segData[segType] = Map<ad_group_id, [{value, impressions, clicks, cost_micros, conversions}, ...]>
-    const segData = {};
-    for (const segType of segDims) {
+    // Segment dim categories:
+    //   DIST = distribution segments (demographics) — weight base metrics
+    //   SPEC = specific segments — own actual metrics per row
+    const DIST_SEGS = new Set(['age', 'gender', 'income', 'parental']);
+    const SPEC_SEGS = new Set(['conversion_action', 'date', 'search_term', 'device', 'hour', 'dow', 'geo']);
+
+    const distDims = segDims.filter(d => DIST_SEGS.has(d));
+    const specDims = segDims.filter(d => SPEC_SEGS.has(d));
+
+    // For now, only one specific seg at a time (Google doesn't expose cross-tabs)
+    if (specDims.length > 1) {
+      return res.status(400).json({ error: `Pick only ONE of these per pivot: ${[...SPEC_SEGS].join(', ')}. You picked ${specDims.length}: ${specDims.join(', ')}.` });
+    }
+
+    // Pull distribution segment data: dist[segType] = Map<adGroupId, [{value, share, ...}]>
+    const distData = {};
+    for (const d of distDims) {
       const rows = db.prepare(`
-        SELECT ad_group_id, segment_value, impressions, clicks, cost_micros, conversions
+        SELECT ad_group_id, segment_value, impressions
         FROM gads_segments WHERE segment_type = ?
-      `).all(segType);
+      `).all(d);
       const byAg = new Map();
       for (const r of rows) {
         if (!byAg.has(r.ad_group_id)) byAg.set(r.ad_group_id, []);
-        byAg.get(r.ad_group_id).push({
-          value: r.segment_value,
-          impressions: r.impressions || 0,
-          clicks: r.clicks || 0,
-          cost_micros: r.cost_micros || 0,
-          conversions: r.conversions || 0
-        });
+        byAg.get(r.ad_group_id).push({ value: r.segment_value, impressions: r.impressions || 0 });
       }
-      segData[segType] = byAg;
+      distData[d] = byAg;
     }
 
-    // For each ad_group meta row, expand to cross-product of requested segments
-    const expanded = [];
-    for (const m of meta) {
-      const baseDims = { campaign: m.campaign_name, ad_group: m.ad_group_name };
-      const baseMetrics = {
-        impressions: m.impressions || 0,
-        clicks: m.clicks || 0,
-        cost_micros: m.cost_micros || 0,
-        conversions: m.conversions || 0
-      };
+    // Build base rows: either from a specific segment (own metrics) or from
+    // ad_group_meta totals
+    const baseRows = [];
+    if (specDims.length === 1) {
+      const spec = specDims[0];
+      const rows = db.prepare(`
+        SELECT ad_group_id, ad_group_name, campaign_id, campaign_name,
+          segment_value, impressions, clicks, cost_micros, conversions, conversions_value
+        FROM gads_segments WHERE segment_type = ?
+      `).all(spec);
+      for (const r of rows) {
+        baseRows.push({
+          campaign: r.campaign_name,
+          ad_group: r.ad_group_name,
+          [spec]: r.segment_value,
+          _agid: r.ad_group_id,
+          _m: {
+            impressions: r.impressions || 0,
+            clicks: r.clicks || 0,
+            cost_micros: r.cost_micros || 0,
+            conversions: r.conversions || 0,
+            conversions_value: r.conversions_value || 0
+          }
+        });
+      }
+    } else {
+      for (const m of meta) {
+        baseRows.push({
+          campaign: m.campaign_name,
+          ad_group: m.ad_group_name,
+          _agid: m.ad_group_id,
+          _m: {
+            impressions: m.impressions || 0,
+            clicks: m.clicks || 0,
+            cost_micros: m.cost_micros || 0,
+            conversions: m.conversions || 0,
+            conversions_value: m.conversions_value || 0
+          }
+        });
+      }
+    }
 
-      // Compute distribution per requested seg dim for this ad_group
-      const dists = segDims.map(segType => {
-        const list = (segData[segType] && segData[segType].get(m.ad_group_id)) || [];
+    // Expand by demographic distributions
+    const expanded = [];
+    for (const base of baseRows) {
+      const dists = distDims.map(d => {
+        const list = (distData[d] && distData[d].get(base._agid)) || [];
         if (!list.length) return null;
         const total = list.reduce((s, x) => s + x.impressions, 0);
         return {
-          segType,
-          buckets: list.map(x => ({
-            value: x.value,
-            share: total > 0 ? x.impressions / total : 0,
-            absMetrics: { impressions: x.impressions, clicks: x.clicks, cost_micros: x.cost_micros, conversions: x.conversions }
-          }))
+          segType: d,
+          buckets: list.map(x => ({ value: x.value, share: total > 0 ? x.impressions / total : 0 }))
         };
       }).filter(Boolean);
 
-      // No seg dims → emit one row with base metrics
       if (dists.length === 0) {
-        if (segDims.length > 0) continue; // requested seg but no data for this ad_group
-        expanded.push({ ...baseDims, _metrics: baseMetrics });
+        if (distDims.length > 0) continue; // wanted demo, no data for this ad_group
+        expanded.push({ ...base, _metrics: base._m });
         continue;
       }
 
-      // Cartesian product over seg dims, weight base metrics by combined share
-      let stack = [{ row: { ...baseDims }, weight: 1, abs: null }];
+      let stack = [{ row: { ...base }, weight: 1 }];
       for (const dist of dists) {
         const next = [];
         for (const s of stack) {
           for (const b of dist.buckets) {
-            next.push({
-              row: { ...s.row, [dist.segType]: b.value },
-              weight: s.weight * b.share,
-              abs: dists.length === 1 ? b.absMetrics : null
-            });
+            next.push({ row: { ...s.row, [dist.segType]: b.value }, weight: s.weight * b.share });
           }
         }
         stack = next;
       }
 
       for (const s of stack) {
-        const m_out = s.abs ? s.abs : {
-          impressions: baseMetrics.impressions * s.weight,
-          clicks: baseMetrics.clicks * s.weight,
-          cost_micros: baseMetrics.cost_micros * s.weight,
-          conversions: baseMetrics.conversions * s.weight
-        };
-        expanded.push({ ...s.row, _metrics: m_out });
+        expanded.push({
+          ...s.row,
+          _metrics: {
+            impressions: base._m.impressions * s.weight,
+            clicks: base._m.clicks * s.weight,
+            cost_micros: base._m.cost_micros * s.weight,
+            conversions: base._m.conversions * s.weight,
+            conversions_value: (base._m.conversions_value || 0) * s.weight
+          }
+        });
       }
     }
 
@@ -1585,13 +1619,14 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       for (const d of dimensions) dimVals[d] = r[d] != null ? String(r[d]) : 'UNKNOWN';
       const key = dimensions.map(d => dimVals[d]).join('||');
       if (!groups.has(key)) {
-        groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0 });
+        groups.set(key, { ...dimVals, impressions: 0, clicks: 0, cost_micros: 0, conversions: 0, conversions_value: 0 });
       }
       const g = groups.get(key);
       g.impressions += r._metrics.impressions;
       g.clicks += r._metrics.clicks;
       g.cost_micros += r._metrics.cost_micros;
       g.conversions += r._metrics.conversions;
+      g.conversions_value += r._metrics.conversions_value || 0;
     }
 
     const rows = [...groups.values()].map(g => {
@@ -1604,10 +1639,12 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
         clicks: Math.round(g.clicks),
         cost: +cost.toFixed(2),
         conversions: +g.conversions.toFixed(2),
+        value: +g.conversions_value.toFixed(2),
         ctr: g.impressions ? +(g.clicks / g.impressions * 100).toFixed(2) : 0,
         cpc: g.clicks ? +(cost / g.clicks).toFixed(2) : 0,
         conv_rate: g.clicks ? +(g.conversions / g.clicks * 100).toFixed(2) : 0,
-        cpa: g.conversions ? +(cost / g.conversions).toFixed(2) : 0
+        cpa: g.conversions ? +(cost / g.conversions).toFixed(2) : 0,
+        roas: cost > 0 ? +(g.conversions_value / cost).toFixed(2) : 0
       };
     });
 
@@ -1620,12 +1657,14 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       impressions: acc.impressions + r.impressions,
       clicks: acc.clicks + r.clicks,
       cost: +(acc.cost + r.cost).toFixed(2),
-      conversions: +(acc.conversions + r.conversions).toFixed(2)
-    }), { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
+      conversions: +(acc.conversions + r.conversions).toFixed(2),
+      value: +(acc.value + (r.value || 0)).toFixed(2)
+    }), { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 });
     totals.ctr = totals.impressions ? +(totals.clicks / totals.impressions * 100).toFixed(2) : 0;
     totals.cpc = totals.clicks ? +(totals.cost / totals.clicks).toFixed(2) : 0;
     totals.conv_rate = totals.clicks ? +(totals.conversions / totals.clicks * 100).toFixed(2) : 0;
     totals.cpa = totals.conversions ? +(totals.cost / totals.conversions).toFixed(2) : 0;
+    totals.roas = totals.cost > 0 ? +(totals.value / totals.cost).toFixed(2) : 0;
 
     return res.json({
       dimensions, filters, metrics,

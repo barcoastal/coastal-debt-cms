@@ -364,16 +364,22 @@
                 <span class="filter-chip" onclick="togglePivotFilter('device','OTHER',this)">Other</span>
               </div>
             </div>
+            <div class="filter-dim" id="filterEventWrap">
+              <div class="filter-dim-title">Conversion event</div>
+              <div data-dim="conversion_action" id="filterEventChips">
+                <span style="font-size:11px;color:#94a3b8;">Run "Sync Deep Data" first to load events.</span>
+              </div>
+            </div>
             <div class="filter-dim">
               <div class="filter-dim-title">Day of week</div>
-              <div data-dim="day_of_week">
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','MONDAY',this)">Mon</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','TUESDAY',this)">Tue</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','WEDNESDAY',this)">Wed</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','THURSDAY',this)">Thu</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','FRIDAY',this)">Fri</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','SATURDAY',this)">Sat</span>
-                <span class="filter-chip" onclick="togglePivotFilter('day_of_week','SUNDAY',this)">Sun</span>
+              <div data-dim="dow">
+                <span class="filter-chip" onclick="togglePivotFilter('dow','MONDAY',this)">Mon</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','TUESDAY',this)">Tue</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','WEDNESDAY',this)">Wed</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','THURSDAY',this)">Thu</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','FRIDAY',this)">Fri</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','SATURDAY',this)">Sat</span>
+                <span class="filter-chip" onclick="togglePivotFilter('dow','SUNDAY',this)">Sun</span>
               </div>
             </div>
           </div>
@@ -386,14 +392,17 @@
             <div id="pivotGroupBy" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
               <span class="group-chip selected" onclick="togglePivotGroupBy('campaign',this)">Campaign</span>
               <span class="group-chip" onclick="togglePivotGroupBy('ad_group',this)">Ad group</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('conversion_action',this)" title="Per Google Ads conversion event (e.g. Opportunity, Lead)">Event</span>
               <span class="group-chip" onclick="togglePivotGroupBy('age',this)">Age</span>
               <span class="group-chip" onclick="togglePivotGroupBy('gender',this)">Gender</span>
               <span class="group-chip" onclick="togglePivotGroupBy('income',this)">Income</span>
               <span class="group-chip" onclick="togglePivotGroupBy('parental',this)">Parental</span>
               <span class="group-chip" onclick="togglePivotGroupBy('device',this)">Device</span>
-              <span class="group-chip" onclick="togglePivotGroupBy('day_of_week',this)">Weekday</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('dow',this)">Weekday</span>
               <span class="group-chip" onclick="togglePivotGroupBy('hour',this)">Hour</span>
-              <span class="group-chip" onclick="togglePivotGroupBy('region',this)">Region</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('geo',this)">Region/State</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('date',this)">Date</span>
+              <span class="group-chip" onclick="togglePivotGroupBy('search_term',this)">Search term</span>
             </div>
           </div>
           <div>
@@ -403,6 +412,8 @@
               <label><input type="checkbox" class="pivotMetric" value="clicks" checked> Clicks</label>
               <label><input type="checkbox" class="pivotMetric" value="cost" checked> Cost</label>
               <label><input type="checkbox" class="pivotMetric" value="conversions" checked> Conversions</label>
+              <label><input type="checkbox" class="pivotMetric" value="value" checked> $ Value</label>
+              <label><input type="checkbox" class="pivotMetric" value="roas"> ROAS</label>
               <label><input type="checkbox" class="pivotMetric" value="ctr"> CTR</label>
               <label><input type="checkbox" class="pivotMetric" value="cpc"> CPC</label>
               <label><input type="checkbox" class="pivotMetric" value="conv_rate" checked> Conv rate</label>
@@ -710,6 +721,22 @@
         el.innerHTML = `Last synced: <strong>${ts}</strong> · Total rows: <strong>${d.total}</strong> · ${breakdown}`;
         el.style.color = '#475569';
       } catch (e) {}
+      // Populate event filter chips
+      try {
+        const r = await fetch('/api/deep-analysis/google-pivot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dimensions: ['conversion_action'], filters: {}, sort: { metric: 'conversions', dir: 'desc' }, limit: 50 })
+        });
+        const d2 = await r.json();
+        const chips = (d2.rows || []).map(r => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${(r.conversion_action || '').replace(/'/g,"&#39;")}',this)">${(r.conversion_action || '').replace(/</g, '&lt;')}</span>`).join('');
+        const el2 = document.getElementById('filterEventChips');
+        if (el2 && chips) el2.innerHTML = chips;
+        // also update PIVOT_DIM_LABELS so renderGoogleAdsPivot can show friendly names
+        if (PIVOT_DIM_LABELS.conversion_action) {
+          PIVOT_DIM_LABELS.conversion_action.values = (d2.rows || []).map(r => [r.conversion_action, r.conversion_action]);
+        }
+      } catch (e) {}
     }
 
     // Belt and suspenders: bind click handler explicitly in case inline onclick fails
@@ -766,13 +793,14 @@
       income:      { label: 'Household income', values: [['INCOME_RANGE_0_50','Lower 50%'],['INCOME_RANGE_50_60','41-50%'],['INCOME_RANGE_60_70','31-40%'],['INCOME_RANGE_70_80','21-30%'],['INCOME_RANGE_80_90','11-20%'],['INCOME_RANGE_90_UP','Top 10%'],['INCOME_RANGE_UNDETERMINED','Undetermined']] },
       parental:    { label: 'Parental status', values: [['PARENT','Parent'],['NOT_A_PARENT','Not a parent'],['UNDETERMINED','Undetermined']] },
       device:      { label: 'Device',       values: [['MOBILE','Mobile'],['DESKTOP','Desktop'],['TABLET','Tablet'],['CONNECTED_TV','Connected TV'],['OTHER','Other']] },
-      day_of_week: { label: 'Day of week',  values: [['MONDAY','Mon'],['TUESDAY','Tue'],['WEDNESDAY','Wed'],['THURSDAY','Thu'],['FRIDAY','Fri'],['SATURDAY','Sat'],['SUNDAY','Sun']] },
-      hour:        { label: 'Hour of day',  values: Array.from({length:24}, (_,i)=>[String(i),i+':00']) }
+      dow:         { label: 'Day of week',  values: [['MONDAY','Mon'],['TUESDAY','Tue'],['WEDNESDAY','Wed'],['THURSDAY','Thu'],['FRIDAY','Fri'],['SATURDAY','Sat'],['SUNDAY','Sun']] },
+      hour:        { label: 'Hour of day',  values: Array.from({length:24}, (_,i)=>[String(i),i+':00']) },
+      conversion_action: { label: 'Conversion event', values: [] }
     };
     const PIVOT_GROUP_OPTIONS = [
-      ['campaign','Campaign'], ['ad_group','Ad group'],
+      ['campaign','Campaign'], ['ad_group','Ad group'], ['conversion_action','Event'],
       ['age','Age'], ['gender','Gender'], ['income','Income'], ['parental','Parental'],
-      ['device','Device'], ['day_of_week','Weekday'], ['hour','Hour'], ['region','Region']
+      ['device','Device'], ['dow','Weekday'], ['hour','Hour'], ['geo','Region/State'], ['date','Date'], ['search_term','Search term']
     ];
 
     let _pivotFilters = {}; // { age: ['AGE_RANGE_45_54'], gender: ['FEMALE'], ... }
