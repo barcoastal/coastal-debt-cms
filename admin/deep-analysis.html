@@ -797,26 +797,37 @@
       const columnDim = document.getElementById('pivotColumnDim').value;
       const columnMetric = document.getElementById('pivotColumnMetric').value || 'conversions';
 
-      const dimensionsForRequest = columnDim
-        ? [..._pivotGroupBy.filter(d => d !== columnDim), columnDim]
-        : [..._pivotGroupBy];
-
-      // Pivot now reads from cache — no date params needed
-      const body = {
-        dimensions: dimensionsForRequest,
-        filters: _pivotFilters,
-        metrics,
-        sort: { metric: sortMetric, dir: sortDir },
-        limit: columnDim ? limit * 50 : limit
-      };
-
       const target = document.getElementById('googlePivotResult');
-      target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Pulling from Google Ads…</div>';
+      target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Loading…</div>';
+
       try {
+        // Special path: when columns = Event AND cells = Conversions, render
+        // each event as an inline column alongside the regular metrics.
+        if (columnDim === 'conversion_action' && (columnMetric === 'conversions' || columnMetric === 'value')) {
+          const baseBody = { dimensions: [..._pivotGroupBy], filters: _pivotFilters, metrics, sort: { metric: sortMetric, dir: sortDir }, limit };
+          const eventBody = { dimensions: [..._pivotGroupBy, 'conversion_action'], filters: _pivotFilters, metrics: ['conversions', 'value'], sort: { metric: sortMetric, dir: sortDir }, limit: limit * 50 };
+          const [baseR, eventR] = await Promise.all([
+            fetch('/api/deep-analysis/google-pivot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(baseBody) }),
+            fetch('/api/deep-analysis/google-pivot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) })
+          ]);
+          const [baseD, eventD] = await Promise.all([baseR.json(), eventR.json()]);
+          if (!baseR.ok) throw new Error(baseD.error || 'Base pivot failed');
+          if (!eventR.ok) throw new Error(eventD.error || 'Event pivot failed');
+          renderEventInlinePivot(baseD, eventD, metrics, _pivotGroupBy, columnMetric, target);
+          return;
+        }
+
+        // Normal cross-tab path (e.g. spreading device, weekday, age)
+        const dimensionsForRequest = columnDim
+          ? [..._pivotGroupBy.filter(d => d !== columnDim), columnDim]
+          : [..._pivotGroupBy];
+        const body = {
+          dimensions: dimensionsForRequest, filters: _pivotFilters, metrics,
+          sort: { metric: sortMetric, dir: sortDir },
+          limit: columnDim ? limit * 50 : limit
+        };
         const r = await fetch('/api/deep-analysis/google-pivot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Failed');
@@ -828,6 +839,95 @@
       } catch (err) {
         target.innerHTML = `<div style="padding:30px;text-align:center;color:#dc2626;">Error: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
       }
+    }
+
+    // Renders the pivot with each conversion event as its own column inline
+    // with the other metrics (Clicks, Cost, CPA, etc.). Replaces the single
+    // Conversions column with N event columns + a Total column.
+    function renderEventInlinePivot(baseData, eventData, metrics, rowDims, eventMetric, target) {
+      if (!baseData.rows || baseData.rows.length === 0) {
+        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data — sync first.</div>';
+        return;
+      }
+
+      // Build event lookup: rowKey → { eventName: count }
+      const eventsByKey = new Map();
+      const eventNames = new Set();
+      for (const r of (eventData.rows || [])) {
+        const key = rowDims.map(rd => r[rd]).join('||');
+        if (!eventsByKey.has(key)) eventsByKey.set(key, {});
+        eventsByKey.get(key)[r.conversion_action || 'UNKNOWN'] = r[eventMetric] || 0;
+        if (r.conversion_action) eventNames.add(r.conversion_action);
+      }
+      const eventList = [...eventNames].sort();
+
+      const fmt = {
+        impressions: v => (v||0).toLocaleString(),
+        clicks: v => (v||0).toLocaleString(),
+        cost: v => '$' + (v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+        conversions: v => (v||0).toFixed(2),
+        value: v => '$' + (v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),
+        roas: v => (v||0).toFixed(2)+'x',
+        ctr: v => (v||0).toFixed(2)+'%',
+        cpc: v => '$' + (v||0).toFixed(2),
+        conv_rate: v => (v||0).toFixed(2)+'%',
+        cpa: v => '$' + (v||0).toFixed(2)
+      };
+      const fmtEvent = v => eventMetric === 'value' ? fmt.value(v) : (v ? v.toFixed(0) : '—');
+
+      // Split metrics: non-conversion metrics go before events, conversion-related after
+      const beforeMetrics = metrics.filter(m => ['impressions','clicks','cost','ctr','cpc'].includes(m));
+      const afterMetrics  = metrics.filter(m => ['conversions','value','conv_rate','cpa','roas'].includes(m));
+
+      const dimLabel = (dim, val) => {
+        const meta = PIVOT_DIM_LABELS[dim];
+        if (!meta) return val;
+        const found = (meta.values || []).find(([v]) => v === val);
+        return found ? found[1] : val;
+      };
+
+      const headers = `<tr>
+        ${rowDims.map(rd => `<th style="text-align:left;">${PIVOT_DIM_LABELS[rd]?.label || rd}</th>`).join('')}
+        ${beforeMetrics.map(m => `<th style="text-align:right;">${m === 'cost' ? 'Cost' : m.charAt(0).toUpperCase()+m.slice(1)}</th>`).join('')}
+        ${eventList.map(e => `<th style="text-align:right;background:#eef2ff;color:#4338ca;">${_esc(e)}</th>`).join('')}
+        ${afterMetrics.map(m => `<th style="text-align:right;">${m === 'conv_rate' ? 'Conv %' : (m === 'cpa' ? 'CPA' : m.charAt(0).toUpperCase()+m.slice(1))}</th>`).join('')}
+      </tr>`;
+
+      const bodyRows = baseData.rows.map(r => {
+        const key = rowDims.map(rd => r[rd]).join('||');
+        const ev = eventsByKey.get(key) || {};
+        return `<tr>
+          ${rowDims.map(rd => `<td><strong>${_esc(dimLabel(rd, r[rd]))}</strong></td>`).join('')}
+          ${beforeMetrics.map(m => `<td style="text-align:right;">${fmt[m] ? fmt[m](r[m]) : (r[m] || 0)}</td>`).join('')}
+          ${eventList.map(e => `<td style="text-align:right;${ev[e] > 0 ? 'color:#4338ca;font-weight:600;' : 'color:#cbd5e1;'}">${ev[e] ? fmtEvent(ev[e]) : '—'}</td>`).join('')}
+          ${afterMetrics.map(m => `<td style="text-align:right;">${fmt[m] ? fmt[m](r[m]) : (r[m] || 0)}</td>`).join('')}
+        </tr>`;
+      }).join('');
+
+      // Totals row
+      const t = baseData.totals || {};
+      const eventTotals = {};
+      for (const e of eventList) {
+        eventTotals[e] = [...eventsByKey.values()].reduce((s, m) => s + (m[e] || 0), 0);
+      }
+      const totalRow = `<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
+        <td colspan="${rowDims.length}">Total (${baseData.rows.length} rows)</td>
+        ${beforeMetrics.map(m => `<td style="text-align:right;">${fmt[m] ? fmt[m](t[m]) : (t[m] || 0)}</td>`).join('')}
+        ${eventList.map(e => `<td style="text-align:right;color:#4338ca;">${fmtEvent(eventTotals[e])}</td>`).join('')}
+        ${afterMetrics.map(m => `<td style="text-align:right;">${fmt[m] ? fmt[m](t[m]) : (t[m] || 0)}</td>`).join('')}
+      </tr>`;
+
+      const diag = baseData.diagnostic || {};
+      const expandedDiag = `<details style="margin-bottom:8px;font-size:11px;color:#64748b;"><summary style="cursor:pointer;">Show source diagnostic</summary><div style="background:#f8fafc;padding:8px;border-radius:6px;margin-top:6px;">${_esc(diag.notes || '')} · cache: ${_esc(diag.source || '')}</div></details>`;
+
+      target.innerHTML = expandedDiag + `
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
+          ${_esc(baseData.range || '')} · <strong>${eventList.length}</strong> event columns inline (cells: ${eventMetric === 'value' ? '$ value' : 'count'})
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>${headers}</thead>
+          <tbody>${bodyRows}${totalRow}</tbody>
+        </table>`;
     }
 
     // Cross-tab renderer: spreads `columnDim` values as columns, cells = chosen metric
