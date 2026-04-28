@@ -290,20 +290,28 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     const isoDate = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0];
 
     const fetchReport = async (start, end) => {
+      const body = {
+        data: {
+          starts_at: start + 'T00:00:00Z',
+          ends_at: end + 'T23:59:59Z',
+          fields: ['spend', 'clicks', 'impressions'],
+          breakdowns: ['CAMPAIGN_ID'],
+          time_zone_id: 'GMT'
+        }
+      };
       const r = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${accountId}/reports`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: {
-            starts_at: start + 'T00:00:00Z',
-            ends_at: end + 'T23:59:59Z',
-            fields: ['spend', 'clicks', 'impressions'],
-            breakdowns: ['CAMPAIGN_ID']
-          }
-        })
+        body: JSON.stringify(body)
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error?.message || data.message || `Reddit reports ${r.status}`);
+      if (!r.ok) {
+        const detail = data.error?.message || data.message || JSON.stringify(data);
+        const err = new Error(`Reddit reports ${r.status}: ${detail}`);
+        err.reqBody = body;
+        err.respBody = data;
+        throw err;
+      }
       const rows = data?.data?.metrics || [];
       const byCampaign = {};
       for (const row of rows) {
@@ -320,13 +328,21 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
       return byCampaign;
     };
 
-    const [campaignsRes, report30, report7] = await Promise.all([
-      fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${accountId}/campaigns?page.size=200`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0' }
-      }).then(r => r.json()),
-      fetchReport(isoDate(30), today),
-      fetchReport(isoDate(7), today)
-    ]);
+    const debug = req.query.debug === '1';
+    const campaignsRes = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${accountId}/campaigns?page.size=200`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0' }
+    }).then(r => r.json());
+
+    let report30 = {}, report7 = {}, reportError = null;
+    try {
+      [report30, report7] = await Promise.all([
+        fetchReport(isoDate(30), today),
+        fetchReport(isoDate(7), today)
+      ]);
+    } catch (e) {
+      reportError = e.message;
+      if (debug) return res.status(500).json({ error: e.message, reqBody: e.reqBody, respBody: e.respBody });
+    }
 
     const campaigns = (campaignsRes?.data?.campaigns || []).map(c => {
       const id = c.id;
@@ -350,7 +366,7 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     });
 
     campaigns.sort((a, b) => (b.spend_30d || 0) - (a.spend_30d || 0));
-    res.json({ campaigns });
+    res.json({ campaigns, reportError, raw_campaigns_count: campaignsRes?.data?.campaigns?.length || 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
