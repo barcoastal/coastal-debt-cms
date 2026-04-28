@@ -1301,22 +1301,32 @@ router.get('/money-map', authenticateToken, (req, res) => {
       };
     });
 
-    // Filter where spend = 0 — they're noise
     const withSpend = enriched.filter(r => r.spend > 0.01);
+    const hasAnyValue = enriched.some(r => r.conv_value > 0);
 
-    // Winners: highest ROI %, but only if they have meaningful spend (>= $20)
-    const winners = withSpend
-      .filter(r => r.spend >= 20 && r.roi_pct != null)
-      .sort((a, b) => b.roi_pct - a.roi_pct)
-      .slice(0, 10);
+    // Winners: if Google Ads tracks conversion VALUES, rank by ROI. Otherwise
+    // (most accounts including Coastal's), rank by lowest CPA among campaigns
+    // with meaningful spend AND ≥3 conversions — that's the "best efficiency"
+    // signal that doesn't depend on value tracking.
+    let winners;
+    if (hasAnyValue) {
+      winners = withSpend
+        .filter(r => r.spend >= 20 && r.roi_pct != null)
+        .sort((a, b) => b.roi_pct - a.roi_pct)
+        .slice(0, 10);
+    } else {
+      winners = withSpend
+        .filter(r => r.spend >= 50 && r.conv >= 3 && r.cpa != null)
+        .sort((a, b) => a.cpa - b.cpa)
+        .slice(0, 10);
+    }
 
-    // Wasters: high spend with zero or near-zero conv
+    // Wasters: high spend with zero or near-zero conv (always meaningful)
     const wasters = withSpend
       .filter(r => r.conv < 1)
       .sort((a, b) => b.spend - a.spend)
       .slice(0, 10);
 
-    // No-conv-but-spending watch list (subset of wasters but nicer UX)
     const noConv = withSpend.filter(r => r.conv === 0).sort((a, b) => b.spend - a.spend).slice(0, 10);
 
     // Conversion-action mix
@@ -1358,6 +1368,7 @@ router.get('/money-map', authenticateToken, (req, res) => {
       level: lvl,
       range: rows[0]?.range_label || 'cached',
       last_refreshed: rows[0]?.refreshed_at,
+      has_value: hasAnyValue,
       winners, wasters, no_conv: noConv, conv_mix: convMix,
       totals,
       total_groups: enriched.length

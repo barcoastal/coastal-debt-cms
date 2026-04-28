@@ -694,26 +694,57 @@
           ${hint ? `<div style="font-size:10px;color:#94a3b8;">${hint}</div>` : ''}
         </div>`;
         const fmt$ = v => '$' + (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('moneyTotals').innerHTML = [
-          tile('Spend', fmt$(t.spend), 'Money out', '#dc2626'),
-          tile('Conv value', fmt$(t.conv_value), 'Money in (Google)', '#16a34a'),
-          tile('Net', fmt$(t.net), (t.net >= 0 ? 'profit' : 'loss'), t.net >= 0 ? '#16a34a' : '#dc2626'),
-          tile('ROI', t.roi_pct == null ? '—' : t.roi_pct + '%', `ROAS ${t.roas || 0}x`, '#7c3aed'),
-          tile('CPA', t.cpa == null ? '—' : fmt$(t.cpa), `${t.conv} conv · ${t.clicks} clicks`, '#3052FF')
-        ].join('');
+        // Adapt KPI tiles to whether Google Ads has conversion VALUES configured
+        if (d.has_value) {
+          document.getElementById('moneyTotals').innerHTML = [
+            tile('Spend', fmt$(t.spend), 'Money out', '#dc2626'),
+            tile('Conv value', fmt$(t.conv_value), 'Money in (Google)', '#16a34a'),
+            tile('Net', fmt$(t.net), (t.net >= 0 ? 'profit' : 'loss'), t.net >= 0 ? '#16a34a' : '#dc2626'),
+            tile('ROI', t.roi_pct == null ? '—' : t.roi_pct + '%', `ROAS ${t.roas || 0}x`, '#7c3aed'),
+            tile('CPA', t.cpa == null ? '—' : fmt$(t.cpa), `${t.conv} conv · ${t.clicks} clicks`, '#3052FF')
+          ].join('');
+        } else {
+          // No conversion values from Google → drop ROI/Net/Value, focus on volume + efficiency
+          document.getElementById('moneyTotals').innerHTML = [
+            tile('Total spend', fmt$(t.spend), 'last sync window', '#dc2626'),
+            tile('Conversions', (t.conv || 0).toFixed(0), 'count from Google Ads', '#16a34a'),
+            tile('CPA', t.cpa == null ? '—' : fmt$(t.cpa), 'avg cost per conversion', '#3052FF'),
+            tile('Clicks', (t.clicks || 0).toLocaleString(), 'paid clicks', '#7c3aed'),
+            tile('Conv rate', t.cpa == null ? '—' : (((t.conv / t.clicks) || 0) * 100).toFixed(2) + '%', 'click → conversion', '#0891b2')
+          ].join('');
+        }
 
-        const winnerRows = (d.winners || []).map(r => `<tr>
-          <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
-          <td style="text-align:right;">${fmt$(r.spend)}</td>
-          <td style="text-align:right;color:#16a34a;font-weight:600;">${fmt$(r.conv_value)}</td>
-          <td style="text-align:right;font-weight:700;color:#16a34a;">${r.roi_pct}%</td>
-          <td style="text-align:right;">${r.roas}x</td>
-          <td style="text-align:right;">${r.conv}</td>
-          <td style="text-align:right;">${r.cpa == null ? '—' : fmt$(r.cpa)}</td>
-        </tr>`).join('');
+        // Winners table — shape depends on whether values are tracked
+        const winnerHeader = d.has_value
+          ? `<tr><th style="text-align:left;">${d.level === 'ad_group' ? 'Ad group' : 'Campaign'}</th><th style="text-align:right;">Spend</th><th style="text-align:right;">Value</th><th style="text-align:right;">ROI</th><th style="text-align:right;">ROAS</th><th style="text-align:right;">Conv</th><th style="text-align:right;">CPA</th></tr>`
+          : `<tr><th style="text-align:left;">${d.level === 'ad_group' ? 'Ad group' : 'Campaign'}</th><th style="text-align:right;">Spend</th><th style="text-align:right;">Conv</th><th style="text-align:right;">CPA</th><th style="text-align:right;">CR</th><th style="text-align:right;">Clicks</th></tr>`;
+        const winnerRows = (d.winners || []).map(r => d.has_value
+          ? `<tr>
+              <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
+              <td style="text-align:right;">${fmt$(r.spend)}</td>
+              <td style="text-align:right;color:#16a34a;font-weight:600;">${fmt$(r.conv_value)}</td>
+              <td style="text-align:right;font-weight:700;color:#16a34a;">${r.roi_pct}%</td>
+              <td style="text-align:right;">${r.roas}x</td>
+              <td style="text-align:right;">${r.conv}</td>
+              <td style="text-align:right;">${r.cpa == null ? '—' : fmt$(r.cpa)}</td>
+            </tr>`
+          : `<tr>
+              <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
+              <td style="text-align:right;">${fmt$(r.spend)}</td>
+              <td style="text-align:right;font-weight:600;">${(r.conv || 0).toFixed(1)}</td>
+              <td style="text-align:right;font-weight:700;color:#16a34a;">${r.cpa == null ? '—' : fmt$(r.cpa)}</td>
+              <td style="text-align:right;">${(r.conv_rate || 0).toFixed(2)}%</td>
+              <td style="text-align:right;">${(r.clicks || 0).toLocaleString()}</td>
+            </tr>`).join('');
+        const earnersHeading = document.querySelector('#moneyWinners')?.parentElement?.querySelector('h4');
+        if (earnersHeading) {
+          earnersHeading.innerHTML = d.has_value
+            ? '🏆 Top earners (highest ROI, ≥$20 spend)'
+            : '🏆 Best efficiency (lowest CPA, ≥$50 spend, ≥3 conv)';
+        }
         document.getElementById('moneyWinners').innerHTML = winnerRows
-          ? `<table style="width:100%;font-size:12px;"><thead><tr><th style="text-align:left;">${d.level === 'ad_group' ? 'Ad group' : 'Campaign'}</th><th style="text-align:right;">Spend</th><th style="text-align:right;">Value</th><th style="text-align:right;">ROI</th><th style="text-align:right;">ROAS</th><th style="text-align:right;">Conv</th><th style="text-align:right;">CPA</th></tr></thead><tbody>${winnerRows}</tbody></table>`
-          : '<div style="padding:20px;text-align:center;color:#94a3b8;">No earners yet — sync conversion data and check ROI tracking.</div>';
+          ? `<table style="width:100%;font-size:12px;"><thead>${winnerHeader}</thead><tbody>${winnerRows}</tbody></table>`
+          : '<div style="padding:20px;text-align:center;color:#94a3b8;">Not enough campaigns with ≥3 conversions yet — let data accumulate.</div>';
 
         const wasterRows = (d.wasters || []).map(r => `<tr>
           <td><strong>${_esc(r.label || '')}</strong>${d.level === 'ad_group' ? `<div style="font-size:10px;color:#94a3b8;">${_esc(r.campaign_name || '')}</div>` : ''}</td>
