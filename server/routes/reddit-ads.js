@@ -446,6 +446,13 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
       return isNaN(d.getTime()) ? Date.now() : d.getTime();
     })();
 
+    // Reddit's bidding algo treats negative `value` as a bad outcome and bids AWAY
+    // from those users — so any negative payout (refund, no-sale disposition, cost
+    // markers from RedTrack) gets clamped to 0. The conversion still counts; it just
+    // doesn't poison optimization.
+    const rawPayout = conv.payout != null ? parseFloat(conv.payout) : null;
+    const cleanValue = rawPayout != null ? Math.max(0, rawPayout) : null;
+
     const eventPayload = {
       event_at: eventAtMs,
       action_source: 'WEBSITE',
@@ -456,7 +463,7 @@ async function sendRedditEvent(mapping, conv, visitor, lead) {
       click_id: visitor.rdt_cid,
       metadata: {
         currency: 'USD',
-        ...(conv.payout != null ? { value: parseFloat(conv.payout) } : {}),
+        ...(cleanValue != null ? { value: cleanValue } : {}),
         conversion_id: String(conv.id)
       },
       user
