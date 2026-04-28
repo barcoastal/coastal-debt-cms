@@ -784,9 +784,14 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
     // dateClause goes into the WHERE; rangeLabel is the human-friendly form stored alongside cached rows
     let dateClause, rangeLabel;
     if (allTime) {
-      const today = new Date().toISOString().slice(0, 10);
-      dateClause = `BETWEEN '2010-01-01' AND '${today}'`;
-      rangeLabel = 'All time';
+      // Google Ads stat retention is typically ~25 months; some views (search_term_view,
+      // landing_page_view) cap at 90 days. Going back 2 years is the practical max.
+      const today = new Date();
+      const todayIso = today.toISOString().slice(0, 10);
+      const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+      const fromIso = twoYearsAgo.toISOString().slice(0, 10);
+      dateClause = `BETWEEN '${fromIso}' AND '${todayIso}'`;
+      rangeLabel = `All time (${fromIso} → today)`;
     } else if (fromDate && toDate && /^\d{4}-\d{2}-\d{2}$/.test(fromDate) && /^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       dateClause = `BETWEEN '${fromDate}' AND '${toDate}'`;
       rangeLabel = `${fromDate} → ${toDate}`;
