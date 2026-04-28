@@ -375,6 +375,43 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
 });
 
 /**
+ * GET /ad-groups — list ad groups (with optimization goal / tracking event) for the
+ * active Reddit account. Used to verify which conversion event Reddit is bidding toward.
+ */
+router.get('/ad-groups', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
+    if (!config || !config.account_id) return res.status(400).json({ error: 'Reddit Ads not configured' });
+    const token = await getRedditAccessToken(config);
+    const r = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${config.account_id}/ad_groups?page.size=200`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0' }
+    });
+    const data = await r.json();
+    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || data.message || 'Reddit ad_groups error', raw: data });
+    if (req.query.debug === '1') return res.json(data);
+    const groups = (data?.data || []).map(g => ({
+      id: g.id,
+      campaign_id: g.campaign_id,
+      name: g.name,
+      configured_status: g.configured_status,
+      effective_status: g.effective_status,
+      optimization_goal: g.optimization_goal,
+      goal_type: g.goal_type,
+      goal_value: g.goal_value,
+      bid_strategy: g.bid_strategy,
+      bid_type: g.bid_type,
+      bid_value: g.bid_value,
+      tracking_pixel_id: g.tracking_pixel_id,
+      view_through_conversion_type: g.view_through_conversion_type,
+      ad_account_id: g.ad_account_id
+    }));
+    res.json({ ad_groups: groups, total: groups.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /fetch-all-costs — Manual trigger to fetch missing Reddit costs
  */
 router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
