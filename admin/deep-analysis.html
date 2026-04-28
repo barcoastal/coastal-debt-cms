@@ -342,13 +342,19 @@
               <label><input type="checkbox" class="pivotMetric" value="impressions"> Impressions</label>
               <label><input type="checkbox" class="pivotMetric" value="clicks" checked> Clicks</label>
               <label><input type="checkbox" class="pivotMetric" value="cost" checked> Cost</label>
-              <label><input type="checkbox" class="pivotMetric" value="conversions" checked> Conversions</label>
+              <label><input type="checkbox" class="pivotMetric" value="conversions"> Conversions (total)</label>
               <label><input type="checkbox" class="pivotMetric" value="value"> $ Value</label>
               <label><input type="checkbox" class="pivotMetric" value="roas"> ROAS</label>
               <label><input type="checkbox" class="pivotMetric" value="ctr"> CTR</label>
               <label><input type="checkbox" class="pivotMetric" value="cpc"> CPC</label>
               <label><input type="checkbox" class="pivotMetric" value="conv_rate" checked> Conv rate</label>
               <label><input type="checkbox" class="pivotMetric" value="cpa" checked> CPA</label>
+            </div>
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #cbd5e1;">
+              <label style="font-size:11px;color:#4338ca;font-weight:700;text-transform:uppercase;">Conversion events — pick which to show as columns</label>
+              <div id="pivotEventCheckboxes" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;font-size:12px;">
+                <span style="color:#94a3b8;font-style:italic;">Click "Sync Now" first to load events.</span>
+              </div>
             </div>
           </div>
           <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;align-self:stretch;">Run Pivot</button>
@@ -521,6 +527,7 @@
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">${items}</div>
         </div>`;
         loadDeepSyncStatus();
+        await loadConvActionFilterChips();
         runGoogleAdsPivot();
       } catch (err) {
         result.innerHTML = `<div style="padding:12px;background:#fee2e2;border-radius:8px;color:#991b1b;">❌ Sync failed: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
@@ -535,14 +542,30 @@
         const r = await fetch('/api/deep-analysis/google-pivot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dimensions: ['conversion_action'], filters: {}, sort: { metric: 'conversions', dir: 'desc' }, limit: 50 })
+          body: JSON.stringify({ dimensions: ['conversion_action'], filters: {}, sort: { metric: 'conversions', dir: 'desc' }, limit: 100 })
         });
         const d2 = await r.json();
-        const chips = (d2.rows || []).map(r => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${(r.conversion_action || '').replace(/'/g,"&#39;")}',this)">${(r.conversion_action || '').replace(/</g, '&lt;')}</span>`).join('');
+        const events = (d2.rows || []).map(r => r.conversion_action).filter(Boolean);
+
+        // Filter chips (existing)
+        const chipsHtml = events.map(e => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${e.replace(/'/g,"&#39;")}',this)">${e.replace(/</g, '&lt;')}</span>`).join('');
         const el2 = document.getElementById('filterEventChips');
-        if (el2 && chips) el2.innerHTML = chips;
+        if (el2 && chipsHtml) el2.innerHTML = chipsHtml;
         if (PIVOT_DIM_LABELS.conversion_action) {
-          PIVOT_DIM_LABELS.conversion_action.values = (d2.rows || []).map(r => [r.conversion_action, r.conversion_action]);
+          PIVOT_DIM_LABELS.conversion_action.values = events.map(e => [e, e]);
+        }
+
+        // Per-event metric checkboxes (the new thing Bar wants)
+        const evEl = document.getElementById('pivotEventCheckboxes');
+        if (evEl) {
+          if (events.length === 0) {
+            evEl.innerHTML = '<span style="color:#dc2626;font-style:italic;">No events in cache. Click "Sync Now" with All time selected.</span>';
+          } else {
+            evEl.innerHTML = events.map(e => {
+              const safe = e.replace(/"/g, '&quot;');
+              return `<label style="background:#eef2ff;color:#4338ca;padding:3px 8px;border-radius:6px;border:1px solid #c7d2fe;cursor:pointer;"><input type="checkbox" class="pivotEvent" value="${safe}" checked> ${e.replace(/</g, '&lt;')}</label>`;
+            }).join('');
+          }
         }
       } catch (e) {}
     }
@@ -791,6 +814,7 @@
     async function runGoogleAdsPivot() {
       if (_pivotGroupBy.length === 0) { alert('Pick at least one Group by dimension.'); return; }
       const metrics = [...document.querySelectorAll('.pivotMetric:checked')].map(c => c.value);
+      const selectedEvents = [...document.querySelectorAll('.pivotEvent:checked')].map(c => c.value);
       const sortMetric = document.getElementById('pivotSortMetric').value;
       const sortDir = document.getElementById('pivotSortDir').value;
       const limit = parseInt(document.getElementById('pivotLimit').value, 10) || 10;
@@ -801,8 +825,25 @@
       target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Loading…</div>';
 
       try {
-        // Special path: when columns = Event AND cells = Conversions, render
-        // each event as an inline column alongside the regular metrics.
+        // PRIMARY PATH: if user has any events checked, render each as its own column.
+        // (Replaces the old "Spread as columns = Event" toggle for the common case.)
+        if (selectedEvents.length > 0) {
+          const baseBody = { dimensions: [..._pivotGroupBy], filters: _pivotFilters, metrics, sort: { metric: sortMetric, dir: sortDir }, limit };
+          const eventBody = { dimensions: [..._pivotGroupBy, 'conversion_action'], filters: _pivotFilters, metrics: ['conversions', 'value'], sort: { metric: sortMetric, dir: sortDir }, limit: limit * 50 };
+          const [baseR, eventR] = await Promise.all([
+            fetch('/api/deep-analysis/google-pivot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(baseBody) }),
+            fetch('/api/deep-analysis/google-pivot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventBody) })
+          ]);
+          const [baseD, eventD] = await Promise.all([baseR.json(), eventR.json()]);
+          if (!baseR.ok) throw new Error(baseD.error || 'Base pivot failed');
+          if (!eventR.ok) throw new Error(eventD.error || 'Event pivot failed');
+          // Filter event data to only the events the user selected
+          eventD.rows = (eventD.rows || []).filter(r => selectedEvents.includes(r.conversion_action));
+          renderEventInlinePivot(baseD, eventD, metrics, _pivotGroupBy, 'conversions', target);
+          return;
+        }
+
+        // OLD PATH: when explicit Spread-as-columns is set
         if (columnDim === 'conversion_action' && (columnMetric === 'conversions' || columnMetric === 'value')) {
           const baseBody = { dimensions: [..._pivotGroupBy], filters: _pivotFilters, metrics, sort: { metric: sortMetric, dir: sortDir }, limit };
           const eventBody = { dimensions: [..._pivotGroupBy, 'conversion_action'], filters: _pivotFilters, metrics: ['conversions', 'value'], sort: { metric: sortMetric, dir: sortDir }, limit: limit * 50 };
