@@ -846,7 +846,7 @@
     // Conversions column with N event columns + a Total column.
     function renderEventInlinePivot(baseData, eventData, metrics, rowDims, eventMetric, target) {
       if (!baseData.rows || baseData.rows.length === 0) {
-        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data — sync first.</div>';
+        target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data — click "Sync Now" first.</div>';
         return;
       }
 
@@ -860,6 +860,20 @@
         if (r.conversion_action) eventNames.add(r.conversion_action);
       }
       const eventList = [...eventNames].sort();
+
+      // No events came back → tell user why
+      if (eventList.length === 0) {
+        const evDiag = eventData.diagnostic || {};
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;color:#9a3412;font-size:13px;margin-bottom:12px;';
+        banner.innerHTML = `<strong>⚠ No conversion events in the cache.</strong><br>${_esc(evDiag.notes || 'Re-run "Sync Now" with All time selected. If conversion_action: 0 still shows in the sync result, your Google Ads account does not surface conversion-action data via the API for these campaigns.')}`;
+        target.innerHTML = '';
+        target.appendChild(banner);
+        const tableMount = document.createElement('div');
+        target.appendChild(tableMount);
+        renderGoogleAdsPivot(baseData, metrics, tableMount);
+        return;
+      }
 
       const fmt = {
         impressions: v => (v||0).toLocaleString(),
