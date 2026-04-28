@@ -2055,6 +2055,71 @@ try { db.exec(`ALTER TABLE gads_segments ADD COLUMN conversions_value REAL DEFAU
 try { db.exec(`ALTER TABLE gads_segments ADD COLUMN all_conversions REAL DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE gads_segments ADD COLUMN all_conversions_value REAL DEFAULT 0`); } catch (e) {}
 
+// gads_keywords — flat per-keyword cache (each row = one ad_group_criterion).
+// Built from keyword_view during deep sync. Mirrors gads_ad_group_meta keywords
+// JSON but in row form for direct SQL queries.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_keywords (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    criterion_id TEXT,
+    ad_group_id TEXT,
+    ad_group_name TEXT,
+    campaign_id TEXT,
+    campaign_name TEXT,
+    keyword TEXT,
+    match_type TEXT,
+    quality_score INTEGER,
+    post_click_quality_score TEXT,
+    creative_quality_score TEXT,
+    search_predicted_ctr TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost_micros INTEGER DEFAULT 0,
+    conversions REAL DEFAULT 0,
+    conversions_value REAL DEFAULT 0,
+    range_label TEXT,
+    refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_gads_kw_camp ON gads_keywords(campaign_id);
+  CREATE INDEX IF NOT EXISTS idx_gads_kw_ag ON gads_keywords(ad_group_id);
+`);
+
+// gads_ads — per-ad creative + metrics
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_ads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad_id TEXT,
+    ad_group_id TEXT,
+    ad_group_name TEXT,
+    campaign_id TEXT,
+    campaign_name TEXT,
+    ad_type TEXT,
+    final_urls TEXT,
+    headlines TEXT,
+    descriptions TEXT,
+    impressions INTEGER DEFAULT 0,
+    clicks INTEGER DEFAULT 0,
+    cost_micros INTEGER DEFAULT 0,
+    conversions REAL DEFAULT 0,
+    conversions_value REAL DEFAULT 0,
+    range_label TEXT,
+    refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_gads_ads_camp ON gads_ads(campaign_id);
+  CREATE INDEX IF NOT EXISTS idx_gads_ads_ag ON gads_ads(ad_group_id);
+`);
+
+// gads_geo_targets — resource name → human name lookup (e.g. geoTargets/21135 → California)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gads_geo_targets (
+    resource_name TEXT PRIMARY KEY,
+    name TEXT,
+    canonical_name TEXT,
+    target_type TEXT,
+    country_code TEXT
+  );
+`);
+
 // Funnel tracking on visitors: pre-qualification step answers
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_at DATETIME`); } catch (e) {}
 try { db.exec(`ALTER TABLE visitors ADD COLUMN step1_debt_value TEXT`); } catch (e) {}

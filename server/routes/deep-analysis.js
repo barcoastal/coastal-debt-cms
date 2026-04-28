@@ -985,6 +985,220 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
       counts.conversion_action = 0;
     }
 
+    // Per-day metrics (date segment) — gives us trend data per ad group
+    try {
+      const gaql = `
+        SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+          segments.date,
+          metrics.impressions, metrics.clicks, metrics.cost_micros,
+          metrics.conversions, metrics.conversions_value
+        FROM ad_group
+        WHERE segments.date DURING ${range}
+          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+      `;
+      const data = await runQuery(gaql);
+      const insertDate = db.prepare(`
+        INSERT INTO gads_segments (
+          ad_group_id, ad_group_name, campaign_id, campaign_name,
+          segment_type, segment_value, impressions, clicks, cost_micros,
+          conversions, conversions_value, range_label, refreshed_at
+        ) VALUES (?, ?, ?, ?, 'date', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      const insertDateMany = db.transaction(rows => { for (const r of rows) insertDate.run(...r); });
+      const rows = [];
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          const m = row.metrics || {};
+          rows.push([
+            row.adGroup?.id, row.adGroup?.name,
+            row.campaign?.id, row.campaign?.name,
+            row.segments?.date || 'UNKNOWN',
+            parseInt(m.impressions || 0, 10),
+            parseInt(m.clicks || 0, 10),
+            parseInt(m.costMicros || 0, 10),
+            parseFloat(m.conversions || 0),
+            parseFloat(m.conversionsValue || 0),
+            range
+          ]);
+        }
+      }
+      insertDateMany(rows);
+      counts.date = rows.length;
+    } catch (err) {
+      errors.date = err.message;
+      counts.date = 0;
+    }
+
+    // Keywords (per ad_group_criterion with QS + metrics)
+    try {
+      const gaql = `
+        SELECT ad_group_criterion.criterion_id,
+          ad_group.id, ad_group.name, campaign.id, campaign.name,
+          ad_group_criterion.keyword.text,
+          ad_group_criterion.keyword.match_type,
+          ad_group_criterion.quality_info.quality_score,
+          ad_group_criterion.quality_info.post_click_quality_score,
+          ad_group_criterion.quality_info.creative_quality_score,
+          ad_group_criterion.quality_info.search_predicted_ctr,
+          metrics.impressions, metrics.clicks, metrics.cost_micros,
+          metrics.conversions, metrics.conversions_value
+        FROM keyword_view
+        WHERE segments.date DURING ${range}
+          AND ad_group_criterion.status = 'ENABLED'
+          AND ad_group_criterion.negative = FALSE
+          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+      `;
+      const data = await runQuery(gaql);
+      db.prepare('DELETE FROM gads_keywords').run();
+      const insertKw = db.prepare(`
+        INSERT INTO gads_keywords (
+          criterion_id, ad_group_id, ad_group_name, campaign_id, campaign_name,
+          keyword, match_type, quality_score,
+          post_click_quality_score, creative_quality_score, search_predicted_ctr,
+          impressions, clicks, cost_micros, conversions, conversions_value,
+          range_label, refreshed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      const insertKwMany = db.transaction(rows => { for (const r of rows) insertKw.run(...r); });
+      const rows = [];
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          const m = row.metrics || {};
+          const qi = row.adGroupCriterion?.qualityInfo || {};
+          rows.push([
+            row.adGroupCriterion?.criterionId,
+            row.adGroup?.id, row.adGroup?.name,
+            row.campaign?.id, row.campaign?.name,
+            row.adGroupCriterion?.keyword?.text || '',
+            row.adGroupCriterion?.keyword?.matchType || null,
+            qi.qualityScore || null,
+            qi.postClickQualityScore || null,
+            qi.creativeQualityScore || null,
+            qi.searchPredictedCtr || null,
+            parseInt(m.impressions || 0, 10),
+            parseInt(m.clicks || 0, 10),
+            parseInt(m.costMicros || 0, 10),
+            parseFloat(m.conversions || 0),
+            parseFloat(m.conversionsValue || 0),
+            range
+          ]);
+        }
+      }
+      insertKwMany(rows);
+      counts.keywords = rows.length;
+    } catch (err) {
+      errors.keywords = err.message;
+      counts.keywords = 0;
+    }
+
+    // Ads (creative + metrics per ad)
+    try {
+      const gaql = `
+        SELECT ad_group_ad.ad.id, ad_group_ad.ad.type,
+          ad_group_ad.ad.final_urls,
+          ad_group_ad.ad.responsive_search_ad.headlines,
+          ad_group_ad.ad.responsive_search_ad.descriptions,
+          ad_group.id, ad_group.name, campaign.id, campaign.name,
+          metrics.impressions, metrics.clicks, metrics.cost_micros,
+          metrics.conversions, metrics.conversions_value
+        FROM ad_group_ad
+        WHERE segments.date DURING ${range}
+          AND ad_group_ad.status = 'ENABLED'
+          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
+      `;
+      const data = await runQuery(gaql);
+      db.prepare('DELETE FROM gads_ads').run();
+      const insertAd = db.prepare(`
+        INSERT INTO gads_ads (
+          ad_id, ad_group_id, ad_group_name, campaign_id, campaign_name,
+          ad_type, final_urls, headlines, descriptions,
+          impressions, clicks, cost_micros, conversions, conversions_value,
+          range_label, refreshed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      const insertAdMany = db.transaction(rows => { for (const r of rows) insertAd.run(...r); });
+      const rows = [];
+      for (const stream of data) {
+        for (const row of (stream.results || [])) {
+          const m = row.metrics || {};
+          const ad = row.adGroupAd?.ad || {};
+          const rsa = ad.responsiveSearchAd || {};
+          rows.push([
+            ad.id,
+            row.adGroup?.id, row.adGroup?.name,
+            row.campaign?.id, row.campaign?.name,
+            ad.type || null,
+            JSON.stringify(ad.finalUrls || []),
+            JSON.stringify((rsa.headlines || []).map(h => h.text)),
+            JSON.stringify((rsa.descriptions || []).map(d => d.text)),
+            parseInt(m.impressions || 0, 10),
+            parseInt(m.clicks || 0, 10),
+            parseInt(m.costMicros || 0, 10),
+            parseFloat(m.conversions || 0),
+            parseFloat(m.conversionsValue || 0),
+            range
+          ]);
+        }
+      }
+      insertAdMany(rows);
+      counts.ads = rows.length;
+    } catch (err) {
+      errors.ads = err.message;
+      counts.ads = 0;
+    }
+
+    // Resolve geo target resource names → state names. Get all unique resource
+    // names we just synced and look them up in geo_target_constant.
+    try {
+      const geoResources = db.prepare(`
+        SELECT DISTINCT segment_value FROM gads_segments
+        WHERE segment_type = 'geo' AND segment_value LIKE 'geoTargetConstants/%'
+      `).all().map(r => r.segment_value);
+      if (geoResources.length > 0) {
+        const ids = geoResources.map(r => r.split('/')[1]).filter(Boolean);
+        // Chunk into groups of 100 for the IN clause
+        const insertGeo = db.prepare(`
+          INSERT OR REPLACE INTO gads_geo_targets (resource_name, name, canonical_name, target_type, country_code)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        let geoCount = 0;
+        for (let i = 0; i < ids.length; i += 100) {
+          const batch = ids.slice(i, i + 100);
+          const list = batch.map(id => `'geoTargetConstants/${id}'`).join(',');
+          const gaql = `SELECT geo_target_constant.resource_name, geo_target_constant.name, geo_target_constant.canonical_name, geo_target_constant.target_type, geo_target_constant.country_code FROM geo_target_constant WHERE geo_target_constant.resource_name IN (${list})`;
+          const data = await runQuery(gaql);
+          for (const stream of data) {
+            for (const row of (stream.results || [])) {
+              const g = row.geoTargetConstant || {};
+              insertGeo.run(g.resourceName, g.name, g.canonicalName, g.targetType, g.countryCode);
+              geoCount++;
+            }
+          }
+        }
+        counts.geo_resolved = geoCount;
+      } else {
+        counts.geo_resolved = 0;
+      }
+    } catch (err) {
+      errors.geo_resolved = err.message;
+    }
+
+    // Replace raw geo resource names ("geoTargetConstants/21135") with friendly
+    // state/region names from the lookup we just populated. Keeps segment_value
+    // readable for the pivot UI.
+    try {
+      db.prepare(`
+        UPDATE gads_segments
+        SET segment_value = (
+          SELECT COALESCE(name, segment_value) FROM gads_geo_targets
+          WHERE gads_geo_targets.resource_name = gads_segments.segment_value
+        )
+        WHERE segment_type = 'geo'
+          AND segment_value LIKE 'geoTargetConstants/%'
+          AND EXISTS (SELECT 1 FROM gads_geo_targets WHERE resource_name = gads_segments.segment_value)
+      `).run();
+    } catch (e) { /* best-effort label cleanup */ }
+
     // Roll up per-ad-group conversions_value into gads_ad_group_meta
     try {
       const aggCols = db.prepare(`
