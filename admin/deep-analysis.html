@@ -899,11 +899,14 @@
       </details>`;
 
       if (!d.rows || d.rows.length === 0) {
-        const hint = (() => {
-          const total = Object.values(counts).reduce((s, n) => s + (n || 0), 0);
-          if (total === 0) return 'Google returned <strong>zero rows for every query</strong>. Most common cause: the connected account has no active campaigns with traffic in this window, or the access token expired. Try changing Period to Last 90 days, or re-connect Google Ads in Integrations.';
-          return 'Some queries returned data but the filter combination removed everything. Try unselecting some filter chips, or pick fewer Group-by dimensions.';
-        })();
+        const noteFromServer = (diag.notes || '').toString();
+        const hint = noteFromServer
+          ? noteFromServer
+          : (() => {
+              const total = Object.values(counts).reduce((s, n) => s + (n || 0), 0);
+              if (total === 0) return 'Google returned <strong>zero rows for every query</strong>. Likely the connected account has no active campaigns in this window, or the access token expired. Try a longer Period, or re-connect Google Ads in Integrations.';
+              return 'Some queries returned data but the filter combination removed everything. Try unselecting some filter chips, or pick fewer Group-by dimensions.';
+            })();
         target.innerHTML = inlineDiag + expandedDiag + `<div style="padding:24px;text-align:center;color:#475569;">${hint}</div>`;
         return;
       }

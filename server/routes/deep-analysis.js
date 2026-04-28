@@ -1662,10 +1662,32 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
             }
           });
         }
-        debug.counts.ad_group = cnt;
+        debug.counts.ad_group_totals = cnt;
       } catch (err) {
-        debug.errors.ad_group = err.message;
-        debug.counts.ad_group = 0;
+        debug.errors.ad_group_totals = err.message;
+        debug.counts.ad_group_totals = 0;
+      }
+    }
+
+    // If a demographic filter is set but the demo has no data, the user wants
+    // a slice that doesn't exist. Surface a clear error before the filter
+    // silently zeros everything out.
+    for (const filterDim of Object.keys(filters || {})) {
+      if (DIST_SEGS.has(filterDim)) {
+        const map = distData[filterDim];
+        const totalRows = map ? [...map.values()].reduce((s, l) => s + l.length, 0) : 0;
+        if (totalRows === 0) {
+          return res.status(200).json({
+            dimensions, filters, metrics, range: rangeLabel,
+            rows: [], total_rows: 0,
+            totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 },
+            diagnostic: {
+              source: 'live Google Ads',
+              ...debug,
+              notes: `Google Ads has no "${filterDim}" data for your account in this period. The "${filterDim}" filter can't be applied. Remove the ${filterDim} filter, OR change Period to a longer window, OR enable demographic observations on the campaigns in Google Ads.`
+            }
+          });
+        }
       }
     }
 
