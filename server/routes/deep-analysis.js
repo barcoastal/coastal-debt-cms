@@ -1541,6 +1541,20 @@ router.post('/google-pivot', authenticateToken, (req, res) => {
           segment_value, impressions, clicks, cost_micros, conversions, conversions_value
         FROM gads_segments WHERE segment_type = ?
       `).all(spec);
+      if (rows.length === 0) {
+        const segCount = db.prepare(`SELECT COUNT(*) AS n FROM gads_segments`).get().n;
+        const segTypes = db.prepare(`SELECT DISTINCT segment_type FROM gads_segments`).all().map(r => r.segment_type);
+        return res.json({
+          dimensions, filters, metrics, range: meta[0]?.range_label || 'cached',
+          rows: [], total_rows: 0, totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 },
+          diagnostic: {
+            source: 'cache',
+            cached_segment_types: segTypes,
+            cached_segment_rows: segCount,
+            notes: `Cache has no "${spec}" rows. Run "Sync Now" again to refresh — the previous sync may have failed for that view, or your Google Ads account doesn't surface ${spec} (common for ${spec === 'conversion_action' ? 'accounts that haven\'t configured conversion actions' : 'some Search-only campaigns'}).`
+          }
+        });
+      }
       for (const r of rows) {
         baseRows.push({
           campaign: r.campaign_name, ad_group: r.ad_group_name,
