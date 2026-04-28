@@ -293,7 +293,7 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
       const body = {
         data: {
           starts_at: start + 'T00:00:00Z',
-          ends_at: end + 'T23:59:59Z',
+          ends_at: end + 'T23:00:00Z',
           fields: ['spend', 'clicks', 'impressions'],
           breakdowns: ['CAMPAIGN_ID'],
           time_zone_id: 'GMT'
