@@ -274,6 +274,89 @@ async function getRedditTotalSpend(from, to) {
 }
 
 /**
+ * GET /campaigns — List Reddit campaigns with per-campaign spend/clicks/impressions
+ * for two windows (7d, 30d). Query: ?days=30 (default) controls primary window.
+ */
+router.get('/campaigns', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM reddit_ads_config WHERE id = 1').get();
+    if (!config || !config.client_id || !config.client_secret || !config.refresh_token || !config.account_id) {
+      return res.status(400).json({ error: 'Reddit Ads not configured' });
+    }
+    const token = await getRedditAccessToken(config);
+    const accountId = config.account_id;
+
+    const today = new Date().toISOString().split('T')[0];
+    const isoDate = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0];
+
+    const fetchReport = async (start, end) => {
+      const r = await fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${accountId}/reports`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            starts_at: start + 'T00:00:00Z',
+            ends_at: end + 'T23:59:59Z',
+            fields: ['spend', 'clicks', 'impressions'],
+            breakdowns: ['CAMPAIGN_ID']
+          }
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error?.message || data.message || `Reddit reports ${r.status}`);
+      const rows = data?.data?.metrics || [];
+      const byCampaign = {};
+      for (const row of rows) {
+        const cid = row.campaign_id || row.breakdown_value;
+        if (!cid) continue;
+        const spend = parseFloat(row.spend || 0);
+        const clicks = parseInt(row.clicks || 0);
+        const imps = parseInt(row.impressions || 0);
+        if (!byCampaign[cid]) byCampaign[cid] = { spend: 0, clicks: 0, impressions: 0 };
+        byCampaign[cid].spend += spend > 10000 ? spend / 1000000 : spend;
+        byCampaign[cid].clicks += clicks;
+        byCampaign[cid].impressions += imps;
+      }
+      return byCampaign;
+    };
+
+    const [campaignsRes, report30, report7] = await Promise.all([
+      fetch(`https://ads-api.reddit.com/api/v3/ad_accounts/${accountId}/campaigns?page.size=200`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CoastalDebtCMS/1.0' }
+      }).then(r => r.json()),
+      fetchReport(isoDate(30), today),
+      fetchReport(isoDate(7), today)
+    ]);
+
+    const campaigns = (campaignsRes?.data?.campaigns || []).map(c => {
+      const id = c.id;
+      const r30 = report30[id] || { spend: 0, clicks: 0, impressions: 0 };
+      const r7 = report7[id] || { spend: 0, clicks: 0, impressions: 0 };
+      return {
+        id,
+        name: c.name,
+        configured_status: c.configured_status,
+        effective_status: c.effective_status,
+        objective: c.objective,
+        spend_30d: Math.round(r30.spend * 100) / 100,
+        clicks_30d: r30.clicks,
+        impressions_30d: r30.impressions,
+        cpc_30d: r30.clicks > 0 ? Math.round(r30.spend / r30.clicks * 100) / 100 : null,
+        spend_7d: Math.round(r7.spend * 100) / 100,
+        clicks_7d: r7.clicks,
+        impressions_7d: r7.impressions,
+        cpc_7d: r7.clicks > 0 ? Math.round(r7.spend / r7.clicks * 100) / 100 : null
+      };
+    });
+
+    campaigns.sort((a, b) => (b.spend_30d || 0) - (a.spend_30d || 0));
+    res.json({ campaigns });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /fetch-all-costs — Manual trigger to fetch missing Reddit costs
  */
 router.post('/fetch-all-costs', authenticateToken, async (req, res) => {
