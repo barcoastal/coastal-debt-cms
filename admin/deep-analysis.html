@@ -538,16 +538,14 @@
     }
 
     async function loadConvActionFilterChips() {
+      // Pull the list of conversion actions DIRECTLY from Google Ads
+      // (independent of the cache — these are the configured events).
       try {
-        const r = await fetch('/api/deep-analysis/google-pivot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dimensions: ['conversion_action'], filters: {}, sort: { metric: 'conversions', dir: 'desc' }, limit: 100 })
-        });
-        const d2 = await r.json();
-        const events = (d2.rows || []).map(r => r.conversion_action).filter(Boolean);
+        const r = await fetch('/api/deep-analysis/conversion-actions');
+        const d = await r.json();
+        const events = (d.events || []).map(e => e.name).filter(Boolean);
 
-        // Filter chips (existing)
+        // Filter chips
         const chipsHtml = events.map(e => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${e.replace(/'/g,"&#39;")}',this)">${e.replace(/</g, '&lt;')}</span>`).join('');
         const el2 = document.getElementById('filterEventChips');
         if (el2 && chipsHtml) el2.innerHTML = chipsHtml;
@@ -555,15 +553,20 @@
           PIVOT_DIM_LABELS.conversion_action.values = events.map(e => [e, e]);
         }
 
-        // Per-event metric checkboxes (the new thing Bar wants)
+        // Per-event metric checkboxes
         const evEl = document.getElementById('pivotEventCheckboxes');
         if (evEl) {
           if (events.length === 0) {
-            evEl.innerHTML = '<span style="color:#dc2626;font-style:italic;">No events in cache. Click "Sync Now" with All time selected.</span>';
+            evEl.innerHTML = `<span style="color:#dc2626;font-style:italic;">${(d.notes || 'No conversion actions found in this Google Ads account.').replace(/</g, '&lt;')}</span>`;
           } else {
-            evEl.innerHTML = events.map(e => {
-              const safe = e.replace(/"/g, '&quot;');
-              return `<label style="background:#eef2ff;color:#4338ca;padding:3px 8px;border-radius:6px;border:1px solid #c7d2fe;cursor:pointer;"><input type="checkbox" class="pivotEvent" value="${safe}" checked> ${e.replace(/</g, '&lt;')}</label>`;
+            evEl.innerHTML = (d.events || []).map(ev => {
+              const name = ev.name || 'UNNAMED';
+              const safe = name.replace(/"/g, '&quot;');
+              const dimColor = ev.status === 'ENABLED' ? '#4338ca' : '#94a3b8';
+              const bg = ev.status === 'ENABLED' ? '#eef2ff' : '#f1f5f9';
+              const border = ev.status === 'ENABLED' ? '#c7d2fe' : '#e2e8f0';
+              const statusBadge = ev.status === 'ENABLED' ? '' : ` <small style="color:#94a3b8;">(${ev.status})</small>`;
+              return `<label style="background:${bg};color:${dimColor};padding:3px 8px;border-radius:6px;border:1px solid ${border};cursor:pointer;"><input type="checkbox" class="pivotEvent" value="${safe}" ${ev.status === 'ENABLED' ? 'checked' : ''}> ${name.replace(/</g, '&lt;')}${statusBadge}</label>`;
             }).join('');
           }
         }

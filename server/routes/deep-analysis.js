@@ -1383,6 +1383,66 @@ router.get('/money-map', authenticateToken, (req, res) => {
   }
 });
 
+// Pull the list of conversion actions from Google Ads directly (independent of cache).
+// Used by the pivot UI to populate per-event checkboxes even before any sync runs.
+router.get('/conversion-actions', authenticateToken, async (req, res) => {
+  try {
+    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
+    if (!config || !config.refresh_token_encrypted || !config.customer_id) {
+      return res.json({ events: [], notes: 'Google Ads not connected.' });
+    }
+    const accessToken = await googleAds.getValidAccessToken(config);
+    if (!accessToken) return res.json({ events: [], notes: 'access token failed' });
+    const developerToken = googleAds.getDeveloperToken(config);
+    if (!developerToken) return res.json({ events: [], notes: 'developer token missing' });
+
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'developer-token': developerToken,
+      'Content-Type': 'application/json'
+    };
+    const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+    if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
+    const r = await fetch(
+      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: `SELECT conversion_action.id, conversion_action.name, conversion_action.status, conversion_action.category, conversion_action.primary_for_goal FROM conversion_action`
+        })
+      }
+    );
+    const data = await r.json();
+    const apiError = data.error || data[0]?.error;
+    if (apiError) return res.json({ events: [], notes: apiError.message || JSON.stringify(apiError) });
+
+    const events = [];
+    for (const stream of data) {
+      for (const row of (stream.results || [])) {
+        const ca = row.conversionAction || {};
+        events.push({
+          id: ca.id,
+          name: ca.name || 'UNNAMED',
+          status: ca.status,
+          category: ca.category,
+          primary: !!ca.primaryForGoal
+        });
+      }
+    }
+    // Show ENABLED first, then sort by name within each status
+    events.sort((a, b) => {
+      if (a.status === 'ENABLED' && b.status !== 'ENABLED') return -1;
+      if (b.status === 'ENABLED' && a.status !== 'ENABLED') return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    res.json({ events, total: events.length });
+  } catch (err) {
+    console.error('conversion-actions error:', err);
+    res.json({ events: [], notes: err.message });
+  }
+});
+
 // Quick status — when was deep sync last run, how many rows per segment type
 router.get('/deep-sync-status', authenticateToken, (req, res) => {
   const rows = db.prepare(`
