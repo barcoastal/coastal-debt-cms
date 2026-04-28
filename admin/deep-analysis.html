@@ -202,104 +202,10 @@
         <h1>Google Deep Analysis</h1>
       </div>
 
-      <!-- Filters -->
-      <div class="card">
-        <div class="filters" style="flex-wrap: wrap; margin-bottom: 12px;">
-          <div class="time-range-btns">
-            <button data-range="today" onclick="setRange('today', this)">Today</button>
-            <button data-range="yesterday" onclick="setRange('yesterday', this)">Yesterday</button>
-            <button data-range="last_week" onclick="setRange('last_week', this)">Last Week</button>
-            <button data-range="mtd" onclick="setRange('mtd', this)">MTD</button>
-            <button data-range="7d" onclick="setRange('7d', this)">Last 7 Days</button>
-            <button class="active" data-range="30d" onclick="setRange('30d', this)">Last 30 Days</button>
-            <button data-range="all" onclick="setRange('all', this)">All Time</button>
-            <button data-range="custom" onclick="setRange('custom', this)">Custom</button>
-          </div>
-          <input type="date" id="fromDate" class="tr-from" style="display:none;">
-          <input type="date" id="toDate" class="tr-to" style="display:none;">
-        </div>
-        <div class="filters" style="align-items:center;">
-          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#475569;background:#eef2ff;padding:6px 12px;border-radius:6px;border:1px solid #c7d2fe;">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4285F4;"></span>
-            <strong>Google Ads only</strong>
-            <span style="color:#94a3b8;">— this page filters to Google traffic and pulls from the Google Ads API</span>
-          </span>
-          <input type="hidden" id="platformFilter" value="google">
-          <button class="btn btn-primary" onclick="loadAll()" style="margin-left:auto;">Apply</button>
-        </div>
-      </div>
-
-      <!-- Deep Sync card — populates the cache that all pivots use -->
-      <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0f4ff 0%,#fff 60%);border:1px solid #c7d2fe;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-          <div>
-            <h3 class="card-title" style="margin:0;display:flex;align-items:center;gap:8px;">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4285F4;"></span>
-              Sync Deep Data from Google Ads
-            </h3>
-            <small style="color:#475569;">Pulls every per-ad-group segment — age, gender, household income, parental status, device, hour, day-of-week, region, search terms — into the local cache. Run this first, then build pivots below.</small>
-            <div id="deepSyncStatus" style="margin-top:6px;font-size:12px;color:#94a3b8;">Loading status…</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <select id="deepSyncDays" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-              <option value="7">Last 7 days</option>
-              <option value="14">Last 14 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
-            <button type="button" id="deepSyncBtn" onclick="runDeepSync()" style="padding:10px 18px;background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;pointer-events:auto;position:relative;z-index:10;">⬇ Sync Deep Data</button>
-          </div>
-        </div>
-        <div id="deepSyncResult" style="margin-top:10px;display:none;"></div>
-      </div>
-
-      <!-- Where's the money — winners & wasters at a glance -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div>
-            <h3 class="card-title" style="margin:0;">💰 Where's the money?</h3>
-            <small style="color:#94a3b8;">Top earners (best ROI) vs wasters (high spend, no conversions). Pulled from the cache populated by Sync Deep Data.</small>
-          </div>
-          <select id="moneyLevel" onchange="loadMoneyMap()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-            <option value="campaign" selected>By Campaign</option>
-            <option value="ad_group">By Ad Group</option>
-          </select>
-        </div>
-        <div id="moneyTotals" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:8px 0 14px;"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div>
-            <h4 style="font-size:13px;color:#16a34a;margin:8px 0;">🏆 Top earners (highest ROI, ≥$20 spend)</h4>
-            <div id="moneyWinners" class="table-container" style="max-height:340px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-          <div>
-            <h4 style="font-size:13px;color:#dc2626;margin:8px 0;">💸 Top wasters (high spend, &lt;1 conversion)</h4>
-            <div id="moneyWasters" class="table-container" style="max-height:340px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-          </div>
-        </div>
-        <h4 style="font-size:13px;color:#475569;margin:14px 0 6px;">Conversion mix — which actions are firing</h4>
-        <div id="moneyConvMix" class="table-container" style="max-height:240px;overflow:auto;"><div style="padding:20px;text-align:center;color:#94a3b8;">—</div></div>
-      </div>
-
-      <!-- Google Ads at a glance -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header" style="display:flex;align-items:center;gap:10px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4285F4;"></span>
-          <h3 class="card-title" style="margin:0;">Google Ads at a glance</h3>
-        </div>
-        <div id="gadsKpiStrip" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:12px 0;">
-          <div class="kpi-tile"><div class="kpi-label">Clicks</div><div class="kpi-value" id="kpiClicks">—</div></div>
-          <div class="kpi-tile"><div class="kpi-label">Spend</div><div class="kpi-value" id="kpiSpend">—</div></div>
-          <div class="kpi-tile"><div class="kpi-label">Leads</div><div class="kpi-value" id="kpiLeads">—</div></div>
-          <div class="kpi-tile"><div class="kpi-label">CPL</div><div class="kpi-value" id="kpiCpl">—</div></div>
-          <div class="kpi-tile"><div class="kpi-label">Revenue</div><div class="kpi-value" id="kpiRevenue">—</div></div>
-          <div class="kpi-tile"><div class="kpi-label">ROAS</div><div class="kpi-value" id="kpiRoas">—</div></div>
-        </div>
-      </div>
-      <style>
-        .kpi-tile { background: #f8fafc; padding: 12px 14px; border-radius: 10px; border-left: 3px solid #4285F4; }
-        .kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.4px; }
-        .kpi-value { font-size: 20px; font-weight: 800; color: #1e293b; margin-top: 2px; }
-      </style>
+      <!-- Hidden helpers for the legacy code paths the pivot still depends on -->
+      <input type="hidden" id="platformFilter" value="google">
+      <input type="hidden" id="fromDate" value="">
+      <input type="hidden" id="toDate" value="">
 
       <!-- Google Ads Multi-Filter Pivot -->
       <div class="card" style="margin-bottom: 16px;">
@@ -429,6 +335,7 @@
               <option value="90">Last 90 days</option>
               <option value="180">Last 180 days</option>
               <option value="365">Last 365 days</option>
+              <option value="all">All time</option>
               <option value="custom">Custom…</option>
             </select>
             <div id="pivotCustomDates" style="display:none;margin-top:6px;display:flex;gap:4px;">
@@ -510,119 +417,6 @@
         .group-chip.selected { background: #3052FF; color: #fff; border-color: #3052FF; }
       </style>
 
-      <!-- Section 2: Funnel Analysis -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          Funnel Analysis (Google traffic)
-        </h2>
-        <div id="funnelStages" class="funnel-stages">
-          <div class="funnel-stage"><div class="stage-count">-</div><div class="stage-label">Loading...</div></div>
-        </div>
-        <div style="max-width:800px;margin:0 auto;"><canvas id="funnelChart" height="200"></canvas></div>
-      </div>
-
-      <!-- Section 3: Cost Efficiency Scatter -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="7.5" r="3.5"/><circle cx="18" cy="15" r="2"/><circle cx="11" cy="16" r="4"/></svg>
-          Google Ads — Campaign Cost Efficiency
-        </h2>
-        <p style="font-size:12px;color:var(--gray-500);margin:0 0 12px 0;">X = CPL, Y = Lead-to-Conversion Rate, Bubble Size = Spend. Bottom-right = best (low CPL + high conv).</p>
-        <div style="max-height:500px;"><canvas id="scatterChart" height="400"></canvas></div>
-      </div>
-
-      <!-- Section 4: Top & Bottom Campaigns -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
-          Google Ads — Campaign Performance
-        </h2>
-        <div class="table-scroll" id="campaignsTableWrap">
-          <table class="campaign-table" id="campaignsTable">
-            <thead>
-              <tr>
-                <th class="sort-btn" data-sort="utm_campaign">Campaign</th>
-                <th class="sort-btn" data-sort="platform">Platform</th>
-                <th class="sort-btn" data-sort="visitors">Visitors</th>
-                <th class="sort-btn" data-sort="leads">Leads</th>
-                <th class="sort-btn" data-sort="conv_rate">V&rarr;L %</th>
-                <th class="sort-btn" data-sort="spend">Spend</th>
-                <th class="sort-btn" data-sort="cpl">CPL</th>
-                <th class="sort-btn" data-sort="revenue">Revenue</th>
-                <th class="sort-btn" data-sort="roi">ROI</th>
-                <th class="sort-btn" data-sort="calls">Calls</th>
-                <th class="sort-btn" data-sort="avg_call_score">Avg Score</th>
-                <th class="sort-btn" data-sort="transfer_rate">Transfer %</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Section 5: Landing Page Performance -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Landing Page Performance (Google traffic)
-        </h2>
-        <div class="table-scroll" id="pagesTableWrap">
-          <table class="campaign-table" id="pagesTable">
-            <thead>
-              <tr>
-                <th class="sort-btn" data-sort="page_name">Page</th>
-                <th class="sort-btn" data-sort="platform">Platform</th>
-                <th class="sort-btn" data-sort="visitors">Visitors</th>
-                <th class="sort-btn" data-sort="leads">Leads</th>
-                <th class="sort-btn" data-sort="conv_rate">Conv %</th>
-                <th class="sort-btn" data-sort="avg_debt">Avg Debt</th>
-                <th class="sort-btn" data-sort="mca_pct">MCA %</th>
-                <th class="sort-btn" data-sort="calls">Calls</th>
-                <th class="sort-btn" data-sort="transfer_rate">Transfer %</th>
-                <th class="sort-btn" data-sort="spend">Spend</th>
-                <th class="sort-btn" data-sort="revenue">Revenue</th>
-                <th class="sort-btn" data-sort="roi">ROI</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Section 6: Call Quality -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-          Call Quality (Google leads)
-        </h2>
-        <div class="charts-2col">
-          <div><canvas id="callScoreChart" height="260"></canvas></div>
-          <div><canvas id="callTransferChart" height="260"></canvas></div>
-        </div>
-        <div class="charts-2col" style="margin-top:20px;">
-          <div><canvas id="callDurationChart" height="260"></canvas></div>
-          <div><canvas id="dispositionChart" height="260"></canvas></div>
-        </div>
-        <div class="card" style="margin-top:16px;padding:16px;background:var(--gray-50);">
-          <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;" id="callScoreSummary"></div>
-        </div>
-      </div>
-
-      <!-- Section 7: Heatmap -->
-      <div class="card">
-        <h2 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
-          Google Lead Activity Heatmap
-        </h2>
-        <p style="font-size:12px;color:var(--gray-500);margin:0 0 12px;">Lead volume by day-of-week and hour. Darker = more leads.</p>
-        <div id="heatmapContainer" class="heatmap-grid"></div>
-      </div>
-
     </main>
   </div>
 
@@ -669,15 +463,26 @@
     }
 
     async function loadAll() {
-      const qs = getQueryString();
-      loadGoogleKpis(qs);
-      loadFunnel(qs);
-      loadCampaigns(qs);
-      loadLandingPages(qs);
-      loadCallQuality(qs);
-      loadHeatmap(qs);
-      loadDeepSyncStatus();
-      loadMoneyMap();
+      // Pivot-only page — auto-run on load
+      loadConvActionFilterChips();
+      runGoogleAdsPivot();
+    }
+
+    async function loadConvActionFilterChips() {
+      try {
+        const r = await fetch('/api/deep-analysis/google-pivot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dimensions: ['conversion_action'], filters: {}, sort: { metric: 'conversions', dir: 'desc' }, limit: 50 })
+        });
+        const d2 = await r.json();
+        const chips = (d2.rows || []).map(r => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${(r.conversion_action || '').replace(/'/g,"&#39;")}',this)">${(r.conversion_action || '').replace(/</g, '&lt;')}</span>`).join('');
+        const el2 = document.getElementById('filterEventChips');
+        if (el2 && chips) el2.innerHTML = chips;
+        if (PIVOT_DIM_LABELS.conversion_action) {
+          PIVOT_DIM_LABELS.conversion_action.values = (d2.rows || []).map(r => [r.conversion_action, r.conversion_action]);
+        }
+      } catch (e) {}
     }
 
     async function loadMoneyMap() {
@@ -948,6 +753,8 @@
         body.from_date = document.getElementById('pivotFromDate').value;
         body.to_date = document.getElementById('pivotToDate').value;
         if (!body.from_date || !body.to_date) { alert('Pick both From and To dates.'); return; }
+      } else if (periodVal === 'all') {
+        body.days = 'all';
       } else {
         body.days = parseInt(periodVal, 10) || 30;
       }
