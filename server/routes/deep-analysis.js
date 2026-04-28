@@ -780,9 +780,14 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
     const days = parseInt(req.body?.days, 10);
     const fromDate = (req.body?.from_date || '').trim();
     const toDate = (req.body?.to_date || '').trim();
+    const allTime = req.body?.days === 'all' || req.body?.days === 'ALL_TIME';
     // dateClause goes into the WHERE; rangeLabel is the human-friendly form stored alongside cached rows
     let dateClause, rangeLabel;
-    if (fromDate && toDate && /^\d{4}-\d{2}-\d{2}$/.test(fromDate) && /^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+    if (allTime) {
+      const today = new Date().toISOString().slice(0, 10);
+      dateClause = `BETWEEN '2010-01-01' AND '${today}'`;
+      rangeLabel = 'All time';
+    } else if (fromDate && toDate && /^\d{4}-\d{2}-\d{2}$/.test(fromDate) && /^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       dateClause = `BETWEEN '${fromDate}' AND '${toDate}'`;
       rangeLabel = `${fromDate} → ${toDate}`;
     } else {
@@ -1474,236 +1479,107 @@ router.get('/gads-test', authenticateToken, async (req, res) => {
 // weighting (Google Ads doesn't expose true cross-tabs for Search campaigns).
 const SEG_TYPES = new Set(['age', 'gender', 'income', 'parental', 'device', 'hour', 'dow', 'geo', 'search_term', 'conversion_action', 'date']);
 
-// In-memory pivot result cache so repeated identical queries don't re-hit Google Ads
-const _pivotCache = new Map(); // key → { ts, payload }
-const PIVOT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-router.post('/google-pivot', authenticateToken, async (req, res) => {
+// Cache-only pivot. Reads from gads_ad_group_meta + gads_segments only — no
+// live Google Ads calls. Run "Sync All Time" first to fill the cache.
+router.post('/google-pivot', authenticateToken, (req, res) => {
   try {
     const {
       dimensions = ['campaign'],
       filters = {},
-      metrics = ['clicks', 'cost', 'conversions', 'conv_rate', 'cpa'],
+      metrics = ['clicks', 'cost', 'conversions', 'value', 'conv_rate', 'cpa'],
       sort = { metric: 'clicks', dir: 'desc' },
-      limit = 200,
-      days,
-      from_date,
-      to_date
+      limit = 200
     } = req.body || {};
     if (!dimensions.length) return res.status(400).json({ error: 'At least one dimension required' });
 
-    // Detect what kind of dim each one is
     const allDims = [...new Set([...dimensions, ...Object.keys(filters || {})])];
     const segDims = allDims.filter(d => SEG_TYPES.has(d));
-    const flatDims = allDims.filter(d => d === 'campaign' || d === 'ad_group');
     const unknownDims = allDims.filter(d => !SEG_TYPES.has(d) && d !== 'campaign' && d !== 'ad_group');
     if (unknownDims.length) return res.status(400).json({ error: `Unknown dim(s): ${unknownDims.join(', ')}` });
 
-    // Build date clause
-    let dateClause, rangeLabel;
-    if (from_date && to_date && /^\d{4}-\d{2}-\d{2}$/.test(from_date) && /^\d{4}-\d{2}-\d{2}$/.test(to_date)) {
-      dateClause = `BETWEEN '${from_date}' AND '${to_date}'`;
-      rangeLabel = `${from_date} → ${to_date}`;
-    } else if (days === 'all' || days === 'ALL_TIME') {
-      const today = new Date().toISOString().slice(0, 10);
-      dateClause = `BETWEEN '2010-01-01' AND '${today}'`;
-      rangeLabel = 'All time';
-    } else {
-      const d = parseInt(days, 10);
-      const dur = ({ 7: 'LAST_7_DAYS', 14: 'LAST_14_DAYS', 30: 'LAST_30_DAYS', 90: 'LAST_90_DAYS', 180: 'LAST_180_DAYS', 365: 'LAST_365_DAYS' })[d] || 'LAST_30_DAYS';
-      dateClause = `DURING ${dur}`;
-      rangeLabel = dur;
-    }
-
-    // Cache key — same query within 5 min returns cached result
-    const cacheKey = JSON.stringify({ dimensions, filters, dateClause });
-    const cached = _pivotCache.get(cacheKey);
-    if (cached && (Date.now() - cached.ts) < PIVOT_CACHE_TTL_MS) {
-      return res.json({ ...cached.payload, _from_cache: true });
-    }
-
-    // Auth
-    const config = db.prepare('SELECT * FROM google_ads_config WHERE id = 1').get();
-    if (!config || !config.refresh_token_encrypted || !config.customer_id) {
-      return res.status(400).json({ error: 'Google Ads not connected — go to Integrations to connect.' });
-    }
-    const accessToken = await googleAds.getValidAccessToken(config);
-    if (!accessToken) return res.status(401).json({ error: 'Failed to get Google Ads access token' });
-    const developerToken = googleAds.getDeveloperToken(config);
-    if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
-
-    const headers = {
-      'Authorization': `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-      'Content-Type': 'application/json'
-    };
-    const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
-    if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
-    const apiUrl = `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`;
-    const runQ = async (gaql) => {
-      const r = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify({ query: gaql }) });
-      const d = await r.json();
-      const apiError = d.error || d[0]?.error;
-      if (apiError) throw new Error(apiError.message || JSON.stringify(apiError));
-      return d;
-    };
-
-    // Categorize segments
     const DIST_SEGS = new Set(['age', 'gender', 'income', 'parental']);
     const SPEC_SEGS = new Set(['conversion_action', 'date', 'search_term', 'device', 'hour', 'dow', 'geo']);
     const distDims = segDims.filter(d => DIST_SEGS.has(d));
     const specDims = segDims.filter(d => SPEC_SEGS.has(d));
     if (specDims.length > 1) {
-      return res.status(400).json({ error: `Pick only ONE of: ${[...SPEC_SEGS].join(', ')}` });
+      return res.status(400).json({ error: `Only one of these per pivot at a time: ${[...SPEC_SEGS].join(', ')}` });
     }
 
-    // Pull distribution segments live (in parallel)
-    const distData = {};
-    const distFieldMap = {
-      age:      { view: 'age_range_view',       sel: 'ad_group_criterion.age_range.type',       path: ['adGroupCriterion','ageRange','type'] },
-      gender:   { view: 'gender_view',          sel: 'ad_group_criterion.gender.type',          path: ['adGroupCriterion','gender','type'] },
-      income:   { view: 'income_range_view',    sel: 'ad_group_criterion.income_range.type',    path: ['adGroupCriterion','incomeRange','type'] },
-      parental: { view: 'parental_status_view', sel: 'ad_group_criterion.parental_status.type', path: ['adGroupCriterion','parentalStatus','type'] }
-    };
-    const debug = { queries: [], counts: {}, errors: {} };
-    await Promise.all(distDims.map(async d => {
-      const m = distFieldMap[d];
-      const gaql = `SELECT ad_group.id, ${m.sel}, metrics.impressions FROM ${m.view} WHERE segments.date ${dateClause}`;
-      debug.queries.push({ dim: d, view: m.view, gaql: gaql.replace(/\s+/g, ' ').trim() });
-      try {
-        const data = await runQ(gaql);
-        const byAg = new Map();
-        let cnt = 0;
-        for (const stream of data) for (const row of (stream.results || [])) {
-          cnt++;
-          const agId = row.adGroup?.id;
-          let v = row;
-          for (const p of m.path) { v = v && v[p]; if (v === undefined) break; }
-          const val = v == null ? 'UNKNOWN' : String(v);
-          if (!byAg.has(agId)) byAg.set(agId, []);
-          byAg.get(agId).push({ value: val, impressions: parseInt(row.metrics?.impressions || 0, 10) });
-        }
-        distData[d] = byAg;
-        debug.counts[d] = cnt;
-      } catch (err) {
-        debug.errors[d] = err.message;
-        debug.counts[d] = 0;
-        distData[d] = new Map();
-      }
-    }));
+    const meta = db.prepare(`
+      SELECT campaign_id, campaign_name, ad_group_id, ad_group_name,
+        impressions, clicks, cost_micros, conversions, conversions_value, refreshed_at, range_label
+      FROM gads_ad_group_meta
+      WHERE COALESCE(is_manual, 0) = 0
+    `).all();
 
-    // Build base rows: from a specific seg, or from ad_group rollup
+    if (meta.length === 0) {
+      return res.json({
+        dimensions, filters, metrics, range: 'cache',
+        rows: [], total_rows: 0, totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 },
+        diagnostic: { source: 'cache', notes: 'Cache empty — click "Sync All Time" first.' }
+      });
+    }
+
+    // Pull distribution segments
+    const distData = {};
+    for (const d of distDims) {
+      const rows = db.prepare(`SELECT ad_group_id, segment_value, impressions FROM gads_segments WHERE segment_type = ?`).all(d);
+      const byAg = new Map();
+      for (const r of rows) {
+        if (!byAg.has(r.ad_group_id)) byAg.set(r.ad_group_id, []);
+        byAg.get(r.ad_group_id).push({ value: r.segment_value, impressions: r.impressions || 0 });
+      }
+      distData[d] = byAg;
+    }
+
+    // Build base rows
     const baseRows = [];
     if (specDims.length === 1) {
       const spec = specDims[0];
-      let gaql, parseFn;
-      if (spec === 'conversion_action') {
-        gaql = `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name, segments.conversion_action_name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM ad_group WHERE segments.date ${dateClause} AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
-        parseFn = row => row.segments?.conversionActionName || 'UNKNOWN';
-      } else if (spec === 'date') {
-        gaql = `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name, segments.date, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM ad_group WHERE segments.date ${dateClause} AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
-        parseFn = row => row.segments?.date || 'UNKNOWN';
-      } else if (spec === 'search_term') {
-        gaql = `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name, search_term_view.search_term, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM search_term_view WHERE segments.date ${dateClause}`;
-        parseFn = row => row.searchTermView?.searchTerm || 'UNKNOWN';
-      } else {
-        // device, hour, dow, geo
-        const segMap = { device: ['segments.device', 'device'], hour: ['segments.hour', 'hour'], dow: ['segments.day_of_week', 'dayOfWeek'], geo: ['segments.geo_target_region', 'geoTargetRegion'] };
-        const [sf, sp] = segMap[spec];
-        gaql = `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name, ${sf}, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM ad_group WHERE segments.date ${dateClause} AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
-        parseFn = row => row.segments?.[sp] != null ? String(row.segments[sp]) : 'UNKNOWN';
-      }
-      debug.queries.push({ dim: spec, view: 'specific', gaql: gaql.replace(/\s+/g, ' ').trim() });
-      try {
-        const data = await runQ(gaql);
-        let cnt = 0;
-        for (const stream of data) for (const row of (stream.results || [])) {
-          cnt++;
-          const m = row.metrics || {};
-          baseRows.push({
-            campaign: row.campaign?.name,
-            ad_group: row.adGroup?.name,
-            [spec]: parseFn(row),
-            _agid: row.adGroup?.id,
-            _m: {
-              impressions: parseInt(m.impressions || 0, 10),
-              clicks: parseInt(m.clicks || 0, 10),
-              cost_micros: parseInt(m.costMicros || 0, 10),
-              conversions: parseFloat(m.conversions || 0),
-              conversions_value: parseFloat(m.conversionsValue || 0)
-            }
-          });
-        }
-        debug.counts[spec] = cnt;
-      } catch (err) {
-        debug.errors[spec] = err.message;
-        debug.counts[spec] = 0;
+      const rows = db.prepare(`
+        SELECT ad_group_id, ad_group_name, campaign_id, campaign_name,
+          segment_value, impressions, clicks, cost_micros, conversions, conversions_value
+        FROM gads_segments WHERE segment_type = ?
+      `).all(spec);
+      for (const r of rows) {
+        baseRows.push({
+          campaign: r.campaign_name, ad_group: r.ad_group_name,
+          [spec]: r.segment_value, _agid: r.ad_group_id,
+          _m: {
+            impressions: r.impressions || 0, clicks: r.clicks || 0,
+            cost_micros: r.cost_micros || 0, conversions: r.conversions || 0,
+            conversions_value: r.conversions_value || 0
+          }
+        });
       }
     } else {
-      // No specific dim — just per-ad-group totals
-      const gaql = `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM ad_group WHERE segments.date ${dateClause} AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
-      debug.queries.push({ dim: 'ad_group_totals', view: 'ad_group', gaql: gaql.replace(/\s+/g, ' ').trim() });
-      try {
-        const data = await runQ(gaql);
-        let cnt = 0;
-        for (const stream of data) for (const row of (stream.results || [])) {
-          cnt++;
-          const m = row.metrics || {};
-          baseRows.push({
-            campaign: row.campaign?.name,
-            ad_group: row.adGroup?.name,
-            _agid: row.adGroup?.id,
-            _m: {
-              impressions: parseInt(m.impressions || 0, 10),
-              clicks: parseInt(m.clicks || 0, 10),
-              cost_micros: parseInt(m.costMicros || 0, 10),
-              conversions: parseFloat(m.conversions || 0),
-              conversions_value: parseFloat(m.conversionsValue || 0)
-            }
-          });
-        }
-        debug.counts.ad_group_totals = cnt;
-      } catch (err) {
-        debug.errors.ad_group_totals = err.message;
-        debug.counts.ad_group_totals = 0;
+      for (const m of meta) {
+        baseRows.push({
+          campaign: m.campaign_name, ad_group: m.ad_group_name, _agid: m.ad_group_id,
+          _m: {
+            impressions: m.impressions || 0, clicks: m.clicks || 0,
+            cost_micros: m.cost_micros || 0, conversions: m.conversions || 0,
+            conversions_value: m.conversions_value || 0
+          }
+        });
       }
     }
 
-    // If a demographic filter is set but the demo has no data, the user wants
-    // a slice that doesn't exist. Surface a clear error before the filter
-    // silently zeros everything out.
+    // Detect missing demographic data when filtered on it
     for (const filterDim of Object.keys(filters || {})) {
       if (DIST_SEGS.has(filterDim)) {
         const map = distData[filterDim];
         const totalRows = map ? [...map.values()].reduce((s, l) => s + l.length, 0) : 0;
         if (totalRows === 0) {
-          return res.status(200).json({
-            dimensions, filters, metrics, range: rangeLabel,
-            rows: [], total_rows: 0,
-            totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 },
+          return res.json({
+            dimensions, filters, metrics, range: meta[0]?.range_label || 'cached',
+            rows: [], total_rows: 0, totals: { impressions: 0, clicks: 0, cost: 0, conversions: 0, value: 0 },
             diagnostic: {
-              source: 'live Google Ads',
-              ...debug,
-              notes: `Google Ads has no "${filterDim}" data for your account in this period. The "${filterDim}" filter can't be applied. Remove the ${filterDim} filter, OR change Period to a longer window, OR enable demographic observations on the campaigns in Google Ads.`
+              source: 'cache',
+              notes: `Cache has no "${filterDim}" data. Either run Sync All Time again, or remove the ${filterDim} filter — your Google Ads account may not surface that demographic.`
             }
           });
         }
-      }
-    }
-
-    // Resolve geo names if needed (one-shot lookup)
-    if (specDims[0] === 'geo' || filters.geo) {
-      const uniqGeo = [...new Set(baseRows.map(r => r.geo).filter(v => v && v.startsWith('geoTargetConstants/')))];
-      if (uniqGeo.length) {
-        try {
-          const list = uniqGeo.map(r => `'${r}'`).join(',');
-          const data = await runQ(`SELECT geo_target_constant.resource_name, geo_target_constant.name FROM geo_target_constant WHERE geo_target_constant.resource_name IN (${list})`);
-          const lookup = new Map();
-          for (const stream of data) for (const row of (stream.results || [])) {
-            lookup.set(row.geoTargetConstant?.resourceName, row.geoTargetConstant?.name);
-          }
-          for (const r of baseRows) if (r.geo && lookup.has(r.geo)) r.geo = lookup.get(r.geo);
-        } catch (e) { /* skip resolve on failure */ }
       }
     }
 
@@ -1714,14 +1590,11 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
         const list = (distData[d] && distData[d].get(base._agid)) || [];
         if (!list.length) return null;
         const total = list.reduce((s, x) => s + x.impressions, 0);
-        return {
-          segType: d,
-          buckets: list.map(x => ({ value: x.value, share: total > 0 ? x.impressions / total : 0 }))
-        };
+        return { segType: d, buckets: list.map(x => ({ value: x.value, share: total > 0 ? x.impressions / total : 0 })) };
       }).filter(Boolean);
 
       if (dists.length === 0) {
-        if (distDims.length > 0) continue; // wanted demo, no data for this ad_group
+        if (distDims.length > 0) continue;
         expanded.push({ ...base, _metrics: base._m });
         continue;
       }
@@ -1736,7 +1609,6 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
         }
         stack = next;
       }
-
       for (const s of stack) {
         expanded.push({
           ...s.row,
@@ -1751,7 +1623,6 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       }
     }
 
-    // Apply filters
     const filtered = expanded.filter(r => {
       for (const [d, allowed] of Object.entries(filters || {})) {
         if (!allowed || allowed.length === 0) continue;
@@ -1760,7 +1631,6 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       return true;
     });
 
-    // Aggregate by selected dimensions
     const groups = new Map();
     for (const r of filtered) {
       const dimVals = {};
@@ -1777,7 +1647,7 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       g.conversions_value += r._metrics.conversions_value || 0;
     }
 
-    const rows = [...groups.values()].map(g => {
+    const rowsOut = [...groups.values()].map(g => {
       const cost = g.cost_micros / 1_000_000;
       const dimVals = {};
       dimensions.forEach(d => { dimVals[d] = g[d]; });
@@ -1796,12 +1666,12 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
       };
     });
 
-    const sortMetric = sort && sort.metric || 'clicks';
+    const sortMetric = (sort && sort.metric) || 'clicks';
     const sortDir = (sort && sort.dir) === 'asc' ? 1 : -1;
-    rows.sort((a, b) => ((a[sortMetric] || 0) - (b[sortMetric] || 0)) * sortDir);
-    const limited = rows.slice(0, Math.min(parseInt(limit, 10) || 200, 5000));
+    rowsOut.sort((a, b) => ((a[sortMetric] || 0) - (b[sortMetric] || 0)) * sortDir);
+    const limited = rowsOut.slice(0, Math.min(parseInt(limit, 10) || 200, 5000));
 
-    const totals = rows.reduce((acc, r) => ({
+    const totals = rowsOut.reduce((acc, r) => ({
       impressions: acc.impressions + r.impressions,
       clicks: acc.clicks + r.clicks,
       cost: +(acc.cost + r.cost).toFixed(2),
@@ -1814,20 +1684,19 @@ router.post('/google-pivot', authenticateToken, async (req, res) => {
     totals.cpa = totals.conversions ? +(totals.cost / totals.conversions).toFixed(2) : 0;
     totals.roas = totals.cost > 0 ? +(totals.value / totals.cost).toFixed(2) : 0;
 
-    const payload = {
+    res.json({
       dimensions, filters, metrics,
-      range: rangeLabel,
-      rows: limited, total_rows: rows.length, totals,
+      range: meta[0]?.range_label || 'cached',
+      rows: limited, total_rows: rowsOut.length, totals,
       diagnostic: {
-        source: 'live Google Ads',
-        ...debug,
-        notes: segDims.filter(d => DIST_SEGS.has(d)).length > 1
-          ? 'Multi-demographic combo — numbers are weighted estimates because Google Ads does not expose true cross-tabs of two demographics.'
-          : 'Live data from Google Ads.'
+        source: 'cache (gads_ad_group_meta + gads_segments)',
+        ad_groups_in_cache: meta.length,
+        last_refreshed: meta[0]?.refreshed_at,
+        notes: distDims.length > 1
+          ? 'Multi-demographic combo — weighted estimates (Google does not expose true cross-tabs).'
+          : (segDims.length === 0 ? 'Per-ad-group totals from cache.' : 'Single segment from cache.')
       }
-    };
-    _pivotCache.set(cacheKey, { ts: Date.now(), payload });
-    return res.json(payload);
+    });
   } catch (err) {
     console.error('google-pivot error:', err);
     res.status(500).json({ error: err.message });

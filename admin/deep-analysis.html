@@ -207,6 +207,31 @@
       <input type="hidden" id="fromDate" value="">
       <input type="hidden" id="toDate" value="">
 
+      <!-- One-click sync card -->
+      <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0f4ff 0%,#fff 60%);border:1px solid #c7d2fe;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+          <div>
+            <h3 class="card-title" style="margin:0;display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4285F4;"></span>
+              Sync Google Ads → Cache
+            </h3>
+            <small style="color:#475569;">Pulls every campaign, ad group, demographic segment, conversion event, and search term into the local cache. Pivot then queries the cache instantly. Run once, pivot all you want.</small>
+            <div id="deepSyncStatus" style="margin-top:6px;font-size:12px;color:#94a3b8;">Loading status…</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="deepSyncPeriod" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="180">Last 180 days</option>
+              <option value="365">Last 365 days</option>
+              <option value="all" selected>All time</option>
+            </select>
+            <button type="button" id="deepSyncBtn" onclick="runDeepSync()" style="padding:10px 18px;background:linear-gradient(135deg,#3052FF 0%,#7c3aed 100%);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">⬇ Sync Now</button>
+          </div>
+        </div>
+        <div id="deepSyncResult" style="margin-top:10px;display:none;"></div>
+      </div>
+
       <!-- Google Ads Multi-Filter Pivot -->
       <div class="card" style="margin-bottom: 16px;">
         <div class="card-header">
@@ -216,9 +241,9 @@
           </div>
         </div>
 
-        <!-- Filters Panel — chips rendered as static HTML so they always show -->
-        <div style="background:#f8fafc;border-radius:10px;padding:14px;margin:8px 0;">
-          <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Filters — click values to include</div>
+        <!-- ▼ FILTERS zone (Excel-style) -->
+        <div style="background:#f8fafc;border-radius:10px;padding:14px;margin:8px 0;border-left:4px solid #f59e0b;">
+          <div style="font-size:11px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">⚙ Filters — click values to include in the pivot</div>
           <div id="pivotFilters" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
             <div class="filter-dim">
               <div class="filter-dim-title">Age</div>
@@ -291,10 +316,10 @@
           </div>
         </div>
 
-        <!-- Group + Metrics + Run -->
-        <div style="display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:12px;align-items:end;padding:8px 0;">
-          <div>
-            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Group by (rows)</label>
+        <!-- ▼ ROWS / COLUMNS / VALUES zones (Excel-style) -->
+        <div style="display:grid;grid-template-columns:2fr 2fr auto;gap:12px;align-items:end;padding:8px 0;">
+          <div style="background:#f8fafc;border-radius:10px;padding:10px;border-left:4px solid #3052FF;">
+            <label style="font-size:11px;color:#1e3a8a;font-weight:700;text-transform:uppercase;">📊 Rows — group by</label>
             <div id="pivotGroupBy" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
               <span class="group-chip selected" onclick="togglePivotGroupBy('campaign',this)">Campaign</span>
               <span class="group-chip" onclick="togglePivotGroupBy('ad_group',this)">Ad group</span>
@@ -311,14 +336,14 @@
               <span class="group-chip" onclick="togglePivotGroupBy('search_term',this)">Search term</span>
             </div>
           </div>
-          <div>
-            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Show metrics</label>
+          <div style="background:#f8fafc;border-radius:10px;padding:10px;border-left:4px solid #16a34a;">
+            <label style="font-size:11px;color:#14532d;font-weight:700;text-transform:uppercase;">∑ Values — metrics to show</label>
             <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;font-size:12px;">
               <label><input type="checkbox" class="pivotMetric" value="impressions"> Impressions</label>
               <label><input type="checkbox" class="pivotMetric" value="clicks" checked> Clicks</label>
               <label><input type="checkbox" class="pivotMetric" value="cost" checked> Cost</label>
               <label><input type="checkbox" class="pivotMetric" value="conversions" checked> Conversions</label>
-              <label><input type="checkbox" class="pivotMetric" value="value" checked> $ Value</label>
+              <label><input type="checkbox" class="pivotMetric" value="value"> $ Value</label>
               <label><input type="checkbox" class="pivotMetric" value="roas"> ROAS</label>
               <label><input type="checkbox" class="pivotMetric" value="ctr"> CTR</label>
               <label><input type="checkbox" class="pivotMetric" value="cpc"> CPC</label>
@@ -326,33 +351,17 @@
               <label><input type="checkbox" class="pivotMetric" value="cpa" checked> CPA</label>
             </div>
           </div>
-          <div>
-            <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Period</label>
-            <select id="pivotDays" onchange="onPivotPeriodChange()" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-              <option value="7">Last 7 days</option>
-              <option value="14">Last 14 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="180">Last 180 days</option>
-              <option value="365">Last 365 days</option>
-              <option value="all">All time</option>
-              <option value="custom">Custom…</option>
-            </select>
-            <div id="pivotCustomDates" style="display:none;margin-top:6px;display:flex;gap:4px;">
-              <input type="date" id="pivotFromDate" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;">
-              <input type="date" id="pivotToDate" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;">
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;">Run Pivot</button>
-        </div>
-        <div style="margin:6px 0 0;font-size:12px;">
-          <button onclick="testGoogleAdsConnection()" style="padding:6px 12px;background:#fff;color:#3052FF;border:1px dashed #c7d2fe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🩺 Test Google Ads connection</button>
-          <span style="color:#94a3b8;margin-left:8px;">If pivot is empty, click this to see what Google Ads actually returns.</span>
+          <button class="btn btn-primary" onclick="runGoogleAdsPivot()" style="white-space:nowrap;align-self:stretch;">Run Pivot</button>
         </div>
 
-        <div style="margin-top:8px;font-size:13px;">
-          <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Spread as columns (optional)</label>
-          <select id="pivotColumnDim" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+        <input type="hidden" id="pivotDays" value="cache">
+        <input type="hidden" id="pivotFromDate" value="">
+        <input type="hidden" id="pivotToDate" value="">
+        <div id="pivotCustomDates" style="display:none;"></div>
+
+        <div style="margin-top:8px;font-size:13px;background:#f8fafc;border-radius:10px;padding:10px;border-left:4px solid #ea580c;">
+          <label style="font-size:11px;color:#7c2d12;font-weight:700;text-transform:uppercase;">↔ Columns — spread as columns (optional)</label><br>
+          <select id="pivotColumnDim" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:4px;">
             <option value="">— None (flat) —</option>
             <option value="conversion_action">Event (each event = its own column)</option>
             <option value="device">Device</option>
@@ -463,9 +472,62 @@
     }
 
     async function loadAll() {
-      // Pivot-only page — auto-run on load
+      loadDeepSyncStatus();
       loadConvActionFilterChips();
       runGoogleAdsPivot();
+    }
+
+    async function loadDeepSyncStatus() {
+      try {
+        const r = await fetch('/api/deep-analysis/deep-sync-status');
+        const d = await r.json();
+        const el = document.getElementById('deepSyncStatus');
+        if (!el) return;
+        if (!d.total) {
+          el.innerHTML = '⚠ <strong>Cache is empty.</strong> Click "Sync Now" to pull data from Google Ads.';
+          el.style.color = '#9a3412';
+          return;
+        }
+        const ts = d.last_refreshed ? new Date(d.last_refreshed).toLocaleString() : 'unknown';
+        const breakdown = (d.by_type || []).map(b => `${b.segment_type}: ${b.n.toLocaleString()}`).join(' · ');
+        el.innerHTML = `Last synced: <strong>${ts}</strong> · <strong>${d.total.toLocaleString()}</strong> rows cached (${breakdown})`;
+        el.style.color = '#475569';
+      } catch (e) {}
+    }
+
+    async function runDeepSync() {
+      const btn = document.getElementById('deepSyncBtn');
+      const result = document.getElementById('deepSyncResult');
+      const period = document.getElementById('deepSyncPeriod').value || '30';
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.textContent = '⏳ Syncing…';
+      result.style.display = 'block';
+      result.innerHTML = '<div style="padding:12px;background:#eef2ff;border-radius:8px;color:#4338ca;font-size:13px;">Pulling all campaigns / ad groups / demographics / events / search terms from Google Ads…</div>';
+      try {
+        const body = period === 'all' ? { days: 'all' } : { days: parseInt(period, 10) };
+        const r = await fetch('/api/deep-analysis/deep-sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Sync failed');
+        const counts = d.counts || {};
+        const errors = d.errors || {};
+        const items = Object.entries(counts).map(([k, v]) => {
+          const errMsg = errors[k] ? ` <span style="color:#dc2626;">(${(errors[k] || '').replace(/</g, '&lt;')})</span>` : '';
+          const color = errors[k] ? '#dc2626' : (v > 0 ? '#166534' : '#94a3b8');
+          return `<div style="padding:5px 9px;background:#fff;border-radius:6px;border:1px solid #e2e8f0;font-size:11px;"><strong style="color:${color};">${v.toLocaleString()}</strong> ${k}${errMsg}</div>`;
+        }).join('');
+        result.innerHTML = `<div style="padding:12px;background:#dcfce7;border-radius:8px;color:#166534;border:1px solid #86efac;">
+          <strong>✓ Synced ${d.total_rows.toLocaleString()} rows in ${(d.duration_ms/1000).toFixed(1)}s — ${d.range}</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">${items}</div>
+        </div>`;
+        loadDeepSyncStatus();
+        runGoogleAdsPivot();
+      } catch (err) {
+        result.innerHTML = `<div style="padding:12px;background:#fee2e2;border-radius:8px;color:#991b1b;">❌ Sync failed: ${(err.message || '').replace(/</g, '&lt;')}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     }
 
     async function loadConvActionFilterChips() {
@@ -729,35 +791,24 @@
     async function runGoogleAdsPivot() {
       if (_pivotGroupBy.length === 0) { alert('Pick at least one Group by dimension.'); return; }
       const metrics = [...document.querySelectorAll('.pivotMetric:checked')].map(c => c.value);
-      const periodVal = document.getElementById('pivotDays').value;
       const sortMetric = document.getElementById('pivotSortMetric').value;
       const sortDir = document.getElementById('pivotSortDir').value;
       const limit = parseInt(document.getElementById('pivotLimit').value, 10) || 10;
       const columnDim = document.getElementById('pivotColumnDim').value;
       const columnMetric = document.getElementById('pivotColumnMetric').value || 'conversions';
 
-      // Build group-by including the column dim if any (so backend returns all bucket combos)
       const dimensionsForRequest = columnDim
         ? [..._pivotGroupBy.filter(d => d !== columnDim), columnDim]
         : [..._pivotGroupBy];
 
-      // Date params
+      // Pivot now reads from cache — no date params needed
       const body = {
         dimensions: dimensionsForRequest,
         filters: _pivotFilters,
         metrics,
         sort: { metric: sortMetric, dir: sortDir },
-        limit: columnDim ? limit * 50 : limit  // need more rows when transposing
+        limit: columnDim ? limit * 50 : limit
       };
-      if (periodVal === 'custom') {
-        body.from_date = document.getElementById('pivotFromDate').value;
-        body.to_date = document.getElementById('pivotToDate').value;
-        if (!body.from_date || !body.to_date) { alert('Pick both From and To dates.'); return; }
-      } else if (periodVal === 'all') {
-        body.days = 'all';
-      } else {
-        body.days = parseInt(periodVal, 10) || 30;
-      }
 
       const target = document.getElementById('googlePivotResult');
       target.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Pulling from Google Ads…</div>';
