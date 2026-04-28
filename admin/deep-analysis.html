@@ -351,9 +351,14 @@
               <label><input type="checkbox" class="pivotMetric" value="cpa" checked> CPA</label>
             </div>
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #cbd5e1;">
-              <label style="font-size:11px;color:#4338ca;font-weight:700;text-transform:uppercase;">Conversion events — pick which to show as columns</label>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                <label style="font-size:11px;color:#4338ca;font-weight:700;text-transform:uppercase;">Conversion events — pick which to show as columns</label>
+                <label style="font-size:11px;color:#64748b;cursor:pointer;">
+                  <input type="checkbox" id="pivotShowAllEvents" onchange="loadConvActionFilterChips()"> Show all events (incl. non-primary)
+                </label>
+              </div>
               <div id="pivotEventCheckboxes" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;font-size:12px;">
-                <span style="color:#94a3b8;font-style:italic;">Click "Sync Now" first to load events.</span>
+                <span style="color:#94a3b8;font-style:italic;">Loading events…</span>
               </div>
             </div>
           </div>
@@ -422,6 +427,16 @@
       </div>
 
       <style>
+        /* Resizable pivot table columns */
+        #googlePivotResult table { table-layout: auto; }
+        #googlePivotResult th { position: relative; padding-right: 14px; }
+        #googlePivotResult th .col-resizer {
+          position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+          cursor: col-resize; user-select: none; background: transparent;
+        }
+        #googlePivotResult th .col-resizer:hover,
+        #googlePivotResult th .col-resizer.dragging { background: #3052FF; opacity: 0.4; }
+
         .filter-dim { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
         .filter-dim-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px; }
         .filter-chip { display: inline-block; padding: 3px 9px; margin: 2px 3px 2px 0; border: 1px solid #e2e8f0; background: #fff; border-radius: 99px; font-size: 11px; cursor: pointer; user-select: none; color: #475569; }
@@ -538,12 +553,14 @@
     }
 
     async function loadConvActionFilterChips() {
-      // Pull the list of conversion actions DIRECTLY from Google Ads
-      // (independent of the cache — these are the configured events).
       try {
         const r = await fetch('/api/deep-analysis/conversion-actions');
         const d = await r.json();
-        const events = (d.events || []).map(e => e.name).filter(Boolean);
+        const showAll = document.getElementById('pivotShowAllEvents')?.checked;
+        // Default: only PRIMARY conversions ("purchase" / Bar's main events)
+        const all = (d.events || []);
+        const filtered = showAll ? all : all.filter(e => e.primary && e.status === 'ENABLED');
+        const events = filtered.map(e => e.name).filter(Boolean);
 
         // Filter chips
         const chipsHtml = events.map(e => `<span class="filter-chip" onclick="togglePivotFilter('conversion_action','${e.replace(/'/g,"&#39;")}',this)">${e.replace(/</g, '&lt;')}</span>`).join('');
@@ -556,17 +573,21 @@
         // Per-event metric checkboxes
         const evEl = document.getElementById('pivotEventCheckboxes');
         if (evEl) {
-          if (events.length === 0) {
-            evEl.innerHTML = `<span style="color:#dc2626;font-style:italic;">${(d.notes || 'No conversion actions found in this Google Ads account.').replace(/</g, '&lt;')}</span>`;
+          if (filtered.length === 0) {
+            const why = showAll
+              ? (d.notes || 'No conversion actions found in this Google Ads account.')
+              : 'No primary conversion actions configured. Tick "Show all events" to see secondary ones.';
+            evEl.innerHTML = `<span style="color:#dc2626;font-style:italic;">${why.replace(/</g, '&lt;')}</span>`;
           } else {
-            evEl.innerHTML = (d.events || []).map(ev => {
+            evEl.innerHTML = filtered.map(ev => {
               const name = ev.name || 'UNNAMED';
               const safe = name.replace(/"/g, '&quot;');
               const dimColor = ev.status === 'ENABLED' ? '#4338ca' : '#94a3b8';
               const bg = ev.status === 'ENABLED' ? '#eef2ff' : '#f1f5f9';
               const border = ev.status === 'ENABLED' ? '#c7d2fe' : '#e2e8f0';
+              const primaryStar = ev.primary ? '★ ' : '';
               const statusBadge = ev.status === 'ENABLED' ? '' : ` <small style="color:#94a3b8;">(${ev.status})</small>`;
-              return `<label style="background:${bg};color:${dimColor};padding:3px 8px;border-radius:6px;border:1px solid ${border};cursor:pointer;"><input type="checkbox" class="pivotEvent" value="${safe}" ${ev.status === 'ENABLED' ? 'checked' : ''}> ${name.replace(/</g, '&lt;')}${statusBadge}</label>`;
+              return `<label style="background:${bg};color:${dimColor};padding:3px 8px;border-radius:6px;border:1px solid ${border};cursor:pointer;"><input type="checkbox" class="pivotEvent" value="${safe}" ${ev.status === 'ENABLED' ? 'checked' : ''}> ${primaryStar}${name.replace(/</g, '&lt;')}${statusBadge}</label>`;
             }).join('');
           }
         }
@@ -1116,6 +1137,47 @@
     }
 
     function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+    // After every pivot render, attach a draggable handle to every <th> so the
+    // user can resize columns Excel-style.
+    function _attachColResizers() {
+      const target = document.getElementById('googlePivotResult');
+      if (!target) return;
+      target.querySelectorAll('th').forEach(th => {
+        if (th.querySelector('.col-resizer')) return;
+        const handle = document.createElement('div');
+        handle.className = 'col-resizer';
+        th.appendChild(handle);
+        handle.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          handle.classList.add('dragging');
+          const startX = e.clientX;
+          const startWidth = th.offsetWidth;
+          const onMove = ev => {
+            const w = Math.max(40, startWidth + (ev.clientX - startX));
+            th.style.width = w + 'px';
+            th.style.minWidth = w + 'px';
+            th.style.maxWidth = w + 'px';
+          };
+          const onUp = () => {
+            handle.classList.remove('dragging');
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+      });
+    }
+    // Patch render functions to call _attachColResizers right after they update DOM.
+    // Use a MutationObserver on the result container so it fires after every render.
+    document.addEventListener('DOMContentLoaded', () => {
+      const target = document.getElementById('googlePivotResult');
+      if (target) {
+        const obs = new MutationObserver(() => _attachColResizers());
+        obs.observe(target, { childList: true, subtree: true });
+      }
+    });
 
     // --- Legacy visitor pivot (dead, kept guarded so old callers don't crash) ---
     async function loadPivotDEAD() {
