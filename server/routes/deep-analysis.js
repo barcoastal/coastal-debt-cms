@@ -957,28 +957,25 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
       counts.search_term = 0;
     }
 
-    // Conversion actions — segment metrics by which conversion action fired.
-    // Includes conversions_value (revenue / lead value) so we can answer
-    // "where is the money going / coming from".
+    // Conversion actions — query ONLY conversion metrics (Google Ads rejects
+    // mixing conversion_action segment with impressions/clicks/cost on many accounts).
     try {
       const gaql = `
         SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
-          segments.conversion_action_name, segments.conversion_action_category,
+          segments.conversion_action_name,
           metrics.conversions, metrics.conversions_value,
-          metrics.all_conversions, metrics.all_conversions_value,
-          metrics.cost_micros, metrics.clicks, metrics.impressions
+          metrics.all_conversions, metrics.all_conversions_value
         FROM ad_group
         WHERE segments.date ${dateClause}
-          AND ad_group.status = 'ENABLED' AND campaign.status = 'ENABLED'
       `;
       const data = await runQuery(gaql);
       const insertConv = db.prepare(`
         INSERT INTO gads_segments (
           ad_group_id, ad_group_name, campaign_id, campaign_name,
-          segment_type, segment_value, impressions, clicks, cost_micros,
+          segment_type, segment_value,
           conversions, conversions_value, all_conversions, all_conversions_value,
           range_label, refreshed_at
-        ) VALUES (?, ?, ?, ?, 'conversion_action', ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, 'conversion_action', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `);
       const insertConvMany = db.transaction(rows => { for (const r of rows) insertConv.run(...r); });
       const rows = [];
@@ -990,9 +987,6 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
             row.adGroup?.id, row.adGroup?.name,
             row.campaign?.id, row.campaign?.name,
             actionName,
-            parseInt(m.impressions || 0, 10),
-            parseInt(m.clicks || 0, 10),
-            parseInt(m.costMicros || 0, 10),
             parseFloat(m.conversions || 0),
             parseFloat(m.conversionsValue || 0),
             parseFloat(m.allConversions || 0),
