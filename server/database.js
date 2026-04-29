@@ -357,10 +357,10 @@ try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } 
 // Add user_access_token to facebook_config (for multi-page sync)
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN user_access_token TEXT`); } catch (e) {}
 
-// Add capi_access_token for server-side Conversions API events
-try { db.exec(`ALTER TABLE facebook_config ADD COLUMN capi_access_token TEXT`); } catch (e) {}
-
-// Track Meta Pixel events (browser + server-side CAPI dedupe via event_id)
+// Track Meta Pixel events (browser + server-side CAPI dedupe via event_id).
+// Used for non-lead events like PDF guide downloads (lead-tied events live in
+// conversion_events). The CAPI fan-out reuses sendFacebookEvent() from
+// routes/facebook.js, which authenticates with facebook_config.page_access_token.
 db.exec(`
   CREATE TABLE IF NOT EXISTS meta_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

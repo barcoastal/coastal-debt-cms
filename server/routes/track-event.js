@@ -1,11 +1,12 @@
 // /api/track-event — server-side mirror for browser-fired Meta Pixel events.
-// Persists each event to meta_events and (if a CAPI access token is configured)
-// fires the same event to Meta's Conversions API with the matching event_id so the
-// pixel + CAPI events dedupe.
+// Persists each event to meta_events and fans out to Meta's Conversions API
+// via the existing sendFacebookEvent() helper in routes/facebook.js (which
+// authenticates with facebook_config.page_access_token).
+// Browser-fired fbq() and server CAPI dedupe on the shared event_id.
 //
 // POST /api/track-event
 // Body: { event, event_id, placement, visitor_id, url, pdf_url }
-//   event:        Meta event name (e.g. "Lead", "ViewContent")
+//   event:        Meta event name (default "Lead")
 //   event_id:     unique id matching the browser fbq() eventID for dedup
 //   placement:    where the event fired (e.g. "hero", "form-submit")
 //   visitor_id:   our internal visitor id
@@ -13,15 +14,11 @@
 //   pdf_url:      the PDF being downloaded (optional context)
 
 const express = require('express');
-const crypto = require('crypto');
 const router = express.Router();
 const { db } = require('../database');
+const facebookModule = require('./facebook');
+const sendFacebookEvent = facebookModule.sendFacebookEvent;
 
-const META_API_VERSION = 'v21.0';
-
-function sha256(s) {
-  return crypto.createHash('sha256').update(String(s).trim().toLowerCase()).digest('hex');
-}
 function getCookie(req, name) {
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
@@ -38,14 +35,12 @@ router.post('/', async (req, res) => {
     pdf_url
   } = req.body || {};
 
-  // Generate event_id server-side if missing so we can still record + dedupe
   const finalEventId = event_id || `srv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   const userAgent = req.headers['user-agent'] || '';
   const ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
   const fbp = getCookie(req, '_fbp');
   const fbc = getCookie(req, '_fbc');
 
-  // Persist locally — this is the source-of-truth for "every download"
   let rowId = null;
   try {
     const r = db.prepare(`
@@ -58,72 +53,34 @@ router.post('/', async (req, res) => {
     console.error('meta_events insert failed:', e.message);
   }
 
-  // Fire CAPI in the background — don't block the response
   res.json({ ok: true, event_id: finalEventId });
 
-  setImmediate(() => fireCapi(rowId, {
-    event_name: event,
-    event_id: finalEventId,
-    url: url || '',
-    user_agent: userAgent,
-    ip, fbp, fbc, visitor_id: visitor_id || ''
-  }).catch(err => console.error('CAPI error:', err.message)));
-});
-
-async function fireCapi(rowId, ctx) {
-  let cfg;
-  try {
-    cfg = db.prepare('SELECT pixel_id, capi_access_token, test_event_code FROM facebook_config WHERE id = 1').get();
-  } catch (e) { return; }
-  if (!cfg || !cfg.pixel_id || !cfg.capi_access_token) {
-    if (rowId) db.prepare(`UPDATE meta_events SET capi_status = 'skipped' WHERE id = ?`).run(rowId);
-    return;
-  }
-
-  const userData = {
-    client_user_agent: ctx.user_agent || undefined,
-    client_ip_address: ctx.ip || undefined,
-    fbp: ctx.fbp || undefined,
-    fbc: ctx.fbc || undefined
-  };
-  if (ctx.visitor_id) userData.external_id = sha256(ctx.visitor_id);
-
-  const eventTime = Math.floor(Date.now() / 1000);
-  const body = {
-    data: [{
-      event_name: ctx.event_name,
-      event_time: eventTime,
-      event_id: ctx.event_id,
-      event_source_url: ctx.url || undefined,
-      action_source: 'website',
-      user_data: userData,
-      custom_data: {
-        content_name: 'MCA Debt Relief Guide',
-        content_category: 'PDF Guide',
-        content_ids: ['mca-debt-relief-guide'],
-        content_type: 'product',
-        currency: 'USD',
-        value: 0
+  setImmediate(async () => {
+    try {
+      const result = await sendFacebookEvent(event, {
+        client_user_agent: userAgent,
+        client_ip_address: ip,
+        fbp, fbc
+      }, {
+        event_id: finalEventId,
+        event_source_url: url || undefined
+      });
+      if (rowId) {
+        const status = result.success ? 'sent' : (result.error && /not configured/i.test(result.error) ? 'skipped' : 'error');
+        const response = result.success
+          ? `events_received: ${result.events_received || 0}`
+          : (result.error || 'unknown');
+        db.prepare(`UPDATE meta_events SET capi_status = ?, capi_response = ? WHERE id = ?`)
+          .run(status, String(response).slice(0, 500), rowId);
       }
-    }]
-  };
-  if (cfg.test_event_code) body.test_event_code = cfg.test_event_code;
-
-  const url = `https://graph.facebook.com/${META_API_VERSION}/${cfg.pixel_id}/events?access_token=${encodeURIComponent(cfg.capi_access_token)}`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    } catch (err) {
+      console.error('CAPI fan-out error:', err.message);
+      if (rowId) {
+        db.prepare(`UPDATE meta_events SET capi_status = 'error', capi_response = ? WHERE id = ?`)
+          .run(String(err.message).slice(0, 500), rowId);
+      }
+    }
   });
-  const text = await r.text();
-
-  if (rowId) {
-    db.prepare(`UPDATE meta_events SET capi_status = ?, capi_response = ? WHERE id = ?`).run(
-      r.ok ? 'sent' : 'error',
-      text.slice(0, 500),
-      rowId
-    );
-  }
-}
+});
 
 module.exports = router;
