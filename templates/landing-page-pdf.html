@@ -320,7 +320,6 @@
     _pdfSubmitting = true;
     var form = e.target;
     var btn = form.querySelector('button[type="submit"]');
-    var orig = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
     var fd = new FormData(form);
     var data = {};
@@ -328,8 +327,37 @@
     var pdfUrl = "{{pdfUrl}}";
     function finish() {
       _pdfSubmitting = false;
-      if (pdfUrl) { window.location.href = pdfUrl; return; }
-      form.outerHTML = '<div style="padding:32px;text-align:center;"><div style="width:64px;height:64px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-size:30px;font-weight:800;">✓</div><h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Thank you!</h2><p style="color:#475569;">We will email you the guide shortly.</p></div>';
+      var card = form.closest('.form-card');
+      var thankYou;
+      if (pdfUrl) {
+        thankYou =
+          '<div style="text-align:center;padding:8px 0 4px;">' +
+            '<div style="width:64px;height:64px;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#fff;font-size:32px;font-weight:800;box-shadow:0 12px 28px rgba(22,163,74,0.32);">✓</div>' +
+            '<h2 style="font-size:22px;font-weight:800;margin-bottom:8px;color:#0b1320;">You are all set!</h2>' +
+            '<p style="color:#475569;font-size:14px;margin-bottom:22px;line-height:1.55;">Your guide is ready. The download should start automatically — if not, click the button.</p>' +
+            '<a id="pdfDownloadLink" href="' + pdfUrl + '" download class="submit-btn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;width:auto;padding:16px 32px;">' +
+              '<span style="font-size:18px;">⬇</span> Download the Guide' +
+            '</a>' +
+            '<div style="font-size:12px;color:#94a3b8;margin-top:16px;">A copy has also been emailed to you.</div>' +
+          '</div>';
+      } else {
+        thankYou =
+          '<div style="text-align:center;padding:8px 0 4px;">' +
+            '<div style="width:64px;height:64px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#fff;font-size:32px;font-weight:800;">✓</div>' +
+            '<h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Thank you!</h2>' +
+            '<p style="color:#475569;font-size:14px;">We will email you the guide shortly.</p>' +
+          '</div>';
+      }
+      // Replace form contents but keep the card frame
+      if (card) card.innerHTML = thankYou;
+      else form.outerHTML = thankYou;
+      // Auto-start the download (user sees the success card AND gets the file)
+      if (pdfUrl) setTimeout(function() {
+        var a = document.createElement('a');
+        a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener';
+        a.download = '';
+        document.body.appendChild(a); a.click(); a.remove();
+      }, 400);
     }
     fetch('/api/leads', {
       method: 'POST',
