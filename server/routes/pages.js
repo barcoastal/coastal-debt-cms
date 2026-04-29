@@ -1,10 +1,35 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
 
 const router = express.Router();
+
+// PDF upload — saves to the same uploads dir served at /lp/uploads/
+const PDF_UPLOAD_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+  : path.join(__dirname, '..', '..', 'public', 'uploads');
+if (!fs.existsSync(PDF_UPLOAD_DIR)) fs.mkdirSync(PDF_UPLOAD_DIR, { recursive: true });
+
+const pdfStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, PDF_UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext).replace(/[^a-z0-9-_]/gi, '-').slice(0, 60);
+    cb(null, `pdf-${base}-${Date.now()}${ext}`);
+  }
+});
+const pdfUpload = multer({
+  storage: pdfStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.pdf') cb(null, true);
+    else cb(new Error('Only .pdf files are allowed'));
+  }
+});
 
 // Import logActivity (loaded after initialization to avoid circular deps)
 let logActivity = null;
@@ -101,6 +126,35 @@ const defaultContent = {
     primaryLight: "#4a6aff",
     navy: "#1a2e4a",
     navyDark: "#0f1c2e",
+    ctaButton: "#3052FF",
+    ctaButtonHover: "#2442d4",
+    headlineHighlight: "#3052FF"
+  }
+};
+
+const defaultContentPdf = {
+  pageTitle: "Free MCA Debt Relief Guide | Coastal Debt Resolve",
+  metaDescription: "Download our free practical guide for business owners on managing and reducing MCA debt without bankruptcy.",
+  phone: "(888) 487-4167",
+  headline: "Sign Up Now & Download Our Practical Guide to Getting Your Business",
+  headlineHighlight: "Out of Debt",
+  subheadline: "A practical guide for business owners facing financial pressure — understand your debt, avoid common mistakes, and take informed steps toward greater financial control.",
+  ctaButton: "Get the Guide Free",
+  formTitle: "Get Your Free Guide",
+  formSubtitle: "Enter your details and we'll send the PDF straight to your inbox.",
+  formButton: "Send Me the Guide",
+  heroImageUrl: "https://join.coastaldebt.com/wp-content/uploads/2025/08/665db00fa31ff6049c61e8e0_lp-hero-img-901x1024.webp",
+  pdfUrl: "",
+  pdfName: "",
+  section1Title: "Why Debt Pressure Requires Careful Planning",
+  section1Body: "Debt can force business owners into survival mode, where short-term relief takes priority over long-term planning. Hidden consequences — daily ACH withdrawals, factor-rate compounding, and aggressive collections — can quietly erode the business while owners focus on the next payment. Stepping back to plan is the first step toward real control.",
+  section2Title: "Practical Solutions That Protect Your Business",
+  section2Body: "Settlement, restructuring, and consolidation are tools — not magic. The right approach depends on the type of debt, the lender mix, and the cash-flow runway. This guide walks through the structured options business owners actually use to keep operations running while reducing total debt.",
+  section3Title: "Take the First Step With Clear Information",
+  section3Body: "Knowledge changes outcomes. Download the guide, share it with your team, and use it as a starting point for the conversation with a debt-relief specialist. We're here when you're ready.",
+  ctaTitle: "Ready to Get Out of MCA Debt?",
+  ctaSubtitle: "Download the guide. No fluff. Just the steps that work.",
+  colors: {
     ctaButton: "#3052FF",
     ctaButtonHover: "#2442d4",
     headlineHighlight: "#3052FF"
@@ -569,8 +623,11 @@ router.get('/:id', authenticateToken, (req, res) => {
   try {
     const saved = JSON.parse(page.content || '{}');
     // Merge with defaults so editor fields show actual values
-    const defaults = (page.template_type === 'authority') ? defaultContentAuthority : defaultContent;
-    page.content = { ...defaults, ...saved, colors: { ...defaults.colors, ...(saved.colors || {}) } };
+    const defaults =
+      page.template_type === 'authority' ? defaultContentAuthority :
+      page.template_type === 'pdf' ? defaultContentPdf :
+      defaultContent;
+    page.content = { ...defaults, ...saved, colors: { ...(defaults.colors || {}), ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
     page.hidden_fields = JSON.parse(page.hidden_fields || '{}');
   } catch (e) {}
@@ -588,7 +645,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -601,7 +658,11 @@ router.post('/', authenticateToken, (req, res) => {
       platform || 'other',
       traffic_source || '',
       form_id || null,
-      JSON.stringify(validTemplateType === 'authority' ? defaultContentAuthority : defaultContent),
+      JSON.stringify(
+        validTemplateType === 'authority' ? defaultContentAuthority :
+        validTemplateType === 'pdf' ? defaultContentPdf :
+        defaultContent
+      ),
       JSON.stringify(validTemplateType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
       JSON.stringify({}),
       validTemplateType
@@ -672,7 +733,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -790,7 +851,11 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         name, slug, platform, traffic_source, form_id || null,
-        JSON.stringify(validType === 'authority' ? defaultContentAuthority : defaultContent),
+        JSON.stringify(
+          validType === 'authority' ? defaultContentAuthority :
+          validType === 'pdf' ? defaultContentPdf :
+          defaultContent
+        ),
         JSON.stringify(validType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
         JSON.stringify({}),
         validType,
@@ -994,6 +1059,33 @@ router.post('/:id/regen-ai-from-folder', authenticateToken, async (req, res) => 
   }
 });
 
+// Upload a PDF and attach its public URL to the LP's content.pdfUrl.
+// The PDF lives at /lp/uploads/<filename> after upload.
+router.post('/:id/upload-pdf', authenticateToken, (req, res) => {
+  pdfUpload.single('pdf')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: err.message || 'Upload failed' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    const page = db.prepare('SELECT * FROM landing_pages WHERE id = ?').get(req.params.id);
+    if (!page) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+      return res.status(404).json({ error: 'Page not found' });
+    }
+    const url = `/lp/uploads/${req.file.filename}`;
+    let content = {};
+    try { content = JSON.parse(page.content || '{}'); } catch (e) {}
+    content.pdfUrl = url;
+    content.pdfName = req.file.originalname;
+    content.pdfSize = req.file.size;
+    db.prepare(`UPDATE landing_pages SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+      .run(JSON.stringify(content), req.params.id);
+    generateLandingPage(page.id);
+    res.json({ success: true, pdfUrl: url, pdfName: req.file.originalname, pdfSize: req.file.size });
+  });
+});
+
 // Set Google Ads campaign / ad_group association
 router.put('/:id/gads-link', authenticateToken, (req, res) => {
   const { campaign_id, campaign_name, ad_group_id, ad_group_name } = req.body;
@@ -1179,7 +1271,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1212,7 +1304,10 @@ function generateLandingPage(pageId) {
 
   // Merge content with defaults so all template placeholders get replaced
   // If a field is explicitly set (even to empty string), respect it
-  const defaults = (page.template_type === 'authority') ? defaultContentAuthority : defaultContent;
+  const defaults =
+    page.template_type === 'authority' ? defaultContentAuthority :
+    page.template_type === 'pdf' ? defaultContentPdf :
+    defaultContent;
   const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
     if (value !== null && value !== undefined) {

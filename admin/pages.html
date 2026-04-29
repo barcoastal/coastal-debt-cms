@@ -461,6 +461,7 @@
                 <option value="mca-variant">MCA Variant (Keyword-Targeted Join)</option>
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
                 <option value="leadgen">Lead Gen (Funnel)</option>
+                <option value="pdf">PDF Guide (download)</option>
             </select>
           </div>
           <div class="form-group">
@@ -488,6 +489,23 @@
       </div>
       <form id="editForm">
         <input type="hidden" id="editId">
+
+        <!-- PDF upload (only shows when template_type = pdf) -->
+        <div class="edit-section" id="pdfUploadSection" style="display:none;">
+          <h3 class="section-header" onclick="toggleSection('pdfUpload')">
+            <span>📄 PDF File</span>
+            <span class="toggle-icon">-</span>
+          </h3>
+          <div class="section-content" id="section-pdfUpload">
+            <div id="pdfCurrent" style="margin-bottom:10px;font-size:13px;color:#475569;"></div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <input type="file" id="pdfFileInput" accept=".pdf" style="flex:1;padding:8px;border:1px dashed #c7d2fe;border-radius:8px;background:#f8fafc;">
+              <button type="button" class="btn btn-primary" onclick="uploadPdf()">⬆ Upload PDF</button>
+            </div>
+            <small style="color:#94a3b8;display:block;margin-top:6px;">Max 50 MB. Saved to /lp/uploads/. Visitors who submit the form get redirected to this PDF.</small>
+            <div id="pdfUploadStatus" style="margin-top:8px;font-size:12px;"></div>
+          </div>
+        </div>
 
         <!-- AI Content Generator -->
         <div class="ai-section">
@@ -545,6 +563,7 @@
                 <option value="mca-variant">MCA Variant (Keyword-Targeted Join)</option>
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
                 <option value="leadgen">Lead Gen (Funnel)</option>
+                <option value="pdf">PDF Guide (download)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -1653,6 +1672,57 @@
       agSel.disabled = matches.length === 0;
     }
 
+    function _refreshPdfSection(templateType, content) {
+      const sec = document.getElementById('pdfUploadSection');
+      const cur = document.getElementById('pdfCurrent');
+      if (!sec) return;
+      if (templateType === 'pdf') {
+        sec.style.display = '';
+        if (content && content.pdfUrl) {
+          const sizeKb = content.pdfSize ? Math.round(content.pdfSize / 1024) : null;
+          cur.innerHTML = `Current file: <a href="${content.pdfUrl}" target="_blank" style="font-weight:600;">${content.pdfName || content.pdfUrl}</a>${sizeKb ? ' <small style="color:#94a3b8;">(' + sizeKb.toLocaleString() + ' KB)</small>' : ''}`;
+        } else {
+          cur.innerHTML = '<em style="color:#9a3412;">⚠ No PDF uploaded yet — visitors who submit the form won’t have a file to download.</em>';
+        }
+      } else {
+        sec.style.display = 'none';
+      }
+    }
+
+    // Re-render PDF state when user changes the template type in the dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+      const tt = document.getElementById('editTemplateType');
+      if (tt) tt.addEventListener('change', function() {
+        _refreshPdfSection(tt.value, currentEditContent || {});
+      });
+    });
+
+    async function uploadPdf() {
+      const id = document.getElementById('editId').value;
+      const fileInput = document.getElementById('pdfFileInput');
+      const status = document.getElementById('pdfUploadStatus');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { status.innerHTML = '<span style="color:#dc2626;">Pick a .pdf file first.</span>'; return; }
+      if (!file.name.toLowerCase().endsWith('.pdf')) { status.innerHTML = '<span style="color:#dc2626;">Only .pdf files allowed.</span>'; return; }
+      status.innerHTML = '<span style="color:#3052FF;">Uploading…</span>';
+      const fd = new FormData();
+      fd.append('pdf', file);
+      try {
+        const r = await fetch('/api/pages/' + id + '/upload-pdf', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Upload failed');
+        status.innerHTML = '<span style="color:#16a34a;">✓ Uploaded</span>';
+        // Update visible state
+        currentEditContent = currentEditContent || {};
+        currentEditContent.pdfUrl = d.pdfUrl;
+        currentEditContent.pdfName = d.pdfName;
+        currentEditContent.pdfSize = d.pdfSize;
+        _refreshPdfSection('pdf', currentEditContent);
+      } catch (err) {
+        status.innerHTML = '<span style="color:#dc2626;">' + (err.message || 'Failed').replace(/</g, '&lt;') + '</span>';
+      }
+    }
+
     async function editPage(id) {
       await loadFormsForSelect('editFormId');
       const res = await fetch(`/api/pages/${id}`);
@@ -1666,6 +1736,8 @@
       document.getElementById('editSlug').value = page.slug;
       document.getElementById('editPlatform').value = page.platform;
       document.getElementById('editTemplateType').value = page.template_type || 'form';
+      // Toggle the PDF upload section based on template
+      _refreshPdfSection(page.template_type, content);
       document.getElementById('editSource').value = page.traffic_source || '';
       document.getElementById('editFormId').value = page.form_id || '';
       document.getElementById('editPhone').value = content.phone || '';

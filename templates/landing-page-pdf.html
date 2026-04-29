@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{pageTitle}}</title>
+<meta name="description" content="{{metaDescription}}">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{{HEAD_SCRIPTS}}
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #112337; line-height: 1.5; background: #fff; }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: #3052FF; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+  /* Top bar */
+  .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 0; }
+  .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .topbar img { height: 38px; }
+  .topbar .phone { font-size: 16px; font-weight: 700; color: #3052FF; }
+
+  /* Hero */
+  .hero { background: linear-gradient(135deg, #f0f4ff 0%, #fff 60%); padding: 56px 0 64px; }
+  .hero-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; }
+  .hero h1 { font-size: 38px; line-height: 1.15; font-weight: 800; margin-bottom: 18px; }
+  .hero h1 span { color: #3052FF; }
+  .hero p.subhead { font-size: 17px; color: #475569; margin-bottom: 28px; max-width: 560px; }
+  .hero-image { position: relative; }
+  .hero-image .ebook { box-shadow: 0 20px 60px rgba(48, 82, 255, 0.18); border-radius: 12px; overflow: hidden; background: #fff; }
+
+  /* Trust strip */
+  .trust { padding: 28px 0; background: #fff; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
+  .trust-inner { display: flex; align-items: center; justify-content: center; gap: 36px; flex-wrap: wrap; }
+  .trust span { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; }
+  .trust img { height: 38px; opacity: 0.85; }
+
+  /* Form card */
+  .form-card { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 12px 36px rgba(17, 35, 55, 0.08); border: 1px solid #e2e8f0; }
+  .form-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .form-card .form-sub { font-size: 13px; color: #64748b; margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-input { width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; }
+  .form-input:focus { outline: none; border-color: #3052FF; box-shadow: 0 0 0 3px rgba(48, 82, 255, 0.12); }
+  .consent { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0; font-size: 11px; color: #64748b; line-height: 1.5; }
+  .consent input { margin-top: 3px; flex-shrink: 0; }
+  .submit-btn { width: 100%; padding: 14px; background: #3052FF; color: #fff; border: none; border-radius: 999px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .submit-btn:hover { background: #2540cc; }
+
+  /* Body sections */
+  .body-section { padding: 56px 0; border-top: 1px solid #f1f5f9; }
+  .body-section h2 { font-size: 28px; font-weight: 800; margin-bottom: 16px; max-width: 720px; }
+  .body-section p { font-size: 16px; color: #475569; margin-bottom: 14px; max-width: 800px; }
+
+  /* Final CTA */
+  .final-cta { background: linear-gradient(135deg, #3052FF 0%, #7c3aed 100%); color: #fff; padding: 56px 0; text-align: center; }
+  .final-cta h2 { font-size: 30px; font-weight: 800; margin-bottom: 12px; }
+  .final-cta p { font-size: 17px; opacity: 0.92; margin-bottom: 24px; }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #fff; color: #3052FF; padding: 16px 32px;
+    font-size: 16px; font-weight: 700; border-radius: 999px;
+    border: none; cursor: pointer; text-decoration: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    transition: transform 0.12s;
+  }
+  .download-btn:hover { transform: translateY(-1px); text-decoration: none; }
+  .download-btn .dl-icon { font-size: 18px; }
+  .pdf-missing { display: inline-block; padding: 12px 22px; background: rgba(255,255,255,0.18); color: #fff; border-radius: 999px; font-size: 14px; font-weight: 600; }
+
+  /* Footer */
+  footer { padding: 36px 0; background: #f8fafc; text-align: center; font-size: 12px; color: #94a3b8; }
+  footer a { color: #64748b; margin: 0 10px; }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 28px; }
+    .hero h1 { font-size: 30px; }
+    .hero-image { order: -1; max-width: 360px; margin: 0 auto; }
+    .body-section h2 { font-size: 24px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+{{BODY_SCRIPTS}}
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a href="https://www.coastaldebt.com/"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt Resolve"></a>
+    <a href="tel:{{phoneDigits}}" class="phone phone-element">{{phone}}</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <h1>{{headline}} <span>{{headlineHighlight}}</span></h1>
+      <p class="subhead">{{subheadline}}</p>
+      <a href="#start-now" class="submit-btn" style="display:inline-block;width:auto;padding:14px 32px;text-decoration:none;">{{ctaButton}}</a>
+    </div>
+    <div class="hero-image">
+      <img class="ebook" src="{{heroImageUrl}}" alt="Guide preview">
+    </div>
+  </div>
+</section>
+
+<section class="trust">
+  <div class="container trust-inner">
+    <span>As Featured In & Trusted By</span>
+    <img src="https://join.coastaldebt.com/wp-content/uploads/2026/01/blue-seal-120-61-bbb-92025913.png" alt="BBB">
+    <img src="https://join.coastaldebt.com/wp-content/uploads/2025/08/business-insider.png" alt="Business Insider" onerror="this.style.display='none'">
+  </div>
+</section>
+
+<section id="start-now" class="body-section" style="background:#f8fafc;">
+  <div class="container">
+    <div class="form-card" style="max-width:720px;margin:0 auto;">
+      <h2>{{formTitle}}</h2>
+      <p class="form-sub">{{formSubtitle}}</p>
+      <form id="leadForm" onsubmit="return handlePdfSubmit(event)">
+        <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+        <input type="hidden" id="gclid" name="gclid" value="">
+        <input type="hidden" id="msclkid" name="msclkid" value="">
+        <input type="hidden" id="fbclid" name="fbclid" value="">
+        <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+        <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+        <input type="hidden" id="page_url" name="page_url" value="">
+        <input type="hidden" id="referrer_url" name="referrer_url" value="">
+        {{HIDDEN_FIELDS}}
+        <div class="form-row">
+          <input class="form-input" type="text" name="first_name" placeholder="First name" required>
+          <input class="form-input" type="text" name="last_name" placeholder="Last name" required>
+        </div>
+        <div class="form-row">
+          <input class="form-input" type="email" name="email" placeholder="Email" required>
+          <input class="form-input" type="tel" name="phone" placeholder="Phone" required>
+        </div>
+        <label class="consent">
+          <input type="checkbox" id="consentCheckbox" required>
+          <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+        </label>
+        <button type="submit" class="submit-btn">{{formButton}}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="body-section">
+  <div class="container">
+    <h2>{{section1Title}}</h2>
+    <p>{{section1Body}}</p>
+  </div>
+</section>
+
+<section class="body-section" style="background:#f8fafc;">
+  <div class="container">
+    <h2>{{section2Title}}</h2>
+    <p>{{section2Body}}</p>
+  </div>
+</section>
+
+<section class="body-section">
+  <div class="container">
+    <h2>{{section3Title}}</h2>
+    <p>{{section3Body}}</p>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="container">
+    <h2>{{ctaTitle}}</h2>
+    <p>{{ctaSubtitle}}</p>
+    <div id="finalDownload"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> ·
+    <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>
+    <div style="margin-top:8px;">© {{year}} Coastal Debt Resolve. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  // Capture URL params + cookies as hidden form fields
+  (function() {
+    var params = new URLSearchParams(location.search);
+    function setHidden(id, val) { var el = document.getElementById(id); if (el && val) el.value = val; }
+    setHidden('gclid', params.get('gclid'));
+    setHidden('msclkid', params.get('msclkid'));
+    setHidden('fbclid', params.get('fbclid'));
+    setHidden('rt_clickid', params.get('rt_clickid'));
+    setHidden('page_url', location.href);
+    setHidden('referrer_url', document.referrer);
+
+    // eli_clickid via localStorage so the same visitor reuses one
+    try {
+      var k = 'eli_clickid_v2', id = localStorage.getItem(k);
+      if (!id) {
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        id = 'eli_' + t + r;
+        localStorage.setItem(k, id);
+      }
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      // Notify backend
+      fetch('/api/visitors/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eli_clickid: id,
+          gclid: params.get('gclid') || '',
+          msclkid: params.get('msclkid') || '',
+          fbclid: params.get('fbclid') || '',
+          landing_page: location.pathname,
+          referrer_url: document.referrer,
+          page_url: location.href,
+          utm_source: params.get('utm_source') || '',
+          utm_medium: params.get('utm_medium') || '',
+          utm_campaign: params.get('utm_campaign') || '',
+          utm_term: params.get('utm_term') || '',
+          utm_content: params.get('utm_content') || ''
+        })
+      }).catch(function() {});
+    } catch (e) {}
+  })();
+
+  // Render the final-section download (button if pdfUrl, message if not)
+  (function() {
+    var pdfUrl = "{{pdfUrl}}";
+    var pdfName = "{{pdfName}}";
+    var mount = document.getElementById('finalDownload');
+    if (!mount) return;
+    if (pdfUrl) {
+      mount.innerHTML = '<a href="' + pdfUrl + '" target="_blank" rel="noopener" class="download-btn"><span class="dl-icon">⬇</span> Download the Guide (PDF)</a>';
+    } else {
+      mount.innerHTML = '<span class="pdf-missing">Submit the form above to receive the guide</span>';
+    }
+  })();
+
+  function handlePdfSubmit(e) {
+    e.preventDefault();
+    var form = e.target;
+    var fd = new FormData(form);
+    var data = {};
+    fd.forEach(function(v, k) { data[k] = v; });
+    fetch('{{formWebhook}}' || '/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function(r) {
+      // Whether webhook succeeded or not, redirect to PDF
+      var pdfUrl = "{{pdfUrl}}";
+      if (pdfUrl) {
+        window.location.href = pdfUrl;
+      } else {
+        form.innerHTML = '<div style="padding:30px;text-align:center;color:#16a34a;font-weight:600;">Thanks! Check your email for the guide.</div>';
+      }
+    }).catch(function() {
+      var pdfUrl = "{{pdfUrl}}";
+      if (pdfUrl) window.location.href = pdfUrl;
+    });
+    return false;
+  }
+</script>
+
+</body>
+</html>
