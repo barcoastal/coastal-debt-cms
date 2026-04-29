@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How to Get Out of a Merchant Cash Advance — Coastal Debt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     COASTAL DEBT BRAND
+     Future Blue   #3052FF   primary
+     Cyan Blue     #F2F4F9   light bg
+     Light Blue    #7FB2FF   secondary
+     Orange        #FF9000   accent
+     Black         #000000
+     Aeonik substitute: Inter (closest free match)
+     ============================================================ */
+  :root {
+    --blue: #3052FF;
+    --blue-light: #7FB2FF;
+    --cyan: #F2F4F9;
+    --orange: #FF9000;
+    --ink: #0B0F1F;
+    --muted: #6B7280;
+    --line: #E5E9F2;
+  }
+
+  @page { size: A4; margin: 0; }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    color: var(--ink);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* Frame: padded inner area for body pages */
+  /* Body page frame — content lives between the absolute chrome-top (12mm) and chrome-bot (12mm).
+     justify-content: space-between distributes content vertically so pages always fill the height. */
+  .frame {
+    padding: 26mm 22mm 26mm 22mm;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 5mm;
+  }
+
+  /* Header / footer chrome (body pages) */
+  .chrome-top {
+    position: absolute;
+    top: 12mm; left: 20mm; right: 20mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8.5pt; color: var(--muted);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .chrome-top .brand { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink); }
+  /* Native viewBox is 220x40 (5.5:1). Heights below give the visible RESOLVE tagline room to read. */
+  .brand-mark { height: 26px; width: auto; display: block; }
+  .brand-mark.lg { height: 40px; }
+  .brand-mark.xl { height: 56px; }
+  .brand-mark.hero { height: 72px; }
+
+  .chrome-bot {
+    position: absolute;
+    bottom: 12mm; left: 20mm; right: 20mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8.5pt; color: var(--muted);
+  }
+  .chrome-bot .pill {
+    background: var(--cyan); color: var(--blue); font-weight: 600;
+    padding: 3px 10px; border-radius: 999px; font-size: 8pt; letter-spacing: .04em; text-transform: uppercase;
+  }
+
+  /* Type system */
+  h1, h2, h3, h4 { font-weight: 500; line-height: 1.1; margin: 0; letter-spacing: -0.01em; }
+  .display { font-size: 56pt; font-weight: 500; line-height: .98; letter-spacing: -.025em; }
+  .h1 { font-size: 36pt; font-weight: 500; line-height: 1.05; letter-spacing: -.02em; }
+  .h2 { font-size: 24pt; font-weight: 500; line-height: 1.12; letter-spacing: -.015em; }
+  .h3 { font-size: 15pt; font-weight: 600; line-height: 1.25; }
+  .lead { font-size: 13pt; line-height: 1.55; color: var(--ink); font-weight: 400; }
+  .body { font-size: 11pt; line-height: 1.65; color: #1f2433; }
+  .body p + p { margin-top: 9pt; }
+  .eyebrow {
+    font-size: 8.5pt; letter-spacing: .18em; text-transform: uppercase; font-weight: 600;
+    color: var(--blue);
+  }
+  /* Body section wrapper — used inside .frame so flex distributes hero/content/note evenly */
+  .section { display: flex; flex-direction: column; gap: 5mm; }
+  .section.center { text-align: center; align-items: center; }
+
+  /* Reusable blocks */
+  .industry-note {
+    background: var(--blue);
+    color: #fff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    position: relative;
+    box-shadow: 0 12px 28px -12px rgba(48,82,255,.4);
+  }
+  .industry-note .label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 8.5pt; letter-spacing: .16em; text-transform: uppercase; font-weight: 700;
+    color: var(--blue-light);
+    margin-bottom: 8px;
+  }
+  .industry-note .label::before {
+    content: ''; width: 14px; height: 14px;
+    background: linear-gradient(135deg, var(--blue-light) 50%, transparent 50%) no-repeat;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25 31'><path d='M0 28.5L19.4 9.1l5.2 5.2v1.7l-5.2 5.2L10.3 30.3H1.8L0 28.5Z'/><path d='M13.3 15.1l6.1-6.1L10.3 0H1.8L0 1.8 13.3 15.1Z' opacity='.6'/></svg>") center / contain no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25 31'><path d='M0 28.5L19.4 9.1l5.2 5.2v1.7l-5.2 5.2L10.3 30.3H1.8L0 28.5Z'/><path d='M13.3 15.1l6.1-6.1L10.3 0H1.8L0 1.8 13.3 15.1Z' opacity='.6'/></svg>") center / contain no-repeat;
+    background: var(--blue-light);
+  }
+  .industry-note p { margin: 0; font-size: 10pt; line-height: 1.6; }
+  .industry-note p strong { color: #fff; font-weight: 700; }
+  .industry-note.cyan { background: var(--cyan); color: var(--ink); box-shadow: none; }
+  .industry-note.cyan .label { color: var(--blue); }
+  .industry-note.cyan .label::before { background: var(--blue); }
+  .industry-note.cyan p strong { color: var(--blue); }
+
+  .stat-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .stat-card .num { font-size: 28pt; font-weight: 600; color: var(--blue); line-height: 1; letter-spacing: -.02em; }
+  .stat-card .lbl { font-size: 9pt; color: var(--muted); margin-top: 6px; }
+
+  .num-circle {
+    width: 34px; height: 34px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--blue) 0%, #4F70FF 100%); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13pt; flex-shrink: 0;
+    box-shadow: 0 6px 14px -6px rgba(48,82,255,.5);
+  }
+  .num-circle.orange { background: linear-gradient(135deg, var(--orange) 0%, #FFA833 100%); box-shadow: 0 6px 14px -6px rgba(255,144,0,.5); }
+
+  /* ============================================================
+     PAGE 1 — COVER (marketing-grade)
+     ============================================================ */
+  .cover {
+    background:
+      radial-gradient(120% 90% at 100% 0%, #4F70FF 0%, transparent 55%),
+      radial-gradient(80% 60% at 0% 100%, #1936D6 0%, transparent 60%),
+      linear-gradient(180deg, #2A4AFF 0%, #1A33C2 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Subtle chevron-pattern watermark across the cover */
+  .cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(135deg, transparent 49.4%, rgba(255,255,255,.04) 49.6% 50.4%, transparent 50.6%);
+    background-size: 18mm 18mm;
+    opacity: .55;
+    pointer-events: none;
+  }
+  /* Giant brand chevron sitting bottom-right as hero graphic */
+  .cover-chevron {
+    position: absolute;
+    right: -40mm;
+    bottom: -30mm;
+    width: 260mm;
+    height: auto;
+    opacity: .14;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .cover .frame {
+    justify-content: space-between;
+    padding: 24mm 22mm;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    align-items: center;
+  }
+  .cover-top {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding-bottom: 6mm; border-bottom: 1px solid rgba(255,255,255,.20);
+  }
+  .cover-mid {
+    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10mm;
+  }
+  .cover-eyebrow {
+    display: inline-flex; align-items: center; gap: 14px;
+    font-size: 9pt; letter-spacing: .3em; text-transform: uppercase; color: var(--blue-light);
+    font-weight: 600;
+  }
+  .cover-eyebrow::before, .cover-eyebrow::after {
+    content: ''; width: 30px; height: 1.5px; background: var(--orange);
+  }
+  .cover-title {
+    font-size: 64pt; font-weight: 500; line-height: .98; letter-spacing: -.03em;
+    text-align: center;
+  }
+  .cover-title em { font-style: normal; color: var(--blue-light); }
+  .cover-mca {
+    display: flex; flex-direction: column; align-items: center; gap: 6mm;
+    width: 100%;
+  }
+  .cover-mca .mca {
+    font-size: 150pt; line-height: .82; font-weight: 600; letter-spacing: -.045em;
+    background: linear-gradient(180deg, #ffffff 0%, var(--blue-light) 70%, rgba(127,178,255,.35) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-align: center;
+  }
+  .cover-mca .sub {
+    font-size: 12pt; color: rgba(255,255,255,.94); max-width: 130mm;
+    line-height: 1.6;
+    text-align: center;
+    font-weight: 400;
+    position: relative; padding-top: 8mm;
+  }
+  .cover-mca .sub::before {
+    content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 36px; height: 2px; background: var(--orange); border-radius: 2px;
+  }
+  .cover-bot {
+    width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(255,255,255,.20); padding-top: 6mm;
+    font-size: 10pt; letter-spacing: .04em;
+  }
+  .cover-bot .url { font-weight: 700; font-size: 11pt; letter-spacing: .02em; }
+  .cover-bot .meta { color: rgba(255,255,255,.75); letter-spacing: .14em; text-transform: uppercase; font-size: 8.5pt; }
+
+  /* ============================================================
+     PAGE 2 — WELCOME
+     ============================================================ */
+  .welcome {
+    background:
+      radial-gradient(70% 60% at 100% 100%, #4F70FF 0%, transparent 60%),
+      linear-gradient(180deg, #2A4AFF 0%, #1A33C2 100%);
+    color: #fff; position: relative; overflow: hidden;
+  }
+  .welcome-chevron {
+    position: absolute; left: -50mm; top: -30mm;
+    width: 220mm; opacity: .10; pointer-events: none; z-index: 0;
+    transform: scaleX(-1);
+  }
+  .welcome .frame {
+    padding: 26mm 22mm; gap: 0; position: relative; z-index: 1;
+    text-align: center; align-items: center; justify-content: space-between;
+  }
+  .welcome-content {
+    display: flex; flex-direction: column; align-items: center; gap: 8mm;
+    flex: 1; justify-content: center;
+  }
+  .welcome .eyebrow { color: var(--blue-light); display: inline-flex; align-items: center; gap: 14px; }
+  .welcome .eyebrow::before, .welcome .eyebrow::after {
+    content: ''; width: 28px; height: 1.5px; background: var(--orange);
+  }
+  .welcome .h1 { color: #fff; max-width: 160mm; font-size: 42pt; text-align: center; line-height: 1.05; }
+  .welcome .lead { color: rgba(255,255,255,.92); max-width: 135mm; font-size: 14pt; line-height: 1.55; text-align: center; }
+  .welcome .signoff {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding-top: 8mm; border-top: 1px solid rgba(255,255,255,.22);
+  }
+
+  /* ============================================================
+     PAGE 3 — INTRO + STATS
+     ============================================================ */
+  .intro-hero {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; align-items: stretch;
+    margin-bottom: 8mm;
+  }
+  .intro-hero .left .h2 { margin-bottom: 4mm; }
+  .intro-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  .stat-big { background: var(--cyan); border-radius: 16px; padding: 14px 16px; }
+  .stat-big .num { font-size: 26pt; font-weight: 600; color: var(--blue); line-height: 1; }
+  .stat-big .lbl { font-size: 9pt; color: var(--muted); margin-top: 4px; }
+
+  .pull {
+    border-left: 4px solid var(--orange);
+    padding: 6px 0 6px 16px;
+    color: var(--ink);
+    font-size: 12pt;
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -.005em;
+  }
+
+  /* ============================================================
+     PAGE 4 — 4 MISTAKES
+     ============================================================ */
+  .mistake-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7mm;
+    margin-top: 8mm;
+  }
+  .mistake {
+    background: var(--cyan); border-radius: 16px; padding: 18px 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+    break-inside: avoid;
+    border: 1px solid transparent;
+    transition: none;
+    position: relative;
+  }
+  .mistake::before {
+    content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 2px;
+    background: linear-gradient(90deg, var(--blue) 0%, transparent 100%);
+    border-radius: 2px;
+  }
+  .mistake .num-circle { margin-top: 2px; }
+  .mistake h3 { font-size: 13pt; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.2; letter-spacing: -.005em; }
+  .mistake p { font-size: 9.5pt; color: #2a3040; line-height: 1.55; margin: 0; }
+
+  /* ============================================================
+     PAGE 5 — MCA EXPLAINED
+     ============================================================ */
+  .mca-explain {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 9mm; align-items: start;
+  }
+  .mca-explain .photo {
+    border-radius: 16px; overflow: hidden; aspect-ratio: 4/5; background: var(--cyan);
+  }
+  .mca-explain .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 7mm; }
+  .badge {
+    background: #fff; border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 11px; font-size: 8.5pt; font-weight: 600; color: var(--ink);
+  }
+  .badge.blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* ============================================================
+     PAGE 6 — FINANCIAL IMPLICATIONS
+     ============================================================ */
+  .math-card {
+    background: var(--ink); color: #fff; border-radius: 16px;
+    padding: 18px 22px; margin: 6mm 0;
+  }
+  .math-card .label { font-size: 8.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--blue-light); font-weight: 700; }
+  .math-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 10px; }
+  .math-row > div { padding: 6px 14px 6px 0; border-right: 1px solid rgba(255,255,255,.18); }
+  .math-row > div:last-child { border-right: 0; padding-right: 0; }
+  .math-row .k { font-size: 8.5pt; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: .08em; }
+  .math-row .v { font-size: 18pt; font-weight: 600; color: #fff; line-height: 1.1; margin-top: 2px; }
+  .math-row .v.orange { color: var(--orange); }
+
+  /* ============================================================
+     PAGE 7 — RENEGOTIATE
+     ============================================================ */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-items: start;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 5mm;
+  }
+  .section-title .num-circle { width: 26px; height: 26px; font-size: 10.5pt; }
+  .section-title .h2 { margin: 0; }
+
+  /* ============================================================
+     PAGE 8 — DEBT SETTLEMENT (photo + body)
+     ============================================================ */
+  .photo-hero {
+    border-radius: 16px; overflow: hidden; height: 90mm; position: relative; background: var(--cyan);
+    margin-bottom: 8mm;
+  }
+  .photo-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-hero .overlay {
+    position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(11,15,31,.78) 100%);
+    display: flex; align-items: flex-end; padding: 18px 22px;
+  }
+  .photo-hero .overlay-text { color: #fff; max-width: 120mm; }
+  .photo-hero .overlay-text .eyebrow { color: var(--blue-light); }
+
+  /* ============================================================
+     PAGE 10 — BANKRUPTCY HERO
+     ============================================================ */
+  .bankr-hero {
+    background:
+      radial-gradient(70% 50% at 100% 0%, #4F70FF 0%, transparent 60%),
+      linear-gradient(180deg, #2A4AFF 0%, #1A33C2 100%);
+    color: #fff; position: relative; overflow: hidden;
+  }
+  .bankr-chevron {
+    position: absolute; right: -40mm; bottom: 80mm;
+    width: 180mm; opacity: .10; pointer-events: none; z-index: 0;
+  }
+  .bankr-hero .frame {
+    padding: 24mm 22mm; height: 100%; justify-content: space-between; position: relative; z-index: 1;
+    text-align: center; align-items: center; gap: 8mm;
+  }
+  .bankr-hero .h1 { color: #fff; max-width: 165mm; font-size: 44pt; line-height: 1.02; text-align: center; }
+  .bankr-hero .lead { color: rgba(255,255,255,.9); max-width: 145mm; font-size: 13pt; text-align: center; }
+  .bankr-hero .photo {
+    border-radius: 16px; overflow: hidden; height: 110mm; width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  }
+  .bankr-hero .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bankr-hero .eyebrow {
+    display: inline-flex; align-items: center; gap: 12px;
+  }
+  .bankr-hero .eyebrow::before, .bankr-hero .eyebrow::after {
+    content: ''; width: 26px; height: 1.5px; background: var(--orange);
+  }
+
+  /* ============================================================
+     PAGE 11 — BANKRUPTCY CHAPTERS
+     ============================================================ */
+  .chapter-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 18px; margin-bottom: 5mm; display: grid; grid-template-columns: 50mm 1fr; gap: 12px; align-items: start;
+    break-inside: avoid;
+  }
+  .chapter-card .ch-tag {
+    background: var(--cyan); color: var(--blue); border-radius: 10px;
+    padding: 8px 12px; font-weight: 600;
+  }
+  .chapter-card .ch-tag .num { font-size: 22pt; font-weight: 600; line-height: 1; letter-spacing: -.02em; display: block; }
+  .chapter-card .ch-tag .lbl { font-size: 8.5pt; letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; color: var(--ink); }
+  .chapter-card h3 { font-size: 12pt; margin-bottom: 4px; }
+  .chapter-card p { font-size: 9.5pt; color: #2a3040; line-height: 1.55; margin: 0; }
+  .chapter-card.warn { border-color: var(--orange); }
+  .chapter-card.warn .ch-tag { background: #FFF1DC; color: var(--orange); }
+
+  /* ============================================================
+     PAGE 12 — ACTION PLAN STEP 1
+     ============================================================ */
+  .step-header {
+    background: var(--blue); color: #fff; border-radius: 16px;
+    padding: 16px 22px; display: flex; align-items: center; gap: 16px;
+    margin-bottom: 6mm;
+  }
+  .step-header .pill {
+    background: rgba(255,255,255,.18); color: #fff; padding: 4px 12px; border-radius: 999px;
+    font-size: 8.5pt; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+  }
+  .step-header h2 { margin: 0; font-size: 20pt; line-height: 1.1; }
+
+  .creditor-list { display: flex; flex-direction: column; gap: 4mm; }
+  .creditor {
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 14px; align-items: center;
+    background: var(--cyan); border-radius: 14px; padding: 14px 18px;
+    break-inside: avoid;
+    border-left: 4px solid var(--blue);
+  }
+  .creditor .num-circle { width: 30px; height: 30px; font-size: 11.5pt; }
+  .creditor h4 { font-size: 11.5pt; font-weight: 600; margin-bottom: 3px; line-height: 1.25; letter-spacing: -.005em; }
+  .creditor p { font-size: 9pt; color: #2a3040; margin: 0; line-height: 1.5; }
+  .creditor .priority {
+    font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; font-weight: 700;
+    color: var(--blue); padding: 4px 10px; border: 1px solid var(--blue); border-radius: 999px;
+    white-space: nowrap;
+  }
+  .creditor.med { border-left-color: var(--orange); }
+  .creditor.med .priority { color: var(--orange); border-color: var(--orange); }
+  .creditor.low { border-left-color: var(--muted); }
+  .creditor.low .priority { color: var(--muted); border-color: var(--muted); }
+
+  /* ============================================================
+     PAGE 14 — DANCING WITH DEVIL HERO
+     ============================================================ */
+  .devil-hero { position: relative; height: 100%; }
+  .devil-hero .photo { position: absolute; inset: 0; }
+  .devil-hero .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .devil-hero .overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(48,82,255,.45) 0%, rgba(11,15,31,.88) 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 24mm 22mm;
+    color: #fff; gap: 8mm;
+  }
+  .devil-hero .h1 { color: #fff; max-width: 165mm; text-align: center; }
+  .devil-hero .lead { color: rgba(255,255,255,.92); max-width: 140mm; text-align: center; }
+  .devil-hero .eyebrow {
+    display: inline-flex; align-items: center; gap: 12px;
+  }
+  .devil-hero .eyebrow::before, .devil-hero .eyebrow::after {
+    content: ''; width: 26px; height: 1.5px; background: var(--orange);
+  }
+
+  /* ============================================================
+     PAGE 15 — CASH FLOW TIPS
+     ============================================================ */
+  .tips-grid { display: flex; flex-direction: column; gap: 4mm; margin-top: 6mm; }
+  .tip {
+    display: grid; grid-template-columns: 36px 1fr; gap: 14px;
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--orange);
+    border-radius: 10px; padding: 12px 16px;
+    break-inside: avoid;
+  }
+  .tip .ico {
+    width: 30px; height: 30px; border-radius: 8px; background: var(--cyan);
+    color: var(--blue); display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14pt;
+  }
+  .tip h4 { font-size: 10.5pt; font-weight: 600; margin-bottom: 2px; line-height: 1.25; }
+  .tip p { font-size: 9pt; color: #2a3040; margin: 0; line-height: 1.5; }
+
+  .closing-note {
+    background: var(--cyan); border-radius: 14px; padding: 14px 18px;
+    font-size: 10pt; color: #2a3040; margin-top: 5mm;
+  }
+  .closing-note strong { color: var(--blue); }
+
+  /* ============================================================
+     PAGE 16 — SUBSCRIBE BACK COVER
+     ============================================================ */
+  .back-cover {
+    background:
+      radial-gradient(80% 65% at 100% 0%, #4F70FF 0%, transparent 60%),
+      radial-gradient(70% 50% at 0% 100%, #1936D6 0%, transparent 60%),
+      linear-gradient(180deg, #2A4AFF 0%, #1A33C2 100%);
+    color: #fff; position: relative; overflow: hidden;
+  }
+  .back-chevron {
+    position: absolute; right: -50mm; bottom: -50mm;
+    width: 280mm; opacity: .12; pointer-events: none; z-index: 0;
+  }
+  .back-cover .frame {
+    padding: 24mm 22mm; gap: 6mm; position: relative; z-index: 1;
+    text-align: center; align-items: center; justify-content: space-between;
+  }
+  .back-cover .h1 { color: #fff; max-width: 170mm; font-size: 44pt; line-height: 1.02; text-align: center; }
+  .back-cover .lead { color: rgba(255,255,255,.92); max-width: 150mm; font-size: 13.5pt; line-height: 1.55; text-align: center; }
+  .back-cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--orange); color: #fff; font-weight: 700; font-size: 13pt;
+    padding: 16px 30px; border-radius: 999px; letter-spacing: .04em; text-transform: uppercase;
+    width: fit-content;
+    box-shadow: 0 10px 30px rgba(255,144,0,.35);
+  }
+  .back-cta .arrow { font-size: 16pt; line-height: 1; }
+  .back-foot {
+    margin-top: auto; display: flex; align-items: center;
+    border-top: 1px solid rgba(255,255,255,.22); padding-top: 6mm;
+    font-size: 10pt; color: rgba(255,255,255,.85);
+  }
+  .back-foot .url { font-weight: 700; color: #fff; font-size: 12pt; letter-spacing: .04em; }
+  .back-foot .quote {
+    font-style: italic; line-height: 1.4;
+    color: var(--blue-light); font-weight: 500; font-size: 12pt;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     PAGE 1 — COVER
+     ================================================================ -->
+<section class="page cover">
+  <img class="cover-chevron" src="{{CHEV_WHITE}}" alt="">
+  <div class="frame">
+    <div class="cover-top">
+      <img class="brand-mark hero" src="{{LOGO_WHITE}}" alt="Coastal Debt Resolve">
+    </div>
+
+    <div class="cover-mid">
+      <div class="cover-eyebrow">An eBook by Coastal Debt Resolve</div>
+      <div class="cover-title">How to get out<br>of a Merchant<br>Cash <em>Advance.</em></div>
+      <div class="cover-mca">
+        <div class="mca">MCA</div>
+        <div class="sub">Practical strategies, legal options, and the action plan we use to help small business owners take back control.</div>
+      </div>
+    </div>
+
+    <div class="cover-bot">
+      <div class="url">coastaldebt.com</div>
+      <div class="meta">A 16-page guide · Resolve series</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 2 — WELCOME
+     ================================================================ -->
+<section class="page welcome">
+  <img class="welcome-chevron" src="{{CHEV_WHITE}}" alt="">
+  <div class="frame">
+    <img class="brand-mark xl" src="{{LOGO_WHITE}}" alt="Coastal Debt Resolve">
+
+    <div class="welcome-content">
+      <div class="eyebrow">Welcome</div>
+      <h1 class="h1">A close look at the world of Merchant Cash Advances.</h1>
+      <p class="lead">An MCA is a special kind of loan that helps small businesses get the money they need when banks won't lend, because the rules for traditional loans are pretty strict.</p>
+    </div>
+
+    <div class="signoff">
+      <div style="font-size: 11pt; letter-spacing: .16em; text-transform: uppercase; opacity: .9; font-weight: 600;">It's not just about debt. It's your comeback story.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 3 — INTRO + STATS
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>03 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">The Problem</div>
+    <h2 class="h2" style="margin-top: 4mm; max-width: 165mm;">Why MCAs slip through<br>the cracks of regulation.</h2>
+    <p class="body" style="margin-top: 6mm; max-width: 165mm;">Unfortunately, not many people talk about MCAs not in schools, not in the news, and the government doesn't pay much attention either. There aren't many regulations for MCA lenders, which has let some bad behavior slip through the cracks. The lack of regulation has, unfortunately, led to questionable practices that have affected many small business owners. Deception and financial distress are expected, with some businesses facing severe economic consequences.</p>
+
+    <div class="intro-stats" style="margin-top: 8mm;">
+      <div class="stat-big">
+        <div class="num">$10B</div>
+        <div class="lbl">Aggregate MCA borrowing in 2016</div>
+      </div>
+      <div class="stat-big">
+        <div class="num">600%</div>
+        <div class="lbl">Higher default rate than SBA loans</div>
+      </div>
+    </div>
+
+    <p class="body" style="margin-top: 8mm; max-width: 165mm;">In this guide, we'll unpack the origins of MCAs and explain how they've operated outside the regulatory frameworks that govern traditional lending institutions. We'll provide you with a clear understanding of your options, offering practical advice for navigating these challenging situations.</p>
+
+    <div class="pull" style="margin-top: 8mm;">Most MCA lenders keep their information secret. We've done the legwork to compile all the essential details right here.</div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Introduction</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 4 — JOURNEY / 4 MISTAKES
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>04 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Chapter 01</div>
+    <h2 class="h2" style="margin-top: 4mm; max-width: 165mm;">The journey through the mind<br>of a struggling business owner.</h2>
+    <p class="body" style="margin-top: 5mm; max-width: 165mm;">When things get tough for business owners, they often end up making the same mistakes regardless of their company's size or industry. Here are the four most common ones we see:</p>
+
+    <div class="mistake-grid">
+      <div class="mistake">
+        <div class="num-circle">1</div>
+        <div>
+          <h3>Denial</h3>
+          <p>Instead of facing challenges, some owners pretend they don't exist, hoping they'll go away. They use available funds for short-term fixes, following the demands of lenders and vendors until it's too late, leading to foreclosure or bankruptcy. There's a better way.</p>
+        </div>
+      </div>
+      <div class="mistake">
+        <div class="num-circle">2</div>
+        <div>
+          <h3>Impatience</h3>
+          <p>Entrepreneurs like to close deals quickly, but they may not realize that restructuring debt takes time. Understanding and accepting this lengthy process is crucial.</p>
+        </div>
+      </div>
+      <div class="mistake">
+        <div class="num-circle">3</div>
+        <div>
+          <h3>Information Overload</h3>
+          <p>In an effort to avoid denial, some owners seek advice from too many people. This leads to confusion and makes it hard to take any decision at all.</p>
+        </div>
+      </div>
+      <div class="mistake">
+        <div class="num-circle">4</div>
+        <div>
+          <h3>Neglecting Professional Guidance</h3>
+          <p>Debt settlement and restructuring require expertise. Most owners haven't been here before and can make the wrong decisions when working it out alone. Getting help from an experienced professional is key.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">The Four Mistakes</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 5 — MCA EXPLAINED
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>05 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Chapter 02</div>
+    <h2 class="h2" style="margin-top: 4mm;">Merchant Cash Advance, explained.</h2>
+
+    <div class="mca-explain" style="margin-top: 6mm;">
+      <div>
+        <p class="body">A Merchant Cash Advance (MCA) operates similarly to a payday loan but for small businesses. A business receives a lump sum of capital and pays back a multiple of that amount with daily automatic withdrawals. These advances are often backed by the business's accounts receivable.</p>
+        <p class="body">MCAs are known for their short-term nature, minimal documentation, and rapid funding sometimes within 24 hours. Typically, smaller and medium-sized businesses with less-than-ideal credit histories resort to MCAs, facing considerably exorbitant rates compared to standard business loans.</p>
+
+        <div class="badge-row">
+          <span class="badge blue">Lump sum capital</span>
+          <span class="badge">Daily auto withdrawals</span>
+          <span class="badge">Backed by AR</span>
+          <span class="badge">Funded in 24h</span>
+        </div>
+
+        <div class="industry-note" style="margin-top: 7mm;">
+          <div class="label">Industry Note</div>
+          <p>In 2016, the aggregate amount of Merchant Cash Advance borrowing reached approximately <strong>$10 billion</strong>. The default rate on these advances was up to <strong>600% higher</strong> than loans issued by the U.S. Small Business Administration.</p>
+        </div>
+      </div>
+      <div class="photo">
+        <img src="{{IMG1}}" alt="">
+      </div>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">MCA Explained</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 6 — FINANCIAL IMPLICATIONS
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>06 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">The Numbers</div>
+    <h2 class="h2" style="margin-top: 4mm;">Finding your way out<br>of a Merchant Cash Advance.</h2>
+    <p class="body" style="margin-top: 5mm; max-width: 165mm;">Got a Merchant Cash Advance and now feeling the pinch? You're not alone. MCAs can be a quick fix for cash, but they come with a catch: high costs and a piece of your daily card sales. If you want to break free from your MCA, there's a way out and this guide covers the practical steps.</p>
+
+    <div class="math-card">
+      <div class="label">The Math of an MCA</div>
+      <div style="font-size: 11pt; color: rgba(255,255,255,.85); margin-top: 6px; max-width: 150mm;">A borrower receives a $10,000 advance. The repayment owed exceeds the initial sum. It is calculated by multiplying the advance by the buy or factor rate.</div>
+      <div class="math-row" style="margin-top: 14px;">
+        <div>
+          <div class="k">Advance</div>
+          <div class="v">$10,000</div>
+        </div>
+        <div>
+          <div class="k">Factor Rate</div>
+          <div class="v">× 1.35</div>
+        </div>
+        <div>
+          <div class="k">You Repay</div>
+          <div class="v orange">$13,500</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body" style="max-width: 165mm;">Repayment terms differ from conventional loans. Instead of fixed amounts, repayment occurs through automated electronic deductions: a certain percentage of the borrower's daily, weekly, or monthly card sales is sent directly to the MCA provider until the entire payback amount is settled.</p>
+
+    <div class="industry-note cyan" style="margin-top: 5mm;">
+      <div class="label">Industry Note</div>
+      <p>Terminology like "interest rate," "debt," or "loan" is not used when discussing MCAs they're technically classified as advances. Those within the MCA industry justify this by claiming they are not charging interest in the traditional sense, but rather purchasing future revenue from businesses at a discounted rate.</p>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Financial Implications</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 7 — RENEGOTIATE + CONSOLIDATION
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>07 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Chapter 03 · Your Options</div>
+
+    <div class="section-title" style="margin-top: 4mm;">
+      <div class="num-circle">1</div>
+      <h2 class="h2">Attempt to renegotiate.</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">Depending on the status of your account and payments, it could be worthwhile to initiate a conversation with your MCA provider before making any radical financial decisions. Inform them openly that you're facing difficulties. Inquire about lowering daily payments or a short-term pause. An MCA lender's ultimate goal is to recover funds, so they may be open to renegotiation if it increases the likelihood of repayment.</p>
+
+    <div class="industry-note" style="margin-top: 5mm;">
+      <div class="label">Coastal Debt Resolve Advises</div>
+      <p>Avoid prematurely informing your cash advance provider about payment struggles. Most contracts include a <strong>reconciliation clause</strong> meaning if your business income drops, the lender should work with you to adjust the plan. If they don't, they may be breaking your agreement and the loan could be considered predatory. An experienced MCA agreement lawyer can offer valuable guidance.</p>
+    </div>
+
+    <div class="section-title" style="margin-top: 8mm;">
+      <div class="num-circle">2</div>
+      <h2 class="h2">MCA consolidation.</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">Consolidating MCA debt is similar to general debt consolidation. It involves securing a lower-interest, long-term installment loan to retire one or more high-interest MCAs. You're tasked with repaying the new loan, which offers the convenience of a single, fixed monthly payment.</p>
+    <p class="body" style="max-width: 170mm;">Theoretically sound, but it comes with credit qualification difficulty. A favorable rate is contingent upon robust credit and if your payment history shows missed payments or an MCA in collections, your credit score has likely suffered. The debt also still exists, just spread over a longer term.</p>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Renegotiate · Consolidate</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 8 — DEBT SETTLEMENT
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>08 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="photo-hero">
+      <img src="{{IMG2}}" alt="">
+      <div class="overlay">
+        <div class="overlay-text">
+          <div class="eyebrow">Chapter 03 · Option 3</div>
+          <h2 class="h2" style="color:#fff; margin-top: 4mm;">Debt settlement.</h2>
+        </div>
+      </div>
+    </div>
+
+    <p class="body" style="max-width: 170mm;">Exploring the option to settle your Merchant Cash Advance debt is a strategy that involves negotiating with the MCA provider to agree on a payment that is less than the total amount due. However, embarking on this journey solo is fraught with risks.</p>
+
+    <p class="body" style="max-width: 170mm;">MCA lenders might consent to a settlement if it becomes clear that you cannot meet the original repayment terms. They often prefer a partial recovery of the advance rather than engaging in costly and lengthy legal battles.</p>
+
+    <div class="pull">A settlement that's negotiated correctly resolves the debt for less than what's owed. A settlement that's negotiated wrong can become a judgment, a lien, or both.</div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Debt Settlement</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 9 — ATTORNEY ADVANTAGE
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>09 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Chapter 04</div>
+
+    <div class="section-title" style="margin-top: 4mm;">
+      <div class="num-circle orange">!</div>
+      <h2 class="h2">Is self-negotiated settlement<br>a good idea?</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">The art of negotiating a debt settlement is complex. It requires a deep understanding of negotiation tactics as well as the legal ramifications of your contract. For many, the process is complicated, stressful, and consuming both time and energy.</p>
+
+    <h3 class="h3" style="margin-top: 7mm; color: var(--blue);">The advantage of a business debt attorney.</h3>
+    <p class="body" style="max-width: 170mm;">This is where the expertise of a business debt relief attorney can be invaluable. They come equipped with the necessary skills and support teams to negotiate effectively on your behalf, avoiding common traps and securing the most favorable outcome for you and your business.</p>
+
+    <div class="industry-note cyan" style="margin-top: 5mm;">
+      <div class="label">A Word of Caution</div>
+      <p>Exercise caution with debt settlement companies that pledge drastic reductions for upfront fees but fail to deliver. Promises that seem too good to be true could leave your business loaded with judgments or liens.</p>
+    </div>
+
+    <h3 class="h3" style="margin-top: 7mm; color: var(--blue);">Seeking professional legal assistance.</h3>
+    <p class="body" style="max-width: 170mm;">A business debt relief attorney is legally obligated to prioritize your interests. Their established relationships with creditors' legal teams, and their understanding of the process, can be pivotal in achieving a successful settlement.</p>
+    <p class="body" style="max-width: 170mm;">If your MCA payments are becoming unsustainable, immediate action is essential. Consulting with a Coastal Debt Resolve lawyer can help you alleviate the burden, settle your MCA, or find alternative solutions.</p>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Legal Assistance</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 10 — BANKRUPTCY HERO
+     ================================================================ -->
+<section class="page bankr-hero">
+  <img class="bankr-chevron" src="{{CHEV_WHITE}}" alt="">
+  <div class="frame">
+    <div>
+      <img class="brand-mark xl" src="{{LOGO_WHITE}}" alt="Coastal Debt Resolve" style="margin-bottom: 10mm;">
+      <div class="eyebrow" style="color: var(--blue-light);">Chapter 05 · Last Resort</div>
+      <h1 class="h1" style="margin-top: 4mm;">Alternative<br>financing options.</h1>
+      <p class="lead" style="margin-top: 5mm;">For businesses facing extreme financial hardship, bankruptcy could present a viable escape route. But it's a road that demands legal guidance.</p>
+    </div>
+    <div class="photo">
+      <img src="{{IMG3}}" alt="">
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 11 — BANKRUPTCY CHAPTERS
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>11 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Exploring Bankruptcy</div>
+    <h2 class="h2" style="margin-top: 4mm;">Bankruptcy with legal guidance.</h2>
+    <p class="body" style="margin-top: 4mm; max-width: 170mm;">It's important to consult with an attorney who can assess whether your circumstances warrant a Chapter 7 liquidation, an 11 reorganization, or a 13 repayment plan. The specifics differ from state to state, and a filing reflects on your credit for 7 to 10 years.</p>
+
+    <div style="margin-top: 6mm;">
+      <div class="chapter-card warn">
+        <div class="ch-tag">
+          <span class="num">07</span>
+          <span class="lbl">Liquidation</span>
+        </div>
+        <div>
+          <h3>The harsh reality of business liquidation.</h3>
+          <p>A court-appointed trustee takes over your business, tasked with selling assets to meet creditors' demands. Personal guarantees remain intact. The trustee earns a percentage of collected funds, incentivizing them to extract as much as possible.</p>
+        </div>
+      </div>
+      <div class="chapter-card">
+        <div class="ch-tag">
+          <span class="num">13</span>
+          <span class="lbl">Surrendering Control</span>
+        </div>
+        <div>
+          <h3>A trustee takes charge.</h3>
+          <p>Extra charges like interest and fees are reduced, not the principal you owe. You get a plan to pay over a few years but managing this alone, on top of the cost and shame of bankruptcy, is heavy.</p>
+        </div>
+      </div>
+      <div class="chapter-card">
+        <div class="ch-tag">
+          <span class="num">11</span>
+          <span class="lbl">The Tough Choice</span>
+        </div>
+        <div>
+          <h3>Reorganize and continue operating.</h3>
+          <p>You give up control to your creditors, and it costs a lot (more than $25,000). Success isn't guaranteed your case could turn from Chapter 11 to Chapter 7, meaning everything might be sold off.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Chapters 7 · 11 · 13</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 12 — ACTION PLAN STEP 1
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>12 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">The Action Plan</div>
+    <h2 class="h2" style="margin-top: 4mm;">Managing debt and<br>safeguarding your finances.</h2>
+
+    <div class="step-header" style="margin-top: 6mm;">
+      <div class="pill">Step 01</div>
+      <h2>Strategic debt prioritization &amp; management.</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">Begin by developing a comprehensive plan to allocate cash flow toward debts critical to your operational success. Prioritize creditors based on the potential impact of default on your business:</p>
+
+    <div class="creditor-list" style="margin-top: 5mm;">
+      <div class="creditor">
+        <div class="num-circle">1</div>
+        <div>
+          <h4>Secured creditors with personal guarantees</h4>
+          <p>Recognize the psychological impact of lenders pursuing personal assets, such as your home.</p>
+        </div>
+        <div class="priority">High</div>
+      </div>
+      <div class="creditor">
+        <div class="num-circle">2</div>
+        <div>
+          <h4>Secured creditors with UCC-1 liens</h4>
+          <p>Acknowledge these creditors' rights to liquidate crucial business assets.</p>
+        </div>
+        <div class="priority">High</div>
+      </div>
+      <div class="creditor med">
+        <div class="num-circle orange">3</div>
+        <div>
+          <h4>Essential vendors</h4>
+          <p>Identify vendors playing a vital role that may not be easily replaceable.</p>
+        </div>
+        <div class="priority">Medium</div>
+      </div>
+      <div class="creditor med">
+        <div class="num-circle orange">4</div>
+        <div>
+          <h4>Semi-essential vendors</h4>
+          <p>Recognize vendors that can be replaced while maintaining a working relationship.</p>
+        </div>
+        <div class="priority">Medium</div>
+      </div>
+      <div class="creditor low">
+        <div class="num-circle" style="background: linear-gradient(135deg, #6B7280, #94a3b8);">5</div>
+        <div>
+          <h4>Obsolete vendors</h4>
+          <p>Address vendors that are no longer relevant but may continue seeking payment, causing distractions.</p>
+        </div>
+        <div class="priority">Low</div>
+      </div>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Action Plan · Step 1</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 13 — STEPS 2 & 3
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>13 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">The Action Plan, continued</div>
+
+    <div class="step-header" style="margin-top: 5mm;">
+      <div class="pill">Step 02</div>
+      <h2>Strategic bank account management.</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">Recognizing the various ways creditors can target personal and business accounts, changing and safeguarding your bank accounts is imperative. Keep the location of these accounts unknown to creditors to prevent potential attachments or garnishments.</p>
+
+    <div class="step-header" style="margin-top: 8mm; background: var(--orange);">
+      <div class="pill">Step 03</div>
+      <h2>Establishing a settlement budget &amp; generating cash.</h2>
+    </div>
+    <p class="body" style="max-width: 170mm;">After securing your cash, devise a settlement budget to resolve old debts. Consider allocating <strong>at least 5%</strong> of your total defaulted debt per month.</p>
+
+    <div class="math-card">
+      <div class="label">Worked Example</div>
+      <div class="math-row" style="margin-top: 14px;">
+        <div>
+          <div class="k">Defaulted Debt</div>
+          <div class="v">$100,000</div>
+        </div>
+        <div>
+          <div class="k">Allocation / Mo</div>
+          <div class="v">5%</div>
+        </div>
+        <div>
+          <div class="k">Toward Settlement</div>
+          <div class="v orange">$5,000</div>
+        </div>
+      </div>
+      <div style="font-size: 9.5pt; color: rgba(255,255,255,.85); margin-top: 12px; line-height: 1.55;">
+        This proactive approach ensures a systematic and strategic process for debt resolution. The earlier you start the budget, the more leverage you'll have at the negotiation table.
+      </div>
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Action Plan · Steps 2 &amp; 3</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 14 — DANCING WITH THE DEVIL HERO
+     ================================================================ -->
+<section class="page">
+  <div class="devil-hero">
+    <div class="photo"><img src="{{IMG3}}" alt=""></div>
+    <div class="overlay">
+      <img class="brand-mark xl" src="{{LOGO_WHITE}}" alt="Coastal Debt Resolve">
+      <div class="eyebrow" style="color: var(--blue-light);">Chapter 06</div>
+      <h1 class="h1" style="font-size: 48pt; line-height: 1;">Dancing with<br>the devil of cash flow.</h1>
+      <p class="lead">As a small business owner, you often have to dance with the devil. Typically, the devil is in the form of capital or the absence of it. But if you're going to dance, at least know the steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 15 — CASH FLOW TIPS
+     ================================================================ -->
+<section class="page">
+  <div class="chrome-top">
+    <img class="brand-mark" src="{{LOGO_DARK}}" alt="Coastal Debt">
+    <div>15 / 16</div>
+  </div>
+  <div class="frame">
+    <div class="eyebrow">Cash Flow Tips</div>
+    <h2 class="h2" style="margin-top: 4mm;">Five steps to manage<br>cash flow effectively.</h2>
+
+    <div class="tips-grid">
+      <div class="tip">
+        <div class="ico">$</div>
+        <div>
+          <h4>Track your income and expenses closely.</h4>
+          <p>This will help you identify areas where you can cut costs or boost sales.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="ico">⌃</div>
+        <div>
+          <h4>Invoice promptly and follow up on late payments.</h4>
+          <p>The quicker you receive payment, the more favorable your cash flow situation becomes.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="ico">↔</div>
+        <div>
+          <h4>Negotiate flexible payment terms with vendors.</h4>
+          <p>This can give you breathing room when you're short on cash in any given month.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="ico">◆</div>
+        <div>
+          <h4>Build a financial cushion.</h4>
+          <p>Every month, set some money into savings to help when sales go up and down.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="ico">+</div>
+        <div>
+          <h4>Use a line of credit to bridge cash flow gaps.</h4>
+          <p>A good option if you're growing the business or experiencing a temporary financial setback.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing-note">
+      <strong>Remember:</strong> the devil is always in the details. Pay close attention to your finances and adjust as needed. Dancing with the devil of cash flow can be challenging, but it's essential for the success of your small business.
+    </div>
+  </div>
+  <div class="chrome-bot">
+    <div>coastaldebt.com</div>
+    <div class="pill">Five Tips</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     PAGE 16 — SUBSCRIBE BACK COVER
+     ================================================================ -->
+<section class="page back-cover">
+  <img class="back-chevron" src="{{CHEV_WHITE}}" alt="">
+  <div class="frame">
+    <img class="brand-mark hero" src="{{LOGO_WHITE}}" alt="Coastal Debt Resolve">
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6mm;">
+      <div class="eyebrow" style="color: var(--blue-light); display: inline-flex; align-items: center; gap: 12px;">
+        <span style="width: 26px; height: 1.5px; background: var(--orange);"></span>
+        Keep Going
+        <span style="width: 26px; height: 1.5px; background: var(--orange);"></span>
+      </div>
+      <h1 class="h1">Your comeback story<br>starts with one decision.</h1>
+      <p class="lead">Eager to further your understanding of the industry and debt relief management? Explore our blog or subscribe to stay updated on valuable financial insights and tips that keep you in control.</p>
+    </div>
+
+    <div class="back-cta">Subscribe at coastaldebt.com <span class="arrow">→</span></div>
+
+    <div class="back-foot" style="justify-content: center; flex-direction: column; gap: 6mm; width: 100%;">
+      <div class="quote" style="text-align: center; max-width: none;">"It's not just about debt. It's your comeback story."</div>
+      <div class="url">coastaldebt.com</div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

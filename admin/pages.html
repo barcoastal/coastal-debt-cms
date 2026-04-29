@@ -462,6 +462,7 @@
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
                 <option value="leadgen">Lead Gen (Funnel)</option>
                 <option value="pdf">PDF Guide (download)</option>
+                <option value="pdf-v2">PDF Guide V2 (Second Wind style)</option>
             </select>
           </div>
           <div class="form-group">
@@ -564,6 +565,7 @@
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
                 <option value="leadgen">Lead Gen (Funnel)</option>
                 <option value="pdf">PDF Guide (download)</option>
+                <option value="pdf-v2">PDF Guide V2 (Second Wind style)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -1119,8 +1121,8 @@
 
     function _lpCardHtml(page) {
       const m = page.gads_metrics || {};
-      const tplLabel = ({call:'Call',game:'Game',article:'Article',authority:'Authority',join:'Join'}[page.template_type] || 'Form');
-      const tplCls = ({call:'badge-green',game:'badge-orange',article:'badge-purple',authority:'badge-purple',join:'badge-blue'}[page.template_type] || 'badge-blue');
+      const tplLabel = ({call:'Call',game:'Game',article:'Article',authority:'Authority',join:'Join',pdf:'PDF',['pdf-v2']:'PDF V2'}[page.template_type] || 'Form');
+      const tplCls = ({call:'badge-green',game:'badge-orange',article:'badge-purple',authority:'badge-purple',join:'badge-blue',pdf:'badge-orange',['pdf-v2']:'badge-orange'}[page.template_type] || 'badge-blue');
       const ctr = m.ctr ? _pct(m.ctr) : '—';
       const cpc = m.avg_cpc_micros ? _money(m.avg_cpc_micros) : '—';
       return `
@@ -1676,7 +1678,7 @@
       const sec = document.getElementById('pdfUploadSection');
       const cur = document.getElementById('pdfCurrent');
       if (!sec) return;
-      if (templateType === 'pdf') {
+      if (templateType === 'pdf' || templateType === 'pdf-v2') {
         sec.style.display = '';
         if (content && content.pdfUrl) {
           const sizeKb = content.pdfSize ? Math.round(content.pdfSize / 1024) : null;

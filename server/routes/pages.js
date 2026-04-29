@@ -172,6 +172,53 @@ const defaultContentPdf = {
   }
 };
 
+const defaultContentPdfV2 = {
+  pageTitle: "Stop the MCA Debt Spiral | Free Relief Guide | Coastal Debt Resolve",
+  metaDescription: "Download our free MCA Debt Relief Guide. The rational, ethical path to resolving merchant cash advance debt without false promises.",
+  phone: "(888) 487-4167",
+  eyebrow: "Free MCA Debt Relief Guide",
+  headline: "Stop the MCA Debt Spiral.",
+  headlineHighlight: "Get the free guide.",
+  heroSubhead: "You don't need false promises. You need real solutions. Download the playbook business owners use to take back control.",
+  ctaButton: "Download the Guide",
+  whatsNextTitle: "What happens after you download",
+  whatsNext1Title: "Read the guide",
+  whatsNext1Body: "Understand the real options before you commit to anything. No fluff, no fear tactics.",
+  whatsNext2Title: "Schedule a free call",
+  whatsNext2Body: "Talk to a Coastal Debt Resolve advisor about your specific situation, no obligation.",
+  whatsNext3Title: "Build your plan",
+  whatsNext3Body: "Walk away with a clear path to resolve your business debt and protect your operations.",
+  scheduleCta: "Schedule a Free Consultation",
+  trustEyebrow: "As featured on",
+  insideTitle: "What's inside the guide",
+  insideSubhead: "Sixteen pages of frameworks, examples, and tactics drawn from helping over 1,500 small business owners resolve MCA debt.",
+  inside1: "The four common mistakes business owners make under debt pressure, and how to avoid them",
+  inside2: "How MCAs really work — factor rates, daily ACH pulls, and the reconciliation clauses lenders don't advertise",
+  inside3: "Renegotiation, consolidation, and settlement: when each option works and when it backfires",
+  inside4: "The 3-step action plan we walk through with new clients in their first week",
+  inside5: "How to prioritize creditors so the right vendors get paid and the rest get a settlement offer",
+  inside6: "Five cash-flow tactics that keep your business operating while you resolve the debt",
+  testimonialQuote: "Coastal Debt Resolve provides a sober, methodical path through MCA debt — exactly the kind of structured restructuring that small business owners need but rarely find.",
+  testimonialAuthor: "ABL Advisor",
+  testimonialRole: "Asset-based lending publication",
+  formEyebrow: "Get the guide",
+  formTitle: "Yes, send me the guide.",
+  formSubtitle: "Enter your details and the PDF will be on its way. We'll never spam you.",
+  formButton: "Download Guide",
+  formDisclaimer: "By submitting, you agree to our privacy policy. Your information is confidential and never shared.",
+  finalCtaTitle: "Ready to take the first step?",
+  finalCtaBody: "Download the guide today, then book a free consultation when you're ready to talk through your options.",
+  pdfUrl: "",
+  pdfName: "",
+  pdfSize: 0,
+  guideMockupUrl: "/lp/assets/pdf-guide/guide-mockup.png",
+  colors: {
+    ctaButton: "#3052FF",
+    ctaButtonHover: "#2442d4",
+    accent: "#FF9000"
+  }
+};
+
 const defaultContentAuthority = {
   badge: "Business Bankruptcy Alternative 2026",
   headline: "Facing Business Bankruptcy?",
@@ -637,6 +684,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     const defaults =
       page.template_type === 'authority' ? defaultContentAuthority :
       page.template_type === 'pdf' ? defaultContentPdf :
+      page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
       defaultContent;
     page.content = { ...defaults, ...saved, colors: { ...(defaults.colors || {}), ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
@@ -656,7 +704,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -672,6 +720,7 @@ router.post('/', authenticateToken, (req, res) => {
       JSON.stringify(
         validTemplateType === 'authority' ? defaultContentAuthority :
         validTemplateType === 'pdf' ? defaultContentPdf :
+        validTemplateType === 'pdf-v2' ? defaultContentPdfV2 :
         defaultContent
       ),
       JSON.stringify(validTemplateType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
@@ -744,7 +793,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -796,7 +845,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
   if (!source_campaign_id) return res.status(400).json({ error: 'source_campaign_id required' });
   if (!target_campaign_label) return res.status(400).json({ error: 'target_campaign_label required' });
 
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2'];
   const validType = validTypes.includes(template_type) ? template_type : 'join';
 
   // Pull ad groups for the source campaign from the cached meta
@@ -865,6 +914,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
         JSON.stringify(
           validType === 'authority' ? defaultContentAuthority :
           validType === 'pdf' ? defaultContentPdf :
+          validType === 'pdf-v2' ? defaultContentPdfV2 :
           defaultContent
         ),
         JSON.stringify(validType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
@@ -1282,7 +1332,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1318,6 +1368,7 @@ function generateLandingPage(pageId) {
   const defaults =
     page.template_type === 'authority' ? defaultContentAuthority :
     page.template_type === 'pdf' ? defaultContentPdf :
+    page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
     defaultContent;
   const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
