@@ -132,23 +132,44 @@ const defaultContent = {
   }
 };
 
-// PDF guide page — uses the join template visually, so inherit all its
-// fields and only override the ones specific to a guide-download flow.
+// PDF guide / lead-magnet template
 const defaultContentPdf = {
-  ...defaultContent,
   pageTitle: "Free MCA Debt Relief Guide | Coastal Debt Resolve",
   metaDescription: "Download our free practical guide for business owners on managing and reducing MCA debt without bankruptcy.",
-  headline: "Sign Up & Download Our Practical Guide to Getting Your Business",
-  headlineLine2: "",
+  phone: "(888) 487-4167",
+  badge: "Free Business-Owner Guide",
+  headline: "Practical Guide to Getting Your Business",
   headlineHighlight: "Out of Debt",
-  subheadline: "A no-fluff playbook for business owners under financial pressure — understand the real options, avoid common mistakes, take informed steps toward control.",
+  subheadline: "A no-fluff playbook for business owners under financial pressure. Understand the real options, avoid common mistakes, and take informed steps toward control.",
+  bullet1: "Practical strategies real business owners use",
+  bullet2: "Avoid the most common debt-management mistakes",
+  bullet3: "Step-by-step playbook with worksheets",
+  stat1Num: "1,500+",
+  stat1Label: "Businesses Helped",
+  stat2Num: "50-80%",
+  stat2Label: "Avg Debt Reduced",
+  stat3Num: "A+",
+  stat3Label: "BBB Rating",
   formTitle: "Get Your Free Guide",
-  formSubtitle: "Enter your details and we'll send the PDF straight away.",
+  formSubtitle: "Enter your details and we'll send the PDF straight to you.",
   formButton: "Send Me the Guide",
-  ctaButton: "Get the Guide Free",
+  ctaButton: "Get the Guide",
+  section1Title: "Why Debt Pressure Requires Careful Planning",
+  section1Body: "Debt forces business owners into survival mode where short-term relief takes priority over long-term planning. Hidden consequences — daily ACH withdrawals, factor-rate compounding, aggressive collections — quietly erode the business while owners focus on the next payment. Stepping back to plan is the first step toward real control.",
+  section2Title: "Practical Solutions That Protect Your Business",
+  section2Body: "Settlement, restructuring, and consolidation are tools, not magic. The right approach depends on the type of debt, the lender mix, and the cash-flow runway. The guide walks through the structured options business owners actually use to keep operations running while reducing total debt.",
+  section3Title: "Take the First Step With Clear Information",
+  section3Body: "Knowledge changes outcomes. Download the guide, share it with your team, and use it as a starting point for the conversation with a debt-relief specialist. We are here when you are ready.",
+  ctaTitle: "Ready to Get Out of MCA Debt?",
+  ctaSubtitle: "Download the guide. No fluff. Just the steps that work.",
   pdfUrl: "",
   pdfName: "",
-  pdfSize: 0
+  pdfSize: 0,
+  colors: {
+    ctaButton: "#3052FF",
+    ctaButtonHover: "#2442d4",
+    headlineHighlight: "#3052FF"
+  }
 };
 
 const defaultContentAuthority = {
