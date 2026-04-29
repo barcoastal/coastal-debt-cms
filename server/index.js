@@ -36,6 +36,7 @@ const inboxRoutes = require('./routes/inbox');
 const engagementRoutes = require('./routes/engagement');
 const affiliateLeadsRoutes = require('./routes/affiliate-leads');
 const affiliatePortalRoutes = require('./routes/affiliate-portal');
+const trackEventRoutes = require('./routes/track-event');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -240,6 +241,7 @@ app.use('/api/inbox', inboxRoutes);
 app.use('/api/engagement', engagementRoutes);
 app.use('/api/affiliate-leads', affiliateLeadsRoutes);
 app.use('/api/affiliate', affiliatePortalRoutes);
+app.use('/api/track-event', trackEventRoutes);
 app.use('/t', emailTrackingRoutes);
 
 // Redirect root to admin (or handle TikTok OAuth callback)

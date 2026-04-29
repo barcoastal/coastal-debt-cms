@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{pageTitle}}</title>
 <meta name="description" content="{{metaDescription}}">
+
+<!-- Meta Pixel -->
+<script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window._fbPixelId = '{{FB_PIXEL_ID}}';
+  if (window._fbPixelId) { fbq('init', window._fbPixelId); fbq('track', 'PageView'); }
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -543,6 +556,45 @@
     } catch (e) {}
   })();
 
+  // ===== Meta Pixel: fire a Lead event for every download =====
+  // Uses an event_id so the browser pixel and a future server-side CAPI call dedupe.
+  function _ld_uuid() {
+    return 'pdf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+  }
+  function fireDownloadLead(placement) {
+    var eventId = _ld_uuid();
+    var payload = {
+      content_name: 'MCA Debt Relief Guide',
+      content_category: 'PDF Guide',
+      content_ids: ['mca-debt-relief-guide'],
+      content_type: 'product',
+      placement: placement || 'unknown',
+      currency: 'USD',
+      value: 0
+    };
+    try {
+      if (window.fbq && window._fbPixelId) {
+        fbq('track', 'Lead', payload, { eventID: eventId });
+      }
+    } catch (e) {}
+    // Server-side mirror so we still record downloads even if the pixel is blocked
+    try {
+      var visitorId = localStorage.getItem('cd_vid');
+      fetch('/api/track-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'pdf_download',
+          event_id: eventId,
+          placement: placement,
+          visitor_id: visitorId,
+          url: window.location.href,
+          pdf_url: "{{pdfUrl}}"
+        })
+      }).catch(function() {});
+    } catch (e) {}
+  }
+
   // ===== Download buttons =====
   // If a PDF is uploaded, the hero/final CTAs download it directly (no form gate).
   // If not, they fall back to scrolling to the lead form.
@@ -557,15 +609,7 @@
         if (arrow) arrow.textContent = '↓';
       } else {
         a.addEventListener('click', function() {
-          // Best-effort track that someone grabbed the file directly
-          try {
-            var visitorId = localStorage.getItem('cd_vid');
-            fetch('/api/track-event', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'pdf_download', placement: a.dataset.download, visitor_id: visitorId, url: pdfUrl })
-            }).catch(function() {});
-          } catch (e) {}
+          fireDownloadLead(a.dataset.download);
         });
       }
     });
@@ -614,11 +658,15 @@
       }
       if (card) card.innerHTML = thankYou;
       else form.outerHTML = thankYou;
-      if (pdfUrl) setTimeout(function() {
-        var a = document.createElement('a');
-        a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener'; a.download = '';
-        document.body.appendChild(a); a.click(); a.remove();
-      }, 400);
+      if (pdfUrl) {
+        // The form submission itself is a download — fire Meta Lead event
+        try { fireDownloadLead('form-submit'); } catch (e) {}
+        setTimeout(function() {
+          var a = document.createElement('a');
+          a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener'; a.download = '';
+          document.body.appendChild(a); a.click(); a.remove();
+        }, 400);
+      }
     }
 
     fetch('/api/leads', {

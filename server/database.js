@@ -357,6 +357,31 @@ try { db.exec(`ALTER TABLE facebook_config ADD COLUMN test_event_code TEXT`); } 
 // Add user_access_token to facebook_config (for multi-page sync)
 try { db.exec(`ALTER TABLE facebook_config ADD COLUMN user_access_token TEXT`); } catch (e) {}
 
+// Add capi_access_token for server-side Conversions API events
+try { db.exec(`ALTER TABLE facebook_config ADD COLUMN capi_access_token TEXT`); } catch (e) {}
+
+// Track Meta Pixel events (browser + server-side CAPI dedupe via event_id)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS meta_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_name TEXT NOT NULL,
+    event_id TEXT UNIQUE,
+    placement TEXT,
+    visitor_id TEXT,
+    url TEXT,
+    pdf_url TEXT,
+    user_agent TEXT,
+    ip TEXT,
+    fbp TEXT,
+    fbc TEXT,
+    capi_status TEXT,
+    capi_response TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_meta_events_visitor ON meta_events(visitor_id);
+  CREATE INDEX IF NOT EXISTS idx_meta_events_created ON meta_events(created_at);
+`);
+
 // Add Salesforce tracking columns to leads table
 try { db.exec(`ALTER TABLE leads ADD COLUMN transfer_status TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN five9_dispo TEXT`); } catch (e) {}
