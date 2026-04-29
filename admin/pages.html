@@ -2111,10 +2111,15 @@
 
         const esc = function(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
+        const dl = data.stats.total_downloads || 0;
+        const dlByPlacement = (data.stats.downloads_by_placement || [])
+          .map(r => `${esc(r.placement || '—')}: ${r.c}`).join(' · ') || 'No downloads yet';
+        const showDownloads = dl > 0 || (data.page.template_type && /^pdf/.test(data.page.template_type));
+
         const statsHtml = `
           <div style="padding:20px;">
             <!-- Summary Cards -->
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+            <div style="display:grid;grid-template-columns:repeat(${showDownloads ? 5 : 4},1fr);gap:12px;margin-bottom:24px;">
               <div style="background:#f0f4ff;padding:16px;border-radius:10px;border-left:4px solid #3052FF;">
                 <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;">Clicks</div>
                 <div style="font-size:28px;font-weight:800;color:#1e293b;">${data.stats.total_visitors}</div>
@@ -2123,6 +2128,13 @@
                 <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;">Leads</div>
                 <div style="font-size:28px;font-weight:800;color:#1e293b;">${data.stats.total_leads}</div>
               </div>
+              ${showDownloads ? `
+              <div style="background:#eef2ff;padding:16px;border-radius:10px;border-left:4px solid #6366F1;" title="${esc(dlByPlacement)}">
+                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;">Downloads</div>
+                <div style="font-size:28px;font-weight:800;color:#1e293b;">${dl}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px;">${data.stats.unique_downloaders || 0} unique · ${data.stats.download_rate || 0}% of clicks</div>
+              </div>
+              ` : ''}
               <div style="background:#fef3c7;padding:16px;border-radius:10px;border-left:4px solid #f59e0b;">
                 <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;">Conv. Rate</div>
                 <div style="font-size:28px;font-weight:800;color:#1e293b;">${data.stats.conversion_rate}%</div>

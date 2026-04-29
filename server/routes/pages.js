@@ -605,6 +605,21 @@ router.get('/:id/stats', authenticateToken, (req, res) => {
   const totalLeads = leads.length;
   const conversionRate = totalVisitors > 0 ? Math.round((totalLeads / totalVisitors) * 1000) / 10 : 0;
 
+  // PDF guide downloads (logged via /api/track-event from pdf-v2 template)
+  let totalDownloads = 0, uniqueDownloaders = 0, downloadsByPlacement = [];
+  try {
+    totalDownloads = db.prepare(
+      `SELECT COUNT(*) as c FROM meta_events WHERE landing_page_slug = ?`
+    ).get(page.slug).c;
+    uniqueDownloaders = db.prepare(
+      `SELECT COUNT(DISTINCT visitor_id) as c FROM meta_events WHERE landing_page_slug = ? AND visitor_id IS NOT NULL`
+    ).get(page.slug).c;
+    downloadsByPlacement = db.prepare(
+      `SELECT placement, COUNT(*) as c FROM meta_events WHERE landing_page_slug = ? GROUP BY placement ORDER BY c DESC`
+    ).all(page.slug);
+  } catch (e) { /* meta_events may not exist on older DBs */ }
+  const downloadRate = totalVisitors > 0 ? Math.round((totalDownloads / totalVisitors) * 1000) / 10 : 0;
+
   // Funnel: visits → answered debt size (step1) → answered MCA (step2) → lead
   const slugLike = '%' + page.slug + '%';
   const step1 = db.prepare(`SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND step1_debt_at IS NOT NULL`).get(slugLike).c;
@@ -652,11 +667,15 @@ router.get('/:id/stats', authenticateToken, (req, res) => {
   `).all('%' + page.slug + '%');
 
   res.json({
-    page: { id: page.id, name: page.name, slug: page.slug, platform: page.platform },
+    page: { id: page.id, name: page.name, slug: page.slug, platform: page.platform, template_type: page.template_type },
     stats: {
       total_visitors: totalVisitors,
       total_leads: totalLeads,
       conversion_rate: conversionRate,
+      total_downloads: totalDownloads,
+      unique_downloaders: uniqueDownloaders,
+      download_rate: downloadRate,
+      downloads_by_placement: downloadsByPlacement,
       ab_split: {
         A: { visitors: visitors.filter(v => v.ab_variant === 'A').length, leads: leads.filter(l => l.ab_variant === 'A').length },
         B: { visitors: visitors.filter(v => v.ab_variant === 'B').length, leads: leads.filter(l => l.ab_variant === 'B').length }

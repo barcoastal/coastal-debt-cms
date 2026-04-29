@@ -584,10 +584,11 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event: 'pdf_download',
+          event: 'Lead',
           event_id: eventId,
           placement: placement,
           visitor_id: visitorId,
+          slug: '{{SLUG}}',
           url: window.location.href,
           pdf_url: "{{pdfUrl}}"
         })

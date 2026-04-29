@@ -31,9 +31,17 @@ router.post('/', async (req, res) => {
     event_id,
     placement,
     visitor_id,
+    slug,
     url,
     pdf_url
   } = req.body || {};
+
+  // Fall back: parse slug from URL like https://host/lp/<slug>/
+  let lpSlug = slug || null;
+  if (!lpSlug && url) {
+    const m = String(url).match(/\/lp\/([a-z0-9-]+)/i);
+    if (m) lpSlug = m[1];
+  }
 
   const finalEventId = event_id || `srv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   const userAgent = req.headers['user-agent'] || '';
@@ -45,9 +53,9 @@ router.post('/', async (req, res) => {
   try {
     const r = db.prepare(`
       INSERT OR IGNORE INTO meta_events
-        (event_name, event_id, placement, visitor_id, url, pdf_url, user_agent, ip, fbp, fbc, capi_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).run(event, finalEventId, placement || null, visitor_id || null, url || null, pdf_url || null, userAgent, ip, fbp, fbc);
+        (event_name, event_id, placement, visitor_id, landing_page_slug, url, pdf_url, user_agent, ip, fbp, fbc, capi_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).run(event, finalEventId, placement || null, visitor_id || null, lpSlug, url || null, pdf_url || null, userAgent, ip, fbp, fbc);
     rowId = r.lastInsertRowid;
   } catch (e) {
     console.error('meta_events insert failed:', e.message);
