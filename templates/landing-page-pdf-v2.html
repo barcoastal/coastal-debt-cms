@@ -556,13 +556,15 @@
     } catch (e) {}
   })();
 
-  // ===== Meta Pixel: fire a Lead event for every download =====
-  // Uses an event_id so the browser pixel and a future server-side CAPI call dedupe.
-  function _ld_uuid() {
+  // ===== Meta Pixel: fire a custom GuideDownload event for every download =====
+  // Lead is reserved for form submissions; this is a separate, filterable event
+  // in Meta Events Manager. Uses event_id so the browser pixel and server-side
+  // CAPI call dedupe.
+  function _gd_uuid() {
     return 'pdf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
   }
-  function fireDownloadLead(placement) {
-    var eventId = _ld_uuid();
+  function fireGuideDownload(placement) {
+    var eventId = _gd_uuid();
     var payload = {
       content_name: 'MCA Debt Relief Guide',
       content_category: 'PDF Guide',
@@ -574,7 +576,7 @@
     };
     try {
       if (window.fbq && window._fbPixelId) {
-        fbq('track', 'Lead', payload, { eventID: eventId });
+        fbq('trackCustom', 'GuideDownload', payload, { eventID: eventId });
       }
     } catch (e) {}
     // Server-side mirror so we still record downloads even if the pixel is blocked
@@ -584,7 +586,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event: 'Lead',
+          event: 'GuideDownload',
           event_id: eventId,
           placement: placement,
           visitor_id: visitorId,
@@ -610,7 +612,7 @@
         if (arrow) arrow.textContent = '↓';
       } else {
         a.addEventListener('click', function() {
-          fireDownloadLead(a.dataset.download);
+          fireGuideDownload(a.dataset.download);
         });
       }
     });
@@ -661,7 +663,7 @@
       else form.outerHTML = thankYou;
       if (pdfUrl) {
         // The form submission itself is a download — fire Meta Lead event
-        try { fireDownloadLead('form-submit'); } catch (e) {}
+        try { fireGuideDownload('form-submit'); } catch (e) {}
         setTimeout(function() {
           var a = document.createElement('a');
           a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener'; a.download = '';
