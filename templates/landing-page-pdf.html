@@ -303,14 +303,11 @@
   })();
 
   (function() {
-    var pdfUrl = "{{pdfUrl}}";
+    // Final-CTA button: scrolls back up to the lead form so users complete capture
+    // before getting the file. (Hero stays as-is — form submission downloads the PDF.)
     var mount = document.getElementById('finalDownload');
     if (!mount) return;
-    if (pdfUrl) {
-      mount.innerHTML = '<a href="' + pdfUrl + '" target="_blank" rel="noopener" class="download-btn"><span class="dl-icon">⬇</span> Download the Guide (PDF)</a>';
-    } else {
-      mount.innerHTML = '<span class="pdf-missing">Submit the form above to receive the guide</span>';
-    }
+    mount.innerHTML = '<a href="#leadForm" class="download-btn" onclick="document.getElementById(\'leadForm\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;"><span class="dl-icon">↑</span> Get the Guide</a>';
   })();
 
   var _pdfSubmitting = false;
