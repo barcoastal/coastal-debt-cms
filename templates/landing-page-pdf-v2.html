@@ -530,6 +530,19 @@
 </footer>
 
 <script>
+  // ===== Capture click identifiers (gclid / fbclid) so conversions can be
+  //       attributed back to the source ad even if the user navigates away.
+  (function() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var save = function(key) {
+        var v = params.get(key);
+        if (v) localStorage.setItem('cd_' + key, v);
+      };
+      ['gclid', 'fbclid', 'msclkid'].forEach(save);
+    } catch (e) {}
+  })();
+
   // ===== Funnel tracking + visitor id =====
   (function() {
     try {
@@ -579,7 +592,9 @@
         fbq('trackCustom', 'GuideDownload', payload, { eventID: eventId });
       }
     } catch (e) {}
-    // Server-side mirror so we still record downloads even if the pixel is blocked
+    // Server-side mirror so we still record downloads even if the pixel is blocked.
+    // Includes click ids so the server can fan out to Google Ads (uploadConversion)
+    // and other platforms based on postback_config.
     try {
       var visitorId = localStorage.getItem('cd_vid');
       fetch('/api/track-event', {
@@ -592,7 +607,10 @@
           visitor_id: visitorId,
           slug: '{{SLUG}}',
           url: window.location.href,
-          pdf_url: "{{pdfUrl}}"
+          pdf_url: "{{pdfUrl}}",
+          gclid: localStorage.getItem('cd_gclid') || null,
+          fbclid: localStorage.getItem('cd_fbclid') || null,
+          msclkid: localStorage.getItem('cd_msclkid') || null
         })
       }).catch(function() {});
     } catch (e) {}

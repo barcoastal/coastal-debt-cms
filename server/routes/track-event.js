@@ -15,9 +15,11 @@
 
 const express = require('express');
 const router = express.Router();
-const { db } = require('../database');
+const db = require('../database');
 const facebookModule = require('./facebook');
 const sendFacebookEvent = facebookModule.sendFacebookEvent;
+const googleAdsModule = require('./google-ads');
+const uploadConversion = googleAdsModule.uploadConversion;
 
 function getCookie(req, name) {
   const c = req.headers.cookie || '';
@@ -33,7 +35,10 @@ router.post('/', async (req, res) => {
     visitor_id,
     slug,
     url,
-    pdf_url
+    pdf_url,
+    gclid,
+    fbclid,
+    msclkid
   } = req.body || {};
 
   // Fall back: parse slug from URL like https://host/lp/<slug>/
@@ -63,6 +68,7 @@ router.post('/', async (req, res) => {
 
   res.json({ ok: true, event_id: finalEventId });
 
+  // Meta CAPI fan-out
   setImmediate(async () => {
     try {
       const result = await sendFacebookEvent(event, {
@@ -89,6 +95,30 @@ router.post('/', async (req, res) => {
       }
     }
   });
+
+  // Google Ads conversion fan-out (offline conversion via gclid).
+  // Routed through postback_config: any active row whose event_name matches
+  // this event ships an offline conversion to its Google Ads conversion action.
+  if (gclid && uploadConversion) {
+    setImmediate(async () => {
+      try {
+        const cfg = db.prepare(
+          `SELECT id, name, conversion_action_id FROM postback_config
+           WHERE event_name = ? AND is_active = 1 AND conversion_action_id IS NOT NULL`
+        ).all(event);
+        for (const row of cfg) {
+          const r = await uploadConversion(gclid, row.conversion_action_id, null, null);
+          db.prepare(`
+            INSERT INTO conversion_events
+              (gclid, conversion_action_id, conversion_action_name, source, status, error_message, sent_at)
+            VALUES (?, ?, ?, 'guide_download', ?, ?, ${r.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
+          `).run(gclid, row.conversion_action_id, row.name || event, r.success ? 'sent' : 'error', r.success ? null : (r.error || ''));
+        }
+      } catch (err) {
+        console.error('Google Ads fan-out error:', err.message);
+      }
+    });
+  }
 });
 
 module.exports = router;
