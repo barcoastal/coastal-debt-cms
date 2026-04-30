@@ -569,16 +569,17 @@
     } catch (e) {}
   })();
 
-  // ===== Meta Pixel: fire a custom GuideDownload event for every download =====
-  // Lead is reserved for form submissions; this is a separate, filterable event
-  // in Meta Events Manager. Uses event_id so the browser pixel and server-side
-  // CAPI call dedupe.
+  // ===== Meta Pixel: fire the standard Search event for every download =====
+  // Reuses an existing event in Meta (Search) so it's already wired in Events
+  // Manager and can be optimized for. Uses event_id so the browser pixel and
+  // server-side CAPI call dedupe.
   function _gd_uuid() {
     return 'pdf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
   }
   function fireGuideDownload(placement) {
     var eventId = _gd_uuid();
     var payload = {
+      search_string: 'MCA Debt Relief Guide download',
       content_name: 'MCA Debt Relief Guide',
       content_category: 'PDF Guide',
       content_ids: ['mca-debt-relief-guide'],
@@ -589,7 +590,7 @@
     };
     try {
       if (window.fbq && window._fbPixelId) {
-        fbq('trackCustom', 'GuideDownload', payload, { eventID: eventId });
+        fbq('track', 'Search', payload, { eventID: eventId });
       }
     } catch (e) {}
     // Server-side mirror so we still record downloads even if the pixel is blocked.
@@ -601,7 +602,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event: 'GuideDownload',
+          event: 'Search',
           event_id: eventId,
           placement: placement,
           visitor_id: visitorId,
