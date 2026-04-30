@@ -118,6 +118,48 @@
     .final-cta h2 { font-size: 30px; }
     .form-row { grid-template-columns: 1fr; }
   }
+
+  /* ===== Mobile sticky CTA banner ===== */
+  .mobile-sticky-cta {
+    display: none;
+    position: fixed;
+    left: 12px; right: 12px; bottom: 12px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #3052FF 0%, #2442d4 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 14px 32px -6px rgba(48,82,255,0.45), 0 4px 10px rgba(11,15,31,0.18);
+    text-decoration: none;
+    align-items: center; justify-content: space-between; gap: 14px;
+    font-weight: 700; font-size: 15px;
+    line-height: 1.25;
+    animation: msticky-in 320ms ease-out;
+  }
+  @keyframes msticky-in {
+    from { transform: translateY(120%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .mobile-sticky-cta:active { transform: scale(0.98); }
+  .mobile-sticky-cta .ms-text { display: flex; flex-direction: column; }
+  .mobile-sticky-cta .ms-sub {
+    font-size: 11px; font-weight: 500; opacity: 0.85;
+    letter-spacing: 0.04em; text-transform: uppercase; margin-top: 1px;
+  }
+  .mobile-sticky-cta .ms-arrow {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-sticky-cta { display: flex; }
+    /* Make sure the banner doesn't cover the footer's last lines */
+    body { padding-bottom: 88px; }
+  }
+  /* Hide once the user is on the form so it doesn't cover the inputs */
+  body.ms-hide-cta .mobile-sticky-cta { display: none !important; }
 </style>
 </head>
 <body>
@@ -363,7 +405,36 @@
     }).then(finish).catch(finish);
     return false;
   }
+
+  // ===== Mobile sticky CTA — only fits in viewport on phones, scrolls to form =====
+  (function() {
+    var banner = document.getElementById('mobileStickyCta');
+    if (!banner) return;
+    banner.addEventListener('click', function(e) {
+      e.preventDefault();
+      var form = document.getElementById('leadForm');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    // Auto-hide when the form is on screen so it never covers the inputs
+    var form = document.getElementById('leadForm');
+    if (form && 'IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          document.body.classList.toggle('ms-hide-cta', entry.isIntersecting);
+        });
+      }, { threshold: 0.3 });
+      io.observe(form);
+    }
+  })();
 </script>
+
+<a href="#leadForm" id="mobileStickyCta" class="mobile-sticky-cta" aria-label="Get the free MCA Debt Relief Guide">
+  <span class="ms-text">
+    <span>Get the Free Guide</span>
+    <span class="ms-sub">Tap to fill the form</span>
+  </span>
+  <span class="ms-arrow">↑</span>
+</a>
 
 </body>
 </html>
