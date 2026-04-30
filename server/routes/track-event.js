@@ -97,14 +97,14 @@ router.post('/', async (req, res) => {
   });
 
   // Google Ads conversion fan-out (offline conversion via gclid).
-  // Routed through postback_config: any active row whose event_name matches
-  // this event ships an offline conversion to its Google Ads conversion action.
+  // Routed through postback_config (managed in admin → Event Configuration).
+  // postback.js stores event_name lowercased; normalize the lookup.
   if (gclid && uploadConversion) {
     setImmediate(async () => {
       try {
         const cfg = db.prepare(
           `SELECT id, name, conversion_action_id FROM postback_config
-           WHERE event_name = ? AND is_active = 1 AND conversion_action_id IS NOT NULL`
+           WHERE LOWER(event_name) = LOWER(?) AND is_active = 1 AND conversion_action_id IS NOT NULL`
         ).all(event);
         for (const row of cfg) {
           const r = await uploadConversion(gclid, row.conversion_action_id, null, null);
