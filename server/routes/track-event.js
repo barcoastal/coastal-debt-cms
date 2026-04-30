@@ -103,16 +103,19 @@ router.post('/', async (req, res) => {
     setImmediate(async () => {
       try {
         const cfg = db.prepare(
-          `SELECT id, name, conversion_action_id FROM postback_config
+          `SELECT id, name, google_ads_event_name, conversion_action_id FROM postback_config
            WHERE LOWER(event_name) = LOWER(?) AND is_active = 1 AND conversion_action_id IS NOT NULL`
         ).all(event);
         for (const row of cfg) {
           const r = await uploadConversion(gclid, row.conversion_action_id, null, null);
+          // Prefer the Google Ads conversion action name (e.g. "pdf_lead_rt") over the
+          // admin's display name so the Conversion Events tab matches what's in Google Ads.
+          const actionLabel = row.google_ads_event_name || row.name || event;
           db.prepare(`
             INSERT INTO conversion_events
               (gclid, conversion_action_id, conversion_action_name, source, status, error_message, sent_at)
             VALUES (?, ?, ?, 'guide_download', ?, ?, ${r.success ? 'CURRENT_TIMESTAMP' : 'NULL'})
-          `).run(gclid, row.conversion_action_id, row.name || event, r.success ? 'sent' : 'error', r.success ? null : (r.error || ''));
+          `).run(gclid, row.conversion_action_id, actionLabel, r.success ? 'sent' : 'error', r.success ? null : (r.error || ''));
         }
       } catch (err) {
         console.error('Google Ads fan-out error:', err.message);
