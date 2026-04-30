@@ -379,12 +379,15 @@ db.exec(`
     capi_response TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+`);
+// Add slug column for tables created before this schema change — must run
+// BEFORE the slug index is created so the column is present either way.
+try { db.exec(`ALTER TABLE meta_events ADD COLUMN landing_page_slug TEXT`); } catch (e) {}
+db.exec(`
   CREATE INDEX IF NOT EXISTS idx_meta_events_visitor ON meta_events(visitor_id);
   CREATE INDEX IF NOT EXISTS idx_meta_events_slug ON meta_events(landing_page_slug);
   CREATE INDEX IF NOT EXISTS idx_meta_events_created ON meta_events(created_at);
 `);
-// Add slug column for tables created before this schema change
-try { db.exec(`ALTER TABLE meta_events ADD COLUMN landing_page_slug TEXT`); } catch (e) {}
 
 // Add Salesforce tracking columns to leads table
 try { db.exec(`ALTER TABLE leads ADD COLUMN transfer_status TEXT`); } catch (e) {}
