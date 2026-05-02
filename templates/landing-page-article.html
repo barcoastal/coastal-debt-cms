@@ -209,9 +209,13 @@
 
     /* Responsive */
     @media(max-width:1024px){
-      .article-layout{grid-template-columns:1fr;gap:40px}
-      .sidebar-form{position:relative;top:0;max-width:520px;margin:0 auto}
-      .article-content{max-width:100%}
+      /* Single column with explicit order so form appears under the hero,
+         above the article body. */
+      .article-layout{display:flex;flex-direction:column;gap:32px}
+      .article-main{display:contents}
+      .article-hero{order:1;margin-bottom:0}
+      .sidebar-form{order:2;position:relative;top:0;max-width:520px;margin:0 auto;width:100%}
+      .article-content{order:3;max-width:100%}
       .article-hero h1{font-size:2.2rem}
     }
     @media(max-width:768px){
