@@ -119,6 +119,38 @@
     .form-row { grid-template-columns: 1fr; }
   }
 
+  @media (max-width: 640px) {
+    /* Tighter topbar: smaller logo + compact phone pill */
+    .topbar { padding: 12px 0; }
+    .topbar img { height: 30px; }
+    .topbar-inner { gap: 10px; }
+    .topbar .phone {
+      font-size: 13px;
+      padding: 8px 14px;
+      background: rgba(48,82,255,0.10);
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* Pull the form into the initial viewport: eyebrow + h1 + subhead + FORM,
+       with bullets/stats moved below. Uses display:contents so children of the
+       inner column become direct grid items, which lets us reorder via `order`. */
+    .hero { padding: 20px 0 28px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .hero-grid > div:first-child { display: contents; }
+    .eyebrow { align-self: start; margin-bottom: 12px; padding: 5px 11px; font-size: 10.5px; }
+    .hero h1 { font-size: 28px; line-height: 1.14; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .hero p.subhead { font-size: 14.5px; margin-bottom: 18px; line-height: 1.55; max-width: none; }
+    .form-card { order: 1; padding: 20px; margin-bottom: 26px; }
+    .form-card h2 { font-size: 20px; }
+    .form-card .form-sub { font-size: 13px; margin-bottom: 16px; }
+    .form-row { grid-template-columns: 1fr 1fr; }
+    .hero-bullets { order: 2; margin: 0 0 22px; gap: 10px; }
+    .hero-bullets li { font-size: 14.5px; }
+    .hero-stats { order: 3; gap: 18px; margin-top: 0; padding-top: 18px; }
+    .hero-stats .stat-num { font-size: 22px; }
+  }
+
   /* ===== Mobile sticky CTA banner ===== */
   .mobile-sticky-cta {
     display: none;
@@ -167,7 +199,7 @@
 
 <header class="topbar">
   <div class="container topbar-inner">
-    <a href="https://www.coastaldebt.com/"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt Resolve"></a>
+    <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt Resolve">
     <div class="cta">
       <a href="tel:{{phoneDigits}}" class="phone phone-element">{{phone}}</a>
     </div>
@@ -352,6 +384,53 @@
     mount.innerHTML = '<a href="#leadForm" class="download-btn" onclick="document.getElementById(\'leadForm\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;"><span class="dl-icon">↑</span> Get the Guide</a>';
   })();
 
+  // ===== Meta Pixel: fire the standard Search event for every download =====
+  // Reuses an existing event in Meta (Search) so it's already wired in Events
+  // Manager and can be optimized for. Uses event_id so the browser pixel and
+  // server-side CAPI call dedupe.
+  window._fbPixelId = window._fbPixelId || '{{FB_PIXEL_ID}}';
+  function _gd_uuid() {
+    return 'pdf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+  }
+  function fireGuideDownload(placement) {
+    var eventId = _gd_uuid();
+    var payload = {
+      search_string: 'MCA Debt Relief Guide download',
+      content_name: 'MCA Debt Relief Guide',
+      content_category: 'PDF Guide',
+      content_ids: ['mca-debt-relief-guide'],
+      content_type: 'product',
+      placement: placement || 'unknown',
+      currency: 'USD',
+      value: 0
+    };
+    try {
+      if (window.fbq) {
+        fbq('track', 'Search', payload, { eventID: eventId });
+      }
+    } catch (e) {}
+    try {
+      var p = new URLSearchParams(location.search);
+      var visitorId = (function(){ try { return localStorage.getItem('eli_clickid_v2'); } catch (e) { return null; } })();
+      fetch('/api/track-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'Search',
+          event_id: eventId,
+          placement: placement,
+          visitor_id: visitorId,
+          slug: '{{SLUG}}',
+          url: window.location.href,
+          pdf_url: "{{pdfUrl}}",
+          gclid: p.get('gclid') || null,
+          fbclid: p.get('fbclid') || null,
+          msclkid: p.get('msclkid') || null
+        })
+      }).catch(function() {});
+    } catch (e) {}
+  }
+
   var _pdfSubmitting = false;
   function handlePdfSubmit(e) {
     e.preventDefault();
@@ -374,7 +453,7 @@
             '<div style="width:64px;height:64px;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#fff;font-size:32px;font-weight:800;box-shadow:0 12px 28px rgba(22,163,74,0.32);">✓</div>' +
             '<h2 style="font-size:22px;font-weight:800;margin-bottom:8px;color:#0b1320;">You are all set!</h2>' +
             '<p style="color:#475569;font-size:14px;margin-bottom:22px;line-height:1.55;">Your guide is ready. The download should start automatically — if not, click the button.</p>' +
-            '<a id="pdfDownloadLink" href="' + pdfUrl + '" download class="submit-btn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;width:auto;padding:16px 32px;">' +
+            '<a id="pdfDownloadLink" href="' + pdfUrl + '" download onclick="try{fireGuideDownload(\'success-redownload\')}catch(e){}" class="submit-btn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;width:auto;padding:16px 32px;">' +
               '<span style="font-size:18px;">⬇</span> Download the Guide' +
             '</a>' +
             '<div style="font-size:12px;color:#94a3b8;margin-top:16px;">A copy has also been emailed to you.</div>' +
@@ -391,12 +470,15 @@
       if (card) card.innerHTML = thankYou;
       else form.outerHTML = thankYou;
       // Auto-start the download (user sees the success card AND gets the file)
-      if (pdfUrl) setTimeout(function() {
-        var a = document.createElement('a');
-        a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener';
-        a.download = '';
-        document.body.appendChild(a); a.click(); a.remove();
-      }, 400);
+      if (pdfUrl) {
+        try { fireGuideDownload('form-submit'); } catch (e) {}
+        setTimeout(function() {
+          var a = document.createElement('a');
+          a.href = pdfUrl; a.target = '_blank'; a.rel = 'noopener';
+          a.download = '';
+          document.body.appendChild(a); a.click(); a.remove();
+        }, 400);
+      }
     }
     fetch('/api/leads', {
       method: 'POST',
