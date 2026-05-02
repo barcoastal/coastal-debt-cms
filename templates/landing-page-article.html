@@ -69,9 +69,9 @@
     .reading-time svg{width:14px;height:14px;opacity:0.6}
     .article-category{background:var(--bbb-blue);color:var(--white);padding:3px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
 
-    /* Hero / Article Header */
-    .article-hero{padding:60px 0 0;background:var(--white)}
-    .article-hero-inner{max-width:1200px;margin:0 auto;padding:0 24px}
+    /* Hero / Article Header (now lives inside .article-layout left column) */
+    .article-hero{padding:0;background:transparent;margin-bottom:32px}
+    .article-hero-inner{max-width:none;margin:0;padding:0}
     .bbb-hero-badge{display:flex;align-items:center;gap:16px;margin-bottom:32px;padding:20px 28px;background:linear-gradient(135deg, #f0f4ff 0%, #e8f4f8 100%);border:2px solid var(--bbb-blue);border-radius:16px}
     .bbb-hero-badge img{height:72px;width:auto;flex-shrink:0}
     .bbb-hero-badge-text{display:flex;flex-direction:column;gap:4px}
@@ -81,8 +81,10 @@
     .article-hero h1{font-family:var(--serif);font-size:2.8rem;font-weight:700;line-height:1.25;color:var(--navy);margin-bottom:20px;max-width:720px}
     .article-hero .subheadline{font-family:var(--serif);font-size:1.25rem;color:var(--gray-600);line-height:1.6;font-style:italic;max-width:680px;margin-bottom:0}
 
-    /* Article Layout */
-    .article-layout{max-width:1200px;margin:0 auto;padding:48px 24px 80px;display:grid;grid-template-columns:1fr 380px;gap:60px;align-items:start}
+    /* Article Layout — hero + content live in the left column so the
+       form (right column) is visible at the top of the page from page load. */
+    .article-layout{max-width:1200px;margin:0 auto;padding:36px 24px 80px;display:grid;grid-template-columns:1fr 380px;gap:60px;align-items:start}
+    .article-main{min-width:0}
 
     /* Article Content */
     .article-content{max-width:720px}
@@ -130,39 +132,39 @@
     .article-cta .cta-button{display:inline-block;background:var(--cta-btn);color:var(--white);padding:16px 40px;border-radius:50px;font-family:var(--sans);font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;border:none;cursor:pointer}
     .article-cta .cta-button:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(48,82,255,0.35)}
 
-    /* Sidebar Form */
-    .sidebar-form{position:sticky;top:100px}
-    .form-card{background:linear-gradient(135deg, #1a3a5c 0%, #0f1c2e 100%);border-radius:20px;padding:36px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.2);position:relative;overflow:hidden}
-    .form-card::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,rgba(48,82,255,0.12) 0%,transparent 70%);pointer-events:none}
-    .form-title{font-family:var(--sans);font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px;text-align:center;position:relative}
-    .form-subtitle{font-family:var(--sans);color:rgba(255,255,255,0.65);font-size:0.9rem;text-align:center;margin-bottom:20px;position:relative}
+    /* Sidebar Form — light theme matching the page */
+    .sidebar-form{position:sticky;top:24px}
+    .form-card{background:#fff;border:1px solid var(--gray-200);border-radius:20px;padding:32px 28px;box-shadow:0 12px 40px rgba(15,23,42,0.08);position:relative;overflow:hidden}
+    .form-card::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,rgba(48,82,255,0.06) 0%,transparent 70%);pointer-events:none}
+    .form-title{font-family:var(--sans);font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:6px;text-align:center;position:relative}
+    .form-subtitle{font-family:var(--sans);color:var(--gray-600);font-size:0.9rem;text-align:center;margin-bottom:20px;position:relative}
     .form-group{margin-bottom:12px;position:relative}
-    .form-group label{display:block;font-family:var(--sans);font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:8px;font-size:0.9rem}
-    .form-group input,.form-group select{width:100%;height:48px;padding:0 18px;border:2px solid rgba(255,255,255,0.15);border-radius:500px;font-size:0.95rem;font-family:var(--sans);transition:all 0.2s;background:rgba(255,255,255,0.1);box-shadow:none;outline:none;color:#fff}
-    .phone-wrapper{display:flex;align-items:center;border:2px solid rgba(255,255,255,0.15);border-radius:500px;background:rgba(255,255,255,0.1);height:48px;transition:all 0.2s}
-    .phone-wrapper:focus-within{border-color:var(--blue)}
-    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.9rem;color:rgba(255,255,255,0.8);white-space:nowrap;user-select:none}
-    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:44px;border-radius:0 500px 500px 0;background:transparent;color:#fff}
-    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
-    .phone-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:18px}
-    .form-group input::placeholder{color:rgba(255,255,255,0.4)}
-    .form-group input:focus,.form-group select:focus{border-color:var(--blue);background:rgba(255,255,255,0.15)}
-    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:#fff}
+    .form-group label{display:block;font-family:var(--sans);font-weight:500;color:var(--navy);margin-bottom:8px;font-size:0.9rem}
+    .form-group input,.form-group select{width:100%;height:48px;padding:0 18px;border:1.5px solid var(--gray-200);border-radius:500px;font-size:0.95rem;font-family:var(--sans);transition:border-color 0.2s, box-shadow 0.2s;background:#fff;box-shadow:none;outline:none;color:var(--gray-800)}
+    .phone-wrapper{display:flex;align-items:center;border:1.5px solid var(--gray-200);border-radius:500px;background:#fff;height:48px;transition:border-color 0.2s, box-shadow 0.2s}
+    .phone-wrapper:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(48,82,255,0.10)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 16px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:44px;border-radius:0 500px 500px 0;background:transparent;color:var(--gray-800)}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent;box-shadow:none}
+    .phone-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none;padding-left:18px}
+    .form-group input::placeholder{color:#94a3b8}
+    .form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(48,82,255,0.10)}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231a2e4a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:var(--gray-800)}
     .form-group select option{color:#1a1a1a;background:#fff}
     .radio-group{display:flex;gap:10px}
-    .radio-label{flex:1;height:48px;border:2px solid rgba(255,255,255,0.15);border-radius:500px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.1);font-weight:500;font-size:0.95rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:#fff;font-family:var(--sans)}
-    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.25);color:#fff;font-weight:600}
+    .radio-label{flex:1;height:48px;border:1.5px solid var(--gray-200);border-radius:500px;cursor:pointer;transition:all 0.2s;background:#fff;font-weight:500;font-size:0.95rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--gray-800);font-family:var(--sans)}
+    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.08);color:var(--navy);font-weight:600}
     .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
     .radio-label span{line-height:48px}
-    .submit-btn{width:100%;height:52px;background:#fff;color:var(--navy);border:none;border-radius:50px;font-family:var(--sans);font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px;position:relative;box-shadow:0 4px 15px rgba(0,0,0,0.2)}
-    .submit-btn:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.25)}
+    .submit-btn{width:100%;height:52px;background:linear-gradient(135deg,var(--cta-btn) 0%,var(--cta-btn-hover) 100%);color:#fff;border:none;border-radius:50px;font-family:var(--sans);font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px;position:relative;box-shadow:0 8px 22px rgba(48,82,255,0.28)}
+    .submit-btn:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(48,82,255,0.35)}
     .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
-    .form-disclaimer{font-size:0.75rem;color:rgba(255,255,255,0.45);text-align:center;margin-top:14px;line-height:1.5;font-family:var(--sans)}
+    .form-disclaimer{font-size:0.75rem;color:var(--gray-600);text-align:center;margin-top:14px;line-height:1.5;font-family:var(--sans)}
     .consent-group{margin:14px 0 0}
-    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.7rem;color:rgba(255,255,255,0.5);line-height:1.5;font-family:var(--sans)}
+    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.7rem;color:var(--gray-600);line-height:1.5;font-family:var(--sans)}
     .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
-    .consent-label a{color:rgba(255,255,255,0.7);text-decoration:underline}
-    .consent-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
+    .consent-label a{color:var(--blue);text-decoration:underline}
+    .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
 
     /* Form Steps */
     .form-step{display:none}
@@ -171,21 +173,21 @@
 
     /* Sorry Message */
     .sorry-message{text-align:center;padding:24px 8px;position:relative}
-    .sorry-icon{width:52px;height:52px;margin:0 auto 16px;color:rgba(255,255,255,0.6)}
+    .sorry-icon{width:52px;height:52px;margin:0 auto 16px;color:var(--gray-600)}
     .sorry-icon svg{width:100%;height:100%}
-    .sorry-message h3{font-size:1.3rem;color:#fff;margin-bottom:10px;font-weight:600;font-family:var(--sans)}
-    .sorry-message p{color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:6px;font-family:var(--sans)}
-    .sorry-message .sorry-sub{font-size:0.8rem;color:rgba(255,255,255,0.5)}
+    .sorry-message h3{font-size:1.3rem;color:var(--navy);margin-bottom:10px;font-weight:600;font-family:var(--sans)}
+    .sorry-message p{color:var(--gray-600);font-size:0.9rem;margin-bottom:6px;font-family:var(--sans)}
+    .sorry-message .sorry-sub{font-size:0.8rem;color:#94a3b8}
 
     /* Form Success */
     .form-success{text-align:center;padding:40px 16px;position:relative}
-    .form-success h3{color:#4ade80;font-size:1.4rem;margin-bottom:10px;font-weight:600;font-family:var(--sans)}
-    .form-success p{color:rgba(255,255,255,0.8);font-size:0.95rem;font-family:var(--sans)}
+    .form-success h3{color:#16a34a;font-size:1.4rem;margin-bottom:10px;font-weight:600;font-family:var(--sans)}
+    .form-success p{color:var(--gray-600);font-size:0.95rem;font-family:var(--sans)}
 
     /* Form BBB trust under form */
-    .form-trust{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);position:relative}
-    .form-trust img{height:28px;opacity:0.7}
-    .form-trust span{font-size:0.75rem;color:rgba(255,255,255,0.45);font-family:var(--sans)}
+    .form-trust{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gray-200);position:relative}
+    .form-trust img{height:28px;opacity:0.85}
+    .form-trust span{font-size:0.75rem;color:var(--gray-600);font-family:var(--sans)}
 
     /* Trust Logos Footer Bar */
     .trust-logos-bar{background:var(--gray-50);padding:40px 0;border-top:1px solid var(--gray-200)}
@@ -213,7 +215,7 @@
       .article-hero h1{font-size:2.2rem}
     }
     @media(max-width:768px){
-      .article-hero{padding:40px 0 0}
+      .article-hero{padding:0;margin-bottom:24px}
       .article-hero h1{font-size:1.7rem}
       .article-hero .subheadline{font-size:1.05rem}
       .bbb-hero-badge{flex-direction:column;text-align:center;padding:16px 20px;gap:12px}
@@ -265,26 +267,28 @@
     </div>
   </div>
 
-  <!-- Article Hero -->
-  <section class="article-hero">
-    <div class="article-hero-inner">
-      <!-- BBB Accreditation Badge -->
-      <div class="bbb-hero-badge">
-        <img src="/lp/uploads/bbb-accredited.png" alt="BBB Accredited Business" style="height:80px;">
-        <div class="bbb-hero-badge-text">
-          <span class="bbb-label">BBB Accredited Business</span>
-          <span class="bbb-name">Coastal Debt Resolve</span>
-          <span class="bbb-rating">Accredited Since 2018</span>
-        </div>
-      </div>
-
-      <h1>A BBB Accredited MCA Debt Relief Alternative to Bankruptcy</h1>
-      <p class="subheadline">Stop the Cycle of Daily MCA Withdrawals. Restore Your Business Cash Flow.</p>
-    </div>
-  </section>
-
-  <!-- Article Layout: Content + Sidebar Form -->
+  <!-- Article Layout: Hero + Content + Sidebar Form (form aligns with top) -->
   <div class="article-layout">
+
+    <div class="article-main">
+
+      <!-- Article Hero -->
+      <section class="article-hero">
+        <div class="article-hero-inner">
+          <!-- BBB Accreditation Badge -->
+          <div class="bbb-hero-badge">
+            <img src="/lp/uploads/bbb-accredited.png" alt="BBB Accredited Business" style="height:80px;">
+            <div class="bbb-hero-badge-text">
+              <span class="bbb-label">BBB Accredited Business</span>
+              <span class="bbb-name">Coastal Debt Resolve</span>
+              <span class="bbb-rating">Accredited Since 2018</span>
+            </div>
+          </div>
+
+          <h1>A BBB Accredited MCA Debt Relief Alternative to Bankruptcy</h1>
+          <p class="subheadline">Stop the Cycle of Daily MCA Withdrawals. Restore Your Business Cash Flow.</p>
+        </div>
+      </section>
 
     <!-- Article Content -->
     <article class="article-content">
@@ -398,6 +402,8 @@
       </div>
 
     </article>
+
+    </div><!-- /.article-main -->
 
     <!-- Sidebar Form -->
     <aside class="sidebar-form">
