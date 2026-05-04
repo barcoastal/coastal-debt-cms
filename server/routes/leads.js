@@ -174,6 +174,15 @@ router.post('/', async (req, res) => {
     }
   }
 
+  // Affiliate-platform LPs: tag the lead with affiliate_id so it surfaces in
+  // /admin/affiliate-leads.html (which filters on hidden_fields.affiliate_id).
+  // Slug is used as the affiliate_id so each affiliate LP is independently
+  // identifiable; admin can rename slugs to match the affiliate's identifier.
+  if (page && page.platform === 'affiliate') {
+    if (!hiddenFields.affiliate_id) hiddenFields.affiliate_id = page.slug;
+    if (!hiddenFields.affiliate_label) hiddenFields.affiliate_label = page.name;
+  }
+
   // Insert lead
   const full_name = [first_name, last_name].filter(Boolean).join(' ');
   const result = db.prepare(`

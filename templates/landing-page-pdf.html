@@ -243,6 +243,8 @@
         <input type="hidden" id="fbclid" name="fbclid" value="">
         <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
         <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+        <input type="hidden" id="click_id" name="click_id" value="">
+        <input type="hidden" id="affiliate_clickid" name="affiliate_clickid" value="">
         <input type="hidden" id="page_url" name="page_url" value="">
         <input type="hidden" id="referrer_url" name="referrer_url" value="">
         {{HIDDEN_FIELDS}}
@@ -343,6 +345,10 @@
     setHidden('msclkid', params.get('msclkid'));
     setHidden('fbclid', params.get('fbclid'));
     setHidden('rt_clickid', params.get('rt_clickid'));
+    // Affiliate click id — same value mirrored to both names so reports/integrations
+    // can pick whichever they expect.
+    var _cid = params.get('click_id') || '';
+    if (_cid) { setHidden('click_id', _cid); setHidden('affiliate_clickid', _cid); }
     setHidden('page_url', location.href);
     setHidden('referrer_url', document.referrer);
     try {
