@@ -102,6 +102,13 @@ router.post('/submit', async (req, res) => {
   hiddenFields.affiliate_label = affiliate.label;
   hiddenFields.utm_source = hiddenFields.utm_source || 'affiliate';
   hiddenFields.utm_medium = hiddenFields.utm_medium || 'affiliate';
+  // Mirror click_id <-> affiliate_clickid so reports/integrations can pick
+  // whichever name they expect, regardless of which field the affiliate sent.
+  const _affCid = hiddenFields.affiliate_clickid || hiddenFields.click_id || '';
+  if (_affCid) {
+    hiddenFields.click_id = _affCid;
+    hiddenFields.affiliate_clickid = _affCid;
+  }
   if (!hiddenFields.ip_address) hiddenFields.ip_address = req.ip;
   if (!hiddenFields.user_agent) hiddenFields.user_agent = req.get('User-Agent') || '';
 

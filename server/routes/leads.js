@@ -183,6 +183,13 @@ router.post('/', async (req, res) => {
     if (!hiddenFields.affiliate_label) hiddenFields.affiliate_label = page.name;
   }
 
+  // Mirror click_id <-> affiliate_clickid so the lead always carries both names.
+  const _affCidLead = hiddenFields.affiliate_clickid || hiddenFields.click_id || '';
+  if (_affCidLead) {
+    hiddenFields.click_id = _affCidLead;
+    hiddenFields.affiliate_clickid = _affCidLead;
+  }
+
   // Insert lead
   const full_name = [first_name, last_name].filter(Boolean).join(' ');
   const result = db.prepare(`
