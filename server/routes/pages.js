@@ -1340,7 +1340,7 @@ function generateLandingPage(pageId) {
 
   // Generate hidden fields HTML (skip names already hardcoded in the template)
   const HARDCODED_HIDDEN = new Set([
-    'gclid','msclkid','fbclid','rt_clickid','eli_clickid','click_id','keyword',
+    'gclid','msclkid','fbclid','rt_clickid','eli_clickid','click_id','affiliate_clickid','keyword',
     'fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name',
     'fb_adset_name','fb_ad_name','fb_placement','visitor_ip',
     'page_url','referrer_url','landing_page_slug','debt_amount','has_mca'
