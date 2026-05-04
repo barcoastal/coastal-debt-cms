@@ -376,6 +376,7 @@
       { key: 'eli_clickid', label: 'Eli Click ID', default: false },
       { key: 'fbclid', label: 'FB Click ID', default: false },
       { key: 'msclkid', label: 'MS Click ID', default: false },
+      { key: 'click_id', label: 'Affiliate Click ID', default: true },
       { key: 'utm_campaign', label: 'Campaign', default: true },
       { key: 'has_mca', label: 'MCA', default: true },
       { key: 'current_status', label: 'Current Status', default: true },
@@ -404,6 +405,7 @@
       eli_clickid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.eli_clickid) + '">' + escapeHtml(lead.eli_clickid || '-') + '</td>',
       fbclid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.fbclid) + '">' + escapeHtml(lead.fbclid || '-') + '</td>',
       msclkid: (lead) => '<td class="clickid-cell" title="' + escapeHtml(lead.msclkid) + '">' + escapeHtml(lead.msclkid || '-') + '</td>',
+      click_id: (lead) => { const v = (lead.hidden_fields && lead.hidden_fields.click_id) || ''; return '<td class="clickid-cell" style="color:' + (v ? '#0a0' : '#999') + ';" title="' + escapeHtml(v) + '">' + escapeHtml(v || '-') + '</td>'; },
       utm_campaign: (lead) => '<td>' + escapeHtml(lead.utm_campaign || '-') + '</td>',
       has_mca: (lead) => '<td>' + (lead.has_mca === 'Yes' ? '<span class="mca-yes">Yes</span>' : (lead.has_mca === 'No' ? '<span class="mca-no">No</span>' : '-')) + '</td>',
       current_status: (lead) => '<td>' + getStatusBadge(lead.current_status) + '</td>',
@@ -574,10 +576,11 @@
 
       const trackingIds = [
         ['GCLID', lead.gclid], ['RT Click ID', lead.rt_clickid], ['RDT_CID (Reddit)', lead.rdt_cid], ['Eli Click ID', lead.eli_clickid],
-        ['FB Click ID', lead.fbclid], ['MS Click ID', lead.msclkid]
+        ['FB Click ID', lead.fbclid], ['MS Click ID', lead.msclkid],
+        ['Affiliate Click ID', hf.click_id]
       ].filter(([, v]) => v && v !== '-');
 
-      const hiddenKeysToHide = ['page_url', 'referrer_url', 'landing_page_slug', 'fb_form_name', 'fb_page_name', 'fb_form_id', 'fb_leadgen_id', 'fb_page_id', 'fb_created_time', 'source', 'sync_method'];
+      const hiddenKeysToHide = ['page_url', 'referrer_url', 'landing_page_slug', 'fb_form_name', 'fb_page_name', 'fb_form_id', 'fb_leadgen_id', 'fb_page_id', 'fb_created_time', 'source', 'sync_method', 'click_id'];
       const extraFields = Object.entries(hf).filter(([k]) => !hiddenKeysToHide.includes(k));
 
       document.getElementById('leadDetails').innerHTML = `

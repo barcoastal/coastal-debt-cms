@@ -128,7 +128,7 @@ router.post('/', async (req, res) => {
   let rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';
   if (!rt_clickid || rt_clickid === 'adblock_blocked') {
     // Detect traffic source from available click IDs
-    const source = gclid ? 'google' : msclkid ? 'bing' : fbclid ? 'facebook' : rdt_cid ? 'reddit' : (hiddenFields.utm_source || '').toLowerCase() || 'organic';
+    const source = gclid ? 'google' : msclkid ? 'bing' : fbclid ? 'facebook' : rdt_cid ? 'reddit' : hiddenFields.click_id ? 'affiliate' : (hiddenFields.utm_source || '').toLowerCase() || 'organic';
     const ssClickId = await createRedTrackClick(source, { gclid, fbclid, msclkid, utm_campaign: hiddenFields.utm_campaign, utm_source: hiddenFields.utm_source || source });
     rt_clickid = ssClickId || 'adblock_blocked';
   }

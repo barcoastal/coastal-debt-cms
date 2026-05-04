@@ -1023,6 +1023,7 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
         <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
         <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
         <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+        <input type="hidden" id="click_id" name="click_id" value="">
         <input type="hidden" id="keyword" name="keyword" value="">
         <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
         <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
@@ -2529,6 +2530,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var rdtCid = _p.get('rdt_cid') || getStored('_rdt_cid') || '';
     if (rdtCid) { setStored('_rdt_cid', rdtCid); var rdt = document.getElementById('rdt_cid'); if (rdt) rdt.value = rdtCid; }
+
+    // Affiliate click id — passed in URL as ?click_id=... by affiliate networks
+    var clickId = _p.get('click_id') || getStored('_click_id') || '';
+    if (clickId) { setStored('_click_id', clickId); var ci = document.getElementById('click_id'); if (ci) ci.value = clickId; }
 
     var pageUrl = document.getElementById('page_url'); if (pageUrl) pageUrl.value = window.location.href;
     var refUrl = document.getElementById('referrer_url'); if (refUrl) refUrl.value = document.referrer || '';
