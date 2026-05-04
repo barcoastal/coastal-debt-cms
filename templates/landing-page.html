@@ -390,6 +390,8 @@
             <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
             <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
             <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+            <input type="hidden" id="click_id" name="click_id" value="">
+            <input type="hidden" id="affiliate_clickid" name="affiliate_clickid" value="">
             <input type="hidden" id="keyword" name="keyword" value="">
             <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
             <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
@@ -800,6 +802,16 @@
     if (fbclid) {
       setStored('_fbclid', fbclid);
       document.getElementById('fbclid').value = fbclid;
+    }
+
+    // AFFILIATE click_id: URL param ?click_id=… → localStorage. Mirrored to both
+    // `click_id` and `affiliate_clickid` fields so reports/integrations can pick
+    // whichever name they expect.
+    let _affClickId = _lpParams.get('click_id') || getStored('_click_id') || '';
+    if (_affClickId) {
+      setStored('_click_id', _affClickId);
+      var _ci = document.getElementById('click_id'); if (_ci) _ci.value = _affClickId;
+      var _ac = document.getElementById('affiliate_clickid'); if (_ac) _ac.value = _affClickId;
     }
 
     // KEYWORD (utm_term): URL param → localStorage
