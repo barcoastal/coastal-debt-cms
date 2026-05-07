@@ -345,9 +345,10 @@
     setHidden('msclkid', params.get('msclkid'));
     setHidden('fbclid', params.get('fbclid'));
     setHidden('rt_clickid', params.get('rt_clickid'));
-    // Affiliate click id — same value mirrored to both names so reports/integrations
-    // can pick whichever they expect.
-    var _cid = params.get('click_id') || '';
+    // Affiliate click id — accept either ?click_id= or ?affiliate_clickid= and
+    // mirror the same value to both hidden fields so reports/integrations can
+    // pick whichever name they expect.
+    var _cid = params.get('affiliate_clickid') || params.get('click_id') || '';
     if (_cid) { setHidden('click_id', _cid); setHidden('affiliate_clickid', _cid); }
     setHidden('page_url', location.href);
     setHidden('referrer_url', document.referrer);
