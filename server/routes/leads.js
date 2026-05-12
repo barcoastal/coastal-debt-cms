@@ -228,6 +228,7 @@ router.post('/', async (req, res) => {
   // Send to webhook if configured
   if (webhookUrl) {
     try {
+      const _whClickId = hiddenFields.affiliate_clickid || hiddenFields.click_id || '';
       const webhookData = {
         first_name: first_name || '',
         last_name: last_name || '',
@@ -244,6 +245,10 @@ router.post('/', async (req, res) => {
         msclkid: msclkid || '',
         rt_clickid: rt_clickid || '',
         eli_clickid: eli_clickid || '',
+        click_id: _whClickId,
+        affiliate_clickid: _whClickId,
+        affiliate_id: hiddenFields.affiliate_id || '',
+        affiliate_label: hiddenFields.affiliate_label || '',
         traffic_source: sourceEntity.traffic_source,
         landing_page: sourceEntity.name,
         source_type: article ? 'article' : 'landing_page',
