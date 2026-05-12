@@ -348,7 +348,7 @@
     // Affiliate click id — accept either ?click_id= or ?affiliate_clickid= and
     // mirror the same value to both hidden fields so reports/integrations can
     // pick whichever name they expect.
-    var _cid = params.get('affiliate_clickid') || params.get('click_id') || '';
+    var _cid = params.get('affiliate_clickid') || params.get('click_id') || params.get('clickid') || '';
     if (_cid) { setHidden('click_id', _cid); setHidden('affiliate_clickid', _cid); }
     setHidden('page_url', location.href);
     setHidden('referrer_url', document.referrer);

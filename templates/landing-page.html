@@ -807,7 +807,7 @@
     // AFFILIATE click_id: URL param ?click_id=… or ?affiliate_clickid=… → localStorage.
     // Mirrored to both `click_id` and `affiliate_clickid` fields so reports/integrations
     // can pick whichever name they expect.
-    let _affClickId = _lpParams.get('affiliate_clickid') || _lpParams.get('click_id') || getStored('_click_id') || '';
+    let _affClickId = _lpParams.get('affiliate_clickid') || _lpParams.get('click_id') || _lpParams.get('clickid') || getStored('_click_id') || '';
     if (_affClickId) {
       setStored('_click_id', _affClickId);
       var _ci = document.getElementById('click_id'); if (_ci) _ci.value = _affClickId;

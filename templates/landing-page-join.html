@@ -2535,7 +2535,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Affiliate click id — accept either ?click_id= or ?affiliate_clickid= URL
     // param. Stored on the lead under both `click_id` and `affiliate_clickid`
     // so reports/integrations can pick whichever name they expect.
-    var clickId = _p.get('affiliate_clickid') || _p.get('click_id') || getStored('_click_id') || '';
+    var clickId = _p.get('affiliate_clickid') || _p.get('click_id') || _p.get('clickid') || getStored('_click_id') || '';
     if (clickId) {
       setStored('_click_id', clickId);
       var ci = document.getElementById('click_id'); if (ci) ci.value = clickId;
