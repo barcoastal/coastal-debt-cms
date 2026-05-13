@@ -182,6 +182,9 @@ router.post('/', async (req, res) => {
     if (!hiddenFields.affiliate_id) hiddenFields.affiliate_id = page.slug;
     if (!hiddenFields.affiliate_label) hiddenFields.affiliate_label = page.name;
   }
+  // Tag origin for the affiliate-leads admin: form submissions to /api/leads
+  // are always landing_page even if the LP slug is affiliate-leads-hub.
+  if (!hiddenFields.submission_method) hiddenFields.submission_method = 'landing_page';
 
   // Mirror click_id <-> affiliate_clickid so the lead always carries both names.
   const _affCidLead = hiddenFields.affiliate_clickid || hiddenFields.click_id || '';

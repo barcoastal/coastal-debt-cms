@@ -102,6 +102,9 @@ router.post('/submit', async (req, res) => {
   hiddenFields.affiliate_label = affiliate.label;
   hiddenFields.utm_source = hiddenFields.utm_source || 'affiliate';
   hiddenFields.utm_medium = hiddenFields.utm_medium || 'affiliate';
+  // Tag origin so /admin/affiliate-leads.html can distinguish API submissions
+  // from LP form submissions (both can share the affiliate-leads-hub slug).
+  hiddenFields.submission_method = 'api';
   // Mirror click_id <-> affiliate_clickid so reports/integrations can pick
   // whichever name they expect, regardless of which field the affiliate sent.
   const _affCid = hiddenFields.affiliate_clickid || hiddenFields.click_id || '';

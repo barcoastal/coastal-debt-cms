@@ -552,7 +552,12 @@ sold=https://affiliate.com/pb?event=sold&clickid={clickid}&payout={payout}" styl
       tbody.innerHTML = j.leads.map(l => {
         let hf = {};
         try { hf = JSON.parse(l.hidden_fields || '{}'); } catch (e) {}
-        const sourceLabel = l.landing_page_slug === 'affiliate-leads-hub'
+        // Source: explicit submission_method tag wins (set by /api/leads vs
+        // /api/affiliate-leads/submit). Fall back to slug-based heuristic for
+        // older leads that predate the tag.
+        const isApi = hf.submission_method === 'api'
+          || (!hf.submission_method && l.landing_page_slug === 'affiliate-leads-hub');
+        const sourceLabel = isApi
           ? '<span class="badge badge-blue">API</span>'
           : `<span class="badge badge-green" title="${escapeHtml(l.landing_page_name || '')}">LP: ${escapeHtml((l.landing_page_slug || '-').slice(0, 18))}</span>`;
         return `
