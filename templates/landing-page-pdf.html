@@ -496,7 +496,11 @@
   }
 
   // ===== Mobile sticky CTA — only fits in viewport on phones, scrolls to form =====
-  (function() {
+  // The <a id="mobileStickyCta"> element appears AFTER this script in source
+  // order, so wait for DOMContentLoaded before binding. Without this the
+  // handler never attached and the anchor's default href="#leadForm" jumped
+  // the page abruptly on mobile (looked like a "page change").
+  document.addEventListener('DOMContentLoaded', function() {
     var banner = document.getElementById('mobileStickyCta');
     if (!banner) return;
     banner.addEventListener('click', function(e) {
@@ -514,7 +518,7 @@
       }, { threshold: 0.3 });
       io.observe(form);
     }
-  })();
+  });
 </script>
 
 <a href="#leadForm" id="mobileStickyCta" class="mobile-sticky-cta" aria-label="Get the free MCA Debt Relief Guide">
