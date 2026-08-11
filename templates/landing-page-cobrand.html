@@ -118,52 +118,52 @@
     .score-num{font-size:0.8rem;font-weight:700;color:var(--navy);text-align:right}
     @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
-    /* ============ Form card ============ */
-    .form-card{background:linear-gradient(160deg,var(--navy) 0%,var(--navy-deep) 100%);border-radius:18px;padding:36px 32px;box-shadow:0 20px 60px rgba(15,23,42,0.25);min-width:440px;position:relative;overflow:hidden;border:1px solid rgba(245,184,0,0.25);animation:riseIn 0.6s 0.2s ease both}
+    /* ============ Form card (light) ============ */
+    .form-card{background:var(--white);border-radius:18px;padding:36px 32px;box-shadow:0 20px 60px rgba(15,23,42,0.12);min-width:440px;position:relative;overflow:hidden;border:1px solid var(--line);animation:riseIn 0.6s 0.2s ease both}
     .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--blue));border-radius:18px 18px 0 0}
-    .form-card::after{content:'';position:absolute;top:-40%;right:-40%;width:90%;height:90%;background:radial-gradient(circle,rgba(245,184,0,0.08) 0%,transparent 70%);pointer-events:none}
+    .form-card::after{content:'';position:absolute;top:-40%;right:-40%;width:90%;height:90%;background:radial-gradient(circle,rgba(245,184,0,0.06) 0%,transparent 70%);pointer-events:none}
     .form-pick{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;position:relative}
     .form-pick .pick-stars{color:var(--gold);font-size:0.85rem;letter-spacing:2px}
-    .form-pick .pick-text{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.13em;font-weight:700;color:rgba(255,255,255,0.65)}
-    .form-title{font-family:var(--serif);font-size:1.65rem;font-weight:900;color:#fff;margin-bottom:8px;text-align:center;letter-spacing:-0.01em;position:relative}
-    .form-subtitle{color:rgba(255,255,255,0.68);font-size:0.98rem;text-align:center;margin-bottom:22px;position:relative}
+    .form-pick .pick-text{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.13em;font-weight:700;color:var(--ink-subtle)}
+    .form-title{font-family:var(--serif);font-size:1.65rem;font-weight:900;color:var(--navy);margin-bottom:8px;text-align:center;letter-spacing:-0.01em;position:relative}
+    .form-subtitle{color:var(--ink-muted);font-size:0.98rem;text-align:center;margin-bottom:22px;position:relative}
     .form-group{margin-bottom:12px;position:relative}
-    .form-group label{display:block;font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:9px;font-size:0.98rem}
-    .form-group input,.form-group select{width:100%;height:52px;padding:0 18px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;font-size:1rem;transition:all 0.2s;background:rgba(255,255,255,0.08);box-shadow:none;outline:none;color:#fff;font-family:var(--sans)}
-    .phone-wrapper{display:flex;align-items:center;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.08);height:52px;transition:all 0.2s}
-    .phone-wrapper:focus-within{border-color:var(--gold)}
-    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.95rem;color:rgba(255,255,255,0.8);white-space:nowrap;user-select:none}
-    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:48px;border-radius:0 10px 10px 0;background:transparent;color:#fff}
+    .form-group label{display:block;font-weight:600;color:var(--ink);margin-bottom:9px;font-size:0.98rem}
+    .form-group input,.form-group select{width:100%;height:52px;padding:0 18px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem;transition:all 0.2s;background:var(--paper);box-shadow:none;outline:none;color:var(--ink);font-family:var(--sans)}
+    .phone-wrapper{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);height:52px;transition:all 0.2s}
+    .phone-wrapper:focus-within{border-color:var(--blue)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.95rem;color:var(--ink-muted);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:48px;border-radius:0 10px 10px 0;background:transparent;color:var(--ink)}
     .phone-wrapper input[type="tel"]:focus{border-color:transparent}
-    .phone-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
-    .form-group input::placeholder{color:rgba(255,255,255,0.4)}
-    .form-group input:focus,.form-group select:focus{border-color:var(--gold);background:rgba(255,255,255,0.12)}
-    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5b800' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:#fff}
+    .phone-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
+    .form-group input::placeholder{color:var(--ink-subtle)}
+    .form-group input:focus,.form-group select:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(48,82,255,0.1)}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231a2540' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:var(--ink)}
     .form-group select option{color:#1a1a1a;background:#fff}
     .radio-group{display:flex;gap:10px}
-    .radio-label{flex:1;height:52px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.08);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:#fff}
-    .radio-label:has(input:checked){border-color:var(--gold);background:rgba(245,184,0,0.15);color:#fff;font-weight:700}
+    .radio-label{flex:1;height:52px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:all 0.2s;background:var(--paper);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--ink)}
+    .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.06);color:var(--navy);font-weight:700}
     .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
     .radio-label span{line-height:52px}
-    .submit-btn{width:100%;height:56px;background:var(--gold);color:var(--navy-deep);border:none;border-radius:10px;font-size:1.12rem;font-weight:800;font-family:var(--sans);cursor:pointer;transition:all 0.2s;margin-top:16px;position:relative;box-shadow:0 6px 20px rgba(245,184,0,0.35)}
-    .submit-btn:hover{background:#ffca1a;transform:translateY(-1px);box-shadow:0 8px 26px rgba(245,184,0,0.45)}
+    .submit-btn{width:100%;height:56px;background:var(--cta-btn);color:#fff;border:none;border-radius:10px;font-size:1.12rem;font-weight:800;font-family:var(--sans);cursor:pointer;transition:all 0.2s;margin-top:16px;position:relative;box-shadow:0 6px 20px rgba(48,82,255,0.3)}
+    .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 8px 26px rgba(48,82,255,0.4)}
     .form-step{display:none}
     .form-step.active{display:block;animation:fadeIn 0.3s ease}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .sorry-message{text-align:center;padding:30px 10px;position:relative}
-    .sorry-icon{width:60px;height:60px;margin:0 auto 20px;color:rgba(255,255,255,0.6)}
+    .sorry-icon{width:60px;height:60px;margin:0 auto 20px;color:var(--ink-subtle)}
     .sorry-icon svg{width:100%;height:100%}
-    .sorry-message h3{font-family:var(--serif);font-size:1.5rem;color:#fff;margin-bottom:12px;font-weight:700}
-    .sorry-message p{color:rgba(255,255,255,0.7);font-size:1rem;margin-bottom:8px}
-    .sorry-message .sorry-sub{font-size:0.9rem;color:rgba(255,255,255,0.5)}
+    .sorry-message h3{font-family:var(--serif);font-size:1.5rem;color:var(--navy);margin-bottom:12px;font-weight:700}
+    .sorry-message p{color:var(--ink-muted);font-size:1rem;margin-bottom:8px}
+    .sorry-message .sorry-sub{font-size:0.9rem;color:var(--ink-subtle)}
     .form-success{text-align:center;padding:50px 20px;position:relative}
-    .form-success h3{font-family:var(--serif);color:#4ade80;font-size:1.6rem;margin-bottom:12px;font-weight:700}
-    .form-success p{color:rgba(255,255,255,0.8);font-size:1rem}
+    .form-success h3{font-family:var(--serif);color:var(--win);font-size:1.6rem;margin-bottom:12px;font-weight:700}
+    .form-success p{color:var(--ink-muted);font-size:1rem}
     .consent-group{margin:16px 0 0}
-    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.72rem;color:rgba(255,255,255,0.55);line-height:1.5}
-    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
-    .consent-label a{color:rgba(255,255,255,0.75);text-decoration:underline}
-    .consent-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
+    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.72rem;color:var(--ink-subtle);line-height:1.5}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+    .consent-label a{color:var(--blue);text-decoration:underline}
+    .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
     .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
 
     /* ============ Trust bar ============ */
@@ -1243,7 +1243,7 @@
         return `
           <div class="form-group">
             <label for="${field.name}">${field.label}</label>
-            <textarea id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} rows="3" style="border-radius:10px;padding:12px 18px;width:100%;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.18);color:#fff;font-family:var(--sans);font-size:1rem;outline:none;"></textarea>
+            <textarea id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} rows="3" style="border-radius:10px;padding:12px 18px;width:100%;background:var(--paper);border:1.5px solid var(--line);color:var(--ink);font-family:var(--sans);font-size:1rem;outline:none;"></textarea>
           </div>
         `;
       } else if (field.type === 'hidden') {
