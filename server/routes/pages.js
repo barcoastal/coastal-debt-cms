@@ -723,7 +723,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -812,7 +812,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -864,7 +864,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
   if (!source_campaign_id) return res.status(400).json({ error: 'source_campaign_id required' });
   if (!target_campaign_label) return res.status(400).json({ error: 'target_campaign_label required' });
 
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2', 'cobrand'];
   const validType = validTypes.includes(template_type) ? template_type : 'join';
 
   // Pull ad groups for the source campaign from the cached meta
