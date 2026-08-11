@@ -193,6 +193,11 @@ router.post('/', async (req, res) => {
     hiddenFields.affiliate_clickid = _affCidLead;
   }
 
+  // tkclid: fall back to the request cookie if the form field was empty or missing
+  if (!hiddenFields.tkclid && req.cookies?.tkclid) {
+    hiddenFields.tkclid = req.cookies.tkclid;
+  }
+
   // Insert lead
   const full_name = [first_name, last_name].filter(Boolean).join(' ');
   const result = db.prepare(`
@@ -252,6 +257,7 @@ router.post('/', async (req, res) => {
         affiliate_clickid: _whClickId,
         affiliate_id: hiddenFields.affiliate_id || '',
         affiliate_label: hiddenFields.affiliate_label || '',
+        tkclid: hiddenFields.tkclid || '',
         traffic_source: sourceEntity.traffic_source,
         landing_page: sourceEntity.name,
         source_type: article ? 'article' : 'landing_page',

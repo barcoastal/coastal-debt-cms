@@ -2537,6 +2537,40 @@ async function handleJoinSubmit(e) {
   return false;
 }
 </script>
+
+  <!-- tkclid capture: read the tkclid cookie into a hidden field on every lead form -->
+  <script>
+  (function () {
+    function tkclidFromCookie() {
+      var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/);
+      if (!m) return '';
+      try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+    }
+    function fillTkclid() {
+      var v = tkclidFromCookie();
+      if (!v) return;
+      var forms = document.querySelectorAll('form');
+      for (var i = 0; i < forms.length; i++) {
+        var f = forms[i];
+        if ((f.getAttribute('action') || '').indexOf('/search') !== -1) continue;
+        var input = f.querySelector('input[name="tkclid"]');
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'tkclid';
+          f.appendChild(input);
+        }
+        input.value = v;
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fillTkclid);
+    } else {
+      fillTkclid();
+    }
+    document.addEventListener('submit', fillTkclid, true);
+  })();
+  </script>
 </body>
 </html>
 
