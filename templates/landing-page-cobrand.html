@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  {{HEAD_SCRIPTS}}
+  <!-- Facebook Pixel (only loads when Pixel ID is configured) -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700;8..60,900&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --paper:#fafaf7;
+      --paper-soft:#f5f4ee;
+      --line:#e7e5dc;
+      --ink:#0f172a;
+      --ink-muted:#475569;
+      --ink-subtle:#64748b;
+      --navy:#1a2540;
+      --navy-deep:#0f172a;
+      --gold:#f5b800;
+      --gold-soft:#fde68a;
+      --blue:{{colors.primary}};
+      --blue-light:{{colors.primaryLight}};
+      --orange:#FF9000;
+      --win:#15803d;
+      --win-soft:#dcfce7;
+      --bad-soft:#fee2e2;
+      --bad:#b91c1c;
+      --white:#ffffff;
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --serif:'Source Serif 4',Georgia,serif;
+      --sans:'Schibsted Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    }
+    body{font-family:var(--sans);color:var(--ink);line-height:1.6;background:var(--paper)}
+    .container{max-width:1180px;margin:0 auto;padding:0 24px}
+
+    /* ============ Verdict ribbon ============ */
+    .verdict-ribbon{background:var(--navy-deep);color:rgba(255,255,255,0.85);font-size:0.8rem;letter-spacing:0.04em;padding:9px 0;position:relative;overflow:hidden}
+    .verdict-ribbon::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(245,184,0,0.12) 50%,transparent 70%);animation:ribbonSheen 6s ease-in-out infinite}
+    @keyframes ribbonSheen{0%,100%{transform:translateX(-60%)}50%{transform:translateX(60%)}}
+    .verdict-ribbon .container{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center}
+    .verdict-ribbon .rb-brand{font-family:var(--serif);font-weight:700;color:#fff;white-space:nowrap}
+    .verdict-ribbon .rb-stars{color:var(--gold);letter-spacing:2px;white-space:nowrap}
+    .verdict-ribbon .rb-score{background:var(--gold);color:var(--navy-deep);font-weight:800;border-radius:4px;padding:1px 7px;font-size:0.78rem;white-space:nowrap}
+
+    /* ============ Header ============ */
+    header{background:var(--paper);padding:16px 0;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--line)}
+    header.scrolled{box-shadow:0 4px 24px rgba(15,23,42,0.08)}
+    .header-inner{display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .header-brands{display:flex;align-items:center;gap:16px}
+    .logo img{height:36px;width:auto;display:block}
+    .brand-divider{width:1px;height:30px;background:var(--line)}
+    .reviewed-by{display:flex;flex-direction:column;line-height:1.25}
+    .reviewed-by .rb-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-subtle);font-weight:600}
+    .reviewed-by .rb-name{font-family:var(--serif);font-weight:700;font-size:0.92rem;color:var(--navy)}
+    .reviewed-by .rb-name .star{color:var(--gold)}
+    .header-phone{display:flex;align-items:center;gap:8px;background:var(--blue);color:var(--white);font-weight:700;text-decoration:none;font-size:0.95rem;padding:12px 22px;border-radius:50px;transition:all 0.2s;white-space:nowrap}
+    .header-phone:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:0 6px 18px rgba(48,82,255,0.3)}
+    .phone-icon{width:17px;height:17px}
+
+    /* ============ Hero ============ */
+    .hero{padding:56px 0 64px;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-140px;right:-140px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(245,184,0,0.10) 0%,transparent 65%);pointer-events:none}
+    .hero::after{content:'';position:absolute;bottom:-180px;left:-120px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(48,82,255,0.07) 0%,transparent 65%);pointer-events:none}
+    .hero-grid{display:grid;grid-template-columns:1fr 440px;gap:56px;align-items:start;position:relative}
+    .hero-content{padding-top:6px}
+    .hero-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px;animation:riseIn 0.6s ease both}
+    .hero-badge{display:inline-block;background:var(--navy);color:var(--gold);padding:7px 14px;border-radius:4px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em}
+    .hero-badge-note{font-size:0.8rem;color:var(--ink-subtle);font-style:italic;font-family:var(--serif)}
+    .hero h1{font-family:var(--serif);font-size:3.3rem;font-weight:900;line-height:1.08;letter-spacing:-0.02em;margin-bottom:20px;color:var(--ink);animation:riseIn 0.6s 0.08s ease both}
+    .hero h1 span{color:var(--blue);position:relative;white-space:nowrap}
+    .hero h1 span::after{content:'';position:absolute;left:0;right:0;bottom:6px;height:10px;background:var(--gold-soft);z-index:-1;transform:skewX(-8deg)}
+    .hero-sub{font-size:1.12rem;color:var(--ink-muted);margin-bottom:26px;line-height:1.65;max-width:560px;animation:riseIn 0.6s 0.16s ease both}
+    .hero-points{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:30px;animation:riseIn 0.6s 0.24s ease both}
+    .hero-points li{display:flex;align-items:center;gap:12px;font-size:1rem;color:var(--ink)}
+    .check-icon{width:22px;height:22px;background:var(--win);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .check-icon svg{width:12px;height:12px}
+
+    /* Verdict seal + scorecard row */
+    .verdict-row{display:flex;align-items:center;gap:26px;margin-top:4px;animation:riseIn 0.6s 0.32s ease both}
+    .verdict-seal{width:132px;height:132px;flex-shrink:0;position:relative;filter:drop-shadow(0 6px 16px rgba(245,184,0,0.35))}
+    .verdict-seal svg{width:100%;height:100%;animation:sealSpin 40s linear infinite}
+    @keyframes sealSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .verdict-seal .seal-core{position:absolute;inset:22px;background:var(--navy-deep);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:2px solid var(--gold)}
+    .verdict-seal .seal-rank{font-family:var(--serif);font-weight:900;font-size:1.7rem;color:var(--gold);line-height:1}
+    .verdict-seal .seal-year{font-size:0.62rem;font-weight:700;letter-spacing:0.18em;color:rgba(255,255,255,0.8);margin-top:3px}
+    .scorecard{flex:1;min-width:0;background:var(--white);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:18px 22px;box-shadow:0 4px 20px rgba(15,23,42,0.05)}
+    .scorecard-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .scorecard-title{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;color:var(--ink-subtle)}
+    .scorecard-overall{font-family:var(--serif);font-weight:900;font-size:1.25rem;color:var(--navy)}
+    .scorecard-overall .of{font-size:0.8rem;color:var(--ink-subtle);font-weight:400}
+    .score-row{display:grid;grid-template-columns:130px 1fr 34px;align-items:center;gap:10px;margin-bottom:8px}
+    .score-row:last-child{margin-bottom:0}
+    .score-label{font-size:0.8rem;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .score-track{height:7px;background:var(--paper-soft);border-radius:4px;overflow:hidden}
+    .score-fill{height:100%;background:linear-gradient(90deg,var(--gold),#e0a800);border-radius:4px;width:0;transition:width 1.1s cubic-bezier(0.22,1,0.36,1)}
+    .score-num{font-size:0.8rem;font-weight:700;color:var(--navy);text-align:right}
+    @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ============ Form card ============ */
+    .form-card{background:linear-gradient(160deg,var(--navy) 0%,var(--navy-deep) 100%);border-radius:18px;padding:36px 32px;box-shadow:0 20px 60px rgba(15,23,42,0.25);min-width:440px;position:relative;overflow:hidden;border:1px solid rgba(245,184,0,0.25);animation:riseIn 0.6s 0.2s ease both}
+    .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--blue));border-radius:18px 18px 0 0}
+    .form-card::after{content:'';position:absolute;top:-40%;right:-40%;width:90%;height:90%;background:radial-gradient(circle,rgba(245,184,0,0.08) 0%,transparent 70%);pointer-events:none}
+    .form-pick{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;position:relative}
+    .form-pick .pick-stars{color:var(--gold);font-size:0.85rem;letter-spacing:2px}
+    .form-pick .pick-text{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.13em;font-weight:700;color:rgba(255,255,255,0.65)}
+    .form-title{font-family:var(--serif);font-size:1.65rem;font-weight:900;color:#fff;margin-bottom:8px;text-align:center;letter-spacing:-0.01em;position:relative}
+    .form-subtitle{color:rgba(255,255,255,0.68);font-size:0.98rem;text-align:center;margin-bottom:22px;position:relative}
+    .form-group{margin-bottom:12px;position:relative}
+    .form-group label{display:block;font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:9px;font-size:0.98rem}
+    .form-group input,.form-group select{width:100%;height:52px;padding:0 18px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;font-size:1rem;transition:all 0.2s;background:rgba(255,255,255,0.08);box-shadow:none;outline:none;color:#fff;font-family:var(--sans)}
+    .phone-wrapper{display:flex;align-items:center;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.08);height:52px;transition:all 0.2s}
+    .phone-wrapper:focus-within{border-color:var(--gold)}
+    .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.95rem;color:rgba(255,255,255,0.8);white-space:nowrap;user-select:none}
+    .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:48px;border-radius:0 10px 10px 0;background:transparent;color:#fff}
+    .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    .phone-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
+    .form-group input::placeholder{color:rgba(255,255,255,0.4)}
+    .form-group input:focus,.form-group select:focus{border-color:var(--gold);background:rgba(255,255,255,0.12)}
+    .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5b800' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;color:#fff}
+    .form-group select option{color:#1a1a1a;background:#fff}
+    .radio-group{display:flex;gap:10px}
+    .radio-label{flex:1;height:52px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.08);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:#fff}
+    .radio-label:has(input:checked){border-color:var(--gold);background:rgba(245,184,0,0.15);color:#fff;font-weight:700}
+    .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    .radio-label span{line-height:52px}
+    .submit-btn{width:100%;height:56px;background:var(--gold);color:var(--navy-deep);border:none;border-radius:10px;font-size:1.12rem;font-weight:800;font-family:var(--sans);cursor:pointer;transition:all 0.2s;margin-top:16px;position:relative;box-shadow:0 6px 20px rgba(245,184,0,0.35)}
+    .submit-btn:hover{background:#ffca1a;transform:translateY(-1px);box-shadow:0 8px 26px rgba(245,184,0,0.45)}
+    .form-step{display:none}
+    .form-step.active{display:block;animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .sorry-message{text-align:center;padding:30px 10px;position:relative}
+    .sorry-icon{width:60px;height:60px;margin:0 auto 20px;color:rgba(255,255,255,0.6)}
+    .sorry-icon svg{width:100%;height:100%}
+    .sorry-message h3{font-family:var(--serif);font-size:1.5rem;color:#fff;margin-bottom:12px;font-weight:700}
+    .sorry-message p{color:rgba(255,255,255,0.7);font-size:1rem;margin-bottom:8px}
+    .sorry-message .sorry-sub{font-size:0.9rem;color:rgba(255,255,255,0.5)}
+    .form-success{text-align:center;padding:50px 20px;position:relative}
+    .form-success h3{font-family:var(--serif);color:#4ade80;font-size:1.6rem;margin-bottom:12px;font-weight:700}
+    .form-success p{color:rgba(255,255,255,0.8);font-size:1rem}
+    .consent-group{margin:16px 0 0}
+    .consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.72rem;color:rgba(255,255,255,0.55);line-height:1.5}
+    .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+    .consent-label a{color:rgba(255,255,255,0.75);text-decoration:underline}
+    .consent-error{color:#fca5a5;font-size:0.8rem;margin-top:4px;display:none;padding-left:26px}
+    .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+
+    /* ============ Trust bar ============ */
+    .trust-bar{background:var(--white);padding:36px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .trust-label{text-align:center;font-size:0.72rem;color:var(--ink-subtle);margin-bottom:22px;text-transform:uppercase;letter-spacing:0.16em;font-weight:700}
+    .trust-logos{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+    .trust-logos img{height:auto;max-height:46px;opacity:0.85;transition:opacity 0.2s}
+    .trust-logos img:hover{opacity:1}
+
+    /* ============ Editorial verdict section ============ */
+    .verdict-section{padding:76px 0;background:var(--paper)}
+    .verdict-kicker{text-align:center;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.18em;font-weight:700;color:var(--ink-subtle);margin-bottom:12px}
+    .verdict-kicker .star{color:var(--gold)}
+    .verdict-title{font-family:var(--serif);text-align:center;font-size:2.3rem;font-weight:900;letter-spacing:-0.02em;color:var(--ink);max-width:720px;margin:0 auto 14px;line-height:1.2}
+    .verdict-sub{text-align:center;color:var(--ink-muted);max-width:620px;margin:0 auto 48px;font-size:1.05rem}
+    .verdict-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:44px;align-items:start;max-width:1020px;margin:0 auto}
+    .verdict-prose{font-family:var(--serif);font-size:1.12rem;line-height:1.85;color:var(--ink)}
+    .verdict-prose p{margin-bottom:20px}
+    .verdict-prose p:first-child::first-letter{font-size:3.2rem;font-weight:900;float:left;line-height:0.85;padding:6px 10px 0 0;color:var(--blue)}
+    .verdict-prose .pullquote{border-left:4px solid var(--gold);padding:6px 0 6px 22px;margin:26px 0;font-size:1.28rem;font-weight:600;font-style:italic;color:var(--navy);line-height:1.5}
+    .verdict-prose .pullquote cite{display:block;font-size:0.8rem;font-style:normal;font-family:var(--sans);font-weight:600;color:var(--ink-subtle);margin-top:10px;text-transform:uppercase;letter-spacing:0.1em}
+    .criteria-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:0 6px 28px rgba(15,23,42,0.06);position:sticky;top:96px}
+    .criteria-card h3{font-family:var(--serif);font-size:1.15rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+    .criteria-card .cc-note{font-size:0.82rem;color:var(--ink-subtle);margin-bottom:18px}
+    .criteria-list{list-style:none;display:flex;flex-direction:column;gap:0}
+    .criteria-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line);font-size:0.92rem;color:var(--ink)}
+    .criteria-list li:last-child{border-bottom:none}
+    .criteria-list .cl-verdict{display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;font-weight:700;color:var(--win);background:var(--win-soft);border-radius:50px;padding:3px 10px;white-space:nowrap}
+    .criteria-cta{display:block;text-align:center;margin-top:20px;background:var(--blue);color:#fff;font-weight:700;text-decoration:none;padding:14px 18px;border-radius:50px;transition:all 0.2s;font-size:0.95rem}
+    .criteria-cta:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:0 6px 18px rgba(48,82,255,0.3)}
+
+    /* ============ Generic sections ============ */
+    .section{padding:76px 0}
+    .section-title{font-family:var(--serif);text-align:center;font-size:2.1rem;font-weight:900;letter-spacing:-0.02em;color:var(--navy);margin-bottom:14px}
+    .section-sub{text-align:center;color:var(--ink-muted);max-width:600px;margin:0 auto 48px}
+    .reveal{opacity:0;transform:translateY(18px);transition:opacity 0.6s ease,transform 0.6s ease}
+    .reveal.in{opacity:1;transform:translateY(0)}
+
+    /* How it works */
+    .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;counter-reset:step}
+    .step-card{padding:36px 28px;border-radius:14px;background:var(--white);border:1px solid var(--line);transition:all 0.3s;position:relative}
+    .step-card:hover{border-color:var(--blue);box-shadow:0 12px 40px rgba(48,82,255,0.10);transform:translateY(-3px)}
+    .step-num{width:48px;height:48px;background:var(--navy);color:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:900;margin-bottom:18px}
+    .step-card h3{font-family:var(--serif);font-size:1.18rem;font-weight:700;color:var(--navy);margin-bottom:10px}
+    .step-card p{color:var(--ink-muted);font-size:0.95rem}
+
+    /* Case studies */
+    .cases-section{background:var(--navy-deep);padding:76px 0;position:relative;overflow:hidden}
+    .cases-section::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:700px;height:300px;background:radial-gradient(ellipse,rgba(245,184,0,0.08),transparent 70%);pointer-events:none}
+    .cases-section .section-title{color:#fff}
+    .cases-section .section-sub{color:rgba(255,255,255,0.65)}
+    .cases-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .case-card{background:var(--paper);border-radius:14px;padding:28px 24px;text-align:center;border-top:4px solid var(--gold)}
+    .case-industry{font-size:0.72rem;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px}
+    .case-story{font-size:0.88rem;color:var(--ink-muted);line-height:1.55;margin-bottom:16px;text-align:left}
+    .case-original{color:var(--ink-muted);font-size:0.88rem;margin-bottom:5px}
+    .case-original span{text-decoration:line-through}
+    .case-settled{font-family:var(--serif);font-size:1.8rem;font-weight:900;color:var(--navy);margin-bottom:8px}
+    .case-savings{display:inline-block;background:var(--win);color:#fff;padding:7px 16px;border-radius:50px;font-weight:700;font-size:0.85rem}
+    .case-note{font-size:0.78rem;color:var(--ink-subtle);margin-top:10px;font-style:italic}
+    .case-link{display:inline-block;margin-top:14px;padding:9px 18px;background:transparent;border:1.5px solid var(--blue);color:var(--blue);border-radius:50px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .case-link:hover{background:var(--blue);color:#fff}
+
+    /* Comparison */
+    .comparison-section{padding:76px 0;background:var(--white)}
+    .comparison-table{width:100%;border-collapse:collapse;margin-top:44px;font-size:0.95rem}
+    .comparison-table th,.comparison-table td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--line)}
+    .comparison-table th{background:var(--paper-soft);font-weight:700;color:var(--navy);font-family:var(--serif);font-size:1rem}
+    .comparison-table th:first-child{border-radius:10px 0 0 0}
+    .comparison-table th:last-child{border-radius:0 10px 0 0}
+    .comparison-table td:first-child{font-weight:600;color:var(--ink);background:var(--paper-soft)}
+    .comparison-table .col-bankruptcy{background:var(--bad-soft);color:var(--bad)}
+    .comparison-table .col-settlement{background:var(--win-soft);color:var(--win);font-weight:600}
+    .comparison-cta{text-align:center;margin-top:44px}
+    .comparison-cta a{display:inline-block;background:var(--cta-btn);color:var(--white);padding:17px 40px;border-radius:50px;font-size:1.05rem;font-weight:700;text-decoration:none;transition:all 0.2s}
+    .comparison-cta a:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 8px 24px rgba(48,82,255,0.35)}
+
+    /* Empathy */
+    .empathy-section{background:linear-gradient(150deg,var(--navy) 0%,var(--navy-deep) 100%);padding:76px 0}
+    .empathy-content{max-width:780px;margin:0 auto;text-align:center;color:#fff}
+    .empathy-content h2{font-family:var(--serif);font-size:2.1rem;font-weight:900;margin-bottom:25px;letter-spacing:-0.02em}
+    .empathy-content p{font-size:1.08rem;line-height:1.8;color:rgba(255,255,255,0.85);margin-bottom:20px}
+    .empathy-content p:last-child{margin-bottom:0;font-size:1.15rem;color:#fff;font-weight:500}
+    .empathy-content strong{color:var(--gold-soft)}
+    .empathy-cta{display:inline-block;margin-top:30px;padding:17px 48px;background:var(--gold);color:var(--navy-deep);border-radius:50px;font-size:1.05rem;font-weight:800;text-decoration:none;transition:all 0.2s}
+    .empathy-cta:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(245,184,0,0.4)}
+
+    /* Testimonials */
+    .testimonials{background:var(--paper-soft)}
+    .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .testimonial-card{background:var(--white);border-radius:14px;padding:30px;border:1px solid var(--line);box-shadow:0 4px 18px rgba(15,23,42,0.04)}
+    .testimonial-stars{color:var(--gold);font-size:1.1rem;margin-bottom:14px;letter-spacing:2px}
+    .testimonial-text{color:var(--ink);font-size:0.98rem;margin-bottom:20px;font-style:italic;font-family:var(--serif);line-height:1.7}
+    .testimonial-author{display:flex;align-items:center;gap:12px}
+    .author-avatar{width:44px;height:44px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:700}
+    .author-info h4{font-size:0.92rem;color:var(--navy);margin-bottom:2px}
+    .author-info p{font-size:0.78rem;color:var(--ink-subtle)}
+
+    /* FAQ */
+    .faq-section{padding:76px 0;background:var(--paper)}
+    .faq-grid{max-width:780px;margin:0 auto}
+    .faq-item{border-bottom:1px solid var(--line);padding:24px 0}
+    .faq-item:last-child{border-bottom:none}
+    .faq-question{font-family:var(--serif);font-size:1.12rem;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+    .faq-answer{color:var(--ink-muted);font-size:0.98rem;line-height:1.7}
+
+    /* CTA footer */
+    .cta-footer{background:var(--navy-deep);padding:76px 0;text-align:center;position:relative;overflow:hidden}
+    .cta-footer::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--blue))}
+    .cta-footer h2{font-family:var(--serif);color:#fff;font-size:2.1rem;margin-bottom:15px;font-weight:900;letter-spacing:-0.02em}
+    .cta-footer > .container > p{color:rgba(255,255,255,0.75);font-size:1.1rem;margin-bottom:30px}
+    .cta-form-card{background:var(--paper);border-radius:16px;padding:34px 30px;max-width:520px;margin:0 auto 24px;text-align:left;border-top:4px solid var(--gold)}
+    .cta-form-card .form-group{margin-bottom:14px}
+    .cta-form-card label{display:block;font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+    .cta-form-card input[type="text"],.cta-form-card input[type="email"],.cta-form-card input[type="tel"],.cta-form-card select,.cta-form-card textarea{width:100%;padding:12px 16px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem;transition:border 0.2s;background:var(--white);color:var(--ink);height:auto}
+    .cta-form-card input:focus,.cta-form-card select:focus,.cta-form-card textarea:focus{outline:none;border-color:var(--blue)}
+    .cta-form-card .phone-wrapper{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;transition:border 0.2s;background:var(--white);height:auto}
+    .cta-form-card .phone-wrapper .phone-prefix{padding:12px;background:var(--paper-soft);font-size:0.9rem;white-space:nowrap;border-right:1px solid var(--line);color:var(--ink-muted)}
+    .cta-form-card .phone-wrapper input{border:none;border-radius:0;padding:12px 16px;color:var(--ink);background:transparent}
+    .cta-form-card .phone-wrapper input:focus{outline:none;box-shadow:none}
+    .cta-form-card .phone-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
+    .cta-form-card .radio-group{display:flex;gap:12px}
+    .cta-form-card .radio-label{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:all 0.2s;font-weight:600;background:var(--white);color:var(--ink);height:auto}
+    .cta-form-card .radio-label:has(input:checked){border-color:var(--blue);background:rgba(48,82,255,0.05)}
+    .cta-form-card .radio-label input{display:none}
+    .cta-form-card .consent-group{margin-top:10px}
+    .cta-form-card .consent-label{display:flex;align-items:flex-start;gap:8px;font-size:0.72rem;color:#666;line-height:1.4;cursor:pointer}
+    .cta-form-card .consent-label input{margin-top:3px;flex-shrink:0;accent-color:var(--blue)}
+    .cta-form-card .consent-label a{color:var(--blue)}
+    .cta-form-card .consent-error{color:#dc2626;font-size:0.8rem;margin-top:4px;display:none}
+    .cta-form-card .submit-btn{width:100%;padding:16px;height:auto;background:var(--cta-btn);color:#fff;border:none;border-radius:50px;font-size:1.05rem;font-weight:700;cursor:pointer;margin-top:12px;transition:all 0.2s;box-shadow:none}
+    .cta-form-card .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    .cta-form-card .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .bottom-form-success{text-align:center;padding:24px}
+    .bottom-form-success h3{font-family:var(--serif);font-size:1.4rem;color:#16a34a;margin-bottom:8px}
+    .bottom-form-success p{color:#555;font-size:1rem}
+    .cta-phone{color:#fff;font-size:1.3rem;font-weight:600;margin-top:25px}
+    .cta-phone a{color:var(--gold);text-decoration:none}
+
+    /* Footer */
+    footer{background:var(--navy-deep);padding:36px 0;border-top:1px solid rgba(255,255,255,0.08)}
+    .footer-cobrand{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+    .footer-cobrand img{height:26px;opacity:0.9}
+    .footer-cobrand .fx{color:rgba(255,255,255,0.35);font-size:0.85rem}
+    .footer-cobrand .fc-mcasr{font-family:var(--serif);font-weight:700;color:rgba(255,255,255,0.85);font-size:0.95rem}
+    .footer-cobrand .fc-mcasr .star{color:var(--gold)}
+    footer p{color:rgba(255,255,255,0.55);font-size:0.82rem;text-align:center;line-height:1.7;max-width:720px;margin:0 auto}
+    footer a{color:rgba(255,255,255,0.75);text-decoration:none}
+    footer a:hover{color:#fff}
+
+    /* Sticky mobile CTA */
+    .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--paper);padding:12px 20px;z-index:100;box-shadow:0 -4px 20px rgba(15,23,42,0.12);border-top:1px solid var(--line)}
+    .mobile-cta a{display:block;text-align:center;background:var(--cta-btn);color:#fff;font-weight:700;font-size:1rem;text-decoration:none;padding:14px 20px;border-radius:50px}
+
+    /* ============ Responsive ============ */
+    @media(max-width:992px){
+      .hero-grid{grid-template-columns:1fr;gap:40px}
+      .hero-content{order:1}
+      .form-card{max-width:520px;margin:0 auto;order:2;min-width:auto}
+      .hero h1{font-size:2.5rem}
+      .verdict-grid{grid-template-columns:1fr;gap:32px}
+      .criteria-card{position:static}
+      .cases-grid{grid-template-columns:repeat(2,1fr)}
+      .testimonials-grid{grid-template-columns:repeat(2,1fr)}
+      .empathy-content h2{font-size:1.8rem}
+      .comparison-table{font-size:0.85rem}
+      .comparison-table th,.comparison-table td{padding:12px 10px}
+    }
+    @media(max-width:768px){
+      .hero{padding:28px 0 44px}
+      .hero h1{font-size:1.95rem}
+      .hero h1 br{display:none}
+      .hero-sub{font-size:1rem}
+      .hero-points{gap:10px;margin-bottom:22px}
+      .hero-points li{font-size:0.93rem}
+      .verdict-row{flex-direction:column;align-items:stretch;gap:18px}
+      .verdict-seal{margin:0 auto;width:112px;height:112px}
+      .verdict-seal .seal-core{inset:18px}
+      .form-card{padding:28px 22px}
+      .form-title{font-size:1.4rem}
+      .form-group label{font-size:0.95rem;margin-bottom:8px}
+      .form-group input,.form-group select,.radio-label{height:46px}
+      .radio-label span{line-height:46px}
+      .submit-btn{height:50px;font-size:1.05rem}
+      .verdict-title{font-size:1.65rem}
+      .verdict-prose{font-size:1.02rem}
+      .verdict-prose .pullquote{font-size:1.1rem}
+      .steps-grid{grid-template-columns:1fr}
+      .cases-grid{grid-template-columns:1fr}
+      .trust-logos{justify-content:center;gap:15px 20px}
+      .trust-logos img{max-height:34px}
+      .section{padding:52px 0}
+      .section-title{font-size:1.55rem}
+      .testimonials-grid{grid-template-columns:1fr}
+      .empathy-content h2{font-size:1.5rem}
+      .empathy-content p{font-size:1rem}
+      .mobile-cta{display:block}
+      .cta-footer{padding-bottom:110px}
+      .header-phone span{display:none}
+      .header-phone{padding:10px 13px}
+      .reviewed-by{display:none}
+      .brand-divider{display:none}
+      .comparison-table-wrapper{overflow-x:auto}
+      .comparison-table{min-width:500px}
+      .radio-group{flex-direction:column;gap:10px}
+      .verdict-ribbon{font-size:0.7rem}
+    }
+  </style>
+</head>
+<body>
+  {{BODY_SCRIPTS}}
+
+  <!-- Verdict ribbon -->
+  <div class="verdict-ribbon">
+    <div class="container">
+      <span class="rb-brand">MCA Settlement Reviews</span>
+      <span>2026 Rankings: Coastal Debt Resolve rated #1 of 10 firms reviewed</span>
+      <span class="rb-stars">★★★★★</span>
+      <span class="rb-score">4.9/5</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header id="siteHeader">
+    <div class="container header-inner">
+      <div class="header-brands">
+        <span class="logo"><img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" height="36"></span>
+        <span class="brand-divider"></span>
+        <span class="reviewed-by">
+          <span class="rb-label">Ranked #1 by</span>
+          <span class="rb-name"><span class="star">★</span> MCA Settlement Reviews</span>
+        </span>
+      </div>
+      <a href="tel:{{phone}}" class="header-phone phone-element">
+        <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+        </svg>
+        <span>{{phone}}</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="hero-badge">{{badge}}</span>
+          <span class="hero-badge-note">Independently reviewed</span>
+        </div>
+        <h1>{{headline}}<br>{{headlineLine2}} <span>{{headlineHighlight}}</span></h1>
+        <p class="hero-sub">{{subheadline}}</p>
+        <ul class="hero-points" id="bulletPoints"></ul>
+
+        <div class="verdict-row">
+          <div class="verdict-seal" aria-hidden="true">
+            <svg viewBox="0 0 132 132">
+              <defs>
+                <path id="sealCircle" d="M 66,66 m -52,0 a 52,52 0 1,1 104,0 a 52,52 0 1,1 -104,0"/>
+              </defs>
+              <circle cx="66" cy="66" r="64" fill="#f5b800"/>
+              <circle cx="66" cy="66" r="56" fill="none" stroke="#0f172a" stroke-width="1" stroke-dasharray="2 3"/>
+              <text font-family="Schibsted Grotesk, sans-serif" font-size="9.5" font-weight="700" letter-spacing="1.8" fill="#0f172a">
+                <textPath href="#sealCircle">MCA SETTLEMENT REVIEWS ★ EDITOR'S CHOICE ★</textPath>
+              </text>
+            </svg>
+            <div class="seal-core">
+              <span class="seal-rank">#1</span>
+              <span class="seal-year">2026</span>
+            </div>
+          </div>
+          <div class="scorecard">
+            <div class="scorecard-head">
+              <span class="scorecard-title">Review Scorecard</span>
+              <span class="scorecard-overall">4.9 <span class="of">/ 5.0</span></span>
+            </div>
+            <div class="score-row"><span class="score-label">Settlement Results</span><div class="score-track"><div class="score-fill" data-score="5.0"></div></div><span class="score-num">5.0</span></div>
+            <div class="score-row"><span class="score-label">Transparency</span><div class="score-track"><div class="score-fill" data-score="4.9"></div></div><span class="score-num">4.9</span></div>
+            <div class="score-row"><span class="score-label">Speed to Resolve</span><div class="score-track"><div class="score-fill" data-score="4.8"></div></div><span class="score-num">4.8</span></div>
+            <div class="score-row"><span class="score-label">Client Support</span><div class="score-track"><div class="score-fill" data-score="4.9"></div></div><span class="score-num">4.9</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <!-- Step 1: Debt Amount -->
+        <div class="form-step form-step-1 active">
+          <div class="form-pick"><span class="pick-stars">★★★★★</span><span class="pick-text">Reviewers' Top Pick 2026</span></div>
+          <h2 class="form-title">{{formTitle}}</h2>
+          <p class="form-subtitle">{{formSubtitle}}</p>
+          <div class="form-group">
+            <label for="debt_amount">How much business debt do you have?</label>
+            <select id="debt_amount" name="debt_amount">
+              <option value="">Select amount...</option>
+              <option value="under-20000">Under $20,000</option>
+              <option value="20000-50000">$20,000 - $50,000</option>
+              <option value="50000-100000">$50,000 - $100,000</option>
+              <option value="100000-250000">$100,000 - $250,000</option>
+              <option value="250000-500000">$250,000 - $500,000</option>
+              <option value="500000-1000000">$500,000 - $1,000,000</option>
+              <option value="1000000+">$1,000,000+</option>
+            </select>
+          </div>
+          <button type="button" class="submit-btn" id="checkDebtBtn" style="display:none;">Continue</button>
+        </div>
+
+        <!-- Step 2: Sorry - Debt too low -->
+        <div class="form-step form-step-sorry">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we can only help businesses with debt of $20,000 or more.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 3: MCA Question -->
+        <div class="form-step form-step-mca">
+          <h2 class="form-title">One Quick Question</h2>
+          <p class="form-subtitle">Do you currently have a Merchant Cash Advance (MCA)?</p>
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="Yes">
+                <span>Yes</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="mca_check" value="No">
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Sorry - No MCA -->
+        <div class="form-step form-step-sorry-mca">
+          <div class="sorry-message">
+            <div class="sorry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+            <h3>We're Sorry</h3>
+            <p>Unfortunately, we specialize in helping businesses with Merchant Cash Advance debt.</p>
+            <p class="sorry-sub">If your situation changes, please come back and we'll be happy to help.</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Rest of Form -->
+        <div class="form-step form-step-2">
+          <h2 class="form-title">Great! You Qualify</h2>
+          <p class="form-subtitle">Complete your details for a free consultation.</p>
+          <form id="leadForm">
+            <input type="hidden" id="debt_amount_hidden" name="debt_amount">
+            <input type="hidden" id="has_mca_hidden" name="has_mca" value="">
+            <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+            <input type="hidden" id="gclid" name="gclid" value="">
+            <input type="hidden" id="msclkid" name="msclkid" value="">
+            <input type="hidden" id="fbclid" name="fbclid" value="">
+            <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+            <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+            <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+            <input type="hidden" id="click_id" name="click_id" value="">
+            <input type="hidden" id="affiliate_clickid" name="affiliate_clickid" value="">
+            <input type="hidden" id="keyword" name="keyword" value="">
+            <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+            <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+            <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+            <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+            <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+            <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+            <input type="hidden" id="fb_placement" name="fb_placement" value="">
+            <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+            <input type="hidden" id="page_url" name="page_url" value="">
+            <input type="hidden" id="referrer_url" name="referrer_url" value="">
+            {{HIDDEN_FIELDS}}
+            <div id="dynamicFormFields"></div>
+            <div class="consent-group">
+              <label class="consent-label">
+                <input type="checkbox" id="consentCheckbox" required>
+                <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. Carriers are not liable for delayed or undelivered messages. Message frequency varies per user. You can unsubscribe anytime. Click for our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+              </label>
+              <div class="consent-error" id="consentError">You must agree to continue</div>
+            </div>
+            <button type="submit" class="submit-btn">{{formSubmitText}}</button>
+          </form>
+        </div>
+
+        <!-- Step 6: Success -->
+        <div class="form-step form-success">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Bar -->
+  <section class="trust-bar">
+    <div class="container">
+      <p class="trust-label">{{trustLabel}}</p>
+      <div class="trust-logos" id="trustLogos"></div>
+    </div>
+  </section>
+
+  <!-- Editorial verdict: why reviewers ranked Coastal #1 -->
+  <section class="verdict-section">
+    <div class="container">
+      <p class="verdict-kicker reveal"><span class="star">★</span> The 2026 Verdict <span class="star">★</span></p>
+      <h2 class="verdict-title reveal">Why MCA Settlement Reviews Ranked Coastal Debt Resolve #1 of 10 Firms</h2>
+      <p class="verdict-sub reveal">Ten MCA settlement companies were reviewed and scored on results, transparency, speed, and support. One firm took the top spot.</p>
+      <div class="verdict-grid">
+        <div class="verdict-prose reveal">
+          <p>Most business owners searching for MCA debt help have already been burned once: by the advance itself. The 2026 rankings from MCA Settlement Reviews set out to answer one question for them: which settlement firm actually delivers what it promises?</p>
+          <div class="pullquote">
+            "Coastal Debt Resolve ranked #1 with 4.9/5 for combining attorneys, settlement negotiators, and case management under one roof."
+            <cite>MCA Settlement Reviews, 2026 Rankings</cite>
+          </div>
+          <p>What separated Coastal from the other nine firms reviewed was structure. Instead of outsourcing legal work or passing files between departments, Coastal keeps attorneys, negotiators, and case managers on one team. In practice, that showed up in the results: documented settlements between 30% and 61% below the balance owed, lawsuits resolved before judgment, and daily ACH withdrawals stopped while negotiations ran.</p>
+          <p>The review also weighed how firms get paid. Coastal charges no upfront fees: it earns its fee from the savings it negotiates. That aligns the firm's incentive with the outcome, something several lower-ranked competitors could not demonstrate.</p>
+        </div>
+        <aside class="criteria-card reveal">
+          <h3>What the review evaluated</h3>
+          <p class="cc-note">Every firm was scored against the same criteria.</p>
+          <ul class="criteria-list">
+            <li>Documented settlement results <span class="cl-verdict">✓ Verified</span></li>
+            <li>Attorneys on staff, not referred out <span class="cl-verdict">✓ Yes</span></li>
+            <li>No upfront fees <span class="cl-verdict">✓ Yes</span></li>
+            <li>Stops daily ACH withdrawals <span class="cl-verdict">✓ Yes</span></li>
+            <li>Handles stacked MCAs <span class="cl-verdict">✓ Yes</span></li>
+            <li>BBB accredited <span class="cl-verdict">✓ Yes</span></li>
+          </ul>
+          <a href="#" class="criteria-cta" onclick="event.preventDefault();var fc=document.querySelector('.form-card');if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'});}">Get Your Free Debt Analysis</a>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" style="background:var(--paper-soft)">
+    <div class="container">
+      <h2 class="section-title reveal">{{howItWorksTitle}}</h2>
+      <p class="section-sub reveal">{{howItWorksSubtitle}}</p>
+      <div class="steps-grid reveal" id="stepsGrid"></div>
+    </div>
+  </section>
+
+  <!-- Case Studies -->
+  <section class="cases-section">
+    <div class="container">
+      <h2 class="section-title reveal">{{caseStudiesTitle}}</h2>
+      <p class="section-sub reveal">{{caseStudiesSubtitle}}</p>
+      <div class="cases-grid reveal">
+        <div class="case-card">
+          <div class="case-industry">Home Interiors</div>
+          <p class="case-story">Facing a $107K judgment from Mulligan Funding, this interior design business was days away from losing everything. We negotiated a settlement that saved their company.</p>
+          <p class="case-original">Judgment: <span>$107,684</span></p>
+          <p class="case-settled">$55,000</p>
+          <div class="case-savings">49% Savings</div>
+          <p class="case-note">$52,684 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/Mulligan.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Pumping Services</div>
+          <p class="case-story">A pumping services company was sued by DLP Funding over an MCA default. We stepped in and settled the lawsuit for a fraction of what was owed.</p>
+          <p class="case-original">Owed: <span>$12,792</span></p>
+          <p class="case-settled">$5,000</p>
+          <div class="case-savings">61% Savings</div>
+          <p class="case-note">Lawsuit dismissed</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/DLP.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Education</div>
+          <p class="case-story">RTQ Academy, an education and family services provider, was drowning in MCA debt from Byzfunder. We negotiated a settlement that let them keep serving their community.</p>
+          <p class="case-original">Balance: <span>$40,570</span></p>
+          <p class="case-settled">$18,000</p>
+          <div class="case-savings">56% Savings</div>
+          <p class="case-note">$22,570 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/Bzfunder.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+        <div class="case-card">
+          <div class="case-industry">Construction</div>
+          <p class="case-story">B Squared Carpentry faced $169K in MCA debt from Expansion Capital Group. Our team negotiated aggressively and secured a settlement that kept them in business.</p>
+          <p class="case-original">Balance: <span>$169,006</span></p>
+          <p class="case-settled">$117,955</p>
+          <div class="case-savings">30% Savings</div>
+          <p class="case-note">$51,051 saved</p>
+          <a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/AMA-B-Squared-Carpentry-LLC-dba-B-Squared-Carpentry.pdf" target="_blank" class="case-link">View Settlement</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section class="comparison-section">
+    <div class="container">
+      <h2 class="section-title reveal">{{comparisonTitle}}</h2>
+      <p class="section-sub reveal">{{comparisonSubtitle}}</p>
+      <div class="comparison-table-wrapper reveal">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{{comparisonColBad}}</th>
+              <th>{{comparisonColGood}}</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonBody"></tbody>
+        </table>
+      </div>
+      <div class="comparison-cta reveal">
+        <a href="#leadForm" onclick="var fc = document.querySelector('.form-card'); if (fc) fc.scrollIntoView({behavior:'smooth',block:'center'});">{{comparisonCtaText}}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Empathy Section -->
+  <section class="empathy-section">
+    <div class="container">
+      <div class="empathy-content">
+        <h2 class="reveal">{{empathyTitle}}</h2>
+        <div id="empathyText" class="reveal"></div>
+        <a href="#leadForm" class="empathy-cta reveal" onclick="var fc=document.querySelector('.form-card'); if(fc){fc.scrollIntoView({behavior:'smooth',block:'center'}); var fi=fc.querySelector('input:not([type=hidden])'); if(fi) setTimeout(function(){fi.focus()},600);}">Get Your Free Consultation</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section testimonials">
+    <div class="container">
+      <h2 class="section-title reveal">{{testimonialsTitle}}</h2>
+      <p class="section-sub reveal">{{testimonialsSubtitle}}</p>
+      <div class="testimonials-grid reveal" id="testimonialsGrid"></div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq-section">
+    <div class="container">
+      <h2 class="section-title reveal">{{faqTitle}}</h2>
+      <p class="section-sub reveal">{{faqSubtitle}}</p>
+      <div class="faq-grid reveal" id="faqGrid"></div>
+    </div>
+  </section>
+
+  <!-- CTA Footer with Form -->
+  <section class="cta-footer">
+    <div class="container">
+      <h2>{{ctaTitle}}</h2>
+      <p>{{ctaSubtitle}}</p>
+      <div class="cta-form-card" id="bottomFormCard">
+        <form id="bottomLeadForm" class="bottom-form">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="debt_amount" value="">
+          <input type="hidden" name="has_mca" value="">
+          <input type="hidden" name="gclid" class="bottom-gclid" value="">
+          <input type="hidden" name="msclkid" class="bottom-msclkid" value="">
+          <input type="hidden" name="fbclid" class="bottom-fbclid" value="">
+          <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
+          <input type="hidden" name="rdt_cid" class="bottom-rdt-cid" value="">
+          <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
+          <input type="hidden" name="keyword" class="bottom-keyword" value="">
+          <input type="hidden" name="fb_campaign_id" class="bottom-fb-campaign-id" value="">
+          <input type="hidden" name="fb_adset_id" class="bottom-fb-adset-id" value="">
+          <input type="hidden" name="fb_ad_id" class="bottom-fb-ad-id" value="">
+          <input type="hidden" name="fb_campaign_name" class="bottom-fb-campaign-name" value="">
+          <input type="hidden" name="fb_adset_name" class="bottom-fb-adset-name" value="">
+          <input type="hidden" name="fb_ad_name" class="bottom-fb-ad-name" value="">
+          <input type="hidden" name="fb_placement" class="bottom-fb-placement" value="">
+          <input type="hidden" name="visitor_ip" class="bottom-visitor-ip" value="">
+          <input type="hidden" name="page_url" class="bottom-pageurl" value="">
+          <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
+          {{HIDDEN_FIELDS}}
+          <div id="bottomFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="bottomConsentCheckbox" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="bottomConsentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{ctaButton}}</button>
+        </form>
+        <div class="bottom-form-success" id="bottomFormSuccess" style="display:none;">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
+      <p class="cta-phone phone-element">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-cobrand">
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg" alt="Coastal Debt Resolve" style="filter:brightness(0) invert(1)">
+        <span class="fx">×</span>
+        <span class="fc-mcasr"><span class="star">★</span> MCA Settlement Reviews</span>
+      </div>
+      <p>Coastal Debt Resolve was rated #1 of 10 MCA settlement firms in the 2026 rankings published by MCASettlementReviews.com, an independent review site. Ratings reflect that publication's editorial methodology.</p>
+      <p style="margin-top:12px">&copy; {{year}} Coastal Debt Resolve. All rights reserved. | <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> | <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <!-- Mobile Sticky CTA -->
+  <div class="mobile-cta" id="mobileStickyCtaBar">
+    <a id="mobileStickyCtaLink" href="tel:{{phone}}">Call Now: {{phone}}</a>
+  </div>
+
+  <!-- Form JS -->
+  <script>
+    // Hide phone elements if no phone number is set
+    (function() {
+      var phone = '{{phone}}';
+      if (!phone || phone === '{{' + 'phone}}') {
+        document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // Mobile sticky CTA: switch between call and form scroll
+    (function() {
+      var mobileCta = '{{mobileCta}}';
+      var ctaLink = document.getElementById('mobileStickyCtaLink');
+      var ctaBar = document.getElementById('mobileStickyCtaBar');
+      if (!ctaLink || !ctaBar) return;
+
+      if (mobileCta === 'form') {
+        ctaLink.href = '#';
+        ctaLink.textContent = 'Get My Free Consultation';
+        ctaBar.classList.remove('phone-element');
+        ctaLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          var formCard = document.querySelector('.form-card');
+          if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+    })();
+
+    // Scorecard bar animation + scroll reveal + header shadow
+    (function() {
+      setTimeout(function() {
+        document.querySelectorAll('.score-fill').forEach(function(bar) {
+          var score = parseFloat(bar.getAttribute('data-score') || '0');
+          bar.style.width = (score / 5 * 100) + '%';
+        });
+      }, 500);
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(en) {
+            if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+          });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('in'); });
+      }
+      var hdr = document.getElementById('siteHeader');
+      if (hdr) {
+        window.addEventListener('scroll', function() {
+          hdr.classList.toggle('scrolled', window.scrollY > 8);
+        }, { passive: true });
+      }
+    })();
+
+    // Page configuration from CMS
+    const PAGE_SLUG = '{{SLUG}}';
+    const API_BASE = '/api';
+
+    // Generate unique visitor ID (eli_clickid) - passes ad blockers
+    (function() {
+      var k = '_vid_'; // storage key (non-obvious name)
+      var id = localStorage.getItem(k);
+      if (!id) {
+        // Generate unique ID: timestamp (base36) + random string
+        var t = Date.now().toString(36);
+        var r = Math.random().toString(36).substring(2, 10);
+        var s = Math.random().toString(36).substring(2, 6);
+        id = 'eli_' + t + r + s;
+        try { localStorage.setItem(k, id); } catch(e) {}
+      }
+      // Set hidden field
+      var el = document.getElementById('eli_clickid');
+      if (el) el.value = id;
+      // Also store in window for reference
+      window._eliClickId = id;
+
+      // Track visitor with full device info
+      try {
+        var ua = navigator.userAgent;
+        var browser = 'Unknown', browserVer = '', os = 'Unknown', osVer = '', deviceType = 'Desktop';
+
+        // Detect browser
+        if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) { browser = 'Chrome'; browserVer = ua.match(/Chrome\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) { browser = 'Safari'; browserVer = ua.match(/Version\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Firefox') > -1) { browser = 'Firefox'; browserVer = ua.match(/Firefox\/(\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Edg') > -1) { browser = 'Edge'; browserVer = ua.match(/Edg\/(\d+)/)?.[1] || ''; }
+
+        // Detect OS
+        if (ua.indexOf('Windows') > -1) { os = 'Windows'; osVer = ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Mac OS') > -1) { os = 'macOS'; osVer = ua.match(/Mac OS X (\d+[._]\d+)/)?.[1]?.replace('_','.') || ''; }
+        else if (ua.indexOf('Android') > -1) { os = 'Android'; osVer = ua.match(/Android (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('iOS') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) { os = 'iOS'; osVer = ua.match(/OS (\d+)/)?.[1] || ''; }
+        else if (ua.indexOf('Linux') > -1) { os = 'Linux'; }
+
+        // Detect device type
+        if (/Mobile|Android|iPhone|iPod/.test(ua)) deviceType = 'Mobile';
+        else if (/iPad|Tablet/.test(ua)) deviceType = 'Tablet';
+
+        // Get UTM params
+        var params = new URLSearchParams(window.location.search);
+
+        // Helper to get cookie value - robust parsing
+        function getCookieVal(name) {
+          var cookies = {};
+          document.cookie.split(';').forEach(function(c) {
+            var parts = c.trim().split('=');
+            if (parts.length >= 2) {
+              cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
+            }
+          });
+          var val = cookies[name];
+          if (val) { try { return decodeURIComponent(val); } catch(e) { return val; } }
+          return '';
+        }
+
+        // Send tracking data
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eli_clickid: id,
+            gclid: params.get('gclid') || '',
+            msclkid: params.get('msclkid') || '',
+            fbclid: params.get('fbclid') || '',
+            fbc: getCookieVal('_fbc') || '',
+            fbp: getCookieVal('_fbp') || '',
+            rt_clickid: (function(){ try { var s = sessionStorage.getItem('rtkclickid'); if(s) return s; } catch(e){} return params.get('rt_clickid') || getCookieVal('rtkclickid-store') || 'adblock_blocked'; })(),
+            rdt_cid: params.get('rdt_cid') || '',
+            user_agent: ua,
+            browser: browser,
+            browser_version: browserVer,
+            os: os,
+            os_version: osVer,
+            device_type: deviceType,
+            screen_width: screen.width,
+            screen_height: screen.height,
+            language: navigator.language || '',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+            referrer_url: document.referrer || '',
+            landing_page: window.location.pathname,
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || '',
+            ab_variant: window._abVariant || ''
+          })
+        }).catch(function(){});
+
+        // Retry visitor tracking with rt_clickid after RedTrack script loads
+        setTimeout(function() {
+          var rtId = '';
+          try { rtId = sessionStorage.getItem('rtkclickid') || ''; } catch(e) {}
+          if (!rtId) { try { rtId = getCookieVal('rtkclickid-store'); } catch(e) {} }
+          // Also retry fbc/fbp after Facebook Pixel has had time to set cookies
+          var fbcRetry = getCookieVal('_fbc') || '';
+          var fbpRetry = getCookieVal('_fbp') || '';
+          if (rtId || fbcRetry || fbpRetry) {
+            var retryData = { eli_clickid: id };
+            if (rtId) retryData.rt_clickid = rtId;
+            if (fbcRetry) retryData.fbc = fbcRetry;
+            if (fbpRetry) retryData.fbp = fbpRetry;
+            fetch('/api/visitors/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryData)
+            }).catch(function(){});
+          }
+        }, 3000);
+      } catch(e) {}
+    })();
+
+    // Wrap in IIFE to avoid variable name collisions with external scripts (e.g., RedTrack)
+    (function() {
+    // Helper to get cookie value - robust parsing
+    function getCookie(name) {
+      // Method 1: Parse all cookies into object
+      const cookies = {};
+      document.cookie.split(';').forEach(function(c) {
+        const parts = c.trim().split('=');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join('=').trim();
+          cookies[key] = val;
+        }
+      });
+      const value = cookies[name];
+      if (value) {
+        try { return decodeURIComponent(value); } catch(e) { return value; }
+      }
+      return '';
+    }
+
+    // Helper to safely get/set localStorage
+    function getStored(key) {
+      try { return localStorage.getItem(key) || ''; } catch(e) { return ''; }
+    }
+    function setStored(key, val) {
+      try { if (val) localStorage.setItem(key, val); } catch(e) {}
+    }
+
+    // Capture URL parameters (use unique name to avoid collision with RedTrack script)
+    var _lpParams = new URLSearchParams(window.location.search);
+
+    // GCLID: URL param → localStorage → _gcl_aw cookie
+    let gclid = _lpParams.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    if (gclid) {
+      // Clean gclid from cookie format (GCL.timestamp.value → value)
+      if (gclid.startsWith('GCL.')) {
+        const parts = gclid.split('.');
+        gclid = parts[parts.length - 1];
+      }
+      setStored('_gclid', gclid);
+      document.getElementById('gclid').value = gclid;
+    }
+
+    // MSCLKID: URL param → localStorage
+    let msclkid = _lpParams.get('msclkid') || getStored('_msclkid') || '';
+    if (msclkid) {
+      setStored('_msclkid', msclkid);
+      document.getElementById('msclkid').value = msclkid;
+    }
+
+    // FBCLID: URL param → localStorage
+    let fbclid = _lpParams.get('fbclid') || getStored('_fbclid') || '';
+    if (fbclid) {
+      setStored('_fbclid', fbclid);
+      document.getElementById('fbclid').value = fbclid;
+    }
+
+    // AFFILIATE click_id: URL param ?click_id=… or ?affiliate_clickid=… → localStorage.
+    // Mirrored to both `click_id` and `affiliate_clickid` fields so reports/integrations
+    // can pick whichever name they expect.
+    let _affClickId = _lpParams.get('affiliate_clickid') || _lpParams.get('click_id') || _lpParams.get('clickid') || getStored('_click_id') || '';
+    if (_affClickId) {
+      setStored('_click_id', _affClickId);
+      var _ci = document.getElementById('click_id'); if (_ci) _ci.value = _affClickId;
+      var _ac = document.getElementById('affiliate_clickid'); if (_ac) _ac.value = _affClickId;
+    }
+
+    // KEYWORD (utm_term): URL param → localStorage
+    // Skip pure numeric values (Facebook ad IDs use utm_term for ad ID)
+    let keyword = _lpParams.get('keyword') || '';
+    if (!keyword) {
+      var _utmTerm = _lpParams.get('utm_term') || '';
+      if (_utmTerm && !/^\d+$/.test(_utmTerm)) keyword = _utmTerm;
+    }
+    keyword = keyword || getStored('_keyword') || '';
+    if (keyword) {
+      setStored('_keyword', keyword);
+      document.getElementById('keyword').value = keyword;
+    }
+
+    // META ADS PARAMS: URL params → localStorage
+    var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+    // Also check common alt param names (campaign_id, adset_id, ad_id, etc.)
+    var metaAltNames = {
+      fb_campaign_id: ['campaign_id','c_id','sub6','utm_id'],
+      fb_adset_id: ['adset_id','as_id','sub5','utm_content'],
+      fb_ad_id: ['ad_id','sub4','utm_term'],
+      fb_campaign_name: ['campaign_name','c_name','utm_campaign'],
+      fb_adset_name: ['adset_name','as_name'],
+      fb_ad_name: ['ad_name','sub2'],
+      fb_placement: ['placement','sub7']
+    };
+    metaParams.forEach(function(p) {
+      var val = _lpParams.get(p) || '';
+      if (!val && metaAltNames[p]) {
+        for (var i = 0; i < metaAltNames[p].length; i++) {
+          val = _lpParams.get(metaAltNames[p][i]) || '';
+          if (val) break;
+        }
+      }
+      val = val || getStored('_' + p) || '';
+      if (val) {
+        setStored('_' + p, val);
+        var el = document.getElementById(p);
+        if (el) el.value = val;
+      }
+    });
+
+    // VISITOR IP: fetch from server
+    fetch('/api/visitors/ip').then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ip) {
+        var el = document.getElementById('visitor_ip');
+        if (el) el.value = d.ip;
+        window._visitorIp = d.ip;
+      }
+    }).catch(function(){});
+
+    // RT_CLICKID: URL param → sessionStorage (RedTrack) → localStorage → cookie
+    function getRtClickId() {
+      try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {}
+      return _lpParams.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || 'adblock_blocked';
+    }
+    var rtClickId = getRtClickId();
+    if (rtClickId) {
+      setStored('_rt_clickid', rtClickId);
+      document.getElementById('rt_clickid').value = rtClickId;
+    }
+    // RedTrack script may set cookie/sessionStorage after page load - retry after delay
+    setTimeout(function() {
+      if (!document.getElementById('rt_clickid').value) {
+        var delayed = getRtClickId();
+        if (delayed) {
+          setStored('_rt_clickid', delayed);
+          document.getElementById('rt_clickid').value = delayed;
+        }
+      }
+    }, 2000);
+
+    // RDT_CID (Reddit): URL param → localStorage
+    var rdtCid = _lpParams.get('rdt_cid') || getStored('_rdt_cid') || '';
+    if (rdtCid) {
+      setStored('_rdt_cid', rdtCid);
+      document.getElementById('rdt_cid').value = rdtCid;
+    }
+
+    // Capture page URL and referrer
+    document.getElementById('page_url').value = window.location.href;
+    document.getElementById('referrer_url').value = document.referrer || '';
+
+    // Form step elements
+    const skipPreQual = {{skipPreQual}};
+    const step1 = document.querySelector('.form-step-1');
+    const stepSorry = document.querySelector('.form-step-sorry');
+    const stepMca = document.querySelector('.form-step-mca');
+    const stepSorryMca = document.querySelector('.form-step-sorry-mca');
+    const step2 = document.querySelector('.form-step-2');
+    const stepSuccess = document.querySelector('.form-success');
+    const debtSelect = document.getElementById('debt_amount');
+    const checkDebtBtn = document.getElementById('checkDebtBtn');
+
+    // Skip pre-qualification: hide debt/MCA steps, show form directly
+    if (skipPreQual) {
+      step1.classList.remove('active');
+      step1.style.display = 'none';
+      stepSorry.style.display = 'none';
+      stepMca.style.display = 'none';
+      stepSorryMca.style.display = 'none';
+      step2.querySelector('.form-title').textContent = '{{formTitle}}';
+      step2.querySelector('.form-subtitle').textContent = '{{formSubtitle}}';
+      step2.classList.add('active');
+    }
+
+    // Populate dynamic content
+    const bulletPoints = {{bulletPointsJson}};
+    const bulletPointsHtml = bulletPoints.map(point => `
+      <li>
+        <span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+        ${point}
+      </li>
+    `).join('');
+    document.getElementById('bulletPoints').innerHTML = bulletPointsHtml;
+
+    // Hide extra bullets on mobile
+    const mobileBulletsCount = '{{mobileBulletsCount}}';
+    if (mobileBulletsCount !== 'all') {
+      const n = parseInt(mobileBulletsCount) + 1;
+      const style = document.createElement('style');
+      style.textContent = '@media(max-width:768px){.hero-points li:nth-child(n+' + n + '){display:none !important}}';
+      document.head.appendChild(style);
+    }
+
+    const steps = {{stepsJson}};
+    const stepsHtml = steps.map((step, i) => `
+      <div class="step-card">
+        <div class="step-num">${i + 1}</div>
+        <h3>${step.title}</h3>
+        <p>${step.description}</p>
+      </div>
+    `).join('');
+    document.getElementById('stepsGrid').innerHTML = stepsHtml;
+
+    const empathyText = {{empathyTextJson}};
+    const empathyHtml = empathyText.map((text, i) => {
+      if (i === empathyText.length - 1) return `<p>${text}</p>`;
+      if (text.includes('there is another way')) return `<p>But here's what we want you to know: <strong>there is another way.</strong> ${text.split('there is another way.')[1] || ''}</p>`;
+      return `<p>${text}</p>`;
+    }).join('');
+    document.getElementById('empathyText').innerHTML = empathyHtml;
+
+    const comparisonRows = {{comparisonRowsJson}};
+    const comparisonHtml = comparisonRows.map(row => `
+      <tr>
+        <td>${row.label}</td>
+        <td class="col-bankruptcy">${row.bad}</td>
+        <td class="col-settlement">${row.good}</td>
+      </tr>
+    `).join('');
+    document.getElementById('comparisonBody').innerHTML = comparisonHtml;
+
+    const faqItems = {{faqItemsJson}};
+    const faqHtml = faqItems.map(item => `
+      <div class="faq-item">
+        <div class="faq-question">${item.question}</div>
+        <div class="faq-answer">${item.answer}</div>
+      </div>
+    `).join('');
+    document.getElementById('faqGrid').innerHTML = faqHtml;
+
+    const testimonials = [
+      { initials: 'KT', name: 'KMJ Trucking, LLC', title: 'Trucking Company', text: "They were helpful, clear communication, effective results, empathetic towards the situation. I couldn't have asked for a better team to help my trucking company through this difficult time." },
+      { initials: 'AA', name: 'AAMCO Auburn', title: 'Auto Repair Shop', text: "Their team was very responsive and explained the process clearly. As an auto repair shop owner, I was overwhelmed with MCA debt. Coastal Debt gave me my life back." },
+      { initials: 'ES', name: 'Edward Sweeney', title: 'Business Owner', text: "I cannot thank Carlos enough for his guidance through this process. He has been amazing. When I thought bankruptcy was my only option, Coastal Debt showed me there was another way." },
+      { initials: 'DF', name: 'Danny Francis', title: 'Business Owner', text: "My experience with Coastal Debt has been great! My rep Julio has been there every step of the way. They truly care about helping business owners like me get back on their feet." },
+      { initials: 'AC', name: 'Arnie Creinin', title: 'Company Owner', text: "Simone did an outstanding job with our company. She was always true to her word and kept us informed throughout the entire process. Highly recommend!" },
+      { initials: 'TG', name: 'Tyler Geoffroy', title: 'Business Owner', text: "Zack and Natasha were the first people to truly explain everything in detail. After talking to so many people who just wanted my money, Coastal Debt actually helped me." }
+    ];
+    const testimonialsHtml = testimonials.map(t => `
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"${t.text}"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">${t.initials}</div>
+          <div class="author-info">
+            <h4>${t.name}</h4>
+            <p>${t.title}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('testimonialsGrid').innerHTML = testimonialsHtml;
+
+    const trustLogos = [
+      { src: '/lp/assets/trust-logos/bbb-accredited.png', alt: 'BBB Accredited Business', height: '50' },
+      { src: '/lp/assets/trust-logos/trustpilot.webp', alt: 'Trustpilot', height: '45' },
+      { src: '/lp/assets/trust-logos/forbes.svg', alt: 'Forbes', height: '28' },
+      { src: '/lp/assets/trust-logos/business-insider.svg', alt: 'Business Insider', height: '28' },
+      { src: '/lp/assets/trust-logos/bsi.webp', alt: 'BSI ISO 9001 Certified', height: '45' },
+      { src: '/lp/assets/trust-logos/featured-partner.webp', alt: 'ISO 9001:2015 Certified', height: '40' }
+    ];
+    const trustLogosHtml = trustLogos.map(logo => `<img src="${logo.src}" alt="${logo.alt}" height="${logo.height}">`).join('');
+    document.getElementById('trustLogos').innerHTML = trustLogosHtml;
+
+    // Render dynamic form fields (skip has_mca — handled by its own step)
+    const formFields = {{formFieldsJson}};
+    const formFieldsHtml = formFields.filter(field => field.name !== 'has_mca').map(field => {
+      if (field.type === 'radio') {
+        const options = (field.options || 'Yes,No').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label>${field.label}</label>
+            <div class="radio-group">
+              ${options.map((opt, i) => `
+                <label class="radio-label">
+                  <input type="radio" name="${field.name}" value="${opt.toLowerCase()}" ${field.required && i === 0 ? 'required' : ''}>
+                  <span>${opt}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else if (field.type === 'select') {
+        const options = (field.options || '').split(',').map(opt => opt.trim());
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <select id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}>
+              <option value="">Select...</option>
+              ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          </div>
+        `;
+      } else if (field.type === 'textarea') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <textarea id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''} rows="3" style="border-radius:10px;padding:12px 18px;width:100%;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.18);color:#fff;font-family:var(--sans);font-size:1rem;outline:none;"></textarea>
+          </div>
+        `;
+      } else if (field.type === 'hidden') {
+        // Skip if this hidden field already exists in the form (to avoid duplicates)
+        const existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
+        if (existingIds.includes(field.name)) return '';
+        return `<input type="hidden" name="${field.name}" value="${field.placeholder || ''}">`;
+      } else if (field.type === 'tel') {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <div class="phone-wrapper">
+              <span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>
+              <input type="tel" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || '(555) 123-4567'}" ${field.required ? 'required' : ''}>
+            </div>
+            <div class="phone-error" id="${field.name}_error">Please enter a valid 10-digit US phone number</div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="form-group">
+            <label for="${field.name}">${field.label}</label>
+            <input type="${field.type}" id="${field.name}" name="${field.name}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>
+          </div>
+        `;
+      }
+    }).join('');
+    document.getElementById('dynamicFormFields').innerHTML = formFieldsHtml;
+
+    // US phone validation: valid area code (2-9 first digit), 10 digits total
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      var areaCode = parseInt(digits.substring(0, 3));
+      if (digits[0] === '0' || digits[0] === '1') return false; // area codes start 2-9
+      if (digits[3] === '0' || digits[3] === '1') return false; // exchange starts 2-9
+      if (areaCode === 555) return false; // fictional
+      return true;
+    }
+
+    // Add phone formatting and validation
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        // Clear error on typing
+        var errEl = document.getElementById(e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // Funnel tracking helper — idempotent server-side per (visitor, step).
+    // Uses fetch+keepalive (sendBeacon with application/json gets rejected
+    // silently by some browsers).
+    function trackFunnelStep(step, value) {
+      try {
+        var eli = (document.getElementById('eli_clickid') || {}).value || '';
+        if (!eli) { console.warn('[funnel] no eli_clickid yet, skipping', step, value); return; }
+        var blob = JSON.stringify({ eli_clickid: eli, step: step, value: value });
+        fetch('/api/visitors/funnel-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: blob,
+          keepalive: true
+        }).catch(function(e) {
+          console.warn('[funnel] failed', step, e && e.message);
+        });
+      } catch (e) { console.warn('[funnel] threw', e && e.message); }
+    }
+
+    // Step 1: Auto-advance on debt amount selection
+    debtSelect.addEventListener('change', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) return;
+
+      trackFunnelStep('debt', debtValue);
+
+      setTimeout(function() {
+        step1.classList.remove('active');
+        if (debtValue === 'under-20000') {
+          stepSorry.classList.add('active');
+        } else {
+          document.getElementById('debt_amount_hidden').value = debtValue;
+          stepMca.classList.add('active');
+        }
+      }, 200);
+    });
+
+    // Step 2: MCA question — auto-advance on radio select
+    document.querySelectorAll('input[name="mca_check"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        const mcaValue = this.value;
+        trackFunnelStep('mca', mcaValue);
+        setTimeout(function() {
+          stepMca.classList.remove('active');
+          if (mcaValue === 'No') {
+            stepSorryMca.classList.add('active');
+          } else {
+            // Set has_mca hidden field in the form
+            var mcaHidden = document.getElementById('has_mca_hidden');
+            if (mcaHidden) mcaHidden.value = mcaValue;
+            step2.classList.add('active');
+          }
+        }, 200);
+      });
+    });
+
+    // Keep button as no-JS fallback
+    checkDebtBtn.addEventListener('click', function() {
+      const debtValue = debtSelect.value;
+      if (!debtValue) {
+        debtSelect.focus();
+        debtSelect.style.borderColor = '#dc2626';
+        setTimeout(() => debtSelect.style.borderColor = '', 2000);
+        return;
+      }
+      trackFunnelStep('debt', debtValue);
+      step1.classList.remove('active');
+      if (debtValue === 'under-20000') {
+        stepSorry.classList.add('active');
+      } else {
+        document.getElementById('debt_amount_hidden').value = debtValue;
+        stepMca.classList.add('active');
+      }
+    });
+
+    // Dedup flag to prevent double-submissions
+    var _formSubmitting = false;
+
+    // Form submission
+    document.getElementById('leadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      // Validate consent checkbox
+      var consentBox = document.getElementById('consentCheckbox');
+      var consentErr = document.getElementById('consentError');
+      if (!consentBox.checked) {
+        consentErr.style.display = 'block';
+        consentBox.focus();
+        return;
+      }
+      consentErr.style.display = 'none';
+
+      // Validate phone fields
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById(phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      _formSubmitting = true;
+      const btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+
+      // Always re-check rt_clickid at submit time from all sources
+      if (!data.rt_clickid) {
+        data.rt_clickid = getRtClickId();
+      }
+
+      try {
+        const response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          // Fire Facebook Pixel Lead event for deduplication with server-side CAPI
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          step2.classList.remove('active');
+          stepSuccess.classList.add('active');
+          document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Also show success on bottom form
+          var bf = document.getElementById('bottomLeadForm');
+          if (bf) bf.style.display = 'none';
+          var bs = document.getElementById('bottomFormSuccess');
+          if (bs) bs.style.display = 'block';
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formButton}}';
+      }
+    });
+    // ============= Bottom Form =============
+    // Render bottom form fields (same fields, skip has_mca)
+    var bottomFieldsHtml = formFields.filter(function(field) { return field.name !== 'has_mca'; }).map(function(field) {
+      if (field.type === 'radio') {
+        var options = (field.options || 'Yes,No').split(',').map(function(opt) { return opt.trim(); });
+        return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+          options.map(function(opt, i) {
+            return '<label class="radio-label"><input type="radio" name="bottom_' + field.name + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
+          }).join('') + '</div></div>';
+      } else if (field.type === 'hidden') {
+        var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url','debt_amount_hidden','has_mca'];
+        if (existingIds.includes(field.name)) return '';
+        return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+      } else if (field.type === 'tel') {
+        return '<div class="form-group"><label for="bottom_' + field.name + '">' + field.label + '</label>' +
+          '<div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>' +
+          '<input type="tel" id="bottom_' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div>' +
+          '<div class="phone-error" id="bottom_' + field.name + '_error">Please enter a valid 10-digit US phone number</div></div>';
+      } else {
+        return '<div class="form-group"><label for="bottom_' + field.name + '">' + field.label + '</label>' +
+          '<input type="' + field.type + '" id="bottom_' + field.name + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+      }
+    }).join('');
+    document.getElementById('bottomFormFields').innerHTML = bottomFieldsHtml;
+
+    // Set bottom form hidden fields
+    function setBottomHiddenFields() {
+      var eli = window._eliClickId || '';
+      document.querySelectorAll('.bottom-eli').forEach(function(f) { f.value = eli; });
+      document.querySelectorAll('.bottom-gclid').forEach(function(f) { f.value = document.getElementById('gclid') ? document.getElementById('gclid').value : ''; });
+      document.querySelectorAll('.bottom-msclkid').forEach(function(f) { f.value = document.getElementById('msclkid') ? document.getElementById('msclkid').value : ''; });
+      document.querySelectorAll('.bottom-fbclid').forEach(function(f) { f.value = document.getElementById('fbclid') ? document.getElementById('fbclid').value : ''; });
+      document.querySelectorAll('.bottom-rt').forEach(function(f) { f.value = document.getElementById('rt_clickid') ? document.getElementById('rt_clickid').value : ''; });
+      document.querySelectorAll('.bottom-rdt-cid').forEach(function(f) { f.value = document.getElementById('rdt_cid') ? document.getElementById('rdt_cid').value : ''; });
+      document.querySelectorAll('.bottom-keyword').forEach(function(f) { f.value = document.getElementById('keyword') ? document.getElementById('keyword').value : ''; });
+      ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'].forEach(function(p) {
+        document.querySelectorAll('.bottom-' + p.replace(/_/g, '-')).forEach(function(f) { f.value = document.getElementById(p) ? document.getElementById(p).value : ''; });
+      });
+      document.querySelectorAll('.bottom-visitor-ip').forEach(function(f) { f.value = window._visitorIp || (document.getElementById('visitor_ip') ? document.getElementById('visitor_ip').value : ''); });
+      document.querySelectorAll('.bottom-pageurl').forEach(function(f) { f.value = window.location.href; });
+      document.querySelectorAll('.bottom-referrer').forEach(function(f) { f.value = document.referrer || ''; });
+    }
+    setBottomHiddenFields();
+    setTimeout(setBottomHiddenFields, 3000);
+
+    // Phone formatting on bottom form
+    document.querySelectorAll('#bottomLeadForm input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        var errEl = document.getElementById('bottom_' + e.target.name + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // Bottom form submission
+    document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      var consentBox = document.getElementById('bottomConsentCheckbox');
+      var consentErr = document.getElementById('bottomConsentError');
+      if (!consentBox.checked) {
+        consentErr.style.display = 'block';
+        consentBox.focus();
+        return;
+      }
+      consentErr.style.display = 'none';
+
+      // Validate phone
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById('bottom_' + phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      // Refresh hidden fields before submit
+      setBottomHiddenFields();
+
+      _formSubmitting = true;
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = {};
+      formData.forEach(function(val, key) {
+        // Strip "bottom_" prefix from radio field names
+        var cleanKey = key.startsWith('bottom_') ? key.substring(7) : key;
+        data[cleanKey] = val;
+      });
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+
+      if (!data.rt_clickid) data.rt_clickid = getRtClickId();
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          document.getElementById('bottomLeadForm').style.display = 'none';
+          document.getElementById('bottomFormSuccess').style.display = 'block';
+          // Also show success on hero form
+          step2.classList.remove('active');
+          stepSuccess.classList.add('active');
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{ctaButton}}';
+      }
+    });
+
+    })(); // end IIFE
+  </script>
+
+  <!-- tkclid capture: read the tkclid cookie into a hidden field on every lead form -->
+  <script>
+  (function () {
+    function tkclidFromCookie() {
+      var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/);
+      if (!m) return '';
+      try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+    }
+    function fillTkclid() {
+      var v = tkclidFromCookie();
+      if (!v) return;
+      var forms = document.querySelectorAll('form');
+      for (var i = 0; i < forms.length; i++) {
+        var f = forms[i];
+        if ((f.getAttribute('action') || '').indexOf('/search') !== -1) continue;
+        var input = f.querySelector('input[name="tkclid"]');
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'tkclid';
+          f.appendChild(input);
+        }
+        input.value = v;
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fillTkclid);
+    } else {
+      fillTkclid();
+    }
+    document.addEventListener('submit', fillTkclid, true);
+  })();
+  </script>
+</body>
+</html>
