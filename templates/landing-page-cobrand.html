@@ -370,6 +370,15 @@
       .comparison-table{min-width:500px}
       .radio-group{flex-direction:column;gap:10px}
       .verdict-ribbon{font-size:0.7rem}
+      /* Mobile hero order: headline first, form right under it, then the rest */
+      .hero-grid{display:flex;flex-direction:column;gap:0}
+      .hero-content{display:contents}
+      .hero-eyebrow{order:1}
+      .hero-content h1{order:2}
+      .form-card{order:3;margin:6px auto 28px;width:100%;max-width:520px}
+      .hero-sub{order:4}
+      .hero-points{order:5}
+      .verdict-row{order:6}
     }
   </style>
 </head>
