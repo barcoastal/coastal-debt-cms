@@ -986,6 +986,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 					<h1 class="elementor-heading-title elementor-size-default">{{headline}} {{headlineLine2}} <span>{{headlineHighlight}}</span></h1>				</div>
 				</div>
 				</div>
+				<div class="elementor-element elementor-element-9e027b2 body-fnt cd-under-h1 elementor-widget elementor-widget-text-editor" data-id="9e027b2" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Register below by <span id="lpDate" class="text-color-blue">Wednesday, August 6 </span></p>								</div>
+				</div>
 		<div class="elementor-element elementor-element-b179fc0 e-con-full elementor-hidden-tablet elementor-hidden-mobile e-flex e-con e-child" data-id="b179fc0" data-element_type="container" data-e-type="container" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
 				<div class="elementor-element elementor-element-7f2e09a elementor-widget elementor-widget-image" data-id="7f2e09a" data-element_type="widget" data-e-type="widget" data-widget_type="image.default">
 				<div class="elementor-widget-container">
@@ -1002,10 +1006,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 				<div class="elementor-widget-container">
 									Small Businesses In <span id="lpState" class="text-color-blue" aria-live="polite">Your Area</span>
 Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text-color-blue"> (Only $20K+ MCA Debt Relief. No Loans or Other Debt).</span>								</div>
-				</div>
-				<div class="elementor-element elementor-element-9e027b2 body-fnt elementor-widget elementor-widget-text-editor" data-id="9e027b2" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
-				<div class="elementor-widget-container">
-									<p>Register below by <span id="lpDate" class="text-color-blue">Wednesday, August 6 </span></p>								</div>
 				</div>
 				<div class="elementor-element elementor-element-7d3d5a5 hme-lan-frm elementor-widget elementor-widget-shortcode" data-id="7d3d5a5" data-element_type="widget" data-e-type="widget" data-widget_type="shortcode.default">
 				<div class="elementor-widget-container">
@@ -1098,6 +1098,8 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 /* The consult section pulls itself up 72px over whatever precedes it; cancel that on all breakpoints so it cannot cover the trust bar */
 .elementor-element-4cf930c{margin-top:0!important}
 .cd-trustbar{position:relative;z-index:5}
+.cd-under-h1{margin-top:14px}
+.cd-under-h1 p{font-size:19px!important;color:#0f172a}
 </style>
 <section class="cd-trustbar">
   <div class="cd-trustbar-card">
@@ -2173,6 +2175,61 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 				</div>
 					</div>
 				</div>
+<!-- Free text box (edited via the Empathy title/text fields in the admin) -->
+<style>
+.cd-freetext{padding:30px 20px 10px}
+.cd-ft-card{max-width:980px;margin:0 auto;background:#F2F4F9;border-radius:22px;padding:44px 48px}
+.cd-ft-title{font-size:30px;font-weight:700;color:#0f172a;margin:0 0 18px;line-height:1.25;text-align:center}
+.cd-ft-body p{font-size:16.5px;line-height:1.75;color:#334155;margin:0 0 14px}
+.cd-ft-body p:last-child{margin-bottom:0}
+.cd-faq{padding:44px 20px 70px;max-width:860px;margin:0 auto}
+.cd-faq-title{font-size:30px;font-weight:700;color:#0f172a;text-align:center;margin:0 0 8px;line-height:1.25}
+.cd-faq-sub{font-size:16px;color:#64748b;text-align:center;margin:0 0 30px}
+.cd-faq-item{border-bottom:1px solid #e5e7eb}
+.cd-faq-item summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:19px 4px;font-size:17px;font-weight:600;color:#0f172a}
+.cd-faq-item summary::-webkit-details-marker{display:none}
+.cd-faq-ic{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#3052FF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;transition:transform 0.2s}
+.cd-faq-item[open] .cd-faq-ic{transform:rotate(45deg)}
+.cd-faq-a{padding:0 40px 20px 4px;font-size:15.5px;line-height:1.7;color:#475569}
+@media(max-width:768px){
+  .cd-ft-card{padding:30px 22px;border-radius:16px}
+  .cd-ft-title,.cd-faq-title{font-size:23px}
+  .cd-freetext{padding:20px 14px 4px}
+  .cd-faq{padding:34px 16px 50px}
+  .cd-under-h1 p{font-size:16px!important}
+}
+</style>
+<section class="cd-freetext" id="cdFreeText">
+  <div class="cd-ft-card">
+    <h2 class="cd-ft-title">{{empathyTitle}}</h2>
+    <div class="cd-ft-body" id="cdFtBody"></div>
+  </div>
+</section>
+<section class="cd-faq" id="cdFaq">
+  <h2 class="cd-faq-title">{{faqTitle}}</h2>
+  <p class="cd-faq-sub">{{faqSubtitle}}</p>
+  <div class="cd-faq-list" id="cdFaqList"></div>
+</section>
+<script>
+(function(){
+  try {
+    var paras = {{empathyTextJson}};
+    if (!paras || !paras.length) { document.getElementById('cdFreeText').style.display = 'none'; }
+    else {
+      document.getElementById('cdFtBody').innerHTML = paras.map(function(t){ return '<p>' + t + '</p>'; }).join('');
+    }
+  } catch(e) { document.getElementById('cdFreeText').style.display = 'none'; }
+  try {
+    var items = {{faqItemsJson}};
+    if (!items || !items.length) { document.getElementById('cdFaq').style.display = 'none'; }
+    else {
+      document.getElementById('cdFaqList').innerHTML = items.map(function(it){
+        return '<details class="cd-faq-item"><summary>' + it.question + '<span class="cd-faq-ic">+</span></summary><div class="cd-faq-a">' + it.answer + '</div></details>';
+      }).join('');
+    }
+  } catch(e) { document.getElementById('cdFaq').style.display = 'none'; }
+})();
+</script>
 		<div class="elementor-element elementor-element-4e4f31e e-flex e-con-boxed e-con e-parent" data-id="4e4f31e" data-element_type="container" data-e-type="container" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
 					<div class="e-con-inner">
 				<div class="elementor-element elementor-element-b0336a9 bld-fnt elementor-widget elementor-widget-heading" data-id="b0336a9" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
@@ -2212,6 +2269,8 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 		
 		
 			</div>
+
+
 
 	
 </main>
