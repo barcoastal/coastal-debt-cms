@@ -1053,18 +1053,18 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 				</div>
 <!-- Trust bar: white card on desktop, right-to-left marquee on mobile -->
 <style>
-.cd-trustbar{padding:34px 20px}
-.cd-trustbar-card{max-width:1240px;margin:0 auto;background:#fff;border-radius:28px;box-shadow:0 10px 40px rgba(15,23,42,0.07);padding:30px 44px;overflow:hidden}
-.cd-trustbar-track{display:flex;align-items:center;justify-content:space-between;gap:36px}
+.cd-trustbar{padding:6px 20px 48px;background:transparent}
+.cd-trustbar-card{max-width:1240px;margin:0 auto;background:transparent;border-radius:0;box-shadow:none;padding:0;overflow:hidden}
+.cd-trustbar-track{display:flex;align-items:center;justify-content:space-between;gap:36px;min-height:70px}
 .cd-trustbar-item{display:flex;align-items:center;gap:12px;flex-shrink:0;text-decoration:none}
 .cd-tb-bbb-img{height:52px!important;width:auto!important;max-width:none!important;display:block}
-.cd-tb-bbb-text{display:flex;flex-direction:column;line-height:1.3}
-.cd-tb-bbb-rating{font-size:15px;font-weight:700;color:#1c5b8a}
-.cd-tb-bbb-sub{font-size:11.5px;color:#1c5b8a}
-.cd-tb-bbb-link{font-size:11.5px;color:#1c5b8a;text-decoration:underline}
+.cd-tb-bbb-text{display:flex!important;flex-direction:column!important;gap:1px}
+.cd-tb-bbb-rating{font-size:15px!important;font-weight:700;color:#1c5b8a;line-height:1.35!important;display:block}
+.cd-tb-bbb-sub{font-size:11.5px!important;color:#1c5b8a;line-height:1.35!important;display:block}
+.cd-tb-bbb-link{font-size:11.5px!important;color:#1c5b8a;text-decoration:underline;line-height:1.35!important;display:block}
 .cd-tb-bsi{height:58px!important;width:auto!important;max-width:none!important;display:block}
-.cd-tb-google{display:flex;flex-direction:column;align-items:center;line-height:1.1}
-.cd-tb-google-word{font-size:30px;font-weight:500;font-family:Arial,sans-serif;letter-spacing:-1px}
+.cd-tb-google{display:flex!important;flex-direction:column!important;align-items:center;gap:2px}
+.cd-tb-google-word{font-size:30px!important;font-weight:500;font-family:Arial,sans-serif;letter-spacing:-1px;line-height:1.1!important;display:block}
 .cd-tb-google-word span:nth-child(1){color:#4285F4}
 .cd-tb-google-word span:nth-child(2){color:#EA4335}
 .cd-tb-google-word span:nth-child(3){color:#FBBC05}
@@ -1074,17 +1074,17 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
 .cd-tb-google-sub{display:flex;align-items:center;gap:5px;margin-top:2px}
 .cd-tb-google-sub .rv{font-size:14px;color:#5f6368;font-weight:500}
 .cd-tb-google-sub .st{color:#fbbc05;font-size:13px;letter-spacing:1px}
-.cd-tb-tp{display:flex;flex-direction:column;line-height:1.1}
-.cd-tb-tp-score{font-size:24px;font-weight:800;color:#191919}
+.cd-tb-tp{display:flex!important;flex-direction:column!important;gap:0}
+.cd-tb-tp-score{font-size:24px!important;font-weight:800;color:#191919;line-height:1.15!important;display:block}
 .cd-tb-tp-stars{display:flex;gap:2px;margin:3px 0 4px}
 .cd-tb-tp-stars span{width:19px;height:19px;background:#00B67A;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
-.cd-tb-tp-brand{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:#191919}
+.cd-tb-tp-brand{display:flex!important;align-items:center;gap:4px;font-size:14px!important;font-weight:600;color:#191919;line-height:1.3!important}
 .cd-tb-tp-brand .tps{color:#00B67A;font-size:16px}
 .cd-tb-iso{height:56px!important;width:auto!important;max-width:none!important;display:block}
 .cd-tb-bi{height:38px!important;width:auto!important;max-width:none!important;display:block}
 @media(max-width:768px){
-  .cd-trustbar{padding:22px 0}
-  .cd-trustbar-card{border-radius:0;padding:18px 0;box-shadow:0 6px 24px rgba(15,23,42,0.06)}
+  .cd-trustbar{padding:4px 0 30px}
+  .cd-trustbar-card{border-radius:0;padding:6px 0;box-shadow:none}
   .cd-trustbar-track{justify-content:flex-start;gap:0;width:max-content;animation:cdTbScroll 22s linear infinite}
   .cd-trustbar-item{margin-right:38px}
   .cd-tb-bbb-img{height:44px!important}
@@ -1095,6 +1095,9 @@ Discover if you qualify for our PROVEN MCA Debt Relief program.<span class="text
   .cd-tb-tp-score{font-size:20px}
 }
 @keyframes cdTbScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* The consult section pulls itself up 72px over whatever precedes it; cancel that on all breakpoints so it cannot cover the trust bar */
+.elementor-element-4cf930c{margin-top:0!important}
+.cd-trustbar{position:relative;z-index:1}
 </style>
 <section class="cd-trustbar">
   <div class="cd-trustbar-card">
