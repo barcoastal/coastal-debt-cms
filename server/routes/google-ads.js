@@ -233,7 +233,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
     console.log('API headers (redacted):', { ...headers, 'Authorization': 'Bearer ***', 'developer-token': '***' });
 
     // List accessible customers
-    const response = await fetch('https://googleads.googleapis.com/v20/customers:listAccessibleCustomers', {
+    const response = await fetch('https://googleads.googleapis.com/v22/customers:listAccessibleCustomers', {
       headers
     });
 
@@ -257,7 +257,7 @@ router.get('/accounts', authenticateToken, async (req, res) => {
 
     for (const customerId of customerIds) {
       try {
-        const detailRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}`, {
+        const detailRes = await fetch(`https://googleads.googleapis.com/v22/customers/${customerId}`, {
           headers
         });
         const detailText = await detailRes.text();
@@ -445,7 +445,7 @@ async function fetchGclidCost(gclid) {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -552,7 +552,7 @@ router.get('/diagnose', authenticateToken, async (req, res) => {
   checks.push({ step: 'MCC', status: mcc ? 'OK' : 'WARN', detail: 'login_customer_id: ' + (mcc || '(not set)') });
   checks.push({ step: 'Dev Token', status: 'INFO', detail: 'Using: ' + developerToken.substring(0, 6) + '...' });
 
-  const versions = ['v18', 'v17', 'v16', 'v20'];
+  const versions = ['v22', 'v21'];
   const configs = mcc
     ? [{ mcc, label: 'with MCC' }, { mcc: null, label: 'without MCC' }]
     : [{ mcc: null, label: 'no MCC' }];
@@ -624,7 +624,7 @@ async function ensureLoginCustomerId(config) {
     if (!developerToken) return null;
 
     const headers = getApiHeaders(accessToken, developerToken);
-    const response = await fetch('https://googleads.googleapis.com/v20/customers:listAccessibleCustomers', { headers });
+    const response = await fetch('https://googleads.googleapis.com/v22/customers:listAccessibleCustomers', { headers });
     const data = await response.json();
     const customerIds = (data.resourceNames || []).map(r => r.replace('customers/', ''));
 
@@ -633,7 +633,7 @@ async function ensureLoginCustomerId(config) {
     // First pass: look for a manager account by checking details
     for (const customerId of customerIds) {
       try {
-        const detailRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}`, { headers });
+        const detailRes = await fetch(`https://googleads.googleapis.com/v22/customers/${customerId}`, { headers });
         const detail = await detailRes.json();
         console.log(`MCC detection: account ${customerId} — manager=${detail.manager}, name=${detail.descriptiveName || 'N/A'}`);
         if (detail.manager) {
@@ -655,7 +655,7 @@ async function ensureLoginCustomerId(config) {
       try {
         const testHeaders = getApiHeaders(accessToken, developerToken, customerId);
         const testResponse = await fetch(
-          `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
+          `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:search`,
           {
             method: 'POST',
             headers: testHeaders,
@@ -711,7 +711,7 @@ async function fetchMissingCosts() {
 
     // First: test basic access with simplest possible query
     const testResponse = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:search`,
       {
         method: 'POST',
         headers,
@@ -742,7 +742,7 @@ async function fetchMissingCosts() {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:search`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:search`,
       {
         method: 'POST',
         headers,
@@ -882,7 +882,7 @@ async function uploadConversion(gclid, conversionAction, conversionTime, convers
     }
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}:uploadClickConversions`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}:uploadClickConversions`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -931,7 +931,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -980,7 +980,7 @@ router.get('/campaigns', authenticateToken, async (req, res) => {
     const query = `SELECT campaign.id, campaign.name, campaign.status FROM campaign ${whereClause} ORDER BY campaign.name`;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -1027,7 +1027,7 @@ router.get('/ad-groups', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -1086,7 +1086,7 @@ router.get('/quality-scores', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -1193,7 +1193,7 @@ router.get('/landing-page-stats', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -1275,7 +1275,7 @@ router.get('/ads-by-url', authenticateToken, async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers: getApiHeaders(accessToken, developerToken, config.login_customer_id),
@@ -1346,7 +1346,7 @@ router.post('/refresh-lp-metrics', authenticateToken, async (req, res) => {
     const developerToken = getDeveloperToken(config);
     if (!developerToken) return res.status(400).json({ error: 'Developer token not configured' });
     const headers = getApiHeaders(accessToken, developerToken, config.login_customer_id);
-    const url = `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`;
+    const url = `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`;
 
     const runQuery = async (query) => {
       const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ query }) });

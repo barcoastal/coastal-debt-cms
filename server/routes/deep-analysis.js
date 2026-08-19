@@ -611,7 +611,7 @@ async function runGadsQuery(query, accessToken, developerToken, customerId, logi
   const lid = loginCustomerId || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
   if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
   const r = await fetch(
-    `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:searchStream`,
+    `https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:searchStream`,
     { method: 'POST', headers, body: JSON.stringify({ query }) }
   );
   const d = await r.json();
@@ -754,7 +754,7 @@ async function gadsQuery(config, accessToken, developerToken, gaql) {
   const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
   if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
   const r = await fetch(
-    `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+    `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
     { method: 'POST', headers, body: JSON.stringify({ query: gaql }) }
   );
   const data = await r.json();
@@ -809,7 +809,7 @@ router.post('/deep-sync', authenticateToken, async (req, res) => {
     };
     const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
     if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
-    const url = `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`;
+    const url = `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`;
 
     const runQuery = async (gaql) => {
       const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ query: gaql }) });
@@ -1404,7 +1404,7 @@ router.get('/conversion-actions', authenticateToken, async (req, res) => {
     const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
     if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
     const r = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       {
         method: 'POST',
         headers,
@@ -1489,7 +1489,7 @@ router.get('/gads-test', authenticateToken, async (req, res) => {
     const lid = config.login_customer_id || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
     if (lid) headers['login-customer-id'] = String(lid).replace(/-/g, '');
     const r = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${config.customer_id}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v22/customers/${config.customer_id}/googleAds:searchStream`,
       { method: 'POST', headers, body: JSON.stringify({ query: gaql }) }
     );
     const data = await r.json();

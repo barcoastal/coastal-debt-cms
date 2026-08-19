@@ -771,7 +771,7 @@ router.get('/real-ad-spend', authenticateToken, async (req, res) => {
         }
 
         const gaqlQuery = `SELECT metrics.cost_micros FROM customer ${dateFilter}`;
-        const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+        const gRes = await fetch(`https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ query: gaqlQuery, pageSize: 1 })
@@ -1028,7 +1028,7 @@ router.get('/google-ads/impression-share', authenticateToken, async (req, res) =
     const gaql = `SELECT campaign.name, campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share, metrics.top_impression_percentage, metrics.absolute_top_impression_percentage, metrics.search_exact_match_impression_share FROM campaign WHERE campaign.status = 'ENABLED'${dateClause}`;
 
     console.log('[Competition IS] GAQL:', gaql);
-    const gRes = await fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+    const gRes = await fetch(`https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`, {
       method: 'POST', headers, body: JSON.stringify({ query: gaql })
     });
     const gData = await gRes.json();
@@ -1439,7 +1439,7 @@ router.get('/google-ads/quality-scores', authenticateToken, async (req, res) => 
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'developer-token': devToken, 'Content-Type': 'application/json' };
     if (lid) headers['login-customer-id'] = lid.replace(/-/g, '');
 
-    const apiUrl = `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`;
+    const apiUrl = `https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`;
 
     // Query 1: QS snapshot (no date filter, uses ad_group_criterion resource directly)
     const qsGaql = `SELECT ad_group.name, ad_group_criterion.keyword.text, ad_group_criterion.quality_info.quality_score, ad_group_criterion.quality_info.creative_quality_score, ad_group_criterion.quality_info.post_click_quality_score, ad_group_criterion.quality_info.search_predicted_ctr FROM ad_group_criterion WHERE ad_group_criterion.type = 'KEYWORD' AND ad_group_criterion.status = 'ENABLED' AND campaign.status = 'ENABLED'`;
@@ -1673,16 +1673,16 @@ router.get('/google-ads/search-terms', authenticateToken, async (req, res) => {
     console.log('[Competition ST conv] GAQL:', convGaql);
 
     const fetches = [
-      fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      fetch(`https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`, {
         method: 'POST', headers, body: JSON.stringify({ query: gaql })
       }),
-      fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      fetch(`https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`, {
         method: 'POST', headers, body: JSON.stringify({ query: convGaql })
       })
     ];
     // Only fetch campaign list if not already filtering by campaign
     if (!campaign) {
-      fetches.push(fetch(`https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:search`, {
+      fetches.push(fetch(`https://googleads.googleapis.com/v22/customers/${customerId}/googleAds:search`, {
         method: 'POST', headers, body: JSON.stringify({ query: campaignGaql })
       }));
     }
