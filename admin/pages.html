@@ -581,6 +581,12 @@
                 </select>
               </div>
             </div>
+            <!-- Join V2: Page Sections editor (order + texts, mirrors the live page top-to-bottom) -->
+            <div id="j2SectionsPanel" style="display:none;margin:16px 0;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;background:#fafbfe;">
+              <div style="font-weight:700;margin-bottom:2px;">Page Sections</div>
+              <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Same order as the live page. Move sections with the arrows, edit their texts in place. The hero stays on top.</div>
+              <div id="j2SectionsList"></div>
+            </div>
             <div class="form-group">
               <label>Display Phone Number</label>
               <input type="text" id="editPhone" placeholder="(888) 555-0123">
@@ -1731,6 +1737,113 @@
       }
     }
 
+    // ===== Join V2 Page Sections editor =====
+    const J2_SECTIONS = [
+      { key: 'trustbar', label: 'Trust Icons Bar', fields: [] },
+      { key: 'consult', label: 'Book a Free Consultation', fields: [
+        { k: 'j2ConsultTitle', label: 'Title', type: 'input' },
+        { k: 'j2ConsultText', label: 'Text', type: 'textarea', br: true },
+        { k: 'j2ConsultButton', label: 'Button', type: 'input' } ] },
+      { key: 'keepopen', label: 'Keep Your Business Open', fields: [
+        { k: 'j2KeepTitle', label: 'Title', type: 'input' } ] },
+      { key: 'numbers', label: 'Our Numbers (settlement results)', fields: [
+        { k: 'j2NumbersTitle1', label: 'Title line 1', type: 'input' },
+        { k: 'j2NumbersTitle2', label: 'Title line 2', type: 'input' },
+        { k: 'j2NumbersText1', label: 'Subtitle line 1', type: 'input' },
+        { k: 'j2NumbersText2', label: 'Subtitle line 2', type: 'input' } ] },
+      { key: 'seewhat', label: 'See What We Can Do (dark band)', fields: [
+        { k: 'j2SeewhatTitle', label: 'Title', type: 'input' },
+        { k: 'j2SeewhatButton', label: 'Button', type: 'input' } ] },
+      { key: 'clients', label: 'Client Testimonials', fields: [
+        { k: 'j2ClientsTitle1', label: 'Title line 1', type: 'input' },
+        { k: 'j2ClientsTitle2', label: 'Title line 2', type: 'input' } ] },
+      { key: 'howitworks', label: 'How It Works', fields: [
+        { k: 'j2HowTitle', label: 'Title', type: 'input' },
+        { k: 'j2HowText1', label: 'Paragraph 1', type: 'textarea' },
+        { k: 'j2HowText2', label: 'Paragraph 2', type: 'textarea' },
+        { k: 'j2HowButton', label: 'Button', type: 'input' } ] },
+      { key: 'easy123', label: 'Easy as 1,2,3 (steps)', fields: [
+        { k: 'j2EasyTitleA', label: 'Title line 1', type: 'input' },
+        { k: 'j2EasyTitleB', label: 'Title line 2', type: 'input' } ] },
+      { key: 'freetext', label: 'Free Text Box', note: 'Text is edited in the Empathy section further down (title + paragraphs). Empty text hides the box.', fields: [] },
+      { key: 'faq', label: 'FAQ', note: 'Content is edited in the FAQ section further down (title, subtitle, items). No items hides the section.', fields: [] },
+      { key: 'finalcta', label: 'Final CTA (blue band)', fields: [
+        { k: 'j2CtaTitle1', label: 'Title line 1', type: 'input' },
+        { k: 'j2CtaTitle2', label: 'Title line 2', type: 'input' },
+        { k: 'j2CtaButton', label: 'Button', type: 'input' } ] }
+    ];
+    const J2_DEFAULT_ORDER = J2_SECTIONS.map(sec => sec.key);
+    let _j2Order = [...J2_DEFAULT_ORDER];
+    let _j2Values = {};
+
+    function _loadJ2Sections(templateType, content) {
+      const panel = document.getElementById('j2SectionsPanel');
+      if (!panel) return;
+      if (templateType !== 'join-v2') { panel.style.display = 'none'; return; }
+      const saved = Array.isArray(content.j2SectionOrder) ? content.j2SectionOrder : [];
+      _j2Order = saved.length
+        ? [...saved.filter(k => J2_DEFAULT_ORDER.includes(k)), ...J2_DEFAULT_ORDER.filter(k => !saved.includes(k))]
+        : [...J2_DEFAULT_ORDER];
+      _j2Values = {};
+      J2_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+        let v = content[f.k];
+        if (v === undefined || v === null) v = '';
+        if (f.br) v = String(v).replace(/<br\s*\/?>/g, '\n');
+        _j2Values[f.k] = v;
+      }));
+      panel.style.display = 'block';
+      _renderJ2Sections();
+    }
+
+    function _renderJ2Sections() {
+      document.querySelectorAll('#j2SectionsList [data-j2key]').forEach(el => { _j2Values[el.dataset.j2key] = el.value; });
+      const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      const list = document.getElementById('j2SectionsList');
+      list.innerHTML = _j2Order.map((key, idx) => {
+        const sec = J2_SECTIONS.find(x => x.key === key);
+        if (!sec) return '';
+        const fieldsHtml = sec.fields.map(f => {
+          const val = _j2Values[f.k] !== undefined ? _j2Values[f.k] : '';
+          if (f.type === 'textarea') {
+            return '<div class="form-group" style="margin:8px 0;"><label style="font-size:12px;">' + f.label + '</label><textarea data-j2key="' + f.k + '" rows="2" style="width:100%;">' + esc(val) + '</textarea></div>';
+          }
+          return '<div class="form-group" style="margin:8px 0;"><label style="font-size:12px;">' + f.label + '</label><input type="text" data-j2key="' + f.k + '" value="' + esc(val) + '" style="width:100%;"></div>';
+        }).join('');
+        const note = sec.note ? '<div style="font-size:12px;color:#6b7280;font-style:italic;margin-top:4px;">' + sec.note + '</div>' : '';
+        return '<div style="border:1px solid #e5e7eb;border-radius:8px;background:#fff;margin-bottom:10px;padding:12px 14px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+          '<div style="font-weight:600;">' + (idx + 1) + '. ' + sec.label + '</div>' +
+          '<div style="display:flex;gap:6px;">' +
+          '<button type="button" onclick="j2Move(' + idx + ',-1)"' + (idx === 0 ? ' disabled' : '') + ' style="padding:4px 10px;cursor:pointer;">&#9650;</button>' +
+          '<button type="button" onclick="j2Move(' + idx + ',1)"' + (idx === _j2Order.length - 1 ? ' disabled' : '') + ' style="padding:4px 10px;cursor:pointer;">&#9660;</button>' +
+          '</div></div>' + note + fieldsHtml + '</div>';
+      }).join('');
+    }
+
+    function j2Move(idx, dir) {
+      const t = idx + dir;
+      if (t < 0 || t >= _j2Order.length) return;
+      [_j2Order[idx], _j2Order[t]] = [_j2Order[t], _j2Order[idx]];
+      _renderJ2Sections();
+    }
+
+    function _applyJ2Sections(content) {
+      if (document.getElementById('editTemplateType').value !== 'join-v2') return;
+      document.querySelectorAll('#j2SectionsList [data-j2key]').forEach(el => { _j2Values[el.dataset.j2key] = el.value; });
+      content.j2SectionOrder = [..._j2Order];
+      J2_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+        let v = _j2Values[f.k];
+        if (v === undefined) return;
+        if (f.br) v = String(v).replace(/\n/g, '<br />');
+        content[f.k] = v;
+      }));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const tt = document.getElementById('editTemplateType');
+      if (tt) tt.addEventListener('change', function() { _loadJ2Sections(tt.value, currentEditContent || {}); });
+    });
+
     async function editPage(id) {
       await loadFormsForSelect('editFormId');
       const res = await fetch(`/api/pages/${id}`);
@@ -1750,6 +1863,7 @@
       document.getElementById('editFormId').value = page.form_id || '';
       document.getElementById('editPhone').value = content.phone || '';
       document.getElementById('editMobileCta').value = content.mobileCta || 'call';
+      _loadJ2Sections(page.template_type || 'form', content);
       document.getElementById('editActive').checked = page.is_active;
 
       // Google Ads folder dropdowns (cascading)
@@ -1887,6 +2001,8 @@
         ctaSubtitle: document.getElementById('editCtaSubtitle').value,
         ctaButton: document.getElementById('editCtaButton').value
       };
+
+      _applyJ2Sections(content);
 
       const data = {
         name: document.getElementById('editName').value,

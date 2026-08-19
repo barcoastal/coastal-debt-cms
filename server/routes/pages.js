@@ -38,6 +38,32 @@ setTimeout(() => {
 }, 0);
 
 // Default form fields
+// Join V2 section texts (titles/paragraphs/buttons). Edited per page via the
+// Page Sections editor; j2SectionOrder in page content controls section order.
+const defaultContentJoinV2 = {
+  j2ConsultTitle: 'Book a free consultation',
+  j2ConsultText: 'Business owners are always busy.<br />Book a time at your convenience to speak to an expert Debt Settlement Advisor.<br />Our signature confidential consultation will help determine the ideal<br />solution for your business and best of all - it\'s free!',
+  j2ConsultButton: 'Start Now',
+  j2KeepTitle: 'Keep Your Business Open',
+  j2NumbersTitle1: 'Our Numbers',
+  j2NumbersTitle2: 'Speak for Themselves',
+  j2NumbersText1: 'Proven results for real businesses.',
+  j2NumbersText2: 'See what Coastal Debt can do for you.',
+  j2SeewhatTitle: 'See What we can do for you',
+  j2SeewhatButton: 'Free Consultation',
+  j2ClientsTitle1: 'What our clients',
+  j2ClientsTitle2: 'are saying',
+  j2HowTitle: 'How It Works',
+  j2HowText1: 'We\'ve perfected our proven process to get over 1,000 businesses out of MCA debt.',
+  j2HowText2: 'We craft customized solutions for each client to get the best results.',
+  j2HowButton: 'Free Consultation',
+  j2EasyTitleA: 'Getting Out of MCA',
+  j2EasyTitleB: 'Debt is as Easy as 1,2,3',
+  j2CtaTitle1: 'Get Out Of MCA',
+  j2CtaTitle2: 'Debt For Good',
+  j2CtaButton: 'get started'
+};
+
 const defaultFormFields = [
   { name: 'has_mca', label: 'Do you have MCA (Merchant Cash Advance) debt?', type: 'radio', required: true, options: 'Yes,No' },
   { name: 'company_name', label: 'Company Name', type: 'text', required: true, placeholder: 'Your Company Name' },
@@ -704,6 +730,7 @@ router.get('/:id', authenticateToken, (req, res) => {
       page.template_type === 'authority' ? defaultContentAuthority :
       page.template_type === 'pdf' ? defaultContentPdf :
       page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
+      page.template_type === 'join-v2' ? { ...defaultContent, ...defaultContentJoinV2 } :
       defaultContent;
     page.content = { ...defaults, ...saved, colors: { ...(defaults.colors || {}), ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
@@ -1388,6 +1415,7 @@ function generateLandingPage(pageId) {
     page.template_type === 'authority' ? defaultContentAuthority :
     page.template_type === 'pdf' ? defaultContentPdf :
     page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
+    page.template_type === 'join-v2' ? { ...defaultContent, ...defaultContentJoinV2 } :
     defaultContent;
   const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
@@ -1557,6 +1585,27 @@ function generateLandingPage(pageId) {
   }
 
   // Create the page directory and save
+  // Join V2: reorder page sections per content.j2SectionOrder.
+  // Blocks are delimited by <!-- J2SECTION:key --> markers in the template;
+  // unknown/missing keys keep their template position at the end.
+  if (page.template_type === 'join-v2' && Array.isArray(content.j2SectionOrder) && content.j2SectionOrder.length) {
+    const j2re = /<!-- J2SECTION:([a-z0-9]+) -->[\s\S]*?<!-- \/J2SECTION:\1 -->/g;
+    const j2blocks = {};
+    const j2templateOrder = [];
+    let j2m;
+    while ((j2m = j2re.exec(html)) !== null) {
+      j2blocks[j2m[1]] = j2m[0];
+      j2templateOrder.push(j2m[1]);
+    }
+    if (j2templateOrder.length) {
+      const wanted = content.j2SectionOrder.filter(k => j2blocks[k]);
+      const finalOrder = [...wanted, ...j2templateOrder.filter(k => !wanted.includes(k))];
+      const firstKey = j2templateOrder[0];
+      html = html.replace(j2re, (match, key) => key === firstKey ? '<!--J2SLOT-->' : '');
+      html = html.replace('<!--J2SLOT-->', finalOrder.map(k => j2blocks[k]).join('\n'));
+    }
+  }
+
   const pageDir = path.join(__dirname, '..', '..', 'public', page.slug);
   if (!fs.existsSync(pageDir)) {
     fs.mkdirSync(pageDir, { recursive: true });
