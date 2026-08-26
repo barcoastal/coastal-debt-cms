@@ -1772,6 +1772,32 @@
         { k: 'j2CtaTitle2', label: 'Title line 2', type: 'input' },
         { k: 'j2CtaButton', label: 'Button', type: 'input' } ] }
     ];
+    // Default texts, mirrored from defaultContentJoinV2 in pages.js.
+    // Empty saved values fall back to these so the editor always shows the live text
+    // and saving never blanks the page.
+    const J2_FIELD_DEFAULTS = {
+      j2ConsultTitle: 'Book a free consultation',
+      j2ConsultText: 'Business owners are always busy.\nBook a time at your convenience to speak to an expert Debt Settlement Advisor.\nOur signature confidential consultation will help determine the ideal\nsolution for your business and best of all - it\'s free!',
+      j2ConsultButton: 'Start Now',
+      j2KeepTitle: 'Keep Your Business Open',
+      j2NumbersTitle1: 'Our Numbers',
+      j2NumbersTitle2: 'Speak for Themselves',
+      j2NumbersText1: 'Proven results for real businesses.',
+      j2NumbersText2: 'See what Coastal Debt can do for you.',
+      j2SeewhatTitle: 'See What we can do for you',
+      j2SeewhatButton: 'Free Consultation',
+      j2ClientsTitle1: 'What our clients',
+      j2ClientsTitle2: 'are saying',
+      j2HowTitle: 'How It Works',
+      j2HowText1: 'We\'ve perfected our proven process to get over 1,000 businesses out of MCA debt.',
+      j2HowText2: 'We craft customized solutions for each client to get the best results.',
+      j2HowButton: 'Free Consultation',
+      j2EasyTitleA: 'Getting Out of MCA',
+      j2EasyTitleB: 'Debt is as Easy as 1,2,3',
+      j2CtaTitle1: 'Get Out Of MCA',
+      j2CtaTitle2: 'Debt For Good',
+      j2CtaButton: 'get started'
+    };
     const J2_DEFAULT_ORDER = J2_SECTIONS.map(sec => sec.key);
     let _j2Order = [...J2_DEFAULT_ORDER];
     let _j2Values = {};
@@ -1787,8 +1813,11 @@
       _j2Values = {};
       J2_SECTIONS.forEach(sec => sec.fields.forEach(f => {
         let v = content[f.k];
-        if (v === undefined || v === null) v = '';
-        if (f.br) v = String(v).replace(/<br\s*\/?>/g, '\n');
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+          if (f.br) v = String(v).replace(/<br\s*\/?>/g, '\n');
+        } else {
+          v = J2_FIELD_DEFAULTS[f.k] || '';
+        }
         _j2Values[f.k] = v;
       }));
       panel.style.display = 'block';

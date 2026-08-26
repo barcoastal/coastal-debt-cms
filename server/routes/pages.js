@@ -1420,6 +1420,9 @@ function generateLandingPage(pageId) {
   const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
     if (value !== null && value !== undefined) {
+      // Join V2 section texts: an empty string would blank the section on the
+      // live page, so treat empty as "use the default text" instead.
+      if (key.startsWith('j2') && typeof value === 'string' && value.trim() === '') return;
       mergedContent[key] = value;
     }
   });
