@@ -61,7 +61,9 @@ const defaultContentJoinV2 = {
   j2EasyTitleB: 'Debt is as Easy as 1,2,3',
   j2CtaTitle1: 'Get Out Of MCA',
   j2CtaTitle2: 'Debt For Good',
-  j2CtaButton: 'get started'
+  j2CtaButton: 'get started',
+  j2IndTitleA: 'No Matter Your Business,',
+  j2IndTitleB: "We've Got You Covered"
 };
 
 const defaultFormFields = [
