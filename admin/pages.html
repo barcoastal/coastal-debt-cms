@@ -1812,9 +1812,20 @@
       if (!panel) return;
       if (templateType !== 'join-v2') { panel.style.display = 'none'; return; }
       const saved = Array.isArray(content.j2SectionOrder) ? content.j2SectionOrder : [];
-      _j2Order = saved.length
-        ? [...saved.filter(k => J2_DEFAULT_ORDER.includes(k)), ...J2_DEFAULT_ORDER.filter(k => !saved.includes(k))]
-        : [...J2_DEFAULT_ORDER];
+      if (saved.length) {
+        _j2Order = saved.filter(k => J2_DEFAULT_ORDER.includes(k));
+        J2_DEFAULT_ORDER.forEach((k, i) => {
+          if (_j2Order.includes(k)) return;
+          let insertAt = 0;
+          for (let j = i - 1; j >= 0; j--) {
+            const idx = _j2Order.indexOf(J2_DEFAULT_ORDER[j]);
+            if (idx !== -1) { insertAt = idx + 1; break; }
+          }
+          _j2Order.splice(insertAt, 0, k);
+        });
+      } else {
+        _j2Order = [...J2_DEFAULT_ORDER];
+      }
       _j2Values = {};
       J2_SECTIONS.forEach(sec => sec.fields.forEach(f => {
         let v = content[f.k];

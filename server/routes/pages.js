@@ -1604,7 +1604,18 @@ function generateLandingPage(pageId) {
     }
     if (j2templateOrder.length) {
       const wanted = content.j2SectionOrder.filter(k => j2blocks[k]);
-      const finalOrder = [...wanted, ...j2templateOrder.filter(k => !wanted.includes(k))];
+      // Sections missing from the saved order (added after the page was last
+      // saved) slot in at their default template position, not at the end.
+      const finalOrder = [...wanted];
+      j2templateOrder.forEach((k, i) => {
+        if (finalOrder.includes(k)) return;
+        let insertAt = 0;
+        for (let j = i - 1; j >= 0; j--) {
+          const idx = finalOrder.indexOf(j2templateOrder[j]);
+          if (idx !== -1) { insertAt = idx + 1; break; }
+        }
+        finalOrder.splice(insertAt, 0, k);
+      });
       const firstKey = j2templateOrder[0];
       html = html.replace(j2re, (match, key) => key === firstKey ? '<!--J2SLOT-->' : '');
       html = html.replace('<!--J2SLOT-->', finalOrder.map(k => j2blocks[k]).join('\n'));
