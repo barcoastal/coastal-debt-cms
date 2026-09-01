@@ -1708,6 +1708,24 @@ router.post('/regenerate-all', authenticateToken, (req, res) => {
   if (fixed > 0) console.log(`[Pages] Fixed em-dashes in ${fixed} landing pages and regenerated`);
 })();
 
+// ============ Regenerate all pages on boot ============
+// Templates deploy via git but generated pages are static snapshots; without
+// this, every template change needed a manual Save/regenerate per page.
+// Runs shortly after startup so the server binds its port first.
+setTimeout(() => {
+  try {
+    const pages = db.prepare('SELECT id, slug FROM landing_pages').all();
+    let ok = 0;
+    for (const page of pages) {
+      try { generateLandingPage(page.id); ok++; }
+      catch (err) { console.error(`[boot-regen] failed for ${page.slug}:`, err.message); }
+    }
+    console.log(`[boot-regen] Regenerated ${ok}/${pages.length} landing pages from current templates`);
+  } catch (err) {
+    console.error('[boot-regen] error:', err.message);
+  }
+}, 5000);
+
 // Export the generate function
 module.exports = router;
 module.exports.generateLandingPage = generateLandingPage;
