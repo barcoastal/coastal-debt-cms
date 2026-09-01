@@ -1171,6 +1171,7 @@
             ${page.gads_ad_group_id ? `<button style="background:linear-gradient(135deg,#f59e0b 0%,#7c3aed 100%);color:#fff;" onclick="regenAiFromFolder(${page.id}, this)" title="Regenerate AI content using this ad group's top-QS keywords">🤖 Regen</button>` : ''}
             <button style="background:#fef3c7;color:#92400e;" onclick="showLinkCampaign(${page.id})" title="Link to Google Ads campaign / ad group">Link</button>
             <button style="background:#ede9fe;color:#7c3aed" onclick="showAbTest(${page.id})">A/B</button>
+            <button style="background:#e0f2fe;color:#0369a1" onclick="duplicatePage(${page.id})" title="Duplicate this page (copies content, template, form, webhook)">Dup</button>
           </div>
         </div>`;
     }
