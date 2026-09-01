@@ -2591,8 +2591,18 @@ async function handleJoinSubmit(e) {
       if (!m) return '';
       try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
     }
+    // Priority: ?tkclid= URL param (referral site's Trakkit id, persisted) >
+    // stored referral id > this domain's own tkclid cookie.
+    function tkclidValue() {
+      var p = '';
+      try { p = new URLSearchParams(window.location.search).get('tkclid') || ''; } catch (e) {}
+      if (p) { try { localStorage.setItem('_ref_tkclid', p); } catch (e) {} return p; }
+      var s = '';
+      try { s = localStorage.getItem('_ref_tkclid') || ''; } catch (e) {}
+      return s || tkclidFromCookie();
+    }
     function fillTkclid() {
-      var v = tkclidFromCookie();
+      var v = tkclidValue();
       if (!v) return;
       var forms = document.querySelectorAll('form');
       for (var i = 0; i < forms.length; i++) {
