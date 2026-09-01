@@ -258,6 +258,7 @@ router.post('/', async (req, res) => {
         affiliate_id: hiddenFields.affiliate_id || '',
         affiliate_label: hiddenFields.affiliate_label || '',
         tkclid: hiddenFields.tkclid || '',
+        affiliate_tkclid: hiddenFields.affiliate_tkclid || '',
         traffic_source: sourceEntity.traffic_source,
         landing_page: sourceEntity.name,
         source_type: article ? 'article' : 'landing_page',

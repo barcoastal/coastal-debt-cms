@@ -968,7 +968,7 @@
     })();
   </script>
 
-  <!-- tkclid capture: read the tkclid cookie into a hidden field on every lead form -->
+  <!-- tkclid capture: tkclid = this page's own Trakkit cookie; affiliate_tkclid = the referral site's Trakkit id from ?tkclid= (persisted) -->
   <script>
   (function () {
     function tkclidFromCookie() {
@@ -976,31 +976,32 @@
       if (!m) return '';
       try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
     }
-    // Priority: ?tkclid= URL param (referral site's Trakkit id, persisted) >
-    // stored referral id > this domain's own tkclid cookie.
-    function tkclidValue() {
+    function refTkclid() {
       var p = '';
       try { p = new URLSearchParams(window.location.search).get('tkclid') || ''; } catch (e) {}
       if (p) { try { localStorage.setItem('_ref_tkclid', p); } catch (e) {} return p; }
-      var s = '';
-      try { s = localStorage.getItem('_ref_tkclid') || ''; } catch (e) {}
-      return s || tkclidFromCookie();
+      try { return localStorage.getItem('_ref_tkclid') || ''; } catch (e) { return ''; }
+    }
+    function setHidden(f, name, v) {
+      if (!v) return;
+      var input = f.querySelector('input[name="' + name + '"]');
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        f.appendChild(input);
+      }
+      input.value = v;
     }
     function fillTkclid() {
-      var v = tkclidValue();
-      if (!v) return;
+      var own = tkclidFromCookie();
+      var ref = refTkclid();
       var forms = document.querySelectorAll('form');
       for (var i = 0; i < forms.length; i++) {
         var f = forms[i];
         if ((f.getAttribute('action') || '').indexOf('/search') !== -1) continue;
-        var input = f.querySelector('input[name="tkclid"]');
-        if (!input) {
-          input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = 'tkclid';
-          f.appendChild(input);
-        }
-        input.value = v;
+        setHidden(f, 'tkclid', own);
+        setHidden(f, 'affiliate_tkclid', ref);
       }
     }
     if (document.readyState === 'loading') {
