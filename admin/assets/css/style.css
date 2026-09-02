@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 * {
   margin: 0;
   padding: 0;
@@ -26,7 +27,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--gray-100);
   color: var(--gray-800);
   line-height: 1.5;
@@ -1133,3 +1134,11 @@ textarea:focus {
 .act-ab    { background: #ede9fe; color: #7c3aed; }
 .act-dup   { background: #e0f2fe; color: #0369a1; }
 .act-del   { background: #fee2e2; color: #b91c1c; }
+
+/* ===== Header toolbar normalization ===== */
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.page-header h1 { letter-spacing: -0.02em; }
+.page-header .btn, .page-header button.gads-refresh-btn {
+  width: auto; height: 36px; padding: 0 16px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px;
+}

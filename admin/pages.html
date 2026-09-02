@@ -120,6 +120,27 @@
     .folder-adgroup-name { font-size: 13px; font-weight: 600; color: #334155; flex: 1; }
     .folder-adgroup-stats { display: flex; gap: 10px; font-size: 11px; color: #64748b; }
 
+
+    /* Redesign: segmented view toggle */
+    .view-toggle { display: inline-flex; background: #eef1f6; border-radius: 9px; padding: 3px; }
+    .view-toggle button { border: none; background: transparent; padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; }
+    .view-toggle button.active { background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(15,23,42,0.12); }
+    .gads-refresh-btn { background: #eef1f6; color: #0f172a; border: none; cursor: pointer; }
+    .gads-refresh-btn:hover { background: #e2e8f0; }
+    /* Cleaner page rows */
+    .lp-card { background: #fff; border: 1px solid #eef1f6; border-radius: 10px; padding: 12px 14px; margin: 6px 8px 6px 22px; }
+    .lp-card:hover { border-color: #d7ddea; box-shadow: 0 3px 14px rgba(15,23,42,0.05); }
+    .lp-name { font-size: 13.5px; font-weight: 650; color: #0f172a; }
+    .lp-slug a, .lp-slug { font-size: 11.5px; color: #94a3b8; }
+    /* Overflow action menu */
+    .act-wrap { position: relative; display: inline-flex; }
+    .act-more { background: #f1f5f9; color: #475569; }
+    .act-menu { display: none; position: absolute; right: 0; top: 32px; z-index: 50; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 12px 34px rgba(15,23,42,0.16); padding: 5px; min-width: 150px; }
+    .act-wrap.open .act-menu { display: block; }
+    .act-menu button { display: flex; width: 100%; height: 30px; padding: 0 10px; border: none; background: transparent; border-radius: 7px; font-size: 12.5px; font-weight: 550; color: #1e293b; cursor: pointer; align-items: center; gap: 8px; font-family: inherit; text-align: left; }
+    .act-menu button:hover { background: #f1f5f9; }
+    .act-menu button.danger { color: #b91c1c; }
+    .act-menu button.danger:hover { background: #fee2e2; }
     .lp-card { display: grid; grid-template-columns: minmax(220px,1.6fr) 1fr 1fr 1.4fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #f1f5f9; border-radius: 8px; margin: 6px 8px 6px 26px; background: #fafafa; }
     .lp-card:hover { background: #f8fafc; border-color: #e2e8f0; }
     .lp-name { font-size: 13px; font-weight: 600; color: #1e293b; }
@@ -1169,9 +1190,13 @@
             <a href="/lp/${page.slug}/" target="_blank" class="act-view">View</a>
             <button class="act-edit" onclick="editPage(${page.id})">Edit</button>
             ${page.gads_ad_group_id ? `<button class="act-ai" onclick="regenAiFromFolder(${page.id}, this)" title="Regenerate AI content using this ad group's top-QS keywords">🤖 Regen</button>` : ''}
-            <button class="act-link" onclick="showLinkCampaign(${page.id})" title="Link to Google Ads campaign / ad group">Link</button>
-            <button class="act-ab" onclick="showAbTest(${page.id})">A/B</button>
-            <button class="act-dup" onclick="duplicatePage(${page.id})" title="Duplicate this page (copies content, template, form, webhook)">Dup</button>
+            <span class="act-wrap"><button class="act-more" onclick="toggleActMenu(event, this)" title="More actions">&#8943;</button>
+              <div class="act-menu">
+                <button onclick="showLinkCampaign(${page.id})">Link to campaign</button>
+                <button onclick="showAbTest(${page.id})">A/B test</button>
+                <button onclick="duplicatePage(${page.id})">Duplicate</button>
+              </div>
+            </span>
           </div>
         </div>`;
     }
@@ -1547,9 +1572,13 @@
                 <button class="act-stats" onclick="showPageStats(${page.id})" title="View clicks and leads">Stats</button>
                 <a href="/lp/${page.slug}/" target="_blank" class="act-view">View</a>
                 <button class="act-edit" onclick="editPage(${page.id})">Edit</button>
-                <button class="act-ab" onclick="showAbTest(${page.id})">A/B</button>
-                <button class="act-dup" onclick="duplicatePage(${page.id})">Dup</button>
-                <button class="act-del" onclick="deletePage(${page.id})">Del</button>
+                <span class="act-wrap"><button class="act-more" onclick="toggleActMenu(event, this)" title="More actions">&#8943;</button>
+                  <div class="act-menu">
+                    <button onclick="showAbTest(${page.id})">A/B test</button>
+                    <button onclick="duplicatePage(${page.id})">Duplicate</button>
+                    <button class="danger" onclick="deletePage(${page.id})">Delete</button>
+                  </div>
+                </span>
               </div>
             </td>
           </tr>
@@ -1896,6 +1925,18 @@
     document.addEventListener('DOMContentLoaded', function() {
       const tt = document.getElementById('editTemplateType');
       if (tt) tt.addEventListener('change', function() { _loadJ2Sections(tt.value, currentEditContent || {}); });
+    });
+
+    // Overflow action menu (one open at a time; click-away closes)
+    function toggleActMenu(e, btn) {
+      e.stopPropagation();
+      const wrap = btn.closest('.act-wrap');
+      const was = wrap.classList.contains('open');
+      document.querySelectorAll('.act-wrap.open').forEach(w => w.classList.remove('open'));
+      if (!was) wrap.classList.add('open');
+    }
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.act-wrap.open').forEach(w => w.classList.remove('open'));
     });
 
     async function editPage(id) {
