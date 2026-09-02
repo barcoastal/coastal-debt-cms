@@ -453,3 +453,129 @@ function initClock() {
 // Run auth check and clock on page load
 checkAuth();
 initClock();
+
+// ===== Global quick finder (Cmd/Ctrl+K on every admin screen) =====
+// Searches landing pages by name/slug (jumps straight into the edit dialog)
+// and admin screens by name. One consistent way to find anything.
+(function () {
+  const QF_SCREENS = [
+    ['Dashboard', 'index.html'], ['Landing Pages', 'pages.html'], ['Leads', 'leads.html'],
+    ['Affiliate Leads', 'affiliate-leads.html'], ['Forms', 'forms.html'], ['Articles', 'articles.html'],
+    ['Campaigns', 'campaigns.html'], ['Conversions', 'conversions.html'], ['Visitors', 'visitors.html'],
+    ['Calls', 'calls.html'], ['Pipeline', 'pipeline.html'], ['Inbox', 'inbox.html'],
+    ['Engagement', 'engagement.html'], ['Google Ads', 'google-ads.html'], ['Bing Ads', 'bing-ads.html'],
+    ['Meta Ads', 'meta-ads.html'], ['TikTok', 'tiktok.html'], ['Reddit', 'reddit.html'],
+    ['Outbrain', 'outbrain.html'], ['Organic Traffic', 'organic.html'], ['Deep Analysis', 'deep-analysis.html'],
+    ['RedTrack', 'redtrack.html'], ['Google Sheet', 'google-sheet.html'], ['Email Campaigns', 'email-campaigns.html'],
+    ['Email Templates', 'email-templates.html'], ['Email Segments', 'email-segments.html'],
+    ['Ad Generator', 'ad-generator.html'], ['UTM Builder', 'utm-builder.html'], ['Scripts', 'scripts.html'],
+    ['Users', 'users.html'], ['Settings', 'settings.html'], ['Platform Settings', 'platform-settings.html']
+  ];
+  let qfPages = null;
+  let qfSel = 0;
+  let qfItems = [];
+
+  async function qfLoadPages() {
+    if (qfPages) return qfPages;
+    try {
+      const res = await fetch('/api/pages');
+      const data = await res.json();
+      qfPages = (Array.isArray(data) ? data : []).map(p => ({ id: p.id, name: p.name || '', slug: p.slug || '' }));
+    } catch (e) { qfPages = []; }
+    return qfPages;
+  }
+
+  function qfEnsureDom() {
+    if (document.getElementById('qfOverlay')) return;
+    const el = document.createElement('div');
+    el.id = 'qfOverlay';
+    el.innerHTML = '<div class="qf-box">' +
+      '<input id="qfInput" type="text" placeholder="Find a landing page or screen..." autocomplete="off">' +
+      '<div id="qfResults"></div>' +
+      '<div class="qf-hint">&#8593;&#8595; navigate &middot; Enter open &middot; Esc close</div>' +
+      '</div>';
+    document.body.appendChild(el);
+    el.addEventListener('mousedown', function (e) { if (e.target === el) qfClose(); });
+    document.getElementById('qfInput').addEventListener('input', function () { qfRender(this.value); });
+    document.getElementById('qfInput').addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); qfMove(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); qfMove(-1); }
+      else if (e.key === 'Enter') { e.preventDefault(); qfGo(); }
+    });
+  }
+
+  function qfMove(d) {
+    if (!qfItems.length) return;
+    qfSel = (qfSel + d + qfItems.length) % qfItems.length;
+    const rows = document.querySelectorAll('.qf-item');
+    rows.forEach((r, i) => r.classList.toggle('sel', i === qfSel));
+    if (rows[qfSel]) rows[qfSel].scrollIntoView({ block: 'nearest' });
+  }
+
+  function qfGo() {
+    const it = qfItems[qfSel];
+    if (it) window.location.href = it.href;
+  }
+
+  function qfRender(q) {
+    const box = document.getElementById('qfResults');
+    q = (q || '').toLowerCase().trim();
+    const pages = (qfPages || [])
+      .filter(p => !q || p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+      .slice(0, 8)
+      .map(p => ({ label: p.name, sub: '/lp/' + p.slug + '/', href: 'pages.html?edit=' + p.id, kind: 'Page' }));
+    const screens = QF_SCREENS
+      .filter(s => !q || s[0].toLowerCase().includes(q))
+      .slice(0, q ? 5 : 3)
+      .map(s => ({ label: s[0], sub: 'screen', href: s[1], kind: 'Screen' }));
+    qfItems = pages.concat(screens);
+    qfSel = 0;
+    box.innerHTML = qfItems.length
+      ? qfItems.map((it, i) =>
+          '<div class="qf-item' + (i === 0 ? ' sel' : '') + '" data-i="' + i + '">' +
+          '<span class="qf-kind ' + (it.kind === 'Page' ? 'qf-kind-page' : 'qf-kind-screen') + '">' + it.kind + '</span>' +
+          '<span class="qf-label">' + escapeHtml(it.label) + '</span>' +
+          '<span class="qf-sub">' + escapeHtml(it.sub) + '</span></div>'
+        ).join('')
+      : '<div class="qf-empty">Nothing found</div>';
+    box.querySelectorAll('.qf-item').forEach(r => {
+      r.addEventListener('click', function () { qfSel = parseInt(this.dataset.i); qfGo(); });
+      r.addEventListener('mousemove', function () {
+        qfSel = parseInt(this.dataset.i);
+        box.querySelectorAll('.qf-item').forEach((x, i) => x.classList.toggle('sel', i === qfSel));
+      });
+    });
+  }
+
+  window.openQuickFinder = async function () {
+    qfEnsureDom();
+    document.getElementById('qfOverlay').classList.add('open');
+    const input = document.getElementById('qfInput');
+    input.value = '';
+    qfRender('');
+    input.focus();
+    await qfLoadPages();
+    qfRender(input.value);
+  };
+  function qfClose() {
+    const el = document.getElementById('qfOverlay');
+    if (el) el.classList.remove('open');
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') { e.preventDefault(); openQuickFinder(); }
+    else if (e.key === 'Escape') qfClose();
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const nav = document.querySelector('.sidebar-nav');
+    if (nav && !document.getElementById('qfNavBtn')) {
+      const btn = document.createElement('button');
+      btn.id = 'qfNavBtn';
+      btn.type = 'button';
+      btn.innerHTML = '<span>&#128269; Find page...</span><kbd>&#8984;K</kbd>';
+      btn.addEventListener('click', function () { openQuickFinder(); });
+      nav.insertBefore(btn, nav.firstChild);
+    }
+  });
+})();
