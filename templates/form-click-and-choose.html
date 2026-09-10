@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coastal Debt — Click &amp; Choose (multi-step pre-qual)</title>
+{{HEAD_SCRIPTS}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Aeonik is the brand font (loaded live). Hanken Grotesk is a close free stand-in for this preview. -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#3052FF;--blue-dark:#1e3ad6;--blue-deep:#001AB3;--blue-light:#7FB2FF;
+    --cyan:#F2F4F9;--orange:#FF9000;--ink:#101828;--navy:#1a2340;--muted:#5b6472;
+    --line:#dfe4ee;--white:#fff;
+    --font:"Aeonik","Hanken Grotesk",-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{overflow-x:hidden;max-width:100%}
+  body{font-family:var(--font);color:var(--ink);background:#eef1f7;-webkit-font-smoothing:antialiased}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 40px;background:#fff}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo .chev{color:var(--blue);display:flex}
+  .logo .chev svg{width:30px;height:30px}
+  .logo .name{font-weight:800;font-size:22px;letter-spacing:-.01em;color:#0b1220;line-height:1}
+  .logo .name small{display:block;font-weight:600;font-size:9px;letter-spacing:.34em;color:#8a93a6;margin-top:3px}
+  .topbar .tel{font-size:24px;font-weight:700;color:var(--blue);text-decoration:none;white-space:nowrap}
+
+  /* layout */
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,600px);background:#eef1f7}
+  .hero{position:relative;overflow:hidden;min-height:680px;background:linear-gradient(160deg,#eaf0ff,#dfe7fb);display:flex;flex-direction:column;justify-content:flex-end}
+  .hero .bigchev{position:absolute;top:12%;left:-6%;width:70%;opacity:.5;color:#b9caf7}
+  .hero .bigchev svg{width:100%;height:auto}
+  .hero .people{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9fb2e6;font-size:13px;font-weight:600}
+  .hero .trustbar{position:relative;margin:0 22px 22px;background:#fff;border-radius:14px;box-shadow:0 12px 30px -14px rgba(16,24,40,.4);display:flex;align-items:center;gap:16px;padding:12px 16px;z-index:2}
+  .hero .trustbar .seal{width:40px;height:26px;background:#0b3d6b;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:10px}
+  .hero .trustbar small{display:block;font-size:9px;color:#5b6472;line-height:1.2}
+  .hero .trustbar b{font-size:12px;color:#101828}
+  .hero .trustbar a{font-size:10px;color:var(--blue);text-decoration:underline}
+  .hero .trustbar .sep{width:1px;height:34px;background:#e6e9f0}
+  .hero .trustbar .g{font-weight:700;font-size:13px}
+  .hero .trustbar .stars{color:#ff9000;font-size:11px;letter-spacing:1px}
+
+  .formcol{background:#eef1f7;display:flex;align-items:flex-start;justify-content:center;padding:34px 30px 44px}
+
+  /* card */
+  .card{width:100%;max-width:540px;background:#fff;border-radius:26px;box-shadow:0 30px 60px -24px rgba(16,24,40,.35);padding:28px 34px 30px;animation:cardIn .6s cubic-bezier(.16,1,.3,1) both}
+  @keyframes cardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+  .brushwrap{display:flex;justify-content:center;margin-bottom:18px}
+  .brush{display:inline-block;background:var(--blue);color:#fff;font-weight:700;font-size:15px;text-align:center;padding:10px 24px;border-radius:100px;max-width:100%;box-shadow:0 8px 18px -8px rgba(48,82,255,.5)}
+
+  /* progress */
+  .progress{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .pbar{flex:1;height:8px;background:#eef1f7;border-radius:100px;overflow:hidden}
+  .pfill{height:100%;width:33.33%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:100px;transition:width .35s cubic-bezier(.16,1,.3,1)}
+  .pstep{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;letter-spacing:.02em}
+
+  .steptitle{font-size:30px;line-height:1.14;font-weight:800;letter-spacing:-.025em;color:#0b1220;margin-bottom:6px}
+  .stepsub{font-size:14.5px;color:var(--muted);line-height:1.45;margin-bottom:20px}
+
+  /* steps */
+  .step{display:none;animation:stepIn .4s cubic-bezier(.16,1,.3,1) both}
+  .step.active{display:block}
+  @keyframes stepIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+
+  /* benefits (step 1) */
+  .benefits{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:22px}
+  .benefits li{display:flex;gap:11px;align-items:flex-start;font-size:15px;line-height:1.4;color:#3a4351}
+  .benefits li .ck{flex-shrink:0;width:20px;height:20px;color:var(--blue);margin-top:1px}
+  .benefits li b{color:#0b1220;font-weight:700}
+
+  /* big yes/no */
+  .yesno{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .bigopt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:1.6px solid var(--line);border-radius:16px;padding:24px 14px;background:#fff;transition:all .16s ease;user-select:none;font-weight:700;font-size:17px;color:var(--navy)}
+  .bigopt:hover{border-color:var(--blue);box-shadow:0 10px 22px -12px rgba(48,82,255,.5);transform:translateY(-2px)}
+  .bigopt .ic{width:34px;height:34px;color:var(--blue)}
+
+  /* choice tiles (step 2) */
+  .qlabelrow{margin-bottom:14px}
+  .choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:22px}
+  .choice{position:relative;display:flex;align-items:center;gap:12px;cursor:pointer;border:1.6px solid var(--line);border-radius:14px;padding:16px 15px;background:#fff;transition:all .16s ease;user-select:none}
+  .choice:hover{border-color:var(--blue-light);box-shadow:0 6px 16px -10px rgba(48,82,255,.4)}
+  .choice .box{flex-shrink:0;width:24px;height:24px;border:2px solid #c4ccdb;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .16s ease;background:#fff}
+  .choice .box svg{width:15px;height:15px;color:#fff;opacity:0;transform:scale(.5);transition:all .16s ease}
+  .choice .txt{font-size:16px;font-weight:700;color:#1a2340;line-height:1.2;min-width:0;overflow-wrap:anywhere}
+  .choice input{position:absolute;opacity:0;pointer-events:none}
+  .choice.on{background:var(--blue);border-color:var(--blue);box-shadow:0 10px 22px -10px rgba(48,82,255,.6)}
+  .choice.on .txt{color:#fff}
+  .choice.on .box{background:#fff;border-color:#fff}
+  .choice.on .box svg{color:var(--blue);opacity:1;transform:scale(1)}
+  .choice--wide{grid-column:1 / -1}
+
+  /* not-qualified screen */
+  .dq{text-align:center;padding:8px 4px 4px}
+  .dq .dqicon{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;background:rgba(255,144,0,.12);display:flex;align-items:center;justify-content:center;color:var(--orange)}
+  .dq .dqicon svg{width:32px;height:32px}
+  .dq h2{font-size:26px;font-weight:800;letter-spacing:-.02em;color:#0b1220;margin-bottom:12px;line-height:1.15}
+  .dq p{font-size:15px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+  .dq .dqcall{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-size:15px;font-weight:700;color:var(--blue);text-decoration:none}
+  .dq .dqcall svg{width:18px;height:18px}
+  .dq .startover{margin-top:20px;border:1.6px solid var(--line);background:#fff;cursor:pointer;padding:12px 22px;border-radius:100px;font-family:var(--font);font-size:14px;font-weight:700;color:var(--muted);transition:all .16s}
+  .dq .startover:hover{border-color:var(--blue-light);color:var(--blue)}
+
+  /* contact fields (step 3) */
+  .field{margin-bottom:13px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .field label{display:block;font-size:12px;font-weight:600;color:#39424f;margin:0 0 6px 2px}
+  .field label .req{color:var(--orange);margin-left:2px}
+  .ctrl{position:relative;display:flex;align-items:center}
+  .ctrl .ic{position:absolute;left:13px;width:18px;height:18px;color:#98a2b3;pointer-events:none;transition:color .2s}
+  .ctrl input{width:100%;font-family:var(--font);font-size:15px;color:var(--ink);background:#f8f9fc;border:1.5px solid var(--line);border-radius:12px;padding:13px 13px 13px 40px;outline:none;transition:border-color .18s,background .18s,box-shadow .18s}
+  .ctrl input::placeholder{color:#a4adba}
+  .ctrl input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(48,82,255,.13)}
+  .ctrl:focus-within .ic{color:var(--blue)}
+
+  .consent{display:flex;gap:10px;align-items:flex-start;margin:14px 0 16px}
+  .consent input{margin-top:1px;width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:var(--blue)}
+  .consent label{font-size:10.5px;color:#7a8494;line-height:1.55}
+  .consent a{color:var(--blue);text-decoration:underline}
+
+  /* buttons */
+  .actions{display:flex;align-items:center;gap:12px}
+  .cta{position:relative;flex:1;border:none;cursor:pointer;overflow:hidden;font-family:var(--font);font-size:18px;font-weight:800;letter-spacing:.03em;color:#fff;text-transform:uppercase;padding:18px;border-radius:100px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));box-shadow:0 16px 30px -10px rgba(48,82,255,.6);display:flex;align-items:center;justify-content:center;gap:11px;transition:transform .16s,box-shadow .16s,filter .16s}
+  .cta::after{content:"";position:absolute;top:0;left:-120%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg)}
+  .cta:hover{transform:translateY(-2px);box-shadow:0 22px 38px -10px rgba(48,82,255,.65);filter:saturate(1.06)}
+  .cta:hover::after{animation:sheen .95s ease forwards}
+  @keyframes sheen{to{left:130%}}
+  .cta:active{transform:translateY(0)}
+  .cta .arrow{width:19px;height:19px;transition:transform .18s}
+  .cta:hover .arrow{transform:translateX(5px)}
+  .back{flex-shrink:0;border:1.6px solid var(--line);background:#fff;cursor:pointer;width:54px;height:54px;border-radius:100px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .16s}
+  .back:hover{border-color:var(--blue-light);color:var(--blue)}
+  .back svg{width:20px;height:20px}
+  .back--solo{width:auto;height:auto;padding:10px 18px;gap:8px;font-family:var(--font);font-size:14px;font-weight:700}
+
+  .safe{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;font-size:13.5px;color:#5b6472;font-weight:500;text-align:center}
+  .safe svg{width:15px;height:15px;color:var(--orange);flex-shrink:0}
+
+  /* mobile */
+  .m-trust{display:none}
+  @media (max-width:900px){
+    .topbar{padding:14px 18px}
+    .topbar .tel{font-size:19px}
+    .logo .name{font-size:18px}
+    .wrap{grid-template-columns:1fr}
+    .hero{display:none}
+    .formcol{padding:20px 14px 30px}
+    .card{padding:24px 20px 26px;border-radius:22px}
+    .steptitle{font-size:25px}
+    .m-trust{display:flex;align-items:center;justify-content:center;gap:16px;background:#fff;margin:0 14px 20px;border-radius:14px;padding:14px 16px;box-shadow:0 10px 24px -14px rgba(16,24,40,.35)}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo">
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5l7 7-7 7M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="name">Coastal Debt<small>RESOLVE</small></div>
+    </div>
+    <a class="tel" href="tel:{{phoneDigits}}">{{phone}}</a>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="bigchev"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5l7 7-7 7M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="people">Hero image</div>
+      <div class="trustbar">
+        <span class="seal">BBB</span>
+        <div><small>BBB Rating: A+</small><b>Accredited</b><a href="#">Click for Profile</a></div>
+        <span class="sep"></span>
+        <div><span class="g">Google</span><br><span class="stars">★★★★★</span></div>
+      </div>
+    </div>
+
+    <div class="formcol">
+      <form id="leadForm" class="card" onsubmit="return handleJoinSubmit(event)">
+        <!-- hidden tracking + captured answers -->
+        <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+        <input type="hidden" id="gclid" name="gclid" value="">
+        <input type="hidden" id="msclkid" name="msclkid" value="">
+        <input type="hidden" id="fbclid" name="fbclid" value="">
+        <input type="hidden" id="rt_clickid" name="rt_clickid" value="">
+        <input type="hidden" id="rdt_cid" name="rdt_cid" value="">
+        <input type="hidden" id="eli_clickid" name="eli_clickid" value="">
+        <input type="hidden" id="keyword" name="keyword" value="">
+        <input type="hidden" id="fb_campaign_id" name="fb_campaign_id" value="">
+        <input type="hidden" id="fb_adset_id" name="fb_adset_id" value="">
+        <input type="hidden" id="fb_ad_id" name="fb_ad_id" value="">
+        <input type="hidden" id="fb_campaign_name" name="fb_campaign_name" value="">
+        <input type="hidden" id="fb_adset_name" name="fb_adset_name" value="">
+        <input type="hidden" id="fb_ad_name" name="fb_ad_name" value="">
+        <input type="hidden" id="fb_placement" name="fb_placement" value="">
+        <input type="hidden" id="visitor_ip" name="visitor_ip" value="">
+        <input type="hidden" id="page_url" name="page_url" value="">
+        <input type="hidden" id="referrer_url" name="referrer_url" value="">
+        {{HIDDEN_FIELDS}}
+        <input type="hidden" id="multiple_mca" name="multiple_mca" value="">
+        <input type="hidden" id="debt_amount" name="debt_amount" value="">
+
+        <div class="brushwrap"><span class="brush">Check Your Business Debt Relief Eligibility</span></div>
+
+        <div class="progress">
+          <div class="pbar"><div class="pfill" id="pfill"></div></div>
+          <span class="pstep" id="pstep">Step 1 of 3</span>
+        </div>
+
+        <!-- STEP 1 : multiple MCA -->
+        <section class="step active" data-step="1">
+          <h2 class="steptitle">Do you have more than one MCA?</h2>
+          <p class="stepsub">Find out how much you can save on your MCA &amp; business debt. Takes under 60 seconds, no credit impact.</p>
+          <div class="yesno">
+            <div class="bigopt" data-val="yes">
+              <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Yes
+            </div>
+            <div class="bigopt" data-val="no">
+              <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              No, just one
+            </div>
+          </div>
+          <ul class="benefits" style="margin-top:22px;margin-bottom:0">
+            <li><svg class="ck" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Up to 60% Reduction</b> – Lower your total MCA balance</span></li>
+            <li><svg class="ck" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>No Credit Impact</b> – 100% safe &amp; confidential</span></li>
+            <li><svg class="ck" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>24-48 Hour Relief</b> – Stop daily bank withdrawals fast</span></li>
+          </ul>
+        </section>
+
+        <!-- STEP 2 : how much -->
+        <section class="step" data-step="2">
+          <h2 class="steptitle">How much debt does your business have?</h2>
+          <p class="stepsub">Pick the range that's closest. An MCA Specialist will use this to estimate your savings.</p>
+          <div class="choices" id="choices">
+            <label class="choice choice--wide" data-val="under_20k" data-dq="1"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Under $20,000</span></label>
+            <label class="choice" data-val="20k_50k"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$20,000 – $50,000</span></label>
+            <label class="choice" data-val="50k_100k"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$50,000 – $100,000</span></label>
+            <label class="choice" data-val="100k_250k"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$100,000 – $250,000</span></label>
+            <label class="choice" data-val="250k_500k"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$250,000 – $500,000</span></label>
+            <label class="choice" data-val="500k_1m"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$500,000 – $1,000,000</span></label>
+            <label class="choice" data-val="1m_plus"><span class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">$1,000,000 +</span></label>
+          </div>
+          <button type="button" class="back back--solo" data-back aria-label="Back"><svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button>
+        </section>
+
+        <!-- STEP 3 : contact -->
+        <section class="step" data-step="3">
+          <h2 class="steptitle">Where should we send your savings estimate?</h2>
+          <p class="stepsub">You're one step away. An MCA Specialist will reach out with your options.</p>
+          <div class="row2">
+            <div class="field"><label>First name<span class="req">*</span></label><div class="ctrl">
+              <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input type="text" name="first_name" placeholder="John"></div></div>
+            <div class="field"><label>Last name<span class="req">*</span></label><div class="ctrl">
+              <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input type="text" name="last_name" placeholder="Carter"></div></div>
+          </div>
+          <div class="field"><label>Email address<span class="req">*</span></label><div class="ctrl">
+            <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M3 7l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <input type="email" name="email" placeholder="john@company.com"></div></div>
+          <div class="field"><label>Phone number<span class="req">*</span></label><div class="ctrl">
+            <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 005 5L19 13l2 5v3a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <input type="tel" name="phone" placeholder="(555) 123-4567"></div></div>
+          <div class="field"><label>Business name<span class="req">*</span></label><div class="ctrl">
+            <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M4 20V8l8-4 8 4v12M4 20h16M9 20v-5h6v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <input type="text" name="company_name" placeholder="Carter Logistics LLC"></div></div>
+          <div class="consent">
+            <input type="checkbox" id="consentCb">
+            <label for="consentCb">By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and data rates may apply. Message frequency varies. You can unsubscribe anytime. See our <a href="#">Privacy Policy</a> and <a href="#">Terms of Use</a>.</label>
+          </div>
+          <div class="actions">
+            <button type="button" class="back" data-back aria-label="Back"><svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button type="submit" class="cta">See my savings options<svg class="arrow" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </section>
+
+        <!-- NOT QUALIFIED (under $20k) -->
+        <section class="step" data-step="dq">
+          <div class="dq">
+            <div class="dqicon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <h2>You may not qualify just yet</h2>
+            <p>Our program is built for businesses with <b>multiple MCAs</b> or <b>$20,000+</b> in debt. Based on what you shared, it doesn't look like the right fit right now.</p>
+            <p>If your balance grows or your situation changes, we're here to help.</p>
+            <a class="dqcall" href="tel:{{phoneDigits}}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 005 5L19 13l2 5v3a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Questions? Call {{phone}}</a>
+          </div>
+        </section>
+
+        <div class="safe" id="safeLine">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1112 0v2M5 10h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Safe &amp; Secure. An MCA Specialist will analyze your eligibility
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="m-trust">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:40px;height:26px;background:#0b3d6b;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:10px">BBB</span>
+      <div><div style="font-size:9px;color:#5b6472">BBB Rating: A+</div><b style="font-size:12px">Accredited</b></div>
+    </div>
+    <span style="width:1px;height:30px;background:#e6e9f0"></span>
+    <div style="display:flex;flex-direction:column"><span style="font-weight:700;font-size:13px">Google</span><span style="color:#ff9000;font-size:11px;letter-spacing:1px">★★★★★</span></div>
+  </div>
+
+<script>
+  (function(){
+    var TOTAL = 3, current = 1;
+    var pfill = document.getElementById('pfill');
+    var pstep = document.getElementById('pstep');
+    var progress = document.querySelector('.progress');
+    var safeLine = document.getElementById('safeLine');
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+
+    function show(n){
+      // n can be a number (1-3) or 'dq' for the not-qualified screen
+      var isDq = (n === 'dq');
+      if(!isDq){ current = Math.max(1, Math.min(TOTAL, n)); }
+      steps.forEach(function(s){ s.classList.toggle('active', s.dataset.step === String(isDq ? 'dq' : current)); });
+      // hide chrome on the not-qualified screen
+      progress.style.display = isDq ? 'none' : 'flex';
+      if(safeLine) safeLine.style.display = isDq ? 'none' : 'flex';
+      if(!isDq){
+        pfill.style.width = (current/TOTAL*100) + '%';
+        pstep.textContent = 'Step ' + current + ' of ' + TOTAL;
+      }
+      try{ document.querySelector('.card').scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+    }
+
+    // Step 1: yes/no auto-advance — "no" (single MCA) disqualifies
+    document.querySelectorAll('.bigopt').forEach(function(opt){
+      opt.addEventListener('click', function(){
+        document.getElementById('multiple_mca').value = opt.dataset.val;
+        document.querySelectorAll('.bigopt').forEach(function(o){ o.style.borderColor=''; });
+        opt.style.borderColor = 'var(--blue)';
+        var dq = (opt.dataset.val === 'no');
+        setTimeout(function(){ show(dq ? 'dq' : 2); }, 180);
+      });
+    });
+
+    // Step 2: pick a debt tile → auto-advance (under $20k disqualifies)
+    var choices = document.getElementById('choices');
+    var hidden = document.getElementById('debt_amount');
+    choices.addEventListener('click', function(e){
+      var lbl = e.target.closest('.choice'); if(!lbl) return;
+      choices.querySelectorAll('.choice').forEach(function(c){ c.classList.remove('on'); });
+      lbl.classList.add('on');
+      hidden.value = lbl.dataset.val;
+      var dq = (lbl.dataset.dq === '1');
+      setTimeout(function(){ show(dq ? 'dq' : 3); }, 220);
+    });
+
+    // Back buttons
+    document.querySelectorAll('[data-back]').forEach(function(b){
+      b.addEventListener('click', function(){ show(current-1); });
+    });
+
+    window.__gotoStep = show;
+  })();
+
+  // ============= URL Params & Hidden Fields (populate tracking) =============
+  (function() {
+    function getCookie(name){var c={};document.cookie.split(';').forEach(function(x){var p=x.trim().split('=');if(p.length>=2)c[p[0].trim()]=p.slice(1).join('=').trim();});var v=c[name];if(v){try{return decodeURIComponent(v);}catch(e){return v;}}return '';}
+    function getStored(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+    function setStored(k,v){try{if(v)localStorage.setItem(k,v);}catch(e){}}
+    var _p = new URLSearchParams(window.location.search);
+
+    var gclid = _p.get('gclid') || getStored('_gclid') || getCookie('_gcl_aw');
+    if (gclid) { if (gclid.startsWith('GCL.')) { var parts = gclid.split('.'); gclid = parts[parts.length - 1]; } setStored('_gclid', gclid); var g = document.getElementById('gclid'); if (g) g.value = gclid; }
+
+    var msclkid = _p.get('msclkid') || getStored('_msclkid') || '';
+    if (msclkid) { setStored('_msclkid', msclkid); var m = document.getElementById('msclkid'); if (m) m.value = msclkid; }
+
+    var fbclid = _p.get('fbclid') || getStored('_fbclid') || '';
+    if (fbclid) { setStored('_fbclid', fbclid); var fb = document.getElementById('fbclid'); if (fb) fb.value = fbclid; }
+
+    var keyword = _p.get('keyword') || '';
+    if (!keyword) { var ut = _p.get('utm_term') || ''; if (ut && !/^\d+$/.test(ut)) keyword = ut; }
+    keyword = keyword || getStored('_keyword') || '';
+    if (keyword) { setStored('_keyword', keyword); var kw = document.getElementById('keyword'); if (kw) kw.value = keyword; }
+
+    var metaParams = ['fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement'];
+    var metaAltNames = { fb_campaign_id:['campaign_id','c_id','sub6','utm_id'], fb_adset_id:['adset_id','as_id','sub5','utm_content'], fb_ad_id:['ad_id','sub4','utm_term'], fb_campaign_name:['campaign_name','c_name','utm_campaign'], fb_adset_name:['adset_name','as_name'], fb_ad_name:['ad_name','sub2'], fb_placement:['placement','sub7'] };
+    metaParams.forEach(function(pKey) {
+      var val = _p.get(pKey) || '';
+      if (!val && metaAltNames[pKey]) { for (var i = 0; i < metaAltNames[pKey].length; i++) { val = _p.get(metaAltNames[pKey][i]) || ''; if (val) break; } }
+      val = val || getStored('_' + pKey) || '';
+      if (val) { setStored('_' + pKey, val); var el = document.getElementById(pKey); if (el) el.value = val; }
+    });
+
+    fetch('/api/visitors/ip').then(function(r){return r.json();}).then(function(d){ if (d.ip) { var el = document.getElementById('visitor_ip'); if (el) el.value = d.ip; } }).catch(function(){});
+
+    function getRtClickId(){ try { var s = sessionStorage.getItem('rtkclickid'); if (s) return s; } catch(e) {} return _p.get('rt_clickid') || getStored('_rt_clickid') || getCookie('rtkclickid-store') || 'adblock_blocked'; }
+    window.getRtClickId = getRtClickId;
+    var rtClickId = getRtClickId();
+    if (rtClickId) { setStored('_rt_clickid', rtClickId); var rt = document.getElementById('rt_clickid'); if (rt) rt.value = rtClickId; }
+    setTimeout(function(){ var rtEl = document.getElementById('rt_clickid'); if (rtEl && !rtEl.value) { var delayed = getRtClickId(); if (delayed) { setStored('_rt_clickid', delayed); rtEl.value = delayed; } } }, 2000);
+
+    var rdtCid = _p.get('rdt_cid') || getStored('_rdt_cid') || '';
+    if (rdtCid) { setStored('_rdt_cid', rdtCid); var rdt = document.getElementById('rdt_cid'); if (rdt) rdt.value = rdtCid; }
+
+    var pageUrl = document.getElementById('page_url'); if (pageUrl) pageUrl.value = window.location.href;
+    var refUrl = document.getElementById('referrer_url'); if (refUrl) refUrl.value = document.referrer || '';
+  })();
+
+  // ============= tkclid capture (Trakkit) =============
+  (function () {
+    function tkclidFromCookie(){ var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/); if (!m) return ''; try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+    function refTkclid(){ var p=''; try { p = new URLSearchParams(window.location.search).get('tkclid') || ''; } catch (e) {} if (p) { try { localStorage.setItem('_ref_tkclid', p); } catch (e) {} return p; } try { return localStorage.getItem('_ref_tkclid') || ''; } catch (e) { return ''; } }
+    function setHidden(f, name, v){ if (!v) return; var input = f.querySelector('input[name="' + name + '"]'); if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = name; f.appendChild(input); } input.value = v; }
+    function fillTkclid(){ var own = tkclidFromCookie(); var ref = refTkclid(); var forms = document.querySelectorAll('form'); for (var i = 0; i < forms.length; i++) { var f = forms[i]; if ((f.getAttribute('action') || '').indexOf('/search') !== -1) continue; setHidden(f, 'tkclid', own); setHidden(f, 'affiliate_tkclid', ref); } }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fillTkclid); } else { fillTkclid(); }
+    document.addEventListener('submit', fillTkclid, true);
+  })();
+
+  // ============= submit -> /api/leads =============
+  async function handleJoinSubmit(e) {
+    e.preventDefault();
+    if (!document.getElementById('consentCb').checked) { alert('Please agree to the consent to continue.'); return false; }
+    var btn = e.target.querySelector('button[type="submit"]');
+    var btnHtml = btn.innerHTML;
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    var d = {}; new FormData(e.target).forEach(function(v, k) { d[k] = v; });
+    try {
+      var r = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+      if (r.ok) {
+        var form = document.getElementById('leadForm');
+        form.innerHTML = '<div style="text-align:center;padding:44px 20px;">' +
+          '<div style="width:64px;height:64px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+          '<h2 style="font-size:26px;font-weight:800;color:#0B1320;margin-bottom:10px;letter-spacing:-.02em;">Thank you!</h2>' +
+          '<p style="font-size:16px;color:#445268;line-height:1.6;">Your information has been received.<br>An MCA Specialist will call you within <b>15 minutes</b>.</p>' +
+          '<a href="tel:{{phoneDigits}}" style="display:inline-flex;align-items:center;gap:8px;background:#3052FF;color:#fff;font-size:18px;font-weight:700;padding:15px 32px;border-radius:50px;text-decoration:none;margin-top:18px;">Call Now: {{phone}}</a>' +
+          '</div>';
+      } else throw 0;
+    } catch(err) {
+      alert('Submission failed. Please try again.');
+      btn.disabled = false; btn.innerHTML = btnHtml;
+    }
+    return false;
+  }
+</script>
+{{BODY_SCRIPTS}}
+<style>@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}</style>
+</body>
+</html>

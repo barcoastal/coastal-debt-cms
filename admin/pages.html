@@ -479,6 +479,7 @@
               <option value="game">Game (Gamification)</option>
               <option value="article">Article (Editorial + Form)</option>
               <option value="authority">Authority (SEO + Conversion)</option>
+                <option value="clickchoose">Click &amp; Choose (Pre-Qual Funnel)</option>
                 <option value="join">Join (Form-First Lead Gen)</option>
                 <option value="mca-variant">MCA Variant (Keyword-Targeted Join)</option>
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
@@ -585,6 +586,7 @@
                   <option value="game">Game (Gamification)</option>
                   <option value="article">Article (Editorial + Form)</option>
                   <option value="authority">Authority (SEO + Conversion)</option>
+                <option value="clickchoose">Click &amp; Choose (Pre-Qual Funnel)</option>
                 <option value="join">Join (Form-First Lead Gen)</option>
                 <option value="mca-variant">MCA Variant (Keyword-Targeted Join)</option>
                 <option value="rich">Rich (Coastal MCA Debt Relief)</option>
@@ -1154,8 +1156,8 @@
 
     function _lpCardHtml(page) {
       const m = page.gads_metrics || {};
-      const tplLabel = ({call:'Call',game:'Game',article:'Article',authority:'Authority',join:'Join',pdf:'PDF',['pdf-v2']:'PDF V2',cobrand:'Co-Brand',['join-v2']:'Join V2'}[page.template_type] || 'Form');
-      const tplCls = ({call:'badge-green',game:'badge-orange',article:'badge-purple',authority:'badge-purple',join:'badge-blue',pdf:'badge-orange',['pdf-v2']:'badge-orange',cobrand:'badge-purple',['join-v2']:'badge-blue'}[page.template_type] || 'badge-blue');
+      const tplLabel = ({call:'Call',game:'Game',article:'Article',authority:'Authority',clickchoose:'Click&Choose',join:'Join',pdf:'PDF',['pdf-v2']:'PDF V2',cobrand:'Co-Brand',['join-v2']:'Join V2'}[page.template_type] || 'Form');
+      const tplCls = ({call:'badge-green',game:'badge-orange',article:'badge-purple',authority:'badge-purple',clickchoose:'badge-blue',join:'badge-blue',pdf:'badge-orange',['pdf-v2']:'badge-orange',cobrand:'badge-purple',['join-v2']:'badge-blue'}[page.template_type] || 'badge-blue');
       const ctr = m.ctr ? _pct(m.ctr) : '—';
       const cpc = m.avg_cpc_micros ? _money(m.avg_cpc_micros) : '—';
       return `
@@ -3244,6 +3246,7 @@
               <option value="call">Call Now</option>
               <option value="article">Article</option>
               <option value="authority">Authority</option>
+              <option value="clickchoose">Click &amp; Choose (Pre-Qual Funnel)</option>
               <option value="rich">Rich</option>
               <option value="leadgen">Lead Gen</option>
               <option value="mca-variant">MCA Variant</option>
