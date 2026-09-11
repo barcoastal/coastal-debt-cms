@@ -1850,7 +1850,7 @@
     function _loadJ2Sections(templateType, content) {
       const panel = document.getElementById('j2SectionsPanel');
       if (!panel) return;
-      if (templateType !== 'join-v2') { panel.style.display = 'none'; return; }
+      if (templateType !== 'join-v2' && templateType !== 'clickchoose') { panel.style.display = 'none'; return; }
       const saved = Array.isArray(content.j2SectionOrder) ? content.j2SectionOrder : [];
       if (saved.length) {
         _j2Order = saved.filter(k => J2_DEFAULT_ORDER.includes(k));
@@ -1913,7 +1913,8 @@
     }
 
     function _applyJ2Sections(content) {
-      if (document.getElementById('editTemplateType').value !== 'join-v2') return;
+      var _tt = document.getElementById('editTemplateType').value;
+      if (_tt !== 'join-v2' && _tt !== 'clickchoose') return;
       document.querySelectorAll('#j2SectionsList [data-j2key]').forEach(el => { _j2Values[el.dataset.j2key] = el.value; });
       content.j2SectionOrder = [..._j2Order];
       J2_SECTIONS.forEach(sec => sec.fields.forEach(f => {

@@ -733,6 +733,7 @@ router.get('/:id', authenticateToken, (req, res) => {
       page.template_type === 'pdf' ? defaultContentPdf :
       page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
       page.template_type === 'join-v2' ? { ...defaultContent, ...defaultContentJoinV2 } :
+      page.template_type === 'clickchoose' ? { ...defaultContent, ...defaultContentJoinV2 } :
       defaultContent;
     page.content = { ...defaults, ...saved, colors: { ...(defaults.colors || {}), ...(saved.colors || {}) } };
     page.sections_visible = JSON.parse(page.sections_visible || '{}');
@@ -1380,7 +1381,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'form-click-and-choose.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'landing-page-clickchoose.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1418,7 +1419,7 @@ function generateLandingPage(pageId) {
     page.template_type === 'pdf' ? defaultContentPdf :
     page.template_type === 'pdf-v2' ? defaultContentPdfV2 :
     page.template_type === 'join-v2' ? { ...defaultContent, ...defaultContentJoinV2 } :
-    page.template_type === 'clickchoose' ? { ...defaultContent, phone: '(888) 961-5338', formButton: 'See My Savings Options' } :
+    page.template_type === 'clickchoose' ? { ...defaultContent, ...defaultContentJoinV2 } :
     defaultContent;
   const mergedContent = { ...defaults };
   Object.entries(content).forEach(([key, value]) => {
@@ -1594,7 +1595,7 @@ function generateLandingPage(pageId) {
   // Join V2: reorder page sections per content.j2SectionOrder.
   // Blocks are delimited by <!-- J2SECTION:key --> markers in the template;
   // unknown/missing keys keep their template position at the end.
-  if (page.template_type === 'join-v2' && Array.isArray(content.j2SectionOrder) && content.j2SectionOrder.length) {
+  if ((page.template_type === 'join-v2' || page.template_type === 'clickchoose') && Array.isArray(content.j2SectionOrder) && content.j2SectionOrder.length) {
     const j2re = /<!-- J2SECTION:([a-z0-9]+) -->[\s\S]*?<!-- \/J2SECTION:\1 -->/g;
     const j2blocks = {};
     const j2templateOrder = [];
