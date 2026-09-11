@@ -2563,6 +2563,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var st = document.createElement('style'); st.id = 'ccfStyles';
     st.textContent = `
       #dynamicFormFields{margin-top:2px}
+      .ccf-brushwrap{display:flex;justify-content:center;margin-bottom:14px}
+      .ccf-brush{display:inline-block;background:#3052FF;color:#fff;font-weight:700;font-size:14px;text-align:center;padding:9px 22px;border-radius:100px;box-shadow:0 8px 18px -8px rgba(48,82,255,.5)}
+      .ccf-headline{font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:#0b1220;text-align:center;margin:0 0 18px}
       .ccf-prog{display:flex;align-items:center;gap:12px;margin:2px 0 18px}
       .ccf-pbar{flex:1;height:8px;background:#eef1f7;border-radius:100px;overflow:hidden}
       .ccf-pfill{height:100%;width:33.33%;background:linear-gradient(90deg,#3052FF,#7FB2FF);border-radius:100px;transition:width .35s cubic-bezier(.16,1,.3,1)}
@@ -2582,10 +2585,14 @@ document.addEventListener('DOMContentLoaded', function() {
       .ccf-choice.on .ccf-box svg{color:#3052FF;opacity:1;transform:scale(1)}
       .ccf-wide{grid-column:1 / -1}
       .ccf-yesno{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-      .ccf-big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:1.6px solid #dfe4ee;border-radius:16px;padding:22px 14px;background:#fff;transition:all .16s ease;user-select:none;font-weight:700;font-size:16px;color:#1a2340}
+      .ccf-big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:1.6px solid #dfe4ee;border-radius:16px;padding:22px 14px;background:#fff;transition:all .16s ease;user-select:none;font-weight:700;font-size:16px;color:#1a2340;text-align:center}
       .ccf-big:hover{border-color:#3052FF;box-shadow:0 10px 22px -12px rgba(48,82,255,.5);transform:translateY(-2px)}
       .ccf-big svg{width:30px;height:30px;color:#3052FF}
       .ccf-big.on{border-color:#3052FF;background:rgba(48,82,255,.06);color:#3052FF;box-shadow:0 0 0 3px rgba(48,82,255,.1)}
+      .ccf-benefits{list-style:none;padding:0;margin:20px 0 0;display:flex;flex-direction:column;gap:10px}
+      .ccf-benefits li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;color:#3a4351}
+      .ccf-benefits li svg{flex-shrink:0;width:18px;height:18px;color:#3052FF;margin-top:1px}
+      .ccf-benefits li b{color:#0b1220;font-weight:700}
       .ccf-field{margin-bottom:10px}
       .ccf-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
       .ccf-input{width:100%;font-size:15px;color:#101828;background:#f8f9fc;border:1.5px solid #dfe4ee;border-radius:12px;padding:13px 15px;outline:none;font-family:inherit;transition:border-color .18s,background .18s,box-shadow .18s}
@@ -2594,6 +2601,8 @@ document.addEventListener('DOMContentLoaded', function() {
       .ccf-back{display:inline-flex;align-items:center;gap:7px;margin-top:16px;border:1.6px solid #dfe4ee;background:#fff;cursor:pointer;padding:9px 16px;border-radius:100px;font-family:inherit;font-size:13px;font-weight:700;color:#5b6472;transition:all .16s}
       .ccf-back:hover{border-color:#7FB2FF;color:#3052FF}
       .ccf-back svg{width:16px;height:16px}
+      .ccf-safe{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;font-size:13px;color:#5b6472;font-weight:500;text-align:center;line-height:1.4}
+      .ccf-safe svg{width:15px;height:15px;color:#FF9000;flex-shrink:0}
       .ccf-dq{background:#FFF7ED;border:1px solid #FFE3C2;border-radius:16px;padding:22px;text-align:center;color:#7c4a12;line-height:1.55;font-size:15px}
       .ccf-dq svg{width:34px;height:34px;color:#FF9000;margin-bottom:8px}
       #leadForm button[type="submit"]{background:linear-gradient(135deg,#3052FF,#1e3ad6) !important;text-transform:uppercase;letter-spacing:.03em;font-weight:800 !important;border-radius:100px !important;box-shadow:0 14px 26px -10px rgba(48,82,255,.55)}
@@ -2602,16 +2611,37 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   var CK = '<span class="ccf-box"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  var CKM = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var BACK = '<svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back';
   var fieldMap = {}; formFields.forEach(function(f){ fieldMap[f.name] = f; });
 
-  // ---- progress bar (sibling before the steps) ----
+  // ---- persistent header (eyebrow + headline) before the steps ----
+  var head = document.createElement('div');
+  head.innerHTML = '<div class="ccf-brushwrap"><span class="ccf-brush">Check Your Business Debt Relief Eligibility</span></div>' +
+    '<h2 class="ccf-headline">Find out how much you can save on your MCA &amp; business debt</h2>';
+  c.parentNode.insertBefore(head, c);
+
+  // ---- progress bar ----
   var prog = document.createElement('div');
   prog.className = 'ccf-prog';
   prog.innerHTML = '<div class="ccf-pbar"><div class="ccf-pfill" id="ccfFill"></div></div><span class="ccf-pstep" id="ccfStep">Step 1 of 3</span>';
   c.parentNode.insertBefore(prog, c);
 
-  // ---- Step 1: debt amount tiles (values match legacy join-v2) ----
+  // ---- benefits (shown on step 1) ----
+  var benefits = '<ul class="ccf-benefits">' +
+    '<li>' + CKM + '<span><b>Up to 60% Reduction</b> – Lower your total MCA balance</span></li>' +
+    '<li>' + CKM + '<span><b>No Credit Impact</b> – 100% safe &amp; confidential</span></li>' +
+    '<li>' + CKM + '<span><b>24-48 Hour Relief</b> – Stop daily bank withdrawals fast</span></li>' +
+    '</ul>';
+
+  // ---- STEP 1: multiple MCA ----
+  var step1 = '<div id="jfStep1" class="ccf-step"><div class="ccf-q">Do you have more than one MCA?</div>' +
+    '<div class="ccf-yesno">' +
+    '<label class="ccf-big" id="jfMcaYes"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="radio" name="has_mca" value="Yes" required style="display:none">Yes</label>' +
+    '<label class="ccf-big" id="jfMcaNo"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="radio" name="has_mca" value="No" style="display:none">No, just one</label>' +
+    '</div>' + benefits + '</div>';
+
+  // ---- STEP 2: debt amount (values match legacy join-v2) ----
   var tiers = [
     ['Under $20,000','Under $20,000',true],
     ['$20,000 - $50,000','$20,000 – $50,000',false],
@@ -2620,24 +2650,14 @@ document.addEventListener('DOMContentLoaded', function() {
     ['$500,000 - $1,000,000','$500,000 – $1,000,000',false],
     ['$1,000,000+','$1,000,000 +',false]
   ];
-  var tilesHtml = '<input type="hidden" id="jfDebt" name="debt_amount" value="">';
-  tilesHtml += '<div class="ccf-choices">';
+  var tilesHtml = '<input type="hidden" id="jfDebt" name="debt_amount" value=""><div class="ccf-choices">';
   tiers.forEach(function(t){
     tilesHtml += '<label class="ccf-choice' + (t[2] ? ' ccf-wide' : '') + '" data-val="' + t[0] + '"' + (t[2] ? ' data-dq="1"' : '') + '>' + CK + '<span class="ccf-txt">' + t[1] + '</span></label>';
   });
   tilesHtml += '</div>';
-  var step1 = '<div id="jfStep1" class="ccf-step"><div class="ccf-q">How Much Debt Does Your Business Have?</div>' + tilesHtml + '</div>';
+  var step2 = '<div id="jfStep2" class="ccf-step" style="display:none"><div class="ccf-q">How much debt does your business have?</div>' + tilesHtml + '<button type="button" class="ccf-back" data-back="1">' + BACK + '</button></div>';
 
-  // ---- Step 2: MCA yes/no ----
-  var step2 = '<div id="jfStep2" class="ccf-step" style="display:none">' +
-    '<div class="ccf-q">Do you have any unsecured business loans or MCAs?</div>' +
-    '<div class="ccf-yesno">' +
-    '<label class="ccf-big" id="jfMcaYes"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="radio" name="has_mca" value="Yes" required style="display:none">Yes</label>' +
-    '<label class="ccf-big" id="jfMcaNo"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="radio" name="has_mca" value="No" style="display:none">No</label>' +
-    '</div>' +
-    '<button type="button" class="ccf-back" data-back="1">' + BACK + '</button></div>';
-
-  // ---- Step 3: contact ----
+  // ---- STEP 3: contact ----
   var contact = '<div class="ccf-q">Where should we send your savings estimate?</div>';
   if (fieldMap.company_name) contact += '<div class="ccf-field"><input class="ccf-input" type="text" name="company_name" placeholder="Company Name" required></div>';
   contact += '<div class="ccf-row2">';
@@ -2661,6 +2681,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   c.innerHTML = step1 + step2 + step3 + notEligible;
 
+  // ---- persistent safe line at the end of the form ----
+  var safe = document.createElement('div'); safe.className = 'ccf-safe'; safe.id = 'ccfSafe';
+  safe.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1112 0v2M5 10h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Safe &amp; Secure. An MCA Specialist will analyze your eligibility';
+  c.parentNode.appendChild(safe);
+
   var consentWrap = document.getElementById('consentCb') ? document.getElementById('consentCb').closest('div') : null;
   var submitBtn = document.querySelector('#leadForm button[type="submit"]');
   function setProg(n){ var f = document.getElementById('ccfFill'); var s = document.getElementById('ccfStep'); if(f) f.style.width = (n/3*100) + '%'; if(s) s.textContent = 'Step ' + n + ' of 3'; }
@@ -2668,6 +2693,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['jfStep1','jfStep2','jfStep3'].forEach(function(id,i){ var el=document.getElementById(id); if(el) el.style.display = (i+1===n)?'block':'none'; });
     document.getElementById('jfNotEligible').style.display='none';
     prog.style.display='flex';
+    if(safe) safe.style.display='flex';
     if(consentWrap) consentWrap.style.display = (n===3)?'flex':'none';
     if(submitBtn) submitBtn.style.display = (n===3)?'block':'none';
     setProg(n);
@@ -2676,6 +2702,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ['jfStep1','jfStep2','jfStep3'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
     document.getElementById('jfNotEligible').style.display='block';
     prog.style.display='none';
+    if(safe) safe.style.display='none';
     if(consentWrap) consentWrap.style.display='none';
     if(submitBtn) submitBtn.style.display='none';
   }
@@ -2688,7 +2715,19 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (e) {}
   }
 
-  // Step 1: tile click
+  // STEP 1: MCA select — "No, just one" disqualifies
+  document.querySelectorAll('input[name="has_mca"]').forEach(function(r){
+    r.closest('.ccf-big').addEventListener('click', function(){
+      r.checked = true;
+      document.getElementById('jfMcaYes').classList.toggle('on', r.value === 'Yes');
+      document.getElementById('jfMcaNo').classList.toggle('on', r.value === 'No');
+      _trackFunnelStep('mca', r.value);
+      if (r.value === 'No') { setTimeout(disqualify, 180); }
+      else { setTimeout(function(){ showStep(2); }, 200); }
+    });
+  });
+
+  // STEP 2: debt tile — "Under $20,000" disqualifies, else -> contact
   var jfDebt = document.getElementById('jfDebt');
   c.querySelector('.ccf-choices').addEventListener('click', function(e){
     var lbl = e.target.closest('.ccf-choice'); if(!lbl) return;
@@ -2697,19 +2736,7 @@ document.addEventListener('DOMContentLoaded', function() {
     jfDebt.value = lbl.getAttribute('data-val');
     _trackFunnelStep('debt', jfDebt.value);
     if (lbl.getAttribute('data-dq') === '1') { setTimeout(disqualify, 180); return; }
-    setTimeout(function(){ showStep(2); }, 200);
-  });
-
-  // Step 2: MCA select
-  document.querySelectorAll('input[name="has_mca"]').forEach(function(r){
-    r.closest('.ccf-big').addEventListener('click', function(){
-      r.checked = true;
-      document.getElementById('jfMcaYes').classList.toggle('on', r.value === 'Yes');
-      document.getElementById('jfMcaNo').classList.toggle('on', r.value === 'No');
-      _trackFunnelStep('mca', r.value);
-      if (r.value === 'No') { setTimeout(disqualify, 180); }
-      else { setTimeout(function(){ showStep(3); }, 200); }
-    });
+    setTimeout(function(){ showStep(3); }, 200);
   });
 
   // Back buttons
