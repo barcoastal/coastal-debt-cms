@@ -236,8 +236,10 @@
     .manual-del-btn { padding: 3px 8px; background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
     .manual-del-btn:hover { background: #fecaca; }
   </style>
+  <link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1">
+  <script src="/admin/assets/js/workspace.js?v=1" defer></script>
 </head>
-<body>
+<body class="cms-pages">
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -367,39 +369,35 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h1>Landing Pages</h1>
-        <div style="display:flex;gap:10px;align-items:center;">
-          <span class="view-toggle">
-            <button id="viewBtnFolders" class="active" onclick="setView('folders')">Folders</button>
-            <button id="viewBtnFlat" onclick="setView('flat')">Flat</button>
-          </span>
+        <div><div class="workspace-eyebrow">Content workspace</div><h1>Landing pages</h1></div>
+        <div class="workspace-toolbar">
+
           <button class="gads-refresh-btn" id="gadsRefreshBtn" onclick="refreshGadsMetrics()" title="Pull campaign + Quality Score + landing-page-view from Google Ads">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 113.51 9"/></svg>
             Sync Google Ads
           </button>
-          <button class="btn btn-secondary" onclick="showNewFolderModal()" title="Create a manual folder for a campaign that isn't live in Google Ads yet">+ New folder</button>
-          <button class="btn btn-primary" onclick="showModal('createModal')">+ Create New Page</button>
+          <button class="btn btn-secondary" onclick="showNewFolderModal()" title="Create a manual folder for a campaign that isn't live in Google Ads yet">New folder</button>
+          <button class="btn btn-primary" onclick="showModal('createModal')">+ Create page</button>
         </div>
       </div>
       <div id="gadsRefreshStatus" class="gads-refresh-status" style="margin:0 0 8px 4px;"></div>
 
-      <div class="card">
-        <!-- Date Filter Bar -->
-        <div style="display:flex;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;">
-          <label style="font-size:12px;font-weight:600;color:#64748b;">Date range:</label>
-          <select id="statsDateRange" onchange="onDateRangeChange()" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-            <option value="all" selected>All Time</option>
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="mtd">Month to Date</option>
-            <option value="custom">Custom Range</option>
+      <div class="card page-library">
+        <div class="library-toolbar">
+          <label for="statsDateRange">Performance</label>
+          <select id="statsDateRange" onchange="onDateRangeChange()">
+            <option value="all" selected>All time</option><option value="today">Today</option>
+            <option value="yesterday">Yesterday</option><option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option><option value="mtd">Month to date</option><option value="custom">Custom range</option>
           </select>
-          <input type="date" id="statsDateFrom" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;display:none;">
-          <input type="date" id="statsDateTo" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;display:none;">
-          <button onclick="loadPages()" id="applyDateBtn" style="padding:6px 14px;background:#3052FF;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:none;">Apply</button>
-          <span id="statsRangeLabel" style="font-size:11px;color:#94a3b8;margin-left:auto;"></span>
+          <input type="date" id="statsDateFrom" aria-label="Start date" style="display:none;">
+          <input type="date" id="statsDateTo" aria-label="End date" style="display:none;">
+          <button onclick="loadPages()" id="applyDateBtn" style="display:none;">Apply</button>
+          <span class="view-toggle" role="group" aria-label="Page view">
+            <button id="viewBtnFolders" class="active" aria-pressed="true" onclick="setView('folders')">Folders</button>
+            <button id="viewBtnFlat" aria-pressed="false" onclick="setView('flat')">List</button>
+          </span>
+          <span id="statsRangeLabel"></span>
         </div>
         <div id="foldersView" class="folders-container">
           <div style="padding:32px;text-align:center;color:#94a3b8;">Loading…</div>
@@ -408,15 +406,15 @@
           <table>
             <thead>
               <tr>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('name')">Name <span id="sort-name" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('slug')">Slug <span id="sort-slug" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('platform')">Platform <span id="sort-platform" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('template_type')">Template <span id="sort-template_type" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('traffic_source')">Traffic Source <span id="sort-traffic_source" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('visitor_count')">Clicks <span id="sort-visitor_count" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('lead_count')">Leads <span id="sort-lead_count" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('conversion_rate')">Conv. Rate <span id="sort-conversion_rate" class="sort-arrow"></span></th>
-                <th style="cursor:pointer;user-select:none;" onclick="sortPages('is_active')">Status <span id="sort-is_active" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('name')">Name <span id="sort-name" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('slug')">Slug <span id="sort-slug" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('platform')">Platform <span id="sort-platform" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('template_type')">Template <span id="sort-template_type" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('traffic_source')">Traffic Source <span id="sort-traffic_source" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('visitor_count')">Clicks <span id="sort-visitor_count" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('lead_count')">Leads <span id="sort-lead_count" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('conversion_rate')">Conv. Rate <span id="sort-conversion_rate" class="sort-arrow"></span></th>
+                <th tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" style="cursor:pointer;user-select:none;" onclick="sortPages('is_active')">Status <span id="sort-is_active" class="sort-arrow"></span></th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -924,7 +922,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="hideModal('editModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" class="btn btn-primary" id="editSaveButton">Save &amp; update page</button>
         </div>
       </form>
     </div>
@@ -1054,6 +1052,8 @@
         _gadsAdGroupMeta = metaJson.ad_groups || [];
       } catch (e) { _gadsAdGroupMeta = []; }
 
+      renderPagesFolders(pages);
+
       // Re-apply sort if active
       if (_sortKey) {
         sortPages(_sortKey);
@@ -1062,7 +1062,6 @@
       }
 
       renderPagesTable(pages);
-      renderPagesFolders(pages);
     }
 
     var _gadsAdGroupMeta = [];
@@ -1079,6 +1078,8 @@
       document.getElementById('viewBtnFlat').classList.toggle('active', view === 'flat');
       document.getElementById('foldersView').classList.toggle('hidden', view !== 'folders');
       document.getElementById('pagesView').classList.toggle('hidden', view !== 'flat');
+      document.getElementById('viewBtnFolders').setAttribute('aria-pressed', String(view === 'folders'));
+      document.getElementById('viewBtnFlat').setAttribute('aria-pressed', String(view === 'flat'));
     }
 
     function _gadsRangePayload() {
@@ -2031,6 +2032,8 @@
 
     document.getElementById('editForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const saveButton = document.getElementById('editSaveButton');
+      if (saveButton.disabled) return;
 
       const id = document.getElementById('editId').value;
       const formId = document.getElementById('editFormId').value;
@@ -2113,18 +2116,27 @@
         content: content
       };
 
+      saveButton.disabled = true;
+      saveButton.textContent = 'Saving…';
+      const saveNote = document.getElementById('editSaveNote');
+      if (saveNote) saveNote.textContent = 'Updating the landing page…';
+      const closeButtons = document.querySelectorAll('#editModal .modal-close, #editModal .modal-footer [type=button]');
+      closeButtons.forEach(button => { button.disabled = true; });
+      let pageSaved = false;
       try {
         await api(`/api/pages/${id}`, {
           method: 'PUT',
           body: JSON.stringify(data)
         });
 
+        pageSaved = true;
+
         // Save Google Ads folder assignment (separate endpoint)
         const cSel = document.getElementById('editGadsCampaign');
         const agSel = document.getElementById('editGadsAdGroup');
         const cOpt = cSel.options[cSel.selectedIndex];
         const agOpt = agSel.options[agSel.selectedIndex];
-        await fetch(`/api/pages/${id}/gads-link`, {
+        await api(`/api/pages/${id}/gads-link`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2138,7 +2150,11 @@
         hideModal('editModal');
         loadPages();
       } catch (err) {
-        alert(err.message);
+        if (saveNote) saveNote.textContent = (pageSaved ? 'Page saved, but campaign assignment failed: ' : 'Could not save: ') + err.message;
+      } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save & update page';
+        closeButtons.forEach(button => { button.disabled = false; });
       }
     });
 

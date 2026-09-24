@@ -214,8 +214,10 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1">
+  <script src="/admin/assets/js/workspace.js?v=1" defer></script>
 </head>
-<body>
+<body class="cms-editor">
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -340,10 +342,11 @@
     <!-- Main Content -->
     <main class="main-content" style="padding-bottom: 80px;">
       <div class="page-header">
-        <h1>Edit Page: <span id="pageName">Loading...</span></h1>
+        <div><div class="workspace-eyebrow">Landing page editor</div><h1 id="pageName">Loading…</h1></div>
         <a href="/admin/pages.html" class="btn btn-secondary">Back to Pages</a>
       </div>
 
+      <div class="editor-jump"><label for="editorSectionJump">Jump to section</label><select id="editorSectionJump"><option value="">Choose a section</option></select></div>
       <div class="editor-layout">
         <!-- Editor Panel -->
         <div class="editor-panel">
@@ -693,19 +696,19 @@
         <!-- Preview Panel -->
         <div class="preview-panel">
           <div class="preview-header">
-            <strong>Live Preview</strong>
-            <a id="previewLink" href="#" target="_blank" class="btn btn-secondary btn-small">Open in New Tab</a>
+            <strong>Saved page</strong><div class="preview-size" role="group" aria-label="Preview width"><button type="button" data-preview-size="desktop" aria-pressed="true">Desktop</button><button type="button" data-preview-size="mobile" aria-pressed="false">Mobile</button></div>
+            <a id="previewLink" href="#" target="_blank" class="btn btn-secondary btn-small">Open page ↗</a>
           </div>
-          <iframe id="previewFrame" class="preview-frame" src="about:blank"></iframe>
+          <iframe id="previewFrame" class="preview-frame" title="Saved landing page preview" src="about:blank"></iframe><div class="preview-note">Preview refreshes after saving. Saving updates the landing page.</div>
         </div>
       </div>
     </main>
   </div>
 
   <!-- Save Bar -->
-  <div class="save-bar">
+  <div class="save-bar"><span id="editorSaveStatus" class="save-status" role="status">Saving updates the landing page.</span>
     <button class="btn btn-secondary" onclick="window.location.href='/admin/pages.html'">Cancel</button>
-    <button class="btn btn-primary" onclick="saveContent()">Save & Regenerate</button>
+    <button id="editorSaveButton" class="btn btn-primary" onclick="saveContent()" disabled>Save &amp; update page</button>
   </div>
 
   <script src="assets/js/common.js?v=8"></script>
@@ -735,11 +738,11 @@
         return;
       }
 
-      const res = await fetch(`/api/pages/${pageId}`);
-      pageData = await res.json();
+      pageData = await api(`/api/pages/${pageId}`);
       content = pageData.content || {};
 
       document.getElementById('pageName').textContent = pageData.name;
+      document.getElementById('editorSaveButton').disabled = false;
       document.getElementById('previewLink').href = `/lp/${pageData.slug}/`;
       document.getElementById('previewFrame').src = `/lp/${pageData.slug}/`;
 
@@ -1080,19 +1083,26 @@
     }
 
     async function saveContent() {
+      const button = document.getElementById('editorSaveButton');
+      if (!pageData || button.disabled) return;
+      const status = document.getElementById('editorSaveStatus');
       const newContent = collectContent();
-
+      button.disabled = true;
+      button.textContent = 'Saving…';
+      status.dataset.error = 'false';
+      status.textContent = 'Updating the landing page…';
       try {
         await api(`/api/pages/${pageId}/content`, {
-          method: 'PUT',
-          body: JSON.stringify({ content: newContent })
+          method: 'PUT', body: JSON.stringify({ content: newContent })
         });
-
-        // Refresh preview
         document.getElementById('previewFrame').src = `/lp/${pageData.slug}/?t=${Date.now()}`;
-        alert('Content saved and page regenerated!');
+        status.textContent = 'Saved. The landing page is up to date.';
       } catch (err) {
-        alert(err.message);
+        status.dataset.error = 'true';
+        status.textContent = 'Could not save: ' + err.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Save & update page';
       }
     }
 
@@ -1173,7 +1183,7 @@
           if (generated.footer.disclaimer) document.getElementById('footerDisclaimer').value = generated.footer.disclaimer;
         }
 
-        status.innerHTML = 'Content generated! Review the fields below, then click <strong>Save & Regenerate</strong>.';
+        status.innerHTML = 'Content generated! Review the fields below, then click <strong>Save &amp; update page</strong>.';
       } catch (err) {
         errorEl.textContent = err.message || 'Failed to generate content';
         errorEl.style.display = 'block';
@@ -1198,7 +1208,13 @@
       updatePlatformTag();
     };
 
-    loadPage();
+    loadPage().catch(err => {
+      document.getElementById('pageName').textContent = 'Unable to load page';
+      const status = document.getElementById('editorSaveStatus');
+      status.dataset.error = 'true';
+      status.textContent = err.message;
+      document.getElementById('editorSaveButton').disabled = true;
+    });
   </script>
 </body>
 </html>
