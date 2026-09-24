@@ -890,6 +890,13 @@ body.page-id-943 .gform_wrapper{
 .elementor-element-2520fdc>.elementor-widget-heading .elementor-heading-title,.elementor-element-40696f9>.elementor-widget-heading .elementor-heading-title,.elementor-element-f191382>.elementor-widget-heading .elementor-heading-title{margin:0!important}
 .elementor-element-2520fdc>.elementor-widget-text-editor,.elementor-element-40696f9>.elementor-widget-text-editor,.elementor-element-f191382>.elementor-widget-text-editor{flex-basis:100%!important;width:100%!important}
 </style>
+<style>
+/* Keep the header phone icon visible without an icon-font dependency. */
+#phoneNumber .elementor-icon-box-wrapper { display: flex; align-items: center; gap: 8px; }
+#phoneNumber .elementor-icon-box-icon { margin: 0; flex: 0 0 auto; }
+#phoneNumber .elementor-icon { display: inline-flex; align-items: center; line-height: 1; }
+#phoneNumber .cdr-header-phone-icon { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; flex-shrink: 0; }
+</style>
 </head>
 {{BODY_SCRIPTS}}
 <body class="home wp-singular page-template-default page page-id-10 wp-embed-responsive wp-theme-hello-elementor hello-elementor-default elementor-default elementor-kit-7 elementor-page elementor-page-10">
@@ -968,7 +975,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 						<div class="elementor-icon-box-icon">
 				<a href="tel:{{phoneDigits}}" class="elementor-icon" tabindex="-1" aria-label="{{phone}}">
-				<i aria-hidden="true" class="fas fa-phone-alt"></i>				</a>
+				<svg class="cdr-header-phone-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.79a2 2 0 0 1-.45 2.11L8.09 9.89a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.89.34 1.83.58 2.79.7A2 2 0 0 1 22 16.92z"/></svg>				</a>
 			</div>
 			
 						<div class="elementor-icon-box-content">
