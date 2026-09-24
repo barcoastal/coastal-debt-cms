@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  <meta property="og:title" content="{{pageTitle}}">
+  <meta property="og:description" content="{{metaDescription}}">
+  <meta property="og:type" content="website">
+  <link rel="preload" href="/lp/assets/person-cta.webp" as="image">
+  <link rel="stylesheet" href="/lp/assets/join3.css?v=1">
+  <style>:root{--primary:{{colors.primary}};--navy:{{colors.navy}};--cta-btn:{{colors.ctaButton}};--cta-btn-hover:{{colors.ctaButtonHover}};--headline-hl:{{colors.headlineHighlight}}}</style>
+  {{HEAD_SCRIPTS}}
+</head>
+<body>
+{{bodyStartScripts}}
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="shell header-inner">
+    <a href="#main" class="brand" aria-label="Coastal Debt Resolve home"><img src="/lp/assets/logos/logo-dark-text.svg" width="218" height="50" alt="Coastal Debt Resolve"></a>
+    <div class="header-actions">
+      <a href="tel:{{phoneDigits}}" class="phone-element header-phone retreaver-phone" id="phoneNumber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.79a2 2 0 0 1-.45 2.11L8.09 9.89a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.89.34 1.83.58 2.79.7A2 2 0 0 1 22 16.92z"/></svg><span>{{phone}}</span></a>
+      <a href="#assessment" class="button button-small">Free assessment</a>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <section class="hero" id="start-now">
+    <div class="hero-photo" aria-hidden="true"></div>
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <p class="hero-badge">{{badge}}</p>
+        <h1>{{headline}} <span>{{headlineHighlight}}</span> {{headlineLine2}}</h1>
+        <p class="hero-sub">{{subheadline}}</p>
+        <ul class="hero-benefits">{{join3Bullets}}</ul>
+      </div>
+      <div class="form-card" id="assessment" data-form-mode="{{formMode}}" data-skip-prequal="{{skipPreQual}}" data-mobile-bullets-count="{{mobileBulletsCount}}" data-mobile-cta="{{mobileCta}}">
+        <p class="form-progress" id="formProgress" aria-live="polite">Step <span id="stepNumber">1</span> / <span id="stepTotal">3</span></p>
+        <div class="progress-track" aria-hidden="true"><span id="progressFill"></span></div>
+        <form id="leadForm">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="debt_amount" id="debt_amount">
+          <input type="hidden" name="has_mca" id="has_mca">
+          {{HIDDEN_FIELDS}}
+          <fieldset class="form-step" data-step="1">
+            <legend class="form-title">{{formTitle}}</legend>
+            <p class="form-subtitle">{{formSubtitle}}</p>
+            <label for="debtSelect" class="sr-only">Total business debt</label>
+            <select id="debtSelect" required>
+              <option value="">Select your debt amount</option>
+              <option>Under $20,000</option><option>$20,000 - $50,000</option><option>$50,000 - $100,000</option><option>$100,000 - $500,000</option><option>$500,000 - $1,000,000</option><option>$1,000,000+</option>
+            </select>
+            <p class="eligibility-note" id="debtNotice" role="status" hidden>This program is for businesses with at least $20,000 in MCA or unsecured business debt.</p>
+            <button class="button form-next" id="debtNext" type="button" disabled>Check Free Eligibility <span aria-hidden="true">→</span></button>
+          </fieldset>
+          <fieldset class="form-step" data-step="2" hidden disabled>
+            <legend class="form-title">What type of business debt do you have?</legend>
+            <p class="form-subtitle">Do you have merchant cash advances or unsecured business loans?</p>
+            <div class="choice-grid">
+              <label class="choice"><input type="radio" name="_qualificationMca" value="Yes" required><span>Yes</span></label>
+              <label class="choice"><input type="radio" name="_qualificationMca" value="No"><span>No</span></label>
+            </div>
+            <p class="eligibility-note" id="mcaNotice" role="status" hidden>Our program focuses on MCA and unsecured business debt. We do not provide new loans or personal debt relief.</p>
+            <button class="button form-next" type="button" id="mcaNext" disabled>Continue <span aria-hidden="true">→</span></button>
+            <button class="back-button" type="button" data-back="1">← Back</button>
+          </fieldset>
+          <fieldset class="form-step" data-step="3" hidden disabled>
+            <legend class="form-title">Where can your advisor reach you?</legend>
+            <p class="form-subtitle">Complete your free, confidential assessment.</p>
+            <div class="contact-fields" id="dynamicFormFields"></div>
+            <div class="consent"><input type="checkbox" name="consent" value="yes" id="consentCb" required><label for="consentCb">By selecting this checkbox, you consent to receive text messages or emails from Coastal Debt Resolve. Message and data rates may apply. Message frequency varies. You may unsubscribe at any time. Carriers are not liable for delayed or undelivered messages. See our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank" rel="noopener">Terms of Use</a>.</label></div>
+            <p class="form-error" id="formError" role="alert" hidden></p>
+            <button type="submit" class="button submit-btn">{{formSubmitText}}</button>
+            <button class="back-button" type="button" data-back="2">← Back</button>
+          </fieldset>
+        </form>
+        <div class="form-success" id="formSuccess" hidden role="status" tabindex="-1"><span class="success-check" aria-hidden="true">✓</span><h2>Thank you!</h2><p>{{formSuccessMsg}}</p><a class="phone-element button" href="tel:{{phoneDigits}}">Call {{phone}}</a></div>
+        <p class="form-security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Secure form. Free assessment. No obligation.</p>
+        <p class="form-privacy">Your information is handled in accordance with our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <noscript><p>Please enable JavaScript to complete this form, or call <a href="tel:{{phoneDigits}}">{{phone}}</a>.</p></noscript>
+      </div>
+    </div>
+  </section>
+  <!-- SECTION:trustBar -->
+  <section class="shell trust-wrap" aria-label="The Coastal commitment"><div class="trust-bar">
+    <div><span class="trust-symbol" aria-hidden="true">✓</span><span>Free, confidential<br>consultation</span></div>
+    <div><span class="trust-symbol" aria-hidden="true">✓</span><span>Debt relief.<br>No new loan.</span></div>
+    <div><span class="trust-symbol" aria-hidden="true">✓</span><span>A dedicated<br>Debt Settlement Advisor</span></div>
+    <div><span class="trust-symbol" aria-hidden="true">✓</span><span>A plan built around<br>your business</span></div>
+  </div></section>
+  <!-- /SECTION:trustBar -->
+  <!-- SECTION:howItWorks -->
+  <section class="section" id="how-it-works"><div class="shell"><p class="eyebrow">How it works</p><h2>{{howItWorksTitle}}</h2><p class="section-intro">{{howItWorksSubtitle}}</p><div class="three-columns steps">{{join3Steps}}</div></div></section>
+  <!-- /SECTION:howItWorks -->
+  <!-- SECTION:empathy -->
+  <section class="section section-tint"><div class="shell"><p class="eyebrow">Why business owners choose Coastal</p><h2>{{empathyTitle}}</h2><div class="three-columns benefits">{{join3Benefits}}</div></div></section>
+  <!-- /SECTION:empathy -->
+  <!-- SECTION:caseStudies -->
+  <section class="section"><div class="shell"><p class="eyebrow">The results speak</p><h2>{{caseStudiesTitle}}</h2><p class="section-intro">{{caseStudiesSubtitle}}</p><div class="three-columns results">
+    <article><strong>49<span>%</span></strong><h3>Balance reduction</h3><p>Mulligan settlement<br>Debt: $107,684.07 · Settled: $55,000</p><a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/Mulligan.pdf" target="_blank" rel="noopener">View settlement document <span aria-hidden="true">↗</span></a></article>
+    <article><strong>61<span>%</span></strong><h3>Balance reduction</h3><p>DLP settlement<br>Debt: $12,791.87 · Settled: $5,000</p><a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/DLP.pdf" target="_blank" rel="noopener">View settlement document <span aria-hidden="true">↗</span></a></article>
+    <article><strong>73<span>%</span></strong><h3>Balance reduction</h3><p>Everest settlement<br>Debt: $23,000 · Settled: $6,110</p><a href="https://join.coastaldebt.com/wp-content/uploads/2026/02/GregoryPeter_EverestBusinessFunding.pdf" target="_blank" rel="noopener">View settlement document <span aria-hidden="true">↗</span></a></article>
+  </div></div></section>
+  <!-- /SECTION:caseStudies -->
+  <!-- SECTION:testimonials -->
+  <section class="section section-tint"><div class="shell"><p class="eyebrow">From our clients</p><h2>{{testimonialsTitle}}</h2><p class="section-intro">{{testimonialsSubtitle}}</p><div class="three-columns reviews">
+    <figure><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“Informative, supportive, and highly competent. I worked with Craig Caliph of Coastal. He was knowledgeable, very courteous, and very supportive of what we were looking to do.”</blockquote><figcaption><span class="avatar">JH</span><div><strong>Jamil Husain</strong><time datetime="2026-02-07">Feb 7, 2026</time></div></figcaption></figure>
+    <figure><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“Great service and excellent customer service. I would highly recommend this company. Nathan Moe is the best, he makes sure every step is handled for your business needs.”</blockquote><figcaption><span class="avatar">CV</span><div><strong>Cindy Vu</strong><time datetime="2026-02-14">Feb 14, 2026</time></div></figcaption></figure>
+    <figure><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><blockquote>“Their expertise and guidance were invaluable, helping me navigate a complex financial situation with confidence. Highly recommend!”</blockquote><figcaption><span class="avatar">JG</span><div><strong>Juan Granja</strong><time datetime="2026-03-29">Mar 29, 2026</time></div></figcaption></figure>
+  </div></div></section>
+  <!-- /SECTION:testimonials -->
+  <section class="shell consultation-band"><div><h2>Ready to explore a different path?</h2><p>Let's talk about what your business needs next.</p></div><a href="#assessment" class="button">Free consultation <span aria-hidden="true">→</span></a></section>
+  <!-- SECTION:comparison -->
+  <section class="section"><div class="shell"><p class="eyebrow">The Coastal difference</p><h2>{{comparisonTitle}}</h2><p class="section-intro">{{comparisonSubtitle}}</p><div class="comparison-layout"><table class="comparison-table"><thead><tr><th scope="col">{{comparisonColBad}}</th><th scope="col">{{comparisonColGood}}</th></tr></thead><tbody>{{join3Comparison}}</tbody></table><div class="comparison-photo"><img src="/lp/assets/lp-hero-handshake.webp" alt="A business owner meeting with an advisor" width="1000" height="559" loading="lazy"></div></div><a class="text-link" href="#assessment">{{comparisonCtaText}} <span aria-hidden="true">→</span></a></div></section>
+  <!-- /SECTION:comparison -->
+  <!-- SECTION:faq -->
+  <section class="section section-tint"><div class="shell faq-layout"><div><p class="eyebrow">Clear answers</p><h2>{{faqTitle}}</h2><p class="section-intro">{{faqSubtitle}}</p></div><div class="faq-list">{{join3Faq}}</div></div></section>
+  <!-- /SECTION:faq -->
+  <!-- SECTION:cta -->
+  <section class="final-cta cta-footer"><div class="shell"><p class="eyebrow">Your next chapter</p><h2>{{ctaTitle}}</h2><p>{{ctaSubtitle}}</p><a href="#assessment" class="button button-white">{{ctaButton}} <span aria-hidden="true">→</span></a><p class="cta-note">Free assessment · Confidential conversation · No obligation</p></div></section>
+  <!-- /SECTION:cta -->
+</main>
+<footer class="site-footer"><div class="shell footer-inner"><img src="/lp/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve" width="184" height="42" loading="lazy"><p>© {{year}} Coastal Debt Resolve. All rights reserved.</p><nav aria-label="Legal"><a href="https://www.coastaldebt.com/privacy-policy">Privacy Policy</a><a href="https://www.coastaldebt.com/terms-of-use">Terms of Use</a></nav></div></footer>
+<div class="mobile-cta" id="mobileCta"><a class="button" id="mobileCtaLink" href="#assessment">Free assessment <span aria-hidden="true">→</span></a></div>
+<script>window.join3FormFields = JSON.parse('{{formFieldsJson}}');</script>
+<script src="/lp/assets/join3.js?v=1" defer></script>
+{{bodyEndScripts}}
+</body>
+</html>
