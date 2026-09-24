@@ -118,28 +118,37 @@
     if (focus) form.querySelector('[data-step="' + step + '"] input:not([type=hidden]),[data-step="' + step + '"] select')?.focus({preventScroll:true});
   }
   const debt = document.getElementById('debtSelect');
-  const debtNext = document.getElementById('debtNext');
   debt.addEventListener('change', () => {
     const ineligible = debt.value === 'Under $20,000';
-    debtNext.disabled = !debt.value || ineligible;
     document.getElementById('debtNotice').hidden = !ineligible;
     setHidden('debt_amount', debt.value);
     if (debt.value) trackStep('debt', debt.value);
+    if (debt.value && !ineligible) showStep(2);
   });
-  debtNext.addEventListener('click', () => { if (!debtNext.disabled) showStep(2); });
-  const mcaNext = document.getElementById('mcaNext');
-  form.querySelectorAll('input[name="_qualificationMca"]').forEach(input => input.addEventListener('change', () => {
+  const mcaChoices = form.querySelectorAll('input[name="_qualificationMca"]');
+  mcaChoices.forEach(input => input.addEventListener('change', () => {
     setHidden('has_mca', input.value);
     document.getElementById('mcaNotice').hidden = input.value !== 'No';
-    mcaNext.disabled = input.value !== 'Yes';
     trackStep('mca', input.value);
+    if (input.value === 'Yes') showStep(3);
   }));
-  mcaNext.addEventListener('click', () => { if (!mcaNext.disabled) showStep(3); });
-  form.querySelectorAll('[data-back]').forEach(button => button.addEventListener('click', () => showStep(Number(button.dataset.back))));
+  form.querySelectorAll('[data-back]').forEach(button => button.addEventListener('click', () => {
+    const step = Number(button.dataset.back);
+    // Clear qualification answers on return so choosing the same answer advances again.
+    mcaChoices.forEach(input => input.checked = false);
+    setHidden('has_mca', '');
+    document.getElementById('mcaNotice').hidden = true;
+    if (step === 1) {
+      debt.value = '';
+      setHidden('debt_amount', '');
+      document.getElementById('debtNotice').hidden = true;
+    }
+    showStep(step);
+  }));
   if (skipPreQual) { form.querySelector('[data-back="2"]').hidden = true; showStep(3, false); }
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (currentStep !== 3) { (currentStep === 1 ? debtNext : mcaNext).click(); return; }
+    if (currentStep !== 3) return;
     if (!form.reportValidity()) return;
     if (!skipPreQual && (!debt.value || debt.value === 'Under $20,000' || form.elements.namedItem('has_mca').value !== 'Yes')) return;
     const button = form.querySelector('.submit-btn');

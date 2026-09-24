@@ -52,7 +52,6 @@
               <option>Under $20,000</option><option>$20,000 - $50,000</option><option>$50,000 - $100,000</option><option>$100,000 - $500,000</option><option>$500,000 - $1,000,000</option><option>$1,000,000+</option>
             </select>
             <p class="eligibility-note" id="debtNotice" role="status" hidden>This program is for businesses with at least $20,000 in MCA or unsecured business debt.</p>
-            <button class="button form-next" id="debtNext" type="button" disabled>Check Free Eligibility <span aria-hidden="true">→</span></button>
           </fieldset>
           <fieldset class="form-step" data-step="2" hidden disabled>
             <legend class="form-title">What type of business debt do you have?</legend>
@@ -62,7 +61,6 @@
               <label class="choice"><input type="radio" name="_qualificationMca" value="No"><span>No</span></label>
             </div>
             <p class="eligibility-note" id="mcaNotice" role="status" hidden>Our program focuses on MCA and unsecured business debt. We do not provide new loans or personal debt relief.</p>
-            <button class="button form-next" type="button" id="mcaNext" disabled>Continue <span aria-hidden="true">→</span></button>
             <button class="back-button" type="button" data-back="1">← Back</button>
           </fieldset>
           <fieldset class="form-step" data-step="3" hidden disabled>
@@ -124,7 +122,7 @@
 <footer class="site-footer"><div class="shell footer-inner"><img src="/lp/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve" width="184" height="42" loading="lazy"><p>© {{year}} Coastal Debt Resolve. All rights reserved.</p><nav aria-label="Legal"><a href="https://www.coastaldebt.com/privacy-policy">Privacy Policy</a><a href="https://www.coastaldebt.com/terms-of-use">Terms of Use</a></nav></div></footer>
 <div class="mobile-cta" id="mobileCta"><a class="button" id="mobileCtaLink" href="#assessment">Free assessment <span aria-hidden="true">→</span></a></div>
 <script>window.join3FormFields = JSON.parse('{{formFieldsJson}}');</script>
-<script src="/lp/assets/join3.js?v=1" defer></script>
+<script src="/lp/assets/join3.js?v=2" defer></script>
 {{bodyEndScripts}}
 </body>
 </html>
