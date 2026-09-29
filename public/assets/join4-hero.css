@@ -253,7 +253,9 @@
 #join4-hero .debt-picker-options button{display:block;width:100%;min-height:48px;padding:12px;border:0;border-radius:6px;background:#fff;color:var(--ink);font:500 16px/1.5 'Inter Tight',Arial,sans-serif;text-align:left}
 #join4-hero .debt-picker-options button:hover,#join4-hero .debt-picker-options button:focus,#join4-hero .debt-picker-options button[aria-selected=true]{background:#edf2ff;color:var(--primary);outline:none}
 
-/* Visual prompt only: the debt choice advances the form automatically. */
-#join4-hero .debt-visual-cta{display:flex;align-items:center;justify-content:center;gap:12px;min-height:52px;margin-top:16px;padding:13px 16px;border-radius:7px;background:var(--cta-btn);color:#fff;font-size:16px;font-weight:650;line-height:1.45;text-align:center;pointer-events:none;user-select:none}
+/* Debt selection is confirmed with an explicit continue action. */
+#join4-hero .debt-visual-cta{display:flex;align-items:center;justify-content:center;gap:12px;min-height:52px;margin-top:16px;padding:13px 16px;border-radius:7px;background:var(--cta-btn);color:#fff;font-size:16px;font-weight:650;line-height:1.45;text-align:center;width:100%;border:0;cursor:pointer;user-select:none}
 #join4-hero .debt-visual-cta span{font-size:21px;line-height:1}
 #join4-hero .debt-auto-note{margin-top:9px;text-align:center;font-size:12px;line-height:1.5;color:var(--muted)}
+
+#join4-hero .debt-visual-cta:hover{background:var(--cta-btn-hover)}

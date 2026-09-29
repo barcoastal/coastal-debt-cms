@@ -16,7 +16,11 @@ await page.goto('http://localhost:3098/lp/join4/',{waitUntil:'domcontentloaded'}
 await page.waitForTimeout(2500);
 await page.screenshot({path:__dirname+'/preview/desktop.png',fullPage:true});
 console.log('desktop',await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,forms:document.querySelectorAll('#leadForm').length,hero:document.querySelector('#join4-hero').getBoundingClientRect().toJSON(),errors:[]})));
+await page.click('#debtContinue');
+await page.getByText('Please select your debt amount to continue.').waitFor();
 await page.selectOption('#debtSelect',{label:'$50,000 - $100,000'});
+if (!await page.locator('[data-step="1"]').isVisible()) throw new Error('Debt selection advanced without a click');
+await page.click('#debtContinue');
 await page.check('input[name="_qualificationMca"][value="Yes"]');
 console.log('fields',await page.locator('#dynamicFormFields input').evaluateAll(els=>els.map(e=>({name:e.name,type:e.type,required:e.required}))));
 for(const field of await page.locator('#dynamicFormFields input').all()){
@@ -37,9 +41,13 @@ await page.screenshot({path:__dirname+'/preview/mobile-debt-picker.png',fullPage
 const bounds = await page.locator('#debtPickerOptions').boundingBox();
 if (!bounds || bounds.width < 250 || bounds.x < 0 || bounds.x + bounds.width > 390) throw new Error('Mobile picker dimensions invalid');
 await page.getByRole('option', {name:'Under $20,000',exact:true}).click();
+await page.click('#debtContinue');
 await page.locator('#debtNotice:visible').waitFor();
+if (!await page.locator('[data-step="1"]').isVisible()) throw new Error('Ineligible debt advanced');
 await page.click('#debtPickerTrigger');
 await page.getByRole('option', {name:'$50,000 - $100,000',exact:true}).click();
+if (!await page.locator('[data-step="1"]').isVisible()) throw new Error('Mobile debt selection advanced without a click');
+await page.click('#debtContinue');
 await page.locator('[data-step="2"]:visible').waitFor();
 await page.click('[data-back="1"]');
 if ((await page.locator('#debtPickerTrigger').textContent()) !== 'Select your debt amount') throw new Error('Picker did not reset');

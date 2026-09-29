@@ -118,12 +118,27 @@
     if (focus) form.querySelector('[data-step="' + step + '"] input:not([type=hidden]),[data-step="' + step + '"] select')?.focus({preventScroll:true});
   }
   const debt = document.getElementById('debtSelect');
+  const debtContinue = document.getElementById('debtContinue');
+  const debtNotice = document.getElementById('debtNotice');
+  const debtEligibilityMessage = debtNotice.textContent;
   debt.addEventListener('change', () => {
+    debtNotice.textContent = debtEligibilityMessage;
     const ineligible = debt.value === 'Under $20,000';
     document.getElementById('debtNotice').hidden = !ineligible;
     setHidden('debt_amount', debt.value);
     if (debt.value) trackStep('debt', debt.value);
-    if (debt.value && !ineligible) showStep(2);
+    if (debt.value && !ineligible && !debtContinue) showStep(2);
+  });
+  if (debtContinue) debtContinue.addEventListener('click', () => {
+    if (!debt.value || debt.value === 'Under $20,000') {
+      debtNotice.textContent = debt.value ? debtEligibilityMessage : 'Please select your debt amount to continue.';
+      debtNotice.hidden = false;
+      const picker = document.getElementById('debtPickerTrigger');
+      (debt.hidden && picker ? picker : debt).focus({preventScroll:true});
+      return;
+    }
+    debtNotice.hidden = true;
+    showStep(2);
   });
   const mcaChoices = form.querySelectorAll('input[name="_qualificationMca"]');
   mcaChoices.forEach(input => input.addEventListener('change', () => {

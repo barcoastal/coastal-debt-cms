@@ -897,7 +897,7 @@ body.page-id-943 .gform_wrapper{
 #phoneNumber .elementor-icon { display: inline-flex; align-items: center; line-height: 1; }
 #phoneNumber .cdr-header-phone-icon { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; flex-shrink: 0; }
 </style>
-<link rel="stylesheet" href="/lp/assets/join4-hero.css?v=6">
+<link rel="stylesheet" href="/lp/assets/join4-hero.css?v=7">
 <style>#join4-hero{--primary:{{colors.primary}};--navy:{{colors.navy}};--cta-btn:{{colors.ctaButton}};--cta-btn-hover:{{colors.ctaButtonHover}};--headline-hl:{{colors.headlineHighlight}}}</style>
 {{HEAD_SCRIPTS}}
 </head>
@@ -1033,8 +1033,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <option value="">Select your debt amount</option>
               <option>Under $20,000</option><option>$20,000 - $50,000</option><option>$50,000 - $100,000</option><option>$100,000 - $500,000</option><option>$500,000 - $1,000,000</option><option>$1,000,000+</option>
             </select>
-            <div class="debt-visual-cta" aria-hidden="true">Check My Eligibility for Free <span>→</span></div>
-            <p class="debt-auto-note">Choose an amount above to continue automatically.</p>
+            <button type="button" class="debt-visual-cta" id="debtContinue">Check My Eligibility for Free <span aria-hidden="true">→</span></button>
+            <p class="debt-auto-note">Choose your debt amount, then check your eligibility.</p>
             <p class="eligibility-note" id="debtNotice" role="status" hidden>This program is for businesses with at least $20,000 in MCA or unsecured business debt.</p>
           </fieldset>
           <fieldset class="form-step" data-step="2" hidden disabled>
@@ -2557,7 +2557,7 @@ var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false
 
 
 <script>window.join3FormFields = JSON.parse('{{formFieldsJson}}');</script>
-<script src="/lp/assets/join3.js?v=2" defer></script>
+<script src="/lp/assets/join3.js?v=3" defer></script>
 <script src="/lp/assets/join4.js?v=1" defer></script>
 
   <!-- tkclid capture: tkclid = this page's own Trakkit cookie; affiliate_tkclid = the referral site's Trakkit id from ?tkclid= (persisted) -->
