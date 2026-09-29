@@ -6,6 +6,12 @@ const db = require('../database');
 const { authenticateToken } = require('./auth');
 const join3 = require('../templates/join3');
 
+// Only inherit V3 hero settings; V2 owns all lower-page content.
+const join4HeroDefaults = Object.fromEntries([
+  'badge', 'headline', 'headlineHighlight', 'headlineLine2', 'subheadline',
+  'bulletPoints', 'phone', 'mobileCta', 'formMode', 'formTitle', 'formSubtitle', 'formButton'
+].map(key => [key, join3.defaults[key]]));
+
 const router = express.Router();
 
 // PDF upload — saves to the same uploads dir served at /lp/uploads/
@@ -730,6 +736,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     const saved = JSON.parse(page.content || '{}');
     // Merge with defaults so editor fields show actual values
     const defaults =
+      page.template_type === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
       page.template_type === 'join3' ? { ...defaultContent, ...join3.defaults } :
       page.template_type === 'authority' ? defaultContentAuthority :
       page.template_type === 'pdf' ? defaultContentPdf :
@@ -755,7 +762,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -769,6 +776,7 @@ router.post('/', authenticateToken, (req, res) => {
       traffic_source || '',
       form_id || null,
       JSON.stringify(
+        validTemplateType === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
         validTemplateType === 'join3' ? { ...defaultContent, ...join3.defaults } :
         validTemplateType === 'authority' ? defaultContentAuthority :
         validTemplateType === 'pdf' ? defaultContentPdf :
@@ -845,7 +853,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -897,7 +905,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
   if (!source_campaign_id) return res.status(400).json({ error: 'source_campaign_id required' });
   if (!target_campaign_label) return res.status(400).json({ error: 'target_campaign_label required' });
 
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
   const validType = validTypes.includes(template_type) ? template_type : 'join';
 
   // Pull ad groups for the source campaign from the cached meta
@@ -964,6 +972,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
       `).run(
         name, slug, platform, traffic_source, form_id || null,
         JSON.stringify(
+          validType === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
           validType === 'join3' ? { ...defaultContent, ...join3.defaults } :
           validType === 'authority' ? defaultContentAuthority :
           validType === 'pdf' ? defaultContentPdf :
@@ -1364,7 +1373,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'landing-page-clickchoose.html', join3: 'landing-page-join3.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'landing-page-clickchoose.html', join3: 'landing-page-join3.html', join4: 'landing-page-join4.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1398,6 +1407,7 @@ function generateLandingPage(pageId) {
   // Merge content with defaults so all template placeholders get replaced
   // If a field is explicitly set (even to empty string), respect it
   const defaults =
+    page.template_type === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
     page.template_type === 'join3' ? { ...defaultContent, ...join3.defaults } :
     page.template_type === 'authority' ? defaultContentAuthority :
     page.template_type === 'pdf' ? defaultContentPdf :
@@ -1419,6 +1429,10 @@ function generateLandingPage(pageId) {
   mergedContent.colors = { ...defaults.colors, ...(content.colors || {}) };
 
   if (page.template_type === 'join3') html = join3.render(html, mergedContent, sectionsVisible);
+  if (page.template_type === 'join4') {
+    html = html.replaceAll('{{currentMonthYear}}', new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    html = html.replace(/<!-- JOIN4:HERO -->[\s\S]*?<!-- \/JOIN4:HERO -->/, hero => join3.render(hero, mergedContent));
+  }
 
   // Replace content placeholders
   Object.entries(mergedContent).forEach(([key, value]) => {
@@ -1582,7 +1596,7 @@ function generateLandingPage(pageId) {
   // Join V2: reorder page sections per content.j2SectionOrder.
   // Blocks are delimited by <!-- J2SECTION:key --> markers in the template;
   // unknown/missing keys keep their template position at the end.
-  if ((page.template_type === 'join-v2' || page.template_type === 'clickchoose') && Array.isArray(content.j2SectionOrder) && content.j2SectionOrder.length) {
+  if ((page.template_type === 'join-v2' || page.template_type === 'join4' || page.template_type === 'clickchoose') && Array.isArray(content.j2SectionOrder) && content.j2SectionOrder.length) {
     const j2re = /<!-- J2SECTION:([a-z0-9]+) -->[\s\S]*?<!-- \/J2SECTION:\1 -->/g;
     const j2blocks = {};
     const j2templateOrder = [];
