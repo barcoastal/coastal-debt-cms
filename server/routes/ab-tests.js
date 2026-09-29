@@ -13,7 +13,7 @@ router.post('/exposure', (req, res) => {
 });
 router.get('/', authenticateToken, (req, res) => {
   res.set('Cache-Control', 'no-store');
-  try { res.json(store.report(req.query)); }
+  try { res.json(req.query.source === 'historical' ? store.history.report(req.query) : store.report(req.query)); }
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 module.exports = router;

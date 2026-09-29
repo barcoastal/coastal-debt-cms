@@ -20,6 +20,9 @@
 .ab-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ab-table-wrap { overflow-x: auto; }
 .ab-page table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ab-page table { table-layout: auto; }
+.ab-page td:first-child { min-width: 220px; }
+.ab-page td small { max-width: 320px; white-space: normal; overflow-wrap: anywhere; }
 .ab-page th { background: #f8fafd; text-align: left; color: #687b92; font-size: 11px; text-transform: uppercase; letter-spacing: .065em; padding: 12px 18px; white-space: nowrap; }
 .ab-page td { padding: 15px 18px; border-top: 1px solid #edf0f5; white-space: nowrap; }
 .ab-page td small { display: block; margin-top: 5px; color: #64748b; }
