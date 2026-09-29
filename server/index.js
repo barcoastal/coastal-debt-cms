@@ -100,78 +100,9 @@ app.get('/robots.txt', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'robots.txt'));
 });
 
-// A/B template test: serve variant-b.html if visitor is in variant B
+// Assign and measure each experiment independently of its variant source page.
 const isProduction = !!process.env.RAILWAY_VOLUME_MOUNT_PATH;
-app.use('/lp', (req, res, next) => {
-  // Check if requesting a page directory (ends with / or no extension)
-  if (req.path.match(/\/[^.]+\/?$/) || req.path.endsWith('/')) {
-    const slug = req.path.replace(/^\/|\/$/g, '');
-    if (slug) {
-      try {
-        const page = db.prepare('SELECT id, ab_config FROM landing_pages WHERE slug = ?').get(slug);
-        if (page) {
-          const abCfg = JSON.parse(page.ab_config || '{}');
-          if (abCfg.enabled && (abCfg.variantB_template || abCfg.variantB_page)) {
-            // Disable CDN caching for A/B tested pages
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('CDN-Cache-Control', 'no-store');
-            res.setHeader('Vary', 'Cookie');
-
-            const cookieName = `ab_${page.id}`;
-            const cookies = req.headers.cookie || '';
-            const match = cookies.match(new RegExp(cookieName + '=([^;]+)'));
-            let variant = match ? match[1] : null;
-
-            if (!variant) {
-              const split = abCfg.split || 50;
-              variant = Math.random() * 100 < split ? 'B' : 'A';
-              res.cookie(cookieName, variant, { maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' });
-            }
-
-            console.log(`[A/B] Page ${slug} (id:${page.id}): variant=${variant}, cookie=${match ? match[1] : 'new'}`);
-
-            // Helper: inject variant script into HTML before </head>
-            function sendWithVariant(filePath, variantLabel) {
-              let html = fs.readFileSync(filePath, 'utf8');
-              html = html.replace('</head>', `<script>window._abVariant="${variantLabel}";</script>\n</head>`);
-              res.type('html').send(html);
-            }
-
-            if (variant === 'B') {
-              // Option 1: Serve another existing page as variant B
-              if (abCfg.variantB_page) {
-                const bPage = db.prepare('SELECT slug FROM landing_pages WHERE id = ?').get(abCfg.variantB_page);
-                if (bPage) {
-                  const bPath = path.join(__dirname, '..', 'public', bPage.slug, 'index.html');
-                  if (fs.existsSync(bPath)) {
-                    console.log(`[A/B] Serving page "${bPage.slug}" as variant B for "${slug}"`);
-                    return sendWithVariant(bPath, 'B');
-                  }
-                }
-              }
-              // Option 2: Serve generated variant-b.html
-              const variantPath = path.join(__dirname, '..', 'public', slug, 'variant-b.html');
-              if (fs.existsSync(variantPath)) {
-                return sendWithVariant(variantPath, 'B');
-              } else {
-                console.log(`[A/B] WARNING: no variant B file found for ${slug}`);
-              }
-            } else {
-              // Variant A: serve normal page but inject variant tag
-              const aPath = path.join(__dirname, '..', 'public', slug, 'index.html');
-              if (fs.existsSync(aPath)) {
-                return sendWithVariant(aPath, 'A');
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('[A/B] Error:', e.message);
-      }
-    }
-  }
-  next();
-});
+app.use('/lp', require('./lib/ab-serving')(db, require('./lib/ab-tests'), path.join(__dirname, '..', 'public')));
 
 // Serve generated landing pages with cache headers
 app.use('/lp', (req, res, next) => {
@@ -215,6 +146,7 @@ app.use('/a', (req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/pages', pagesRoutes);
+app.use('/api/ab-tests', require('./routes/ab-tests'));
 app.use('/api/scripts', scriptsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/forms', formsRoutes);

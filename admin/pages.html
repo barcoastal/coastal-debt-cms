@@ -2528,10 +2528,10 @@
             <div class="form-group" style="margin-bottom:16px">
               <label style="font-weight:600">Traffic Split (% to Variant B)</label>
               <div style="display:flex;align-items:center;gap:12px">
-                <input type="range" id="abSplit" min="1" max="99" value="${abConfig.split || 50}" style="flex:1">
-                <span id="abSplitLabel" style="font-weight:700;min-width:80px;text-align:center">${100 - (abConfig.split || 50)}% / ${abConfig.split || 50}%</span>
+                <input type="range" id="abSplit" min="1" max="99" value="${abConfig.split ?? 50}" style="flex:1">
+                <span id="abSplitLabel" style="font-weight:700;min-width:80px;text-align:center">${100 - (abConfig.split ?? 50)}% / ${abConfig.split ?? 50}%</span>
               </div>
-              <small style="color:#6b7280">A: ${100 - (abConfig.split || 50)}% &nbsp;|&nbsp; B: ${abConfig.split || 50}%</small>
+              <small style="color:#6b7280">A: ${100 - (abConfig.split ?? 50)}% &nbsp;|&nbsp; B: ${abConfig.split ?? 50}%</small>
             </div>
 
             <div class="form-group" style="margin-bottom:16px">
@@ -2609,7 +2609,7 @@
           </div>
 
           <div id="abStatsSection" style="margin-top:20px;${abConfig.enabled ? '' : 'display:none'}">
-            <h4 style="margin-bottom:12px;font-size:14px">Results</h4>
+            <h4 style="margin-bottom:12px;font-size:14px">Results <a href="/admin/ab-tests.html?page=${pageId}" style="float:right">Open analytics dashboard →</a></h4>
             <div class="ab-results" id="abStatsGrid">
               <div style="text-align:center;color:#6b7280;grid-column:span 2">Loading stats...</div>
             </div>
@@ -2668,60 +2668,23 @@
     }
 
     async function loadAbStats(pageId) {
+      const grid = document.getElementById('abStatsGrid');
       try {
-        const res = await api(`/api/pages/${pageId}/ab-stats`);
-        const grid = document.getElementById('abStatsGrid');
-        const totalVisitors = res.visitors.A + res.visitors.B;
-        const totalLeads = res.leads.A + res.leads.B;
-        const crA = res.visitors.A > 0 ? (res.leads.A / res.visitors.A * 100).toFixed(1) : '0.0';
-        const crB = res.visitors.B > 0 ? (res.leads.B / res.visitors.B * 100).toFixed(1) : '0.0';
-
-        function leadRows(leads) {
-          if (!leads || !leads.length) return '<tr><td colspan="4" style="color:#9ca3af;text-align:center;padding:12px">No leads yet</td></tr>';
-          return leads.map(l => `<tr>
-            <td style="padding:6px 8px;font-size:12px">${l.first_name || ''} ${l.last_name || ''}</td>
-            <td style="padding:6px 8px;font-size:12px">${l.email || ''}</td>
-            <td style="padding:6px 8px;font-size:12px">${l.phone || ''}</td>
-            <td style="padding:6px 8px;font-size:12px;color:#9ca3af">${new Date(l.created_at).toLocaleDateString()}</td>
-          </tr>`).join('');
-        }
-
-        grid.innerHTML = `
-          <div class="ab-variant-card variant-a">
-            <h4>Variant A (Control)</h4>
-            <div class="ab-stat">${res.visitors.A}</div>
-            <div class="ab-label">visitors</div>
-            <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.A}</div>
-            <div class="ab-label">leads (${crA}% CR)</div>
-            <div style="margin-top:12px;max-height:200px;overflow-y:auto">
-              <table style="width:100%;font-size:12px;table-layout:auto">
-                <thead><tr style="border-bottom:1px solid #e5e7eb"><th style="padding:4px 8px;text-align:left">Name</th><th style="padding:4px 8px;text-align:left">Email</th><th style="padding:4px 8px;text-align:left">Phone</th><th style="padding:4px 8px;text-align:left">Date</th></tr></thead>
-                <tbody>${leadRows(res.leadRecords?.A)}</tbody>
-              </table>
-            </div>
-          </div>
-          <div class="ab-variant-card variant-b">
-            <h4>Variant B</h4>
-            <div class="ab-stat">${res.visitors.B}</div>
-            <div class="ab-label">visitors</div>
-            <div class="ab-stat" style="font-size:1.5rem;margin-top:8px">${res.leads.B}</div>
-            <div class="ab-label">leads (${crB}% CR)</div>
-            <div style="margin-top:12px;max-height:200px;overflow-y:auto">
-              <table style="width:100%;font-size:12px;table-layout:auto">
-                <thead><tr style="border-bottom:1px solid #e5e7eb"><th style="padding:4px 8px;text-align:left">Name</th><th style="padding:4px 8px;text-align:left">Email</th><th style="padding:4px 8px;text-align:left">Phone</th><th style="padding:4px 8px;text-align:left">Date</th></tr></thead>
-                <tbody>${leadRows(res.leadRecords?.B)}</tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      } catch (err) {
-        document.getElementById('abStatsGrid').innerHTML = '<div style="color:#ef4444;grid-column:span 2">Failed to load stats</div>';
-      }
+        const data = await api(`/api/pages/${pageId}/ab-stats`);
+        grid.innerHTML = ['A', 'B'].map(v => `<div class="ab-variant-card variant-${v.toLowerCase()}">
+          <h4>Variant ${v}</h4><div class="ab-stat">${data.visitors[v]}</div><div class="ab-label">measured visitors</div>
+          <p>${data.leads[v]} leads · ${data.visitors[v] ? (data.converted[v] / data.visitors[v] * 100).toFixed(1) : '0.0'}% converted</p></div>`).join('') +
+          `<p style="grid-column:1/-1;color:#64748b;font-size:13px">Current run · Measured since ${data.trackingSince ? escapeHtml(new Date(data.trackingSince).toLocaleDateString()) : 'test starts'}. Open the dashboard for dates, daily results, and run history.</p>`;
+      } catch (err) { grid.textContent = 'Unable to load results. Open the dashboard to retry.'; }
     }
+
+    // Deep link from the experiment dashboard to this page's existing settings.
+    const requestedAbPage = Number(new URLSearchParams(location.search).get('ab'));
+    if (requestedAbPage > 0) showAbTest(requestedAbPage);
 
     async function saveAbConfig() {
       const enabled = document.getElementById('abEnabled').checked;
-      const split = parseInt(document.getElementById('abSplit').value) || 50;
+      const split = parseInt(document.getElementById('abSplit').value);
 
       // Collect variant B overrides (only non-empty values)
       const variantB = {};

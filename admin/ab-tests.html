@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A/B Tests | Coastal Debt CMS</title>
+<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=1">
+<script src="/admin/assets/js/workspace.js?v=2" defer></script>
+</head><body class="ab-page"><div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="nautilus-brand">NAUTILUS</span>
+        <img src="https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20(1).svg" alt="Coastal Debt" style="height:36px;background:#fff;padding:8px 12px;border-radius:8px;">
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Dashboard
+        </a>
+        <a href="/admin/deep-analysis.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H4.6c-.56 0-.84 0-1.05-.11a1 1 0 01-.44-.44C3 20.24 3 19.96 3 19.4V3"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          Google Deep Analysis
+        </a>
+        <a href="/admin/inbox.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Inbox
+        </a>
+        <a href="/admin/engagement.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          Engagement
+        </a>
+        <a href="/admin/leads.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+        </a>
+        <a href="/admin/pipeline.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pipeline
+        </a>
+        <a href="/admin/email-campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Marketing
+        </a>
+        <a href="/admin/visitors.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Visitors
+        </a>
+        <a href="/admin/calls.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Calls
+        </a>
+        <a href="/admin/conversions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Conversions
+        </a>
+        <a href="/admin/campaigns.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h12v4H3z"/><path d="M3 17h8v4H3z"/></svg>
+          Campaigns
+        </a>
+        <button class="nav-group-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Webleads
+          <svg class="nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <a href="/admin/google-ads.html">Google Ads</a>
+          <a href="/admin/bing-ads.html">Bing Ads</a>
+          <a href="/admin/meta-ads.html">Meta Ads</a>
+          <a href="/admin/tiktok.html">TikTok</a>
+          <a href="/admin/outbrain.html">Outbrain</a>
+          <a href="/admin/reddit.html">Reddit</a>
+          <a href="/admin/affiliate-leads.html">Affiliate Leads</a>
+          <a href="/admin/facebook-debug.html">FB Debug</a>
+          <a href="/admin/fb-deep-events.html">FB Deep Events</a>
+          <a href="/admin/tiktok-debug.html">TikTok Debug</a>
+        </div>
+        <a href="/admin/redtrack.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          RedTrack
+        </a>
+        <a href="/admin/google-sheet.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          Google Sheet
+        </a>
+        <a href="/admin/utm-builder.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          UTM Builder
+        </a>
+        <a href="/admin/organic.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Organic Traffic
+        </a>
+        <a href="/admin/pages.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Landing Pages
+        </a>
+        <a href="/admin/articles.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="10" y1="6" x2="18" y2="6"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          Articles
+        </a>
+        <a href="/admin/ad-generator.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-6 6"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
+          Ad Generator
+        </a>
+        <a href="/admin/forms.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+          Forms
+        </a>
+        <a href="/admin/scripts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Scripts
+        </a>
+        <a href="/admin/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Integrations
+        </a>
+        <a href="/admin/platform-settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-email" id="userEmail">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="logout()" style="width: 100%;">Logout</button>
+      </div>
+    </aside>
+<main class="main-content">
+  <header class="page-header"><div><div class="workspace-eyebrow">Landing page analytics</div><h1>A/B Tests</h1><p class="ab-muted">See what changes turn visitors into leads.</p></div><div class="workspace-toolbar"><button class="btn btn-secondary" id="refresh">Refresh</button><button class="btn btn-primary" id="exportResults" disabled>Export CSV</button></div></header>
+  <form class="card ab-filters" id="filters">
+    <label>Date range<select id="datePreset"><option value="all">All measured dates</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="custom">Custom range</option></select></label>
+    <label>From<input type="date" id="dateFrom"></label><label>To<input type="date" id="dateTo"></label><button class="btn btn-secondary" type="submit">Apply dates</button><span class="ab-muted ab-timezone" id="timezone"></span>
+  </form>
+  <div id="error" class="ab-error" role="alert" hidden></div><p id="loading" class="ab-muted" role="status">Loading test results…</p>
+  <div id="report" aria-busy="true">
+    <p class="ab-notice" id="coverage">Loading tracking history…</p>
+    <div class="ab-totals"><div class="ab-total"><span>Active tests</span><strong id="activeTotal">—</strong></div><div class="ab-total"><span>Test visitors</span><strong id="visitorTotal">—</strong></div><div class="ab-total"><span>Attributed leads</span><strong id="leadTotal">—</strong></div><div class="ab-total"><span>Visitor conversion rate</span><strong id="rateTotal">—</strong></div></div>
+    <section class="ab-panel"><div class="ab-panel-head"><div><h2>Your experiments</h2><p class="ab-muted" id="testCount"></p></div><div class="ab-tools"><input type="search" id="testSearch" aria-label="Search tests" placeholder="Search tests…"><select id="testStatus" aria-label="Filter test status"><option value="all">All runs</option><option value="active">Active runs</option><option value="ended">Ended runs</option></select></div></div>
+      <div class="ab-table-wrap"><table><thead><tr><th>Test / Run</th><th>Status</th><th>Split A / B</th><th>Visitors</th><th>Leads</th><th>Conversion A / B</th><th>Dates</th></tr></thead><tbody id="testsBody"></tbody></table></div>
+    </section>
+    <div id="runDetail" hidden>
+      <section class="ab-panel"><div class="ab-run-heading"><div class="workspace-eyebrow">Variant comparison</div><h2 id="runName"></h2><p class="ab-muted" id="runMeta"></p><div class="ab-tools"><select id="runSelect" aria-label="Select test run"></select><a class="btn btn-secondary" id="pageLink" target="_blank" rel="noopener">View test page ↗</a><a class="btn btn-secondary" id="configureLink">Test settings</a></div></div><div class="ab-variants" id="variantCards"></div><p class="ab-insight" id="insight"></p><details><summary>Saved configuration for this run</summary><pre id="configSnapshot"></pre></details></section>
+      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Daily performance</h2><p class="ab-muted">Grouped by the visitor’s first measured date in this run.</p></div><select id="chartMetric" aria-label="Chart metric"><option value="visitors">Visitors</option><option value="leads">Leads</option><option value="rate">Conversion rate</option></select></div><div class="ab-chart"><div class="ab-legend"><span>Variant A</span><span>Variant B</span></div><div id="dailyChart"></div></div><div class="ab-table-wrap"><table><thead><tr><th>Date</th><th>A visitors</th><th>A leads</th><th>A conversion</th><th>B visitors</th><th>B leads</th><th>B conversion</th></tr></thead><tbody id="dailyBody"></tbody></table></div></section>
+      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Recent attributed leads</h2><p class="ab-muted">Latest 50 leads from visitors in the selected date range.</p></div><a href="/admin/leads.html">View leads →</a></div><div class="ab-table-wrap"><table><thead><tr><th>Lead ID</th><th>Variant</th><th>First test visit</th><th>Lead created</th></tr></thead><tbody id="leadsBody"></tbody></table></div></section>
+    </div>
+    <p class="ab-muted">How results are counted: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct traffic to the source page for variant B is excluded. Clearing cookies or switching browsers counts as a new visitor. Traffic without a measurable test session is excluded.</p>
+  </div>
+</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=1"></script></body></html>

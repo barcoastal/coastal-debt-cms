@@ -229,6 +229,10 @@ router.post('/', async (req, res) => {
     ab_variant || ''
   );
 
+  // Attribute against the test URL, preserving the selected page's form/webhook routing.
+  try { require('../lib/ab-tests').convert(req, Number(result.lastInsertRowid), page?.id); }
+  catch (err) { console.error('A/B lead attribution failed:', err.message); }
+
   // Determine webhook URL: page/article webhook overrides form webhook
   const sourceEntity = page || article;
   const webhookUrl = (page ? page.webhook_url : null) || (form ? form.webhook_url : null);

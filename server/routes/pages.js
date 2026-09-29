@@ -1263,12 +1263,20 @@ router.put('/:id/ab-config', authenticateToken, (req, res) => {
   if (!page) return res.status(404).json({ error: 'Page not found' });
 
   const { ab_config } = req.body;
-  if (!ab_config || typeof ab_config !== 'object') {
+  if (!ab_config || typeof ab_config !== 'object' || Array.isArray(ab_config)) {
     return res.status(400).json({ error: 'ab_config object required' });
+  }
+
+  const split = Number(ab_config.split ?? 50);
+  if (!Number.isFinite(split) || split < 0 || split > 100) return res.status(400).json({ error: 'Traffic split must be from 0 to 100.' });
+  ab_config.split = split;
+  if (ab_config.variantB_page && (Number(ab_config.variantB_page) === page.id || !db.prepare('SELECT id FROM landing_pages WHERE id = ?').get(ab_config.variantB_page))) {
+    return res.status(400).json({ error: 'Select another existing page for variant B.' });
   }
 
   db.prepare('UPDATE landing_pages SET ab_config = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .run(JSON.stringify(ab_config), req.params.id);
+  require('../lib/ab-tests').sync({ ...page, ab_config: JSON.stringify(ab_config) });
 
   // Regenerate page with new AB config
   generateLandingPage(req.params.id);
@@ -1297,47 +1305,18 @@ router.get('/:id/ab-debug', authenticateToken, (req, res) => {
   });
 });
 
-// Get A/B test stats (per-variant visitors, leads)
+// Compatibility endpoint: use measured experiment traffic, never direct B-page traffic.
 router.get('/:id/ab-stats', authenticateToken, (req, res) => {
-  const page = db.prepare('SELECT id, slug, ab_config FROM landing_pages WHERE id = ?').get(req.params.id);
+  const page = db.prepare('SELECT id FROM landing_pages WHERE id = ?').get(req.params.id);
   if (!page) return res.status(404).json({ error: 'Page not found' });
-
-  const pageId = page.id;
-
-  const abCfg = JSON.parse(page.ab_config || '{}');
-  const variantBPageId = abCfg.variantB_page || null;
-
-  // Count visitors & leads for both variants
-  // Variant A includes visitors with empty/null ab_variant (pre-A/B or untagged)
-  const visitorA = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL)").get(`%${page.slug}%`)?.c || 0;
-  let visitorB = db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ? AND ab_variant = 'B'").get(`%${page.slug}%`)?.c || 0;
-  if (variantBPageId) {
-    const bPage = db.prepare('SELECT slug FROM landing_pages WHERE id = ?').get(variantBPageId);
-    if (bPage) {
-      visitorB += db.prepare("SELECT COUNT(*) as c FROM visitors WHERE landing_page LIKE ?").get(`%${bPage.slug}%`)?.c || 0;
-    }
-  }
-
-  // Leads: variant A from this page, variant B from this page OR the variant B page
-  const leadA = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL)").get(pageId)?.c || 0;
-  let leadB = db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ? AND ab_variant = 'B'").get(pageId)?.c || 0;
-  if (variantBPageId) {
-    leadB += db.prepare("SELECT COUNT(*) as c FROM leads WHERE landing_page_id = ?").get(variantBPageId)?.c || 0;
-  }
-
-  // Get actual lead records for both variants
-  const leadsA = db.prepare("SELECT id, first_name, last_name, email, phone, created_at FROM leads WHERE landing_page_id = ? AND (ab_variant = 'A' OR ab_variant = '' OR ab_variant IS NULL) ORDER BY created_at DESC LIMIT 20").all(pageId);
-  let leadsB = db.prepare("SELECT id, first_name, last_name, email, phone, created_at, ab_variant FROM leads WHERE landing_page_id = ? AND ab_variant = 'B' ORDER BY created_at DESC LIMIT 20").all(pageId);
-  if (variantBPageId) {
-    const bPageLeads = db.prepare("SELECT id, first_name, last_name, email, phone, created_at FROM leads WHERE landing_page_id = ? ORDER BY created_at DESC LIMIT 20").all(variantBPageId);
-    leadsB = [...leadsB, ...bPageLeads].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
-  }
-
-  res.json({
-    visitors: { A: visitorA, B: visitorB },
-    leads: { A: leadA, B: leadB },
-    leadRecords: { A: leadsA, B: leadsB }
-  });
+  try {
+    const report = require('../lib/ab-tests').report({ ...req.query, page: page.id });
+    const run = report.runs.find(r => r.page_id === page.id);
+    res.json({ visitors: { A: run?.stats.A.visitors || 0, B: run?.stats.B.visitors || 0 },
+      leads: { A: run?.stats.A.leads || 0, B: run?.stats.B.leads || 0 },
+      converted: { A: run?.stats.A.converted || 0, B: run?.stats.B.converted || 0 },
+      trackingSince: run?.started_at || null, leadRecords: { A: [], B: [] } });
+  } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 // Generate landing page HTML
@@ -1552,14 +1531,15 @@ function generateLandingPage(pageId) {
   if (abConfig.enabled && abConfig.variantB) {
     const abJson = JSON.stringify({
       id: page.id,
-      split: abConfig.split || 50,
+      split: abConfig.split ?? 50,
       variantB: abConfig.variantB
     });
     const abScript = `<script>
 (function(){
   var cfg=${abJson};
+  if(window._abTestPageId && window._abTestPageId!==cfg.id)return;
   var ck=document.cookie.match('ab_'+cfg.id+'=([^;]+)');
-  var v=ck?ck[1]:(Math.random()*100<cfg.split?'B':'A');
+  var v=window._abVariant||(ck?ck[1]:(Math.random()*100<cfg.split?'B':'A'));
   if(!ck)document.cookie='ab_'+cfg.id+'='+v+';path=/;max-age=2592000';
   window._abVariant=v;
   if(v==='B'){

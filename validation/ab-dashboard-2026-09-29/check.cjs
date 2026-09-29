@@ -1,0 +1,88 @@
+const assert = require('node:assert/strict');
+const Database = require('better-sqlite3');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const {createStore, dateRange} = require('../../server/lib/ab-store');
+const serving = require('../../server/lib/ab-serving');
+const db = new Database(':memory:');
+db.exec(`CREATE TABLE landing_pages(id INTEGER PRIMARY KEY,name TEXT,slug TEXT,template_type TEXT,ab_config TEXT);
+CREATE TABLE settings(key TEXT,value TEXT); INSERT INTO settings VALUES ('timezone','America/New_York');`);
+const put = (id,name,slug,cfg) => db.prepare('INSERT OR REPLACE INTO landing_pages VALUES (?,?,?,?,?)').run(id,name,slug,'join3',JSON.stringify(cfg));
+put(1,'Assessment','assessment',{enabled:true,split:80,variantB_page:2});
+put(2,'Source page','source',{});
+let time = Date.parse('2026-09-29T04:00:00Z');
+const store = createStore(db, () => time);
+store.syncAll();
+const run = store.sync(db.prepare('SELECT * FROM landing_pages WHERE id=1').get());
+const a = store.assign(run,null,'A');
+const b = store.assign(run,null,'B');
+store.expose(a.token); store.expose(b.token);
+assert.equal(store.assign(run,a.token,'B').token,a.token,'repeat browser must keep its assignment');
+store.expose(a.token);
+const req = (slug,token,header) => ({cookies:{ab_session_1:token},get:key => ({host:'example.test',referer:`https://example.test/lp/${slug}/`,'x-coastal-ab-exposure':header})[key]});
+store.convert(req('assessment',a.token),1,1);
+store.convert(req('assessment',b.token),2,2);
+store.convert(req('assessment',b.token),2,2);
+store.convert(req('assessment',b.token),3,2);
+store.convert(req('source',b.token),4,2); // Direct B visits are not test traffic.
+store.convert(req('assessment',a.token),5,2); // A cannot convert on the B destination.
+let report=store.report({from:'2026-09-29',to:'2026-09-29'});
+assert.deepEqual(report.runs[0].stats.A,{visitors:1,leads:1,converted:1,rate:100});
+assert.deepEqual(report.runs[0].stats.B,{visitors:1,leads:2,converted:1,rate:100});
+assert.equal(report.recent.length,3);
+assert.equal(report.daily[0].date,'2026-09-29');
+assert.equal(store.report({to:'2026-09-28'}).runs[0].stats.A.visitors,0,'end date is local midnight, exclusive');
+assert.equal(dateRange({from:'2026-03-08',to:'2026-03-08'},'America/New_York').end - dateRange({from:'2026-03-08',to:'2026-03-08'},'America/New_York').start,23*3600000,'DST spring day has 23 hours');
+assert.equal(dateRange({from:'2026-11-01',to:'2026-11-01'},'America/New_York').end - dateRange({from:'2026-11-01',to:'2026-11-01'},'America/New_York').start,25*3600000,'DST fall day has 25 hours');
+assert.throws(()=>store.report({from:'2026-09-30',to:'2026-09-29'}));
+assert.throws(()=>store.report({from:'2026-02-30'}));
+// Stable configs retain their run. Changes, disabling and re-enabling preserve history.
+assert.equal(store.sync(db.prepare('SELECT * FROM landing_pages WHERE id=1').get()).id,run.id);
+time+=86400000;
+put(1,'Assessment','assessment',{split:0,variantB_page:2,enabled:true});
+const second = store.sync(db.prepare('SELECT * FROM landing_pages WHERE id=1').get());
+assert.notEqual(second.id,run.id);
+const next = store.assign(second,b.token,'B',()=>0);
+assert.equal(next.variant,'A','0% B must allocate A, ignoring stale previous-run cookie');
+store.convert(req('assessment',next.token,b.token),6,2);
+assert.equal(db.prepare('SELECT token FROM ab_conversions WHERE lead_id=6').get().token,b.token,'old-tab conversion must remain in its old run');
+put(1,'Assessment','assessment',{split:100,enabled:true});
+const third=store.sync(db.prepare('SELECT * FROM landing_pages WHERE id=1').get());
+assert.equal(store.assign(third,null,'A',()=>.9999).variant,'B');
+put(1,'Assessment','assessment',{enabled:false}); store.syncAll();
+assert.equal(db.prepare('SELECT count(*) n FROM ab_runs WHERE ended_at IS NULL').get().n,0);
+put(1,'Assessment','assessment',{split:80,enabled:true,variantB_page:2}); store.syncAll();
+assert.equal(store.report().runs.length,4);
+// Real serving middleware: B uses its source HTML but keeps the test's identity.
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'coastal-ab-check-'));
+for (const slug of ['assessment','source']) {fs.mkdirSync(path.join(dir,slug)); fs.writeFileSync(path.join(dir,slug,'index.html'),`<html><head><script>original()</script></head><body>${slug}</body></html>`);}
+const current=store.sync(db.prepare('SELECT * FROM landing_pages WHERE id=1').get());
+const participant=store.assign(current,null,null,()=>0);
+const response={headers:{},cookies:{},set(k,v){this.headers[k]=v;return this;},vary(){},cookie(k,v){this.cookies[k]=v;},type(){return this;},send(html){this.html=html;}};
+let fellThrough=false;
+serving(db,store,dir)({path:'/assessment/',method:'GET',cookies:{ab_session_1:participant.token},secure:true},response,()=>fellThrough=true);
+assert.equal(fellThrough,false);
+assert.match(response.html,/<body>source<\/body>/);
+assert.match(response.html,/window\._abTestPageId=1/);
+assert.match(response.html,/window\._abVariant="B"/);
+assert.ok(response.html.indexOf('_abVariant')<response.html.indexOf('original()'));
+assert.match(response.headers['Cache-Control'],/no-store/);
+fs.unlinkSync(path.join(dir,'source','index.html'));
+fellThrough=false;
+serving(db,store,dir)({path:'/assessment/',method:'GET',cookies:{}},response,()=>fellThrough=true);
+assert.equal(fellThrough,true,'missing variant must not falsely record B');
+// Keep source-copy content changes from running their own A/B experiment within this test.
+assert.match(fs.readFileSync(path.join(__dirname,'../../server/routes/pages.js'),'utf8'),/window\._abTestPageId!==cfg.id/);
+// Verify the browser shim only attaches context to same-origin lead submissions.
+const vm=require('node:vm'); const calls=[];
+const window={_abExposure:b.token,fetch:(...args)=>{calls.push(args);return Promise.resolve({});}};
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../public/assets/ab-tracking.js'),'utf8'),{window,fetch:(...args)=>window.fetch(...args),URL,Headers,location:{href:'https://example.test/lp/assessment/',origin:'https://example.test'},document:{visibilityState:'visible',removeEventListener(){}}});
+window.fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+assert.equal(calls.at(-1)[1].headers.get('X-Coastal-AB-Exposure'),b.token);
+window.fetch('https://other.test/api/leads',{method:'POST',body:'{}'});
+assert.equal(calls.at(-1)[1].headers,undefined);
+window.fetch('/api/visitors/track',{method:'POST',body:'{}'});
+assert.equal(calls.at(-1)[1].headers,undefined);
+fs.rmSync(dir,{recursive:true});
+console.log('PASS: allocation, repeat visits, direct-B exclusion, conversion deduplication, old-tab attribution, date boundaries, DST, run history, serving, missing B, and scoped client tracking.');

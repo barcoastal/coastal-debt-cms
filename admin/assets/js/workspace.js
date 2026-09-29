@@ -13,7 +13,16 @@
   };
   if (nav) {
     nav.setAttribute('aria-label', 'Main navigation');
-    const contentLinks = ['pages.html', 'articles.html', 'forms.html', 'ad-generator.html']
+    if (!nav.querySelector('a[href="/admin/ab-tests.html"]')) {
+      const tests = document.createElement('a');
+      tests.href = '/admin/ab-tests.html';
+      tests.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10m8 10V4m8 16v-8"/></svg>A/B Tests';
+      if (location.pathname === tests.pathname) tests.className = 'active';
+      const visitors = nav.querySelector('a[href="/admin/visitors.html"]');
+      if (visitors) visitors.after(tests); else nav.append(tests);
+    }
+
+    const contentLinks = ['pages.html', 'ab-tests.html', 'articles.html', 'forms.html', 'ad-generator.html']
       .map(file => nav.querySelector('a[href="/admin/' + file + '"]')).filter(Boolean);
     const fragment = document.createDocumentFragment();
     const finder = document.getElementById('qfNavBtn');
