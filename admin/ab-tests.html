@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A/B Tests | Coastal Debt CMS</title>
-<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=2">
+<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=3">
 <script src="/admin/assets/js/workspace.js?v=2" defer></script>
 </head><body class="ab-page"><div class="app-container">
     <aside class="sidebar">
@@ -130,15 +130,15 @@
 <main class="main-content">
   <header class="page-header"><div><div class="workspace-eyebrow">Landing page analytics</div><h1>A/B Tests</h1><p class="ab-muted">See what changes turn visitors into leads.</p></div><div class="workspace-toolbar"><button class="btn btn-secondary" id="refresh">Refresh</button><button class="btn btn-primary" id="exportResults" disabled>Export CSV</button></div></header>
   <form class="card ab-filters" id="filters">
-    <label>Results source<select id="resultsSource"><option value="historical">Historical results</option><option value="live">Live tracking</option></select></label>
+    <label>Results source<select id="resultsSource"><option value="all">All tests</option><option value="live">Live tracking</option><option value="historical">Historical results</option></select></label>
     <label>Date range<select id="datePreset"><option value="all">All dates</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="custom">Custom range</option></select></label>
     <label>From<input type="date" id="dateFrom"></label><label>To<input type="date" id="dateTo"></label><button class="btn btn-secondary" type="submit">Apply dates</button><span class="ab-muted ab-timezone" id="timezone"></span>
   </form>
   <div id="error" class="ab-error" role="alert" hidden></div><p id="loading" class="ab-muted" role="status">Loading test results…</p>
   <div id="report" aria-busy="true">
-    <p class="ab-notice" id="coverage">Loading tracking history…</p>
-    <div class="ab-totals"><div class="ab-total"><span id="periodCountLabel">Active tests</span><strong id="activeTotal">—</strong></div><div class="ab-total"><span>Test visitors</span><strong id="visitorTotal">—</strong></div><div class="ab-total"><span>Attributed leads</span><strong id="leadTotal">—</strong></div><div class="ab-total"><span id="totalRateLabel">Visitor conversion rate</span><strong id="rateTotal">—</strong></div></div>
-    <section class="ab-panel"><div class="ab-panel-head"><div><h2>Your experiments</h2><p class="ab-muted" id="testCount"></p></div><div class="ab-tools"><input type="search" id="testSearch" aria-label="Search tests" placeholder="Search tests…"><select id="testStatus" aria-label="Filter test status"><option value="all">All runs</option><option value="active">Active runs</option><option value="ended">Ended runs</option></select></div></div>
+    <div class="ab-notice ab-coverage"><p id="coverage">Loading tracking history…</p><button class="btn btn-secondary btn-small" id="showAllTests" hidden>Show all tests</button></div>
+    <div class="ab-totals"><div class="ab-total"><span id="periodCountLabel">Active tests</span><strong id="activeTotal">—</strong></div><div class="ab-total"><span id="visitorTotalLabel">Live visitors</span><strong id="visitorTotal">—</strong></div><div class="ab-total"><span id="leadTotalLabel">Live leads</span><strong id="leadTotal">—</strong></div><div class="ab-total"><span id="totalRateLabel">Visitor conversion rate</span><strong id="rateTotal">—</strong></div></div>
+    <section class="ab-panel"><div class="ab-panel-head"><div><h2>Your experiments</h2><p class="ab-muted" id="testCount"></p></div><div class="ab-tools"><input type="search" id="testSearch" aria-label="Search tests" placeholder="Search tests…"><select id="testStatus" aria-label="Filter test status"><option value="all">All statuses</option><option value="active">Active</option><option value="ended">Ended</option><option value="historical">Historical</option></select></div></div>
       <div class="ab-table-wrap"><table><thead><tr><th>Test / Run</th><th>Status</th><th>Split A / B</th><th>Visitors</th><th>Leads</th><th id="comparisonRateHeader">Conversion A / B</th><th>Dates</th></tr></thead><tbody id="testsBody"></tbody></table></div>
     </section>
     <div id="runDetail" hidden>
@@ -148,4 +148,4 @@
     </div>
     <p class="ab-muted" id="methodology">How results are counted: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct traffic to the source page for variant B is excluded. Clearing cookies or switching browsers counts as a new visitor. Traffic without a measurable test session is excluded.</p>
   </div>
-</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=2"></script></body></html>
+</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=3"></script></body></html>

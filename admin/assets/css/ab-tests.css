@@ -61,3 +61,7 @@
 @media(max-width:1000px) { .ab-totals { grid-template-columns: 1fr 1fr; } }
 @media(max-width:768px) { .ab-page .main-content { max-width: 100%; } .ab-variants { grid-template-columns: 1fr; padding: 16px; } .ab-filters { padding: 16px; } .ab-filters label { flex: 1; min-width: 130px; } .ab-filters .ab-timezone { width: 100%; margin: 0; } .ab-total { padding: 16px; } .ab-panel-head, .ab-run-heading { padding: 18px 16px; } .ab-tools { width: 100%; } .ab-tools input { width: 100%; } .ab-variant-stats { gap: 22px; } }
 @media(max-width:768px) { .ab-filters label:first-child { flex-basis: 100%; } }
+
+.ab-coverage { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ab-coverage p { flex: 1; min-width: 220px; margin: 0; }
+.ab-coverage button { flex-shrink: 0; }

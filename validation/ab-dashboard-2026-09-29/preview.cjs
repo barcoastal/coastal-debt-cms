@@ -28,7 +28,7 @@ for(let day=1;day<20;day++) for(let i=0;i<30;i++) {
 const historical=require('../../server/lib/ab-history').createHistory(db);historical.importOnce();
 const app=express();app.use(express.json());app.use(require('cookie-parser')());
 app.use('/admin',express.static(path.join(__dirname,'../../admin')));
-app.get('/api/ab-tests',(req,res)=>{try{res.json(req.query.source==='historical'?historical.report(req.query):store.report(req.query));}catch(e){res.status(400).json({error:e.message});}});
+app.get('/api/ab-tests',(req,res)=>{try{res.json(require('../../server/lib/ab-report').report({...store,history:historical},req.query));}catch(e){res.status(400).json({error:e.message});}});
 app.get('/api/auth/me',(req,res)=>res.json({name:'Design preview',email:'Local fixtures only'}));
 app.get('/api/settings',(req,res)=>res.json({timezone:'America/New_York'}));
 app.get('/api/pages',(req,res)=>res.json({pages:db.prepare('SELECT * FROM landing_pages').all()}));

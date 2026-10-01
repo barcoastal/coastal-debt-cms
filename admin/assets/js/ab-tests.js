@@ -12,7 +12,7 @@
     return [new Date(Date.parse(today + 'T12:00:00Z') - days * 86400000).toISOString().slice(0, 10), today];
   }
   function selected() { return data?.runs.find(r => r.id === data.selectedId); }
-  function historical() { return data?.source === 'historical'; }
+  function historical() { return selected()?.source === 'historical'; }
   function runLabel(run) { return run.source === 'historical' ? 'Historical period ' + Math.abs(run.id) : 'Run #' + run.id; }
   function status(run) { return run.source === 'historical' ? 'Historical' : run.ended_at ? 'Ended' : 'Active'; }
   function splitLabel(run) { return run.config.split == null ? 'Not recorded' : (100 - Number(run.config.split)) + '% / ' + Number(run.config.split) + '%'; }
@@ -21,15 +21,15 @@
   function drawTests() {
     const search = el('testSearch').value.toLowerCase();
     const filter = el('testStatus').value;
-    const runs = data.runs.filter(r => (r.name + ' ' + r.slug + ' ' + r.b_name).toLowerCase().includes(search) && (filter === 'all' || (filter === 'active' ? !r.ended_at : r.ended_at)));
+    const runs = data.runs.filter(r => (r.name + ' ' + r.slug + ' ' + r.b_name).toLowerCase().includes(search) && (filter === 'all' || status(r).toLowerCase() === filter));
     el('testsBody').innerHTML = runs.map(r => `<tr class="${r.id === data.selectedId ? 'ab-selected' : ''}">
       <td><button class="ab-test-link" data-run="${r.id}">${esc(r.name)}</button><small>/lp/${esc(r.slug)}/ · ${runLabel(r)}</small></td>
-      <td><span class="ab-status ${r.ended_at ? '' : 'active'}">${status(r)}</span></td>
+      <td><span class="ab-status ${status(r) === 'Active' ? 'active' : ''}">${status(r)}</span></td>
       <td>${splitLabel(r)}</td>
       <td>${n(r.stats.A.visitors + r.stats.B.visitors)}</td><td>${n(r.stats.A.leads + r.stats.B.leads)}</td>
-      <td><span style="color:var(--a)">${pct(r.stats.A.rate)}</span> / <span style="color:var(--b)">${pct(r.stats.B.rate)}</span></td>
-      <td>${esc(date(r.started_at))}<small>${r.ended_at ? (historical() ? 'Through ' : 'Ended ') + esc(date(r.ended_at)) : 'Currently running'}</small></td></tr>`).join('') || '<tr><td colspan="7" class="ab-empty">No tests match these filters. Enable an A/B test from Landing Pages to start.</td></tr>';
-    el('testCount').textContent = `${runs.length} saved ${historical() ? 'period' : 'run'}${runs.length === 1 ? '' : 's'}`;
+      <td><span style="color:var(--a)">${pct(r.stats.A.rate)}</span> / <span style="color:var(--b)">${pct(r.stats.B.rate)}</span><small>${r.source === 'historical' ? 'Historical estimate' : 'Measured conversion'}</small></td>
+      <td>${esc(date(r.started_at))}<small>${r.ended_at ? (r.source === 'historical' ? 'Through ' : 'Ended ') + esc(date(r.ended_at)) : 'Currently running'}</small></td></tr>`).join('') || '<tr><td colspan="7" class="ab-empty">No tests match these filters. Try All tests or clear your search.</td></tr>';
+    el('testCount').textContent = `${runs.length} ${runs.length === 1 ? 'entry' : 'entries'} · ${data.activeCount} active ${data.activeCount === 1 ? 'test' : 'tests'} · ${data.historicalCount} historical ${data.historicalCount === 1 ? 'period' : 'periods'}`;
   }
   function drawChart() {
     const metric = el('chartMetric').value;
@@ -55,12 +55,18 @@
     el('dailyChart').innerHTML = svg;
   }
   function render() {
+    const historyOnly = data.source === 'historical';
     el('timezone').textContent = 'Dates in ' + data.timezone;
-    el('coverage').textContent = historical() ? `Historical records recovered through ${date(data.trackingSince)}. Test periods come from saved activity logs. Lead URLs identify the original test; missing variant tags are shown as inferred. Historical visitor counts and conversion rates are estimates.` : data.trackingSince ? `Live measurement began ${date(data.trackingSince)}. Switch to Historical results for earlier test results. Each split or variant configuration change starts a separate run.` : 'Enable an A/B test on a landing page to begin measuring results.';
-    el('periodCountLabel').textContent = historical() ? 'Historical periods' : 'Active tests';
-    el('totalRateLabel').textContent = historical() ? 'Estimated lead rate' : 'Visitor conversion rate';
-    el('testStatus').hidden = historical();
-    el('comparisonRateHeader').textContent = historical() ? 'Est. lead rate A / B' : 'Conversion A / B';
+    el('coverage').textContent = historyOnly ? `Historical records recovered through ${date(data.trackingSince)}. New tests appear in All tests or Live tracking. Historical visitor counts and conversion rates are estimates.` : data.source === 'all' ? `Active tests appear first, with completed runs and historical periods below. Summary cards show live tracking for the selected dates. Historical rates are labeled as estimates.` : data.trackingSince ? `Live measurement began ${date(data.trackingSince)}. Each split or variant configuration change starts a separate run. Earlier results are available in All tests or Historical results.` : 'Enable an A/B test on a landing page to begin measuring results.';
+    el('showAllTests').hidden = data.source === 'all';
+    el('showAllTests').textContent = `Show all tests · ${data.activeCount} active`;
+    el('periodCountLabel').textContent = historyOnly ? 'Historical periods' : 'Active tests';
+    el('visitorTotalLabel').textContent = historyOnly ? 'Historical visitors' : 'Live visitors';
+    el('leadTotalLabel').textContent = historyOnly ? 'Historical leads' : 'Live leads';
+    el('totalRateLabel').textContent = historyOnly ? 'Estimated lead rate' : 'Live visitor conversion rate';
+    el('testStatus').hidden = historyOnly;
+    el('testStatus').querySelector('[value=historical]').hidden = data.source === 'live';
+    el('comparisonRateHeader').textContent = 'Rate A / B';
     el('dailyRateA').textContent = historical() ? 'A est. rate' : 'A conversion';
     el('dailyRateB').textContent = historical() ? 'B est. rate' : 'B conversion';
     el('chartMetric').querySelector('[value=rate]').textContent = historical() ? 'Estimated lead rate' : 'Conversion rate';
@@ -68,9 +74,9 @@
     el('recentDescription').textContent = historical() ? 'Latest 50 historical leads submitted within the selected dates.' : 'Latest 50 leads from visitors in the selected date range.';
     el('leadContextHeader').textContent = historical() ? 'Attribution' : 'First test visit';
     el('methodology').textContent = historical() ? 'Historical method: periods begin/end at recorded test saves. Each visitor appears once, on their last saved visit before live tracking began; earlier visits were not retained as separate events. For tests with a separate B source page, untagged visitors on the test URL are estimated as A. Lead submission URLs distinguish test traffic from direct source-page traffic. Lead dates are actual submission dates. Estimated lead rate = attributed leads ÷ recorded visitors; it is not a visitor-cohort conversion rate. Historical splits not preserved in records are shown as “Not recorded”. Records with unresolved attribution remain unassigned. The imported snapshot remains stable as live tracking continues.' : 'Live method: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct B-source traffic is excluded. Clearing cookies or switching browsers counts as a new visitor.';
-    const active = historical() ? data.runs.length : data.runs.filter(r => !r.ended_at).length;
-    const totals = data.runs.reduce((a,r) => { for (const v of ['A','B']) { a.visitors += r.stats[v].visitors; a.leads += r.stats[v].leads; a.converted += r.stats[v].converted; } return a; }, {visitors:0,leads:0,converted:0});
-    el('activeTotal').textContent = n(active); el('visitorTotal').textContent = n(totals.visitors); el('leadTotal').textContent = n(totals.leads); el('rateTotal').textContent = pct(totals.visitors ? (historical() ? totals.leads : totals.converted) / totals.visitors * 100 : (historical() ? null : 0));
+    const active = historyOnly ? data.runs.length : data.activeCount;
+    const totals = data.runs.filter(r => historyOnly || r.source === 'live').reduce((a,r) => { for (const v of ['A','B']) { a.visitors += r.stats[v].visitors; a.leads += r.stats[v].leads; a.converted += r.stats[v].converted; } return a; }, {visitors:0,leads:0,converted:0});
+    el('activeTotal').textContent = n(active); el('visitorTotal').textContent = n(totals.visitors); el('leadTotal').textContent = n(totals.leads); el('rateTotal').textContent = pct(totals.visitors ? (historyOnly ? totals.leads : totals.converted) / totals.visitors * 100 : (historyOnly ? null : 0));
     drawTests();
     const run = selected();
     el('runDetail').hidden = !run;
@@ -122,6 +128,7 @@
   el('datePreset').addEventListener('change', () => { if (el('datePreset').value === 'custom') return; const today = new Intl.DateTimeFormat('en-CA', {timeZone:data?.timezone || 'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); const values = presetDates(el('datePreset').value, today); el('dateFrom').value = values[0]; el('dateTo').value = values[1]; load(); });
   ['dateFrom','dateTo'].forEach(id => el(id).addEventListener('change', () => { el('datePreset').value = 'custom'; }));
   el('resultsSource').addEventListener('change', () => { if (selected()) params.set('page', selected().page_id); params.delete('run'); el('testStatus').value='all'; load(); });
+  el('showAllTests').addEventListener('click', () => { el('resultsSource').value='all'; el('testStatus').value='all'; el('testSearch').value=''; params.delete('run'); params.delete('page'); load(); });
   el('refresh').addEventListener('click', load);
   el('testSearch').addEventListener('input', () => { if (data) drawTests(); }); el('testStatus').addEventListener('change', () => { if (data) drawTests(); });
   el('chartMetric').addEventListener('change', () => { if (data) drawChart(); });
@@ -136,7 +143,7 @@
     const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(r => r.map(cell).join(',')).join('\r\n')], {type:'text/csv;charset=utf-8'}));
     const a = document.createElement('a'); a.href = url; a.download = `ab-test-${run.id}-${data.from || 'all'}-${data.to || 'today'}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-  el('resultsSource').value = params.get('source') === 'live' ? 'live' : 'historical';
+  el('resultsSource').value = ['live','historical'].includes(params.get('source')) ? params.get('source') : 'all';
   el('dateFrom').value = params.get('from') || ''; el('dateTo').value = params.get('to') || '';
   el('datePreset').value = params.get('from') || params.get('to') ? 'custom' : 'all';
   load();
