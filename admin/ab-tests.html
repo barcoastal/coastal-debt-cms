@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A/B Tests | Coastal Debt CMS</title>
-<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=3">
+<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=4">
 <script src="/admin/assets/js/workspace.js?v=2" defer></script>
 </head><body class="ab-page"><div class="app-container">
     <aside class="sidebar">
@@ -128,24 +128,46 @@
       </div>
     </aside>
 <main class="main-content">
-  <header class="page-header"><div><div class="workspace-eyebrow">Landing page analytics</div><h1>A/B Tests</h1><p class="ab-muted">See what changes turn visitors into leads.</p></div><div class="workspace-toolbar"><button class="btn btn-secondary" id="refresh">Refresh</button><button class="btn btn-primary" id="exportResults" disabled>Export CSV</button></div></header>
-  <form class="card ab-filters" id="filters">
-    <label>Results source<select id="resultsSource"><option value="all">All tests</option><option value="live">Live tracking</option><option value="historical">Historical results</option></select></label>
-    <label>Date range<select id="datePreset"><option value="all">All dates</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="custom">Custom range</option></select></label>
-    <label>From<input type="date" id="dateFrom"></label><label>To<input type="date" id="dateTo"></label><button class="btn btn-secondary" type="submit">Apply dates</button><span class="ab-muted ab-timezone" id="timezone"></span>
-  </form>
-  <div id="error" class="ab-error" role="alert" hidden></div><p id="loading" class="ab-muted" role="status">Loading test results…</p>
-  <div id="report" aria-busy="true">
-    <div class="ab-notice ab-coverage"><p id="coverage">Loading tracking history…</p><button class="btn btn-secondary btn-small" id="showAllTests" hidden>Show all tests</button></div>
-    <div class="ab-totals"><div class="ab-total"><span id="periodCountLabel">Active tests</span><strong id="activeTotal">—</strong></div><div class="ab-total"><span id="visitorTotalLabel">Live visitors</span><strong id="visitorTotal">—</strong></div><div class="ab-total"><span id="leadTotalLabel">Live leads</span><strong id="leadTotal">—</strong></div><div class="ab-total"><span id="totalRateLabel">Visitor conversion rate</span><strong id="rateTotal">—</strong></div></div>
-    <section class="ab-panel"><div class="ab-panel-head"><div><h2>Your experiments</h2><p class="ab-muted" id="testCount"></p></div><div class="ab-tools"><input type="search" id="testSearch" aria-label="Search tests" placeholder="Search tests…"><select id="testStatus" aria-label="Filter test status"><option value="all">All statuses</option><option value="active">Active</option><option value="ended">Ended</option><option value="historical">Historical</option></select></div></div>
-      <div class="ab-table-wrap"><table><thead><tr><th>Test / Run</th><th>Status</th><th>Split A / B</th><th>Visitors</th><th>Leads</th><th id="comparisonRateHeader">Conversion A / B</th><th>Dates</th></tr></thead><tbody id="testsBody"></tbody></table></div>
-    </section>
-    <div id="runDetail" hidden>
-      <section class="ab-panel"><div class="ab-run-heading"><div class="workspace-eyebrow">Variant comparison</div><h2 id="runName"></h2><p class="ab-muted" id="runMeta"></p><div class="ab-tools"><select id="runSelect" aria-label="Select test run"></select><a class="btn btn-secondary" id="pageLink" target="_blank" rel="noopener">View test page ↗</a><a class="btn btn-secondary" id="configureLink">Test settings</a></div></div><div class="ab-variants" id="variantCards"></div><p class="ab-insight" id="insight"></p><p class="ab-insight" id="attributionNote" hidden></p><details><summary>Saved configuration for this run</summary><pre id="configSnapshot"></pre></details></section>
-      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Daily performance</h2><p class="ab-muted" id="dailyDescription">Grouped by the visitor’s first measured date in this run.</p></div><select id="chartMetric" aria-label="Chart metric"><option value="visitors">Visitors</option><option value="leads">Leads</option><option value="rate">Conversion rate</option></select></div><div class="ab-chart"><div class="ab-legend"><span>Variant A</span><span>Variant B</span></div><div id="dailyChart"></div></div><div class="ab-table-wrap"><table><thead><tr><th>Date</th><th>A visitors</th><th>A leads</th><th id="dailyRateA">A conversion</th><th>B visitors</th><th>B leads</th><th id="dailyRateB">B conversion</th></tr></thead><tbody id="dailyBody"></tbody></table></div></section>
-      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Recent attributed leads</h2><p class="ab-muted" id="recentDescription">Latest 50 leads from visitors in the selected date range.</p></div><a href="/admin/leads.html">View leads →</a></div><div class="ab-table-wrap"><table><thead><tr><th>Lead ID</th><th>Variant</th><th id="leadContextHeader">First test visit</th><th>Lead created</th></tr></thead><tbody id="leadsBody"></tbody></table></div></section>
-    </div>
-    <p class="ab-muted" id="methodology">How results are counted: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct traffic to the source page for variant B is excluded. Clearing cookies or switching browsers counts as a new visitor. Traffic without a measurable test session is excluded.</p>
+  <header class="page-header ab-header">
+    <div><div class="workspace-eyebrow">Landing page analytics</div><h1>A/B Tests</h1><p class="ab-muted">A clearer view of what turns visitors into leads.</p></div>
+    <div class="workspace-toolbar"><button class="btn btn-secondary" id="refresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17"/></svg>Refresh</button><a class="btn btn-primary" href="/admin/pages.html">Manage tests <span aria-hidden="true">↗</span></a></div>
+  </header>
+  <div class="ab-control-bar">
+    <nav class="ab-tabs" id="viewTabs" aria-label="Test status">
+      <button type="button" data-view="active" aria-pressed="true">Active <span id="activeBadge">—</span></button>
+      <button type="button" data-view="ended" aria-pressed="false">Ended <span id="endedBadge">—</span></button>
+      <button type="button" data-view="historical" aria-pressed="false">Historical <span id="historyBadge">—</span></button>
+    </nav>
+    <button class="ab-back" id="backToTests" hidden><span aria-hidden="true">←</span> Back to active tests</button>
+    <form class="ab-filters" id="filters">
+      <label class="ab-date-control"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><span class="ab-sr-only">Date range</span><select id="datePreset"><option value="all">All time</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="custom">Custom dates</option></select></label>
+      <div class="ab-custom-dates" id="customDates" hidden><label>From<input type="date" id="dateFrom"></label><label>To<input type="date" id="dateTo"></label><button class="btn btn-primary" type="submit">Apply</button></div>
+    </form>
   </div>
-</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=3"></script></body></html>
+  <div id="error" class="ab-error" role="alert" hidden></div><p id="loading" class="ab-loading" role="status">Updating results…</p>
+  <div id="report" aria-busy="true">
+    <div id="overview">
+      <div class="ab-totals" aria-label="Summary for the displayed tests">
+        <div class="ab-total ab-total-primary"><span id="periodCountLabel">Active tests</span><strong id="activeTotal">—</strong><small id="countCaption">Currently running</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17V9M10 17V5M16 17v-4M22 17V3"/></svg></div>
+        <div class="ab-total"><span>Visitors</span><strong id="visitorTotal">—</strong><small id="summaryScope">Across active tests</small></div>
+        <div class="ab-total"><span>Leads</span><strong id="leadTotal">—</strong><small>Attributed to these tests</small></div>
+        <div class="ab-total"><span id="totalRateLabel">Conversion rate</span><strong id="rateTotal">—</strong><small id="rateCaption">Visitors who became leads</small></div>
+      </div>
+      <div class="ab-section-heading"><div><h2 id="listTitle" tabindex="-1">Active experiments</h2><p class="ab-muted" id="testCount"></p></div><label class="ab-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input type="search" id="testSearch" aria-label="Search tests" placeholder="Find a test…"></label></div>
+      <p class="ab-history-note" id="historyNotice" hidden>Recovered historical results. Visitor counts and conversion rates are estimates; open a test to see attribution details.</p>
+      <div class="ab-test-grid" id="testCards"></div>
+    </div>
+    <div id="runDetail" hidden>
+      <section class="ab-panel">
+        <div class="ab-run-heading"><div><div class="workspace-eyebrow">Test results</div><h2 id="runName" tabindex="-1"></h2><p class="ab-muted" id="runMeta"></p></div><div class="ab-tools"><a class="btn btn-secondary" id="pageLink" target="_blank" rel="noopener">View page ↗</a><a class="btn btn-secondary" id="configureLink">Settings</a><button class="btn btn-primary" id="exportResults" disabled>Export CSV</button></div><select id="runSelect" aria-label="Select test run"></select></div>
+        <div class="ab-variants" id="variantCards"></div><p class="ab-insight" id="insight"></p>
+        <details id="attributionDetails" hidden><summary>Historical attribution</summary><p id="attributionNote" class="ab-muted"></p></details>
+        <details><summary>Test setup</summary><dl class="ab-setup" id="configSnapshot"></dl></details>
+      </section>
+      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Daily performance</h2><p class="ab-muted" id="dailyDescription"></p></div><select id="chartMetric" aria-label="Chart metric"><option value="visitors">Visitors</option><option value="leads">Leads</option><option value="rate">Conversion rate</option></select></div><div class="ab-chart"><div class="ab-legend"><span>Variant A</span><span>Variant B</span></div><div id="dailyChart"></div></div><details><summary>Daily breakdown</summary><div class="ab-table-wrap"><table><thead><tr><th>Date</th><th>A visitors</th><th>A leads</th><th id="dailyRateA">A conversion</th><th>B visitors</th><th>B leads</th><th id="dailyRateB">B conversion</th></tr></thead><tbody id="dailyBody"></tbody></table></div></details></section>
+      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Recent leads</h2><p class="ab-muted" id="recentDescription"></p></div><a href="/admin/leads.html">View leads →</a></div><div class="ab-table-wrap"><table><thead><tr><th>Lead ID</th><th>Variant</th><th id="leadContextHeader">First test visit</th><th>Lead created</th></tr></thead><tbody id="leadsBody"></tbody></table></div></section>
+      <details class="ab-method"><summary>How these results are measured</summary><p class="ab-muted" id="methodology"></p></details>
+    </div>
+    <footer class="ab-footer"><span id="coverage"></span><span id="timezone"></span></footer>
+  </div>
+</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=4"></script></body></html>

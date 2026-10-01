@@ -103,3 +103,22 @@ assert.ok(historicalDates.runs.some(r=>r.page_id===99),'Date filters change metr
 assert.throws(()=>overview(store,{from:'2026-10-02',to:'2026-10-01'}),/Start date/);
 assert.equal(JSON.stringify(history.report({page:7})),before,'Unified overview never changes historical results');
 console.log('PASS: all-tests overview, active-first ordering, zero-traffic tests, source filters, signed run IDs, correct live/historical details and date ranges, and immutable historical results.');
+
+const activeOnly=overview(store,{source:'active',run:current.id});
+assert.equal(activeOnly.source,'active');
+assert.equal(activeOnly.runs.length,3);
+assert.ok(activeOnly.runs.every(r=>r.source==='live' && !r.ended_at));
+assert.equal(activeOnly.selectedId,all.selectedId,'An old historical selection cannot leak into Active');
+assert.deepEqual(activeOnly.daily,[]);
+const endedOnly=overview(store,{source:'ended'});
+assert.equal(endedOnly.runs.length,1);
+assert.equal(endedOnly.runs[0].page_id,100);
+assert.equal(endedOnly.endedCount,1);
+assert.ok(endedOnly.runs.every(r=>r.source==='live' && r.ended_at));
+const activeBeforeStart=overview(store,{source:'active',from:'2026-09-01',to:'2026-09-02'});
+assert.equal(activeBeforeStart.runs.length,3,'Active tests with no traffic in the date range stay visible');
+const emptyEnded=overview({...store,report:query=>{const r=store.report(query);return {...r,runs:r.runs.filter(run=>!run.ended_at)};}},{source:'ended'});
+assert.equal(emptyEnded.selectedId,null);
+assert.deepEqual(emptyEnded.daily,[]);
+assert.deepEqual(emptyEnded.recent,[]);
+console.log('PASS: Active/Ended filters, stale selection handling, zero-traffic active tests, and empty ended results.');

@@ -26,6 +26,13 @@ for(let day=1;day<20;day++) for(let i=0;i<30;i++) {
  if(i%11===0) pl.run(id,variant==='A'?1:2,variant==='A'?'':variant,JSON.stringify({page_url:'https://info.coastaldebt.com/lp/business-debt-relief/'}),at,'old-'+id);
 }
 const historical=require('../../server/lib/ab-history').createHistory(db);historical.importOnce();
+time=Date.parse('2026-09-28T12:00:00Z');
+page(4,'MCA Consolidation LP','mca-consolidation',{enabled:true,split:50,variantB_page:5});
+page(5,'Join4 · New assessment','join4',{});
+store.syncAll();seed(4,1);
+page(7,'Facebook','fb-social',{enabled:true,split:50,variantB:{}});
+page(6,'Google (old design)','mca-debt',{enabled:true,split:50,variantB_page:5});
+store.syncAll();seed(6,1);
 const app=express();app.use(express.json());app.use(require('cookie-parser')());
 app.use('/admin',express.static(path.join(__dirname,'../../admin')));
 app.get('/api/ab-tests',(req,res)=>{try{res.json(require('../../server/lib/ab-report').report({...store,history:historical},req.query));}catch(e){res.status(400).json({error:e.message});}});

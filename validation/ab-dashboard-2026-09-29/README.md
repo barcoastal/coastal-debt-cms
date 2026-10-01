@@ -28,7 +28,9 @@ No production lead submissions or A/B configuration changes are part of verifica
 
 ## Historical recovery
 
-The dashboard defaults to All tests, showing active runs first alongside ended runs and historical periods. Live tracking and Historical results remain selectable; filtered views include a Show all tests shortcut. Summary cards in All tests use live measurements only, while historical estimates remain labeled per row and use their own attribution, daily details and CSV format. New tests remain visible even before their first visit. `ab_history_runs`, `ab_history_records`, and `ab_history_meta` preserve a one-time snapshot in the existing database. Original lead/visitor records and live measurement tables are not modified.
+The dashboard defaults to Active tests. Separate Active, Ended and Historical buttons filter the returned runs; summary metrics and search results include only the displayed tests. Two-column comparison cards show A/B visitors, leads, rates, allocation and dates. Selecting a card opens its detailed report, with a return button, chart, historical attribution and CSV export. Custom date inputs appear only when selected. New tests remain visible before their first visit, with a dash for an unmeasured rate. Existing recovered records remain accessible in Historical.
+
+`ab_history_runs`, `ab_history_records`, and `ab_history_meta` preserve a one-time snapshot in the existing database. Original lead/visitor records and live measurement tables are not modified. The API retains the earlier `all` and `live` sources for compatibility.
 
 Historical periods follow A/B enable/save/disable activity records. Leads are attributed by their original `hidden_fields.page_url` and variant tag, even when the destination form belongs to a different B source page. Former B source pages are recovered from that same evidence. A source page's direct traffic is excluded from its parent experiment. For separate-page experiments, untagged lead submissions are inferred from the source page, and untagged visitors on the original test URL are estimated as A. These counts are labeled in the report. Unresolved attribution remains unassigned and is included separately in exports.
 
@@ -42,3 +44,8 @@ Read-only validation for the selected MCA test recovered:
 - Apr 7 to Sep 1: A 8,573 recorded/estimated visitors and 183 leads; B 8,588 recorded visitors and 119 leads.
 
 Browser verification covered source switching, a two-day custom historical range, mobile width without document overflow, and CSV download. The historical fixture CSV reconciled to 60 visitors / 6 leads and included attribution counts and the date basis.
+
+
+## Active dashboard redesign — 2026-10-01
+
+`history-check.cjs` also verifies Active/Ended filtering, stale historical selections, date ranges with no traffic, and empty ended reports. Browser verification covered the four-card active overview, isolated ended and historical views, history totals (570 visitors / 57 leads in the fixture), a custom historical range (60 / 6), search-scoped summaries, empty search, report navigation, and 390px layout without document overflow. Source recovery and live tracking suites passed.
