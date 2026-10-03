@@ -12,6 +12,13 @@
     if (!entry) return '';
     try { return decodeURIComponent(entry.slice(name.length + 1)); } catch (_) { return ''; }
   };
+  const ownTkclid = () => {
+    try {
+      const id = window.trakkit?.getClickId?.();
+      if (typeof id === 'string' && id) return id;
+    } catch (_) {}
+    try { return cookie('tkclid'); } catch (_) { return ''; }
+  };
   const params = new URLSearchParams(location.search);
   const setHidden = (name, value) => {
     let input = [...form.querySelectorAll('input[type="hidden"]')].find(el => el.name === name);
@@ -43,7 +50,7 @@
     if (keyword) { saveStore('_keyword', keyword); setHidden('keyword', keyword); }
     const referral = params.get('tkclid') || readStore('localStorage', '_ref_tkclid');
     if (referral) { saveStore('_ref_tkclid', referral); setHidden('affiliate_tkclid', referral); }
-    setHidden('tkclid', cookie('tkclid'));
+    setHidden('tkclid', ownTkclid() || form.elements.namedItem('tkclid')?.value || '');
     setHidden('eli_clickid', visitorId);
     setHidden('rt_clickid', rtClickId());
     if (rtClickId() !== 'adblock_blocked') saveStore('_rt_clickid', rtClickId());

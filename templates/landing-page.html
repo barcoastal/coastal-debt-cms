@@ -1450,13 +1450,21 @@
     })(); // end IIFE
   </script>
 
-  <!-- tkclid capture: tkclid = this page's own Trakkit cookie; affiliate_tkclid = the referral site's Trakkit id from ?tkclid= (persisted) -->
+  <!-- tkclid capture: tkclid = this page's Trakkit SDK ID or cookie; affiliate_tkclid = the referral site's Trakkit id from ?tkclid= (persisted) -->
   <script>
   (function () {
-    function tkclidFromCookie() {
-      var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/);
-      if (!m) return '';
-      try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+    function ownTkclid() {
+      // The tracker can retain its ID in memory when cookies are unavailable.
+      try {
+        var tracker = window.trakkit;
+        var id = tracker && typeof tracker.getClickId === 'function' ? tracker.getClickId() : '';
+        if (typeof id === 'string' && id) return id;
+      } catch (e) {}
+      try {
+        var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/);
+        if (!m) return '';
+        try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+      } catch (e) { return ''; }
     }
     function refTkclid() {
       var p = '';
@@ -1465,7 +1473,6 @@
       try { return localStorage.getItem('_ref_tkclid') || ''; } catch (e) { return ''; }
     }
     function setHidden(f, name, v) {
-      if (!v) return;
       var input = f.querySelector('input[name="' + name + '"]');
       if (!input) {
         input = document.createElement('input');
@@ -1473,10 +1480,11 @@
         input.name = name;
         f.appendChild(input);
       }
-      input.value = v;
+      // Create empty fields early so Trakkit can fill them when its response arrives.
+      if (v) input.value = v;
     }
     function fillTkclid() {
-      var own = tkclidFromCookie();
+      var own = ownTkclid();
       var ref = refTkclid();
       var forms = document.querySelectorAll('form');
       for (var i = 0; i < forms.length; i++) {
@@ -1492,6 +1500,14 @@
       fillTkclid();
     }
     document.addEventListener('submit', fillTkclid, true);
+    // Also cover programmatic FormData and forms added after DOMContentLoaded.
+    document.addEventListener('formdata', function (event) {
+      if ((event.target.getAttribute('action') || '').indexOf('/search') !== -1) return;
+      var own = ownTkclid();
+      var ref = refTkclid();
+      if (own) event.formData.set('tkclid', own);
+      if (ref) event.formData.set('affiliate_tkclid', ref);
+    }, true);
   })();
   </script>
 </body>
