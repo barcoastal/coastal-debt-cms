@@ -1,4 +1,5 @@
 const { randomBytes } = require('crypto');
+const { analyzeRun } = require('./ab-statistics');
 
 function stable(value) {
   if (Array.isArray(value)) return value.map(stable);
@@ -113,10 +114,18 @@ function createStore(db, now = Date.now) {
       SUM(CASE WHEN c.leads > 0 THEN 1 ELSE 0 END) converted
       FROM ab_participants p LEFT JOIN (SELECT token, COUNT(*) leads FROM ab_conversions GROUP BY token) c ON c.token = p.token
       WHERE p.first_seen >= ? AND p.first_seen < ? GROUP BY p.run_id, p.variant`).all(range.start, range.end);
+    // A date filter must not cherry-pick the cohort used for a winner decision.
+    const fullCounts = db.prepare(`SELECT p.run_id, p.variant, COUNT(*) visitors,
+      SUM(CASE WHEN EXISTS (SELECT 1 FROM ab_conversions c WHERE c.token = p.token) THEN 1 ELSE 0 END) converted
+      FROM ab_participants p WHERE p.first_seen IS NOT NULL AND p.first_seen <= ?
+      GROUP BY p.run_id, p.variant`).all(now());
     for (const run of runs) {
       run.config = JSON.parse(run.config);
       run.stats = { A: empty(), B: empty() };
       for (const row of counts.filter(c => c.run_id === run.id)) run.stats[row.variant] = { visitors: row.visitors, leads: row.leads, converted: row.converted, rate: row.visitors ? row.converted / row.visitors * 100 : 0 };
+      const fullStats = {A:{visitors:0,converted:0},B:{visitors:0,converted:0}};
+      for (const row of fullCounts.filter(c => c.run_id === run.id)) fullStats[row.variant] = {visitors:row.visitors,converted:row.converted};
+      run.inference = analyzeRun(run, fullStats, now());
     }
     const selected = runs.find(r => r.id === Number(query.run)) || runs.find(r => r.page_id === Number(query.page)) || runs[0];
     const daily = [];

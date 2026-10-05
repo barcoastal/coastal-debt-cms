@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A/B Tests | Coastal Debt CMS</title>
-<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=4">
+<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=5">
 <script src="/admin/assets/js/workspace.js?v=2" defer></script>
 </head><body class="ab-page"><div class="app-container">
     <aside class="sidebar">
@@ -160,7 +160,7 @@
     <div id="runDetail" hidden>
       <section class="ab-panel">
         <div class="ab-run-heading"><div><div class="workspace-eyebrow">Test results</div><h2 id="runName" tabindex="-1"></h2><p class="ab-muted" id="runMeta"></p></div><div class="ab-tools"><a class="btn btn-secondary" id="pageLink" target="_blank" rel="noopener">View page ↗</a><a class="btn btn-secondary" id="configureLink">Settings</a><button class="btn btn-primary" id="exportResults" disabled>Export CSV</button></div><select id="runSelect" aria-label="Select test run"></select></div>
-        <div class="ab-variants" id="variantCards"></div><p class="ab-insight" id="insight"></p>
+        <div class="ab-variants" id="variantCards"></div><div id="statisticalVerdict"></div><p class="ab-insight" id="insight"></p>
         <details id="attributionDetails" hidden><summary>Historical attribution</summary><p id="attributionNote" class="ab-muted"></p></details>
         <details><summary>Test setup</summary><dl class="ab-setup" id="configSnapshot"></dl></details>
       </section>
@@ -170,4 +170,4 @@
     </div>
     <footer class="ab-footer"><span id="coverage"></span><span id="timezone"></span></footer>
   </div>
-</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=4"></script></body></html>
+</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=5"></script></body></html>
