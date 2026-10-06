@@ -1,0 +1,52 @@
+const assert=require('node:assert/strict');
+const Database=require(process.env.SQLITE_MODULE || 'better-sqlite3');
+const {identity,matchOutcomes,createOutcomes}=require('../../server/lib/ab-outcomes');
+const T=Date.parse('2026-10-07T12:00:00Z');
+const click='01M3Z72QBDAER4WX0AQF1258BX';
+const lead=(id,extra={})=>({id,email:'person@example.test',first_name:'Test',last_name:'Person',company_name:'Test Co',created_at:'2026-10-01 12:00:00',hidden_fields:JSON.stringify({tkclid:click}),...extra});
+const crm=(l,extra={})=>({id:'00Q123456789012AAA',created_at:'2026-10-01T12:00:10Z',email_hash:identity(l).emailHash,name_hash:identity(l).nameHash,opportunity_id:'006123456789012AAA',stage:'Working Opportunity',...extra});
+const sync=[{status:'complete',updated_at:new Date(T).toISOString()},{status:'complete',updated_at:new Date(T).toISOString()}];
+const snapshot={crm:[crm(lead(1))],clicks:[{id:click}],events:[],sync};
+assert.equal(matchOutcomes([lead(1)],snapshot)[0].opportunity,1);
+assert.equal(matchOutcomes([lead(1)],snapshot)[0].closed_won,0);
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[crm(lead(1),{stage:'Closed Won'})]})[0].closed_won,1);
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[crm(lead(1)),crm(lead(1),{id:'second'})]})[0].state,'ambiguous');
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[crm(lead(1),{converted_opportunity_id:'missing',opportunity_id:null})]})[0].state,'pending');
+assert.equal(matchOutcomes([lead(1,{hidden_fields:'null'})],{...snapshot,crm:[]})[0].state,'unmatched');
+assert.equal(matchOutcomes([lead(1,{hidden_fields:'{}'})],{...snapshot,crm:[crm(lead(1),{created_at:'2026-09-01T12:00:00Z'})]})[0].opportunity,null,'old customer deal is not attributed to the new submission');
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[],events:[{click_id:click,type:'closed_won',status:'approved',occurred_at:'2026-10-05T12:00:00Z'}]})[0].closed_won,1,'later outcomes count');
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[],events:[{click_id:click,type:'closed_won',status:'declined',occurred_at:'2026-10-05T12:00:00Z'}]})[0].closed_won,0,'declined events excluded');
+assert.equal(matchOutcomes([lead(1)],{...snapshot,crm:[],events:[{click_id:click,type:'opportunity',status:'approved',occurred_at:'2026-09-01T12:00:00Z'}]})[0].opportunity,0,'events before submission excluded');
+
+(async()=>{
+ const db=new Database(':memory:');
+ db.exec(`CREATE TABLE leads(id INTEGER PRIMARY KEY,email TEXT,first_name TEXT,last_name TEXT,company_name TEXT,hidden_fields TEXT,salesforce_lead_id TEXT,created_at TEXT);
+ CREATE TABLE ab_conversions(lead_id INTEGER,token TEXT);CREATE TABLE ab_participants(token TEXT,run_id INTEGER,variant TEXT,first_seen INTEGER);`);
+ for(const [id,v,first] of [[1,'A','2026-10-01'],[2,'B','2026-10-02'],[3,'B','2026-10-03']]) {
+  const l=lead(id,{email:id===3?'unknown@example.test':'person@example.test',hidden_fields:id===3?'{}':JSON.stringify({tkclid:click}),first_name:id===3?'Unknown':'Test'});
+  db.prepare('INSERT INTO leads VALUES (?,?,?,?,?,?,?,?)').run(id,l.email,l.first_name,l.last_name,l.company_name,l.hidden_fields,null,l.created_at);
+  db.prepare('INSERT INTO ab_conversions VALUES (?,?)').run(id,'token'+id);
+  db.prepare('INSERT INTO ab_participants VALUES (?,1,?,?)').run('token'+id,v,Date.parse(first+'T12:00:00Z'));
+ }
+ let time=T,fail=false;
+ const service=createOutcomes(db,{now:()=>time,reader:async()=>{if(fail)throw Error('secret should never leak');return snapshot;}});
+ const report=()=>({timezone:'America/New_York',runs:[{id:1,source:'live'},{id:-1,source:'historical'}],selectedId:1,daily:[{date:'2026-10-01',A:{},B:{}},{date:'2026-10-02',A:{},B:{}}],recent:[{lead_id:1}]});
+ let out=service.enrich(report());assert.equal(out.runs[0].outcomes.A.opportunities,null);
+ await service.refresh();out=service.enrich(report());
+ assert.equal(out.runs[0].outcomes.A.opportunities,1);
+ assert.equal(out.runs[0].outcomes.B.opportunities,0);
+ assert.equal(out.runs[0].outcomes.B.repeated,1);
+ assert.equal(out.runs[0].outcomes.B.unmatched,1);
+ assert.equal(out.runs[1].outcomes,null);
+ assert.equal(out.recent[0].outcome.opportunity,1);
+ out=service.enrich(report(),{from:'2026-10-02'});
+ assert.equal(out.runs[0].outcomes.A.opportunities,0);
+ assert.equal(out.runs[0].outcomes.B.opportunities,0,'a filtered-out earlier owner does not move its sale to B');
+ fail=true;time+=120000;await service.refresh();out=service.enrich(report());
+ assert.equal(out.runs[0].outcomes.A.opportunities,1,'failed refresh retains confirmed results');
+ assert.equal(out.outcomeSync.stale,true);
+ assert.equal(out.outcomeSync.error,'Trakkit update failed');
+ const off=createOutcomes(db,{connectionString:null});out=off.enrich(report());
+ assert.equal(out.outcomeSync.available,false);assert.equal(out.runs[0].outcomes.A.opportunities,null);
+ db.close();console.log('PASS: identity/time matching, ambiguity, missing parents, delayed/declined events, deduplication across variants, cohort dates, historical/unconfigured state and failed-refresh retention.');
+})().catch(e=>{console.error(e);process.exitCode=1});

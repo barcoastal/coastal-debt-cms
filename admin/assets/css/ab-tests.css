@@ -157,3 +157,22 @@
 .ab-page .ab-model-method p { margin-top: 10px; font-size: 12px; }
 @media(max-width:1200px) { .ab-verdict { margin: 0 18px 16px; padding: 14px; } }
 @media(max-width:768px) { .ab-verdict { margin: 0 16px 16px; } #statisticalVerdict .ab-verdict { padding: 16px; } .ab-model-checks { grid-template-columns: 1fr 1fr; } .ab-model-scope { font-size: 9px; } }
+
+/* Trakkit sales outcomes */
+.ab-connection { margin: 0 0 20px; padding: 13px 17px; border: 1px solid #d6e9e1; border-radius: 10px; background: #f3faf6; color: #335d4f; font-size: 12px; line-height: 1.6; }
+.ab-connection.is-stale { background: #fff9ed; border-color: #eedeba; color: #796335; }
+.ab-totals { grid-template-columns: repeat(6,minmax(0,1fr)); }
+.ab-business { margin: 0 24px 20px; padding: 15px 17px 12px; background: #f7fafb; border: 1px solid #e2eaf0; border-radius: 10px; }
+.ab-business-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:12px; color:#233b54; }
+.ab-business-heading > span { color:#567767; font-size:10px; padding:3px 7px; background:#e7f3ec; border-radius:5px; }
+.ab-business table { width:100%; border-collapse:collapse; table-layout:fixed; }
+.ab-business th { color:#748399; font-size:10px; font-weight:500; text-align:right; padding:6px 0; }
+.ab-business td { font-size:20px; font-weight:650; text-align:right; padding:6px 0; color:#243a54; font-variant-numeric:tabular-nums; }
+.ab-business td:first-child,.ab-business th:first-child { text-align:left; width:22%; }
+.ab-business td.ab-won { color:#158363; }
+.ab-business p,.ab-match-note { color:#778599; font-size:10px; line-height:1.7; margin:9px 0 0; }
+.ab-variant-sales { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:18px; padding-top:16px; border-top:1px solid #dfe6f0; }
+.ab-variant-sales strong { display:block; font-size:26px; color:#1b705a; }
+.ab-variant-sales span { display:block; margin-top:4px; font-size:12px; color:#60748d; }
+@media(max-width:1200px) { .ab-totals { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:600px) { .ab-totals { grid-template-columns:repeat(2,minmax(0,1fr)); } .ab-business { margin:0 16px 16px; } }

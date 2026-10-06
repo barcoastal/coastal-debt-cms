@@ -27,7 +27,7 @@
   const chance = value => value >= .9995 ? '>99.9%' : value <= .0005 ? '<0.1%' : (value * 100).toFixed(1) + '%';
   function verdict(run, detailed = false) {
     const model = run.inference;
-    if (run.source === 'historical' || !model) return `<section class="ab-verdict is-unavailable"><span class="ab-model-label">Statistical verdict</span><h4>${run.source === 'historical' ? 'Historical estimates only' : 'Model unavailable'}</h4><p>${run.source === 'historical' ? 'Estimated visitor counts cannot establish a reliable winner.' : 'Refresh to load the statistical model.'}</p></section>`;
+    if (run.source === 'historical' || !model) return `<section class="ab-verdict is-unavailable"><span class="ab-model-label">Lead conversion verdict</span><h4>${run.source === 'historical' ? 'Historical estimates only' : 'Model unavailable'}</h4><p>${run.source === 'historical' ? 'Estimated visitor counts cannot establish a reliable winner.' : 'Refresh to load the statistical model.'}</p></section>`;
     const titles = {waiting:'Waiting for data',collecting:'Collecting data',inconclusive:'No clear winner',winner:'Variant ' + model.winner + ' is winning',unavailable:'Cannot compare yet'};
     const checks = model.checks || [];
     const remaining = checks.filter(c => !c.met).map(c => c.key === 'days' ? Math.ceil(c.target-c.current) + ' more day' + (Math.ceil(c.target-c.current) === 1 ? '' : 's') : n(c.target-c.current) + ' more ' + (c.key === 'visitorsA' ? 'A visitors' : c.key === 'visitorsB' ? 'B visitors' : 'converted visitors'));
@@ -36,7 +36,7 @@
     const explanation = model.status === 'winner' ? `${chance(probability[model.winner])} probability of a higher conversion rate. All minimum requirements met.` : model.status === 'unavailable' ? model.reason : model.status === 'waiting' ? model.reason : leader ? `Variant ${leader} has a ${chance(probability[leader])} chance of being better.` : 'Both variants have a 50% chance of being better.';
     const progress = leader ? probability[leader] * 100 : probability ? 50 : 0;
     return `<section class="ab-verdict is-${esc(model.status)}" aria-label="Statistical verdict for ${esc(run.name)}">
-      <div class="ab-verdict-top"><span class="ab-model-label">Statistical verdict</span><span class="ab-model-scope">Full run · Bayesian</span></div>
+      <div class="ab-verdict-top"><span class="ab-model-label">Lead conversion verdict</span><span class="ab-model-scope">Full run · Bayesian</span></div>
       <h4>${esc(titles[model.status] || 'Model unavailable')}</h4><p>${esc(explanation)}</p>
       ${probability ? `<div class="ab-evidence-track" role="meter" aria-label="${leader || 'Each variant'} probability of being better; winner threshold 95 percent" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.toFixed(2)}"><span style="width:${progress}%;--evidence-color:var(--${leader === 'A' ? 'a' : 'b'})"></span><i title="95% winner threshold"></i></div><div class="ab-evidence-labels"><span>A ${chance(probability.A)} <span aria-hidden="true">·</span> B ${chance(probability.B)}</span><span>95% to win</span></div>` : ''}
       ${remaining.length && model.status !== 'unavailable' ? `<p class="ab-next-step">${run.ended_at ? 'Ended before minimums were met: ' : 'Minimums remaining: '}${esc(remaining.join(' · '))}.</p>` : model.status === 'inconclusive' ? `<p class="ab-next-step">${run.ended_at ? 'This run ended without enough evidence for a winner.' : 'Keep running to gather stronger evidence. The minimum sample alone does not guarantee a winner.'}</p>` : ''}
@@ -45,6 +45,23 @@
       <p class="ab-model-footnote">Uses the entire run, regardless of the date filter above. One conversion per visitor. A verdict updates as results arrive and does not change traffic allocation.</p>
       <details class="ab-model-method"><summary>How the winner is decided</summary><p>Each variant uses a Beta(1, 1) prior, updated with converted and non-converted visitors. A winner needs a ${model.policy.probability * 100}% probability of a higher conversion rate, at least ${model.policy.visitorsPerVariant} visitors per variant, ${model.policy.conversions} converted visitors overall, and ${model.policy.days} elapsed days. These minimums are safeguards, not a sample-size guarantee.</p><p>This is a model-based probability, not a 95% frequentist confidence claim or a guarantee. It assumes comparable randomly allocated traffic and stable conversion rates. It tests any improvement, not a preset business-value threshold. ${run.ended_at ? 'Later conversions from visitors in this ended run can still update its result.' : 'Delayed conversions can change the verdict.'} <a href="https://www.evanmiller.org/bayesian-ab-testing.html" target="_blank" rel="noopener">Model reference ↗</a></p></details>` : ''}
     </section>`;
+  }
+  const outcomeValue = value => value == null ? '—' : n(value);
+  function outcomeCoverage(o) {
+    if (!o) return 'Not available for historical estimates';
+    return `${n(o.matched)} of ${n(o.leads)} submissions matched${o.unmatched ? ' · ' + n(o.unmatched) + ' awaiting a match' : ''}${o.repeated ? ' · ' + n(o.repeated) + ' repeats counted once' : ''}`;
+  }
+  function businessResults(run) {
+    if (!run.outcomes) return '';
+    return `<section class="ab-business" aria-label="Business outcomes for ${esc(run.name)}"><div class="ab-business-heading"><strong>Sales outcomes</strong><span>Trakkit</span></div><table><thead><tr><th>Variant</th><th>Opportunities</th><th>Closed Won</th></tr></thead><tbody>${['A','B'].map(v => { const o=run.outcomes[v]; return `<tr><td><span class="ab-letter ${v==='B'?'ab-letter-b':''}">${v}</span></td><td>${outcomeValue(o.opportunities)}</td><td class="ab-won">${outcomeValue(o.closedWon)}</td></tr>`; }).join('')}</tbody></table><p>${['A','B'].map(v=>v+': '+outcomeCoverage(run.outcomes[v])).join('<br>')}</p></section>`;
+  }
+  function drawOutcomeSync() {
+    const node=el('outcomeSync'), sync=data.outcomeSync;
+    node.hidden=view==='historical';
+    if (node.hidden) return;
+    node.classList.toggle('is-stale',!sync?.available || sync.stale);
+    node.textContent=!sync?.connected ? 'Trakkit connection is not configured. Sales outcomes are unavailable.' : !sync.available ? 'Trakkit outcomes are waiting for their first successful update.' :
+      `Trakkit connected · Checked ${date(sync.lastSuccess)}. ${sync.sourceUpdatedAt ? `Salesforce feed: ${date(sync.sourceUpdatedAt)}. ` : ''}${sync.stale ? 'Source updates are delayed; counts may be incomplete. ' : ''}Sales counts reflect matched leads from the selected visitor dates, including later outcomes.`;
   }
   function drawTests() {
     const search = el('testSearch').value.trim().toLowerCase();
@@ -58,6 +75,8 @@
     el('visitorTotal').textContent = n(totals.visitors);
     el('leadTotal').textContent = n(totals.leads);
     el('rateTotal').textContent = pct(totals.visitors ? (isHistory ? totals.leads : totals.converted) / totals.visitors * 100 : null);
+    for (const [id,key] of [['oppTotal','opportunities'],['wonTotal','closedWon']]) { const values=runs.flatMap(r=>r.outcomes?[r.outcomes.A[key],r.outcomes.B[key]]:[]); el(id).textContent=values.length&&values.every(v=>v!=null)?n(values.reduce((a,b)=>a+b,0)):'—'; }
+    el('salesTotals').hidden=isHistory; el('wonTotals').hidden=isHistory;
     el('totalRateLabel').textContent = isHistory ? 'Estimated lead rate' : 'Conversion rate';
     el('rateCaption').textContent = isHistory ? 'Based on recovered records' : 'Visitors who became leads';
     el('listTitle').textContent = isHistory ? 'Historical results' : view === 'ended' ? 'Ended experiments' : 'Active experiments';
@@ -68,6 +87,7 @@
       return `<article class="ab-test-card">
         <div class="ab-card-head"><div><h3><button class="ab-card-title" data-run="${r.id}">${esc(r.name)}</button></h3><span class="ab-card-url" title="/lp/${esc(r.slug)}/">/lp/${esc(r.slug)}/</span></div><span class="ab-status ${status(r) === 'Active' ? 'active' : ''}">${status(r)}</span></div>
         <div class="ab-card-results"><table class="ab-mini-table" aria-label="${esc(r.name)} variant results"><thead><tr><th>Variant</th><th>Visitors</th><th title="${isHistory ? 'Attributed lead submissions' : 'Visitors with at least one lead; repeat submissions count once'}">${isHistory ? 'Leads' : 'Converted'}</th><th>${isHistory ? 'Est. rate' : 'Conversion'}</th></tr></thead><tbody>${['A','B'].map(v => { const s=r.stats[v]; return `<tr><td><div class="ab-variant-name"><span class="ab-letter ${v === 'B' ? 'ab-letter-b' : ''}">${v}</span><span title="${esc(v === 'A' ? r.name : r.b_name)}">${esc(v === 'A' ? 'Control' : r.b_name)}</span></div></td><td>${n(s.visitors)}</td><td>${n(isHistory ? s.leads : s.converted)}</td><td class="ab-card-rate">${pct(s.visitors ? s.rate : null)}</td></tr>`; }).join('')}</tbody></table></div>
+        ${businessResults(r)}
         ${verdict(r)}
         <div class="ab-card-footer"><div><div class="ab-traffic">${allocation == null ? 'Traffic split not recorded' : `<span class="ab-split-bar" aria-hidden="true"><i style="width:${100-allocation}%"></i><i style="width:${allocation}%"></i></span>A ${100-allocation}% <span aria-hidden="true">·</span> B ${allocation}%`}</div><small title="${esc(date(r.started_at))}${r.ended_at ? ' — '+esc(date(r.ended_at)) : ''}">${r.ended_at ? shortDate(r.started_at)+' – '+shortDate(r.ended_at) : 'Started '+shortDate(r.started_at)}</small></div><button class="ab-view-button" data-run="${r.id}" aria-label="View results for ${esc(r.name)}">View results <span aria-hidden="true">→</span></button></div>
       </article>`;
@@ -111,7 +131,7 @@
     el('timezone').textContent = 'Timezone: ' + data.timezone.replace(/_/g,' ');
     el('coverage').textContent = view === 'historical' ? `Historical coverage through ${data.trackingSince ? shortDate(data.trackingSince) : 'the live tracking cutoff'}` : 'Converted visitors count once per run. Statistical verdicts always use the full run.';
     el('exportResults').disabled = !showingDetail;
-    drawTests();
+    drawTests(); drawOutcomeSync();
     if (!showingDetail) return;
     el('dailyRateA').textContent = historical() ? 'A est. rate' : 'A conversion';
     el('dailyRateB').textContent = historical() ? 'B est. rate' : 'B conversion';
@@ -119,7 +139,7 @@
     el('dailyDescription').textContent = historical() ? 'Visitors by last saved visit; leads by submission date. Daily rates are estimates.' : 'Grouped by the visitor’s first measured date in this run.';
     el('recentDescription').textContent = historical() ? 'Latest 50 historical leads submitted within the selected dates.' : 'Latest 50 leads from visitors in the selected date range.';
     el('leadContextHeader').textContent = historical() ? 'Attribution' : 'First test visit';
-    el('methodology').textContent = historical() ? 'Historical method: periods begin/end at recorded test saves. Each visitor appears once, on their last saved visit before live tracking began; earlier visits were not retained as separate events. For tests with a separate B source page, untagged visitors on the test URL are estimated as A. Lead submission URLs distinguish test traffic from direct source-page traffic. Lead dates are actual submission dates. Estimated lead rate = attributed leads ÷ recorded visitors; it is not a visitor-cohort conversion rate. Historical splits not preserved in records are shown as “Not recorded”. Records with unresolved attribution remain unassigned. The imported snapshot remains stable as live tracking continues.' : 'Live method: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct B-source traffic is excluded. Clearing cookies or switching browsers counts as a new visitor.';
+    el('methodology').textContent = historical() ? 'Historical method: periods begin/end at recorded test saves. Each visitor appears once, on their last saved visit before live tracking began; earlier visits were not retained as separate events. For tests with a separate B source page, untagged visitors on the test URL are estimated as A. Lead submission URLs distinguish test traffic from direct source-page traffic. Lead dates are actual submission dates. Estimated lead rate = attributed leads ÷ recorded visitors; it is not a visitor-cohort conversion rate. Historical splits not preserved in records are shown as “Not recorded”. Records with unresolved attribution remain unassigned. The imported snapshot remains stable as live tracking continues.' : 'Live method: one visitor per browser per run, first seen within the selected dates. Leads include later submissions from those visitors. Conversion rate = visitors with at least one lead ÷ visitors. Direct B-source traffic is excluded. Clearing cookies or switching browsers counts as a new visitor. Sales outcomes use Trakkit click events or its Salesforce feed matched by contact identity and submission time. Each matched opportunity is assigned to its earliest attributed submission within a run, across both variants. Repeated submissions do not increase sales counts. Closed Won is included in Opportunities. Unmatched submissions are not treated as confirmed zero outcomes. The statistical verdict remains based on lead conversion.';
     el('runName').textContent = run.name;
     el('runMeta').textContent = `${runLabel(run)} · ${historical() ? 'From' : status(run) + ' · Started'} ${date(run.started_at)}${run.ended_at ? (historical() ? ' · Through ' : ' · Ended ') + date(run.ended_at) : ''}`;
     el('runSelect').hidden = data.runs.filter(r => r.page_id === run.page_id).length < 2;
@@ -129,7 +149,7 @@
     el('variantCards').innerHTML = ['A','B'].map(v => { const s = run.stats[v]; return `<section class="ab-variant variant-${v.toLowerCase()}">
       <h3><span class="ab-letter ${v === 'B' ? 'ab-letter-b' : ''}">${v}</span>${v === 'A' ? 'Control' : 'Variant B'}</h3><div class="ab-muted">${esc(v === 'A' ? run.name + (historical() ? '' : ' · ' + run.template) : run.b_name)} · ${run.config.split == null ? 'Split not recorded' : (v === 'A' ? 100 - Number(run.config.split) : Number(run.config.split)) + '% allocated'}</div>
       <strong class="ab-rate">${pct(s.visitors ? s.rate : null)}</strong><span class="ab-muted">${historical() ? 'estimated lead rate' : 'visitor conversion rate'}</span>
-      <div class="ab-variant-stats"><div><strong>${n(s.visitors)}</strong><span>Visitors</span></div><div><strong>${n(s.leads)}</strong><span>Leads</span></div><div><strong>${n(historical() ? s.taggedLeads : s.converted)}</strong><span>${historical() ? 'Tagged leads' : 'Converted visitors'}</span></div></div></section>`; }).join('');
+      <div class="ab-variant-stats"><div><strong>${n(s.visitors)}</strong><span>Visitors</span></div><div><strong>${n(s.leads)}</strong><span>Leads</span></div><div><strong>${n(historical() ? s.taggedLeads : s.converted)}</strong><span>${historical() ? 'Tagged leads' : 'Converted visitors'}</span></div></div>${run.outcomes ? `<div class="ab-variant-sales"><div><strong>${outcomeValue(run.outcomes[v].opportunities)}</strong><span>Opportunities</span></div><div><strong>${outcomeValue(run.outcomes[v].closedWon)}</strong><span>Closed Won</span></div></div><p class="ab-match-note">${outcomeCoverage(run.outcomes[v])}</p>` : ''}</section>`; }).join('');
     const a = run.stats.A, b = run.stats.B;
     el('statisticalVerdict').innerHTML = verdict(run, true);
     el('attributionDetails').hidden = !historical();
@@ -143,7 +163,8 @@
     el('configSnapshot').innerHTML = setup.map(([label,value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('');
     drawChart();
     el('dailyBody').innerHTML = data.daily.map(d => `<tr><td>${d.date}</td>${['A','B'].map(v => `<td>${n(d[v].visitors)}</td><td>${n(d[v].leads)}</td><td>${pct(d[v].rate)}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="7" class="ab-empty">No results for this range.</td></tr>';
-    el('leadsBody').innerHTML = data.recent.map(l => `<tr><td>#${l.lead_id}</td><td>${l.variant === 'U' ? 'Unassigned' : 'Variant ' + l.variant}</td><td>${historical() ? attributionLabel(l.attribution) : esc(date(l.first_seen))}</td><td>${esc(date(l.created_at))}</td></tr>`).join('') || '<tr><td colspan="4" class="ab-empty">No attributed leads from these visitors yet.</td></tr>';
+    el('leadOutcomeHeader').hidden=historical();
+    el('leadsBody').innerHTML = data.recent.map(l => `<tr><td>#${l.lead_id}</td><td>${l.variant === 'U' ? 'Unassigned' : 'Variant ' + l.variant}</td><td>${historical() ? attributionLabel(l.attribution) : esc(date(l.first_seen))}</td><td>${esc(date(l.created_at))}</td>${historical()?'':`<td>${l.outcome?.closed_won?'Closed Won':l.outcome?.opportunity?'Opportunity':l.outcome?.state==='matched'?'Lead':l.outcome?.state==='ambiguous'?'Match needs review':'Awaiting match'}</td>`}</tr>`).join('') || '<tr><td colspan="5" class="ab-empty">No attributed leads from these visitors yet.</td></tr>';
   }
   async function load() {
     const id = ++requestId;
@@ -200,6 +221,8 @@
     rows[0].push('Model','Verdict scope','Verdict','Winner','Probability A better','Probability B better','Full-run A visitors','Full-run A converted','Full-run B visitors','Full-run B converted');
     const m=run.inference;
     for (const row of rows.slice(1)) row.push(m?.model || '',m?.scope || '',m?.status || 'Historical estimates only',m?.winner || '',m?.probability?.A ?? '',m?.probability?.B ?? '',m?.stats?.A?.visitors ?? '',m?.stats?.A?.converted ?? '',m?.stats?.B?.visitors ?? '',m?.stats?.B?.converted ?? '');
+    rows[0].push('Opportunities','Closed Won','Matched submissions','Unmatched submissions','Outcome checked at','Outcome data delayed');
+    for (let i=1;i<rows.length;i++) { const row=rows[i], day=data.daily.find(d=>d.date===row[5]), o=day?.[row[6]]?.outcomes; row.push(o?.opportunities ?? '',o?.closedWon ?? '',o?.matched ?? '',o?.unmatched ?? '',data.outcomeSync?.lastSuccess ? new Date(data.outcomeSync.lastSuccess).toISOString() : '',data.outcomeSync?.stale ?? ''); }
     const cell = value => '"' + String(value ?? '').replace(/^[=+@\-\t\r]/, "'$&").replace(/"/g,'""') + '"';
     const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(r => r.map(cell).join(',')).join('\r\n')], {type:'text/csv;charset=utf-8'}));
     const a = document.createElement('a'); a.href = url; a.download = `ab-test-${run.id}-${data.from || 'all'}-${data.to || 'today'}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);

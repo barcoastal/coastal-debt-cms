@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A/B Tests | Coastal Debt CMS</title>
-<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=5">
+<link rel="stylesheet" href="/admin/assets/css/style.css?v=7"><link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1"><link rel="stylesheet" href="/admin/assets/css/ab-tests.css?v=6">
 <script src="/admin/assets/js/workspace.js?v=2" defer></script>
 </head><body class="ab-page"><div class="app-container">
     <aside class="sidebar">
@@ -145,6 +145,7 @@
     </form>
   </div>
   <div id="error" class="ab-error" role="alert" hidden></div><p id="loading" class="ab-loading" role="status">Updating results…</p>
+  <p id="outcomeSync" class="ab-connection" role="status" hidden></p>
   <div id="report" aria-busy="true">
     <div id="overview">
       <div class="ab-totals" aria-label="Summary for the displayed tests">
@@ -152,6 +153,8 @@
         <div class="ab-total"><span>Visitors</span><strong id="visitorTotal">—</strong><small id="summaryScope">Across active tests</small></div>
         <div class="ab-total"><span>Leads</span><strong id="leadTotal">—</strong><small>Attributed to these tests</small></div>
         <div class="ab-total"><span id="totalRateLabel">Conversion rate</span><strong id="rateTotal">—</strong><small id="rateCaption">Visitors who became leads</small></div>
+        <div class="ab-total" id="salesTotals"><span>Opportunities</span><strong id="oppTotal">—</strong><small>Confirmed across these tests</small></div>
+        <div class="ab-total" id="wonTotals"><span>Closed Won</span><strong id="wonTotal">—</strong><small>Confirmed across these tests</small></div>
       </div>
       <div class="ab-section-heading"><div><h2 id="listTitle" tabindex="-1">Active experiments</h2><p class="ab-muted" id="testCount"></p></div><label class="ab-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input type="search" id="testSearch" aria-label="Search tests" placeholder="Find a test…"></label></div>
       <p class="ab-history-note" id="historyNotice" hidden>Recovered historical results. Visitor counts and conversion rates are estimates; open a test to see attribution details.</p>
@@ -165,9 +168,9 @@
         <details><summary>Test setup</summary><dl class="ab-setup" id="configSnapshot"></dl></details>
       </section>
       <section class="ab-panel"><div class="ab-panel-head"><div><h2>Daily performance</h2><p class="ab-muted" id="dailyDescription"></p></div><select id="chartMetric" aria-label="Chart metric"><option value="visitors">Visitors</option><option value="leads">Leads</option><option value="rate">Conversion rate</option></select></div><div class="ab-chart"><div class="ab-legend"><span>Variant A</span><span>Variant B</span></div><div id="dailyChart"></div></div><details><summary>Daily breakdown</summary><div class="ab-table-wrap"><table><thead><tr><th>Date</th><th>A visitors</th><th>A leads</th><th id="dailyRateA">A conversion</th><th>B visitors</th><th>B leads</th><th id="dailyRateB">B conversion</th></tr></thead><tbody id="dailyBody"></tbody></table></div></details></section>
-      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Recent leads</h2><p class="ab-muted" id="recentDescription"></p></div><a href="/admin/leads.html">View leads →</a></div><div class="ab-table-wrap"><table><thead><tr><th>Lead ID</th><th>Variant</th><th id="leadContextHeader">First test visit</th><th>Lead created</th></tr></thead><tbody id="leadsBody"></tbody></table></div></section>
+      <section class="ab-panel"><div class="ab-panel-head"><div><h2>Recent leads</h2><p class="ab-muted" id="recentDescription"></p></div><a href="/admin/leads.html">View leads →</a></div><div class="ab-table-wrap"><table><thead><tr><th>Lead ID</th><th>Variant</th><th id="leadContextHeader">First test visit</th><th>Lead created</th><th id="leadOutcomeHeader">Sales outcome</th></tr></thead><tbody id="leadsBody"></tbody></table></div></section>
       <details class="ab-method"><summary>How these results are measured</summary><p class="ab-muted" id="methodology"></p></details>
     </div>
     <footer class="ab-footer"><span id="coverage"></span><span id="timezone"></span></footer>
   </div>
-</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=5"></script></body></html>
+</main></div><script src="/admin/assets/js/common.js?v=8"></script><script src="/admin/assets/js/ab-tests.js?v=6"></script></body></html>
