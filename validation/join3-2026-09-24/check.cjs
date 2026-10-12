@@ -48,6 +48,7 @@ const context = vm.createContext({
     if (name==='multer') return multer;
     if (name==='../database') return db;
     if (name==='./auth') return {authenticateToken:()=>{}};
+    if (name==='../templates/join5-content.json') return require(path.join(root,'server/templates/join5-content.json'));
     if (name==='../templates/join3') return require(path.join(root,'server/templates/join3'));
     throw new Error('Unexpected import '+name);
   }, process:{env:{}}, console, setTimeout:()=>0, clearTimeout:()=>{}

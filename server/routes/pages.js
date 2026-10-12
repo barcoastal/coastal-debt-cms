@@ -5,6 +5,7 @@ const multer = require('multer');
 const db = require('../database');
 const { authenticateToken } = require('./auth');
 const join3 = require('../templates/join3');
+const join5Defaults = { ...join3.defaults, metaImage: '/lp/assets/person-cta.webp', ...require('../templates/join5-content.json') };
 
 // Only inherit V3 hero settings; V2 owns all lower-page content.
 const join4HeroDefaults = Object.fromEntries([
@@ -736,6 +737,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     const saved = JSON.parse(page.content || '{}');
     // Merge with defaults so editor fields show actual values
     const defaults =
+      page.template_type === 'join5' ? join5Defaults :
       page.template_type === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
       page.template_type === 'join3' ? { ...defaultContent, ...join3.defaults } :
       page.template_type === 'authority' ? defaultContentAuthority :
@@ -762,7 +764,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   // Check slug is URL-safe
   const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4', 'join5'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : 'form';
 
   try {
@@ -776,6 +778,7 @@ router.post('/', authenticateToken, (req, res) => {
       traffic_source || '',
       form_id || null,
       JSON.stringify(
+        validTemplateType === 'join5' ? join5Defaults :
         validTemplateType === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
         validTemplateType === 'join3' ? { ...defaultContent, ...join3.defaults } :
         validTemplateType === 'authority' ? defaultContentAuthority :
@@ -783,7 +786,7 @@ router.post('/', authenticateToken, (req, res) => {
         validTemplateType === 'pdf-v2' ? defaultContentPdfV2 :
         defaultContent
       ),
-      JSON.stringify(validTemplateType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
+      JSON.stringify(['authority', 'join5'].includes(validTemplateType) ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
       JSON.stringify({}),
       validTemplateType
     );
@@ -853,7 +856,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const safeSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-') : page.slug;
-  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
+  const validTypes = ['call', 'game', 'article', 'form', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4', 'join5'];
   const validTemplateType = validTypes.includes(template_type) ? template_type : page.template_type;
 
   db.prepare(`
@@ -905,7 +908,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
   if (!source_campaign_id) return res.status(400).json({ error: 'source_campaign_id required' });
   if (!target_campaign_label) return res.status(400).json({ error: 'target_campaign_label required' });
 
-  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4'];
+  const validTypes = ['call', 'game', 'article', 'authority', 'join', 'leadgen', 'mca-variant', 'rich', 'form', 'pdf', 'pdf-v2', 'cobrand', 'join-v2', 'clickchoose', 'join3', 'join4', 'join5'];
   const validType = validTypes.includes(template_type) ? template_type : 'join';
 
   // Pull ad groups for the source campaign from the cached meta
@@ -972,6 +975,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
       `).run(
         name, slug, platform, traffic_source, form_id || null,
         JSON.stringify(
+          validType === 'join5' ? join5Defaults :
           validType === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
           validType === 'join3' ? { ...defaultContent, ...join3.defaults } :
           validType === 'authority' ? defaultContentAuthority :
@@ -979,7 +983,7 @@ router.post('/bulk-create-from-campaign', authenticateToken, async (req, res) =>
           validType === 'pdf-v2' ? defaultContentPdfV2 :
           defaultContent
         ),
-        JSON.stringify(validType === 'authority' ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
+        JSON.stringify(['authority', 'join5'].includes(validType) ? defaultSectionsVisibleAuthority : defaultSectionsVisible),
         JSON.stringify({}),
         validType,
         // Use a synthetic pending campaign id so the folder view groups them together
@@ -1373,7 +1377,7 @@ function generateLandingPage(pageId) {
     .join('\n            ');
 
   // Read the template and generate
-  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'landing-page-clickchoose.html', join3: 'landing-page-join3.html', join4: 'landing-page-join4.html' };
+  const templateFiles = { call: 'landing-page-call.html', game: 'landing-page-game.html', article: 'landing-page-article.html', authority: 'landing-page-authority.html', join: 'landing-page-join.html', leadgen: 'landing-page-leadgen.html', 'mca-variant': 'landing-page-mca-variant.html', rich: 'landing-page-rich.html', pdf: 'landing-page-pdf.html', 'pdf-v2': 'landing-page-pdf-v2.html', cobrand: 'landing-page-cobrand.html', 'join-v2': 'landing-page-join-v2.html', clickchoose: 'landing-page-clickchoose.html', join3: 'landing-page-join3.html', join4: 'landing-page-join4.html', join5: 'landing-page-join5.html' };
   const templateFile = templateFiles[page.template_type] || 'landing-page.html';
   const templatePath = path.join(__dirname, '..', '..', 'templates', templateFile);
 
@@ -1407,6 +1411,7 @@ function generateLandingPage(pageId) {
   // Merge content with defaults so all template placeholders get replaced
   // If a field is explicitly set (even to empty string), respect it
   const defaults =
+    page.template_type === 'join5' ? join5Defaults :
     page.template_type === 'join4' ? { ...defaultContent, ...defaultContentJoinV2, ...join4HeroDefaults } :
     page.template_type === 'join3' ? { ...defaultContent, ...join3.defaults } :
     page.template_type === 'authority' ? defaultContentAuthority :
@@ -1429,7 +1434,7 @@ function generateLandingPage(pageId) {
   mergedContent.colors = { ...defaults.colors, ...(content.colors || {}) };
 
   if (page.template_type === 'join3') html = join3.render(html, mergedContent, sectionsVisible);
-  if (page.template_type === 'join4') {
+  if (['join4', 'join5'].includes(page.template_type)) {
     html = html.replaceAll('{{currentMonthYear}}', new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
     html = html.replace(/<!-- JOIN4:HERO -->[\s\S]*?<!-- \/JOIN4:HERO -->/, hero => join3.render(hero, mergedContent));
   }
@@ -1482,7 +1487,7 @@ function generateLandingPage(pageId) {
     html = html.replace(/{{calcSavingsPercent}}/g, String(mergedContent.calcSavingsPercent || 70));
 
   // Handle form data
-  const isAuthority = page.template === 'authority';
+  const isAuthority = page.template === 'authority' || page.template_type === 'join5';
   const formFields = form ? form.fields : (isAuthority ? authorityFormFields : defaultFormFields);
   const formWebhook = page.webhook_url || (form ? form.webhook_url : '');
   const formSubmitText = form ? form.submit_button_text : content.formButton || 'Get My Free Debt Analysis';
@@ -1506,7 +1511,7 @@ function generateLandingPage(pageId) {
   }
 
     // Strip hidden sections based on sectionsVisible
-    if (page.template_type === 'authority') {
+    if (['authority', 'join5'].includes(page.template_type)) {
       const sectionKeys = ['howItWorks', 'educational', 'calculator', 'comparison', 'caseStudies', 'personCta', 'testimonials', 'faq', 'cta', 'guide'];
       for (const key of sectionKeys) {
         if (sectionsVisible[key] === false) {

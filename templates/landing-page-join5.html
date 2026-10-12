@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{metaDescription}}">
+  <meta property="og:title" content="{{pageTitle}}">
+  <meta property="og:description" content="{{metaDescription}}">
+  <meta property="og:image" content="{{metaImage}}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{pageTitle}}">
+  <meta name="twitter:description" content="{{metaDescription}}">
+  <meta name="twitter:image" content="{{metaImage}}">
+  {{headScripts}}
+  <!-- Facebook Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    var _fbPixelId = '{{FB_PIXEL_ID}}';
+    if (_fbPixelId) {
+      fbq('init', _fbPixelId);
+      fbq('track', 'PageView');
+    }
+  </script>
+  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{FB_PIXEL_ID}}&ev=PageView&noscript=1"/></noscript>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FAQPage JSON-LD (rendered by JS) -->
+  <script id="faqSchema" type="application/ld+json">{}</script>
+  <!-- Organization JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Coastal Debt Resolve",
+    "url": "https://www.coastaldebt.com",
+    "logo": "https://cdn.prod.website-files.com/6634aeab2fd552b666b69c25/68d3ea2a40971102ff6b605f_4df5ec858fd5062f2c7c25ddc701c00e_Coastal%20Debt%20Resolve_id2iMYK6Ad_1%201%20%281%29.svg",
+    "sameAs": []
+  }
+  </script>
+  <!-- AggregateRating JSON-LD (rendered by JS) -->
+  <script id="ratingSchema" type="application/ld+json">{}</script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --primary:{{colors.primary}};
+      --primary-light:{{colors.primaryLight}};
+      --hero-bg:{{colors.heroBg}};
+      --cta-btn:{{colors.ctaButton}};
+      --cta-btn-hover:{{colors.ctaButtonHover}};
+      --headline-hl:{{colors.headlineHighlight}};
+      --navy:{{colors.navy}};
+      --navy-dark:{{colors.navyDark}};
+      --white:#ffffff;
+      --gray-100:#f3f4f6;
+      --gray-200:#e5e7eb;
+      --gray-600:#4b5563;
+      --gray-800:#1f2937;
+      --gold:#f59e0b;
+      --green-600:#16a34a;
+      --red-600:#dc2626;
+    }
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--gray-800);line-height:1.6;background:var(--white)}
+    :where(.bankruptcy-content) .container{max-width:1200px;margin:0 auto;padding:0 20px}
+
+    /* Blue accent strip */
+    body::before{content:'';position:fixed;top:0;left:0;width:5px;height:100%;background:linear-gradient(180deg,var(--primary) 0%,var(--primary-light) 100%);z-index:200}
+
+    /* Nav */
+    :where(.bankruptcy-content) .nav{background:var(--white);padding:16px 0;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+    :where(.bankruptcy-content) .nav-inner{display:flex;justify-content:space-between;align-items:center}
+    :where(.bankruptcy-content) .nav-logo{display:flex;align-items:center;text-decoration:none;cursor:default}
+    :where(.bankruptcy-content) .nav-logo img{height:36px;width:auto}
+    :where(.bankruptcy-content) .nav-phone{display:flex;align-items:center;gap:8px;background:var(--cta-btn);color:var(--white);font-weight:600;font-size:0.95rem;padding:10px 22px;border-radius:50px;text-decoration:none;transition:all 0.2s}
+    :where(.bankruptcy-content) .nav-phone:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    :where(.bankruptcy-content) .nav-phone svg{width:16px;height:16px;flex-shrink:0}
+
+    /* Hero */
+    :where(.bankruptcy-content) .hero{background:var(--hero-bg);padding:50px 0 60px}
+    :where(.bankruptcy-content) .hero-grid{display:grid;grid-template-columns:1fr 400px;gap:36px;align-items:start}
+    :where(.bankruptcy-content) .hero-badge{display:inline-block;background:rgba(48,82,255,0.1);color:var(--primary);padding:8px 16px;border-radius:50px;font-size:0.85rem;font-weight:600;margin-bottom:12px}
+    :where(.bankruptcy-content) .hero h1{font-size:2.8rem;font-weight:800;line-height:1.15;margin-bottom:14px;color:#0a0a0a}
+    :where(.bankruptcy-content) .hero h1 .hl{color:var(--headline-hl)}
+    :where(.bankruptcy-content) .hero-sub{font-size:1.1rem;color:var(--gray-600);margin-bottom:16px;line-height:1.7}
+    :where(.bankruptcy-content) #bulletPoints{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+    :where(.bankruptcy-content) .bullet-item{display:flex;align-items:center;gap:12px;font-size:1rem;color:var(--gray-800)}
+    :where(.bankruptcy-content) .bullet-item .bicon{color:var(--primary);font-weight:900;font-size:1.1rem;flex-shrink:0}
+    :where(.bankruptcy-content) .trust-bar-inline{display:inline-flex;flex-direction:column;align-items:center;margin-top:10px;padding:18px 32px 24px;background:#fff;border-radius:16px;border:2px solid #3052FF}
+    :where(.bankruptcy-content) .trust-bar-inline .trust-label{font-size:11px;color:var(--gray-400);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:16px}
+    :where(.bankruptcy-content) .trust-logo-row{display:flex;align-items:center;gap:28px}
+    :where(.bankruptcy-content) .trust-logo-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    :where(.bankruptcy-content) .trust-logo-grid img{max-width:120px;max-height:55px;object-fit:contain}
+    :where(.bankruptcy-content) .trust-divider{width:1.5px;height:90px;background:#d0d8e8}
+    :where(.bankruptcy-content) .trust-bi{max-width:120px;max-height:70px;object-fit:contain}
+
+    /* Form Card */
+    :where(.bankruptcy-content) .form-card{background:var(--white);border-radius:16px;padding:36px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+    :where(.bankruptcy-content) .form-title{font-size:1.5rem;font-weight:800;color:var(--navy);margin-bottom:6px;text-align:center}
+    :where(.bankruptcy-content) .form-subtitle{color:var(--gray-600);font-size:0.95rem;text-align:center;margin-bottom:20px}
+    :where(.bankruptcy-content) .form-group{margin-bottom:14px}
+    :where(.bankruptcy-content) .form-group label{display:block;font-weight:500;color:var(--gray-800);margin-bottom:6px;font-size:0.9rem}
+    :where(.bankruptcy-content) .form-group input,:where(.bankruptcy-content) .form-group select{width:100%;height:48px;padding:0 16px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;transition:all 0.2s;background:var(--white);outline:none}
+    :where(.bankruptcy-content) .form-group input:focus,:where(.bankruptcy-content) .form-group select:focus{border-color:var(--primary)}
+    :where(.bankruptcy-content) .form-group input::placeholder{color:#aab}
+    :where(.bankruptcy-content) .form-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234b5563' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+    :where(.bankruptcy-content) .form-group select option{color:var(--gray-800)}
+    :where(.bankruptcy-content) .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;height:48px;transition:all 0.2s;background:var(--white)}
+    :where(.bankruptcy-content) .phone-wrapper:focus-within{border-color:var(--primary)}
+    :where(.bankruptcy-content) .phone-prefix{display:flex;align-items:center;gap:6px;padding:0 0 0 14px;font-size:0.9rem;color:var(--gray-600);white-space:nowrap;user-select:none}
+    :where(.bankruptcy-content) .phone-wrapper input[type="tel"]{border:none;padding-left:8px;height:44px;border-radius:0 12px 12px 0;background:transparent}
+    :where(.bankruptcy-content) .phone-wrapper input[type="tel"]:focus{border-color:transparent}
+    :where(.bankruptcy-content) .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:4px}
+    :where(.bankruptcy-content) .radio-group{display:flex;gap:10px}
+    :where(.bankruptcy-content) .radio-label{flex:1;height:48px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;background:var(--white);font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;position:relative;text-align:center;color:var(--gray-800)}
+    :where(.bankruptcy-content) .radio-label:has(input:checked){border-color:var(--primary);background:rgba(48,82,255,0.05);color:var(--primary);font-weight:600}
+    :where(.bankruptcy-content) .radio-label input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+    :where(.bankruptcy-content) .radio-label span{line-height:48px}
+    :where(.bankruptcy-content) .consent-group{margin:14px 0 0}
+    :where(.bankruptcy-content) .consent-label{display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:0.72rem;color:var(--gray-600);line-height:1.5}
+    :where(.bankruptcy-content) .consent-label input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+    :where(.bankruptcy-content) .consent-label a{color:var(--primary);text-decoration:underline}
+    :where(.bankruptcy-content) .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none;padding-left:24px}
+    :where(.bankruptcy-content) .submit-btn{width:100%;height:52px;background:var(--cta-btn);color:var(--white);border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:14px}
+    :where(.bankruptcy-content) .submit-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+    :where(.bankruptcy-content) .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
+    :where(.bankruptcy-content) .form-security{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:0.8rem;color:var(--gray-600)}
+    :where(.bankruptcy-content) .form-security svg{width:14px;height:14px;color:var(--green-600)}
+    :where(.bankruptcy-content) .form-success{text-align:center;padding:40px 20px}
+    :where(.bankruptcy-content) .form-success h3{color:var(--green-600);font-size:1.5rem;margin-bottom:10px;font-weight:700}
+    :where(.bankruptcy-content) .form-success p{color:var(--gray-600);font-size:1rem}
+
+    /* Section base */
+    :where(.bankruptcy-content) .section{padding:70px 0}
+    :where(.bankruptcy-content) .section-title{text-align:center;font-size:2rem;font-weight:800;color:var(--navy);margin-bottom:12px}
+    :where(.bankruptcy-content) .section-sub{text-align:center;color:var(--gray-600);max-width:650px;margin:0 auto 45px;font-size:1.05rem}
+
+    /* How It Works */
+    :where(.bankruptcy-content) .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+    :where(.bankruptcy-content) .step-card{text-align:center;padding:36px 28px;border-radius:16px;background:var(--white);border:1px solid var(--gray-200);transition:all 0.3s}
+    :where(.bankruptcy-content) .step-card:hover{border-color:var(--primary);box-shadow:0 10px 40px rgba(48,82,255,0.1)}
+    :where(.bankruptcy-content) .step-num{width:52px;height:52px;background:var(--primary);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;margin:0 auto 18px}
+    :where(.bankruptcy-content) .step-card h3{font-size:1.15rem;color:var(--navy);margin-bottom:8px;font-weight:700}
+    :where(.bankruptcy-content) .step-card p{color:var(--gray-600);font-size:0.95rem}
+
+    /* Educational */
+    :where(.bankruptcy-content) .edu-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:50px}
+    :where(.bankruptcy-content) .edu-stat{text-align:center;padding:30px 20px;background:var(--white);border-radius:16px;border:1px solid var(--gray-200)}
+    :where(.bankruptcy-content) .edu-stat .num{font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:6px}
+    :where(.bankruptcy-content) .edu-stat .lbl{font-size:0.95rem;color:var(--gray-600)}
+    :where(.bankruptcy-content) .edu-sections{max-width:800px;margin:0 auto}
+    :where(.bankruptcy-content) .edu-section{margin-bottom:32px}
+    :where(.bankruptcy-content) .edu-section h3{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:12px}
+    :where(.bankruptcy-content) .edu-section p{color:var(--gray-600);font-size:1rem;line-height:1.7;margin-bottom:12px}
+
+    /* Calculator */
+    :where(.bankruptcy-content) .calc-card{max-width:600px;margin:0 auto;background:var(--white);border-radius:16px;padding:40px 36px;border:1px solid var(--gray-200);box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+    :where(.bankruptcy-content) .calc-label{font-size:0.95rem;color:var(--gray-600);text-align:center;margin-bottom:8px}
+    :where(.bankruptcy-content) .calc-amount{font-size:2.8rem;font-weight:800;color:var(--navy);text-align:center;margin-bottom:20px}
+    :where(.bankruptcy-content) .calc-slider{width:100%;height:8px;-webkit-appearance:none;appearance:none;background:var(--gray-200);border-radius:4px;outline:none;margin-bottom:28px}
+    :where(.bankruptcy-content) .calc-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 2px 8px rgba(48,82,255,0.3)}
+    :where(.bankruptcy-content) .calc-slider::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;border:none;box-shadow:0 2px 8px rgba(48,82,255,0.3)}
+    :where(.bankruptcy-content) .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    :where(.bankruptcy-content) .calc-result{text-align:center;padding:20px;border-radius:12px;background:#f8f9fb}
+    :where(.bankruptcy-content) .calc-result .cr-label{font-size:0.85rem;color:var(--gray-600);margin-bottom:6px}
+    :where(.bankruptcy-content) .calc-result .cr-value{font-size:1.6rem;font-weight:800;color:var(--navy)}
+    :where(.bankruptcy-content) .calc-result.savings .cr-value{color:var(--green-600)}
+    :where(.bankruptcy-content) .calc-cta{display:block;width:100%;text-align:center;background:var(--cta-btn);color:var(--white);padding:16px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;border:none;cursor:pointer}
+    :where(.bankruptcy-content) .calc-cta:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+
+    /* Comparison */
+    :where(.bankruptcy-content) .comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    :where(.bankruptcy-content) .comp-card{border-radius:16px;padding:32px 28px}
+    :where(.bankruptcy-content) .comp-card.bad{background:var(--white);border:1px solid var(--gray-200)}
+    :where(.bankruptcy-content) .comp-card.good{background:var(--navy);color:var(--white);border:2px solid var(--primary);position:relative}
+    :where(.bankruptcy-content) .comp-card .comp-badge{display:inline-block;padding:6px 14px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:16px}
+    :where(.bankruptcy-content) .comp-card.bad .comp-badge{background:#fee2e2;color:var(--red-600)}
+    :where(.bankruptcy-content) .comp-card.good .comp-badge{background:rgba(48,82,255,0.2);color:var(--primary-light)}
+    :where(.bankruptcy-content) .comp-card.good .comp-recommended{position:absolute;top:-12px;right:20px;background:var(--primary);color:var(--white);padding:4px 14px;border-radius:50px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+    :where(.bankruptcy-content) .comp-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:0.95rem}
+    :where(.bankruptcy-content) .comp-item .comp-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;margin-top:2px}
+    :where(.bankruptcy-content) .comp-card.bad .comp-icon{background:#fee2e2;color:var(--red-600)}
+    :where(.bankruptcy-content) .comp-card.good .comp-icon{background:rgba(22,163,106,0.2);color:#4ade80}
+    :where(.bankruptcy-content) .comp-card.good .comp-text{color:rgba(255,255,255,0.9)}
+
+    /* Case Studies */
+    :where(.bankruptcy-content) .cases-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+    :where(.bankruptcy-content) .case-card{background:var(--white);border-radius:16px;padding:28px;border:1px solid var(--gray-200);transition:box-shadow 0.3s}
+    :where(.bankruptcy-content) .case-card:hover{box-shadow:0 8px 30px rgba(0,0,0,0.08)}
+    :where(.bankruptcy-content) .case-industry{display:inline-block;background:rgba(48,82,255,0.1);color:var(--primary);padding:4px 12px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:12px}
+    :where(.bankruptcy-content) .case-story{font-size:0.9rem;color:var(--gray-600);line-height:1.6;margin-bottom:16px}
+    :where(.bankruptcy-content) .case-original{color:var(--gray-600);font-size:0.9rem;margin-bottom:4px}
+    :where(.bankruptcy-content) .case-original span{text-decoration:line-through}
+    :where(.bankruptcy-content) .case-settled{font-size:1.8rem;font-weight:800;color:var(--primary);margin-bottom:8px}
+    :where(.bankruptcy-content) .case-savings-badge{display:inline-block;background:#dcfce7;color:var(--green-600);padding:4px 14px;border-radius:50px;font-weight:700;font-size:0.85rem}
+    :where(.bankruptcy-content) .case-note{font-size:0.8rem;color:var(--gray-600);margin-top:8px;font-style:italic}
+    :where(.bankruptcy-content) .case-link{display:inline-block;margin-top:12px;padding:8px 18px;background:transparent;border:2px solid var(--primary);color:var(--primary);border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;transition:all 0.2s}
+    :where(.bankruptcy-content) .case-link:hover{background:var(--primary);color:var(--white)}
+
+    /* Person CTA */
+    :where(.bankruptcy-content) .person-cta{background:var(--navy);overflow:hidden}
+    :where(.bankruptcy-content) .person-cta-grid{display:grid;grid-template-columns:1fr 1fr;align-items:center}
+    :where(.bankruptcy-content) .person-cta-content{padding:60px 50px 60px 0}
+    :where(.bankruptcy-content) .person-cta-content h2{font-size:2rem;font-weight:800;color:var(--white);margin-bottom:16px;line-height:1.3}
+    :where(.bankruptcy-content) .person-cta-content h2 .hl{color:var(--primary)}
+    :where(.bankruptcy-content) .person-cta-content p{color:rgba(255,255,255,0.8);font-size:1.05rem;line-height:1.7;margin-bottom:24px}
+    :where(.bankruptcy-content) .person-cta-content .pcta-btn{display:inline-block;background:var(--cta-btn);color:var(--white);padding:14px 36px;border-radius:50px;font-size:1.1rem;font-weight:700;text-decoration:none;transition:all 0.2s;margin-right:16px}
+    :where(.bankruptcy-content) .person-cta-content .pcta-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    :where(.bankruptcy-content) .person-cta-content .pcta-phone{color:rgba(255,255,255,0.8);text-decoration:none;font-size:1rem}
+    :where(.bankruptcy-content) .person-cta-content .pcta-phone:hover{color:var(--white)}
+    :where(.bankruptcy-content) .person-cta-img{height:100%;min-height:350px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%)}
+    :where(.bankruptcy-content) .person-cta-img img{width:100%;height:100%;object-fit:cover;display:block}
+
+    /* Testimonials */
+    :where(.bankruptcy-content) .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    :where(.bankruptcy-content) .testimonial-card{background:var(--white);border-radius:16px;padding:32px;border:1px solid var(--gray-200)}
+    :where(.bankruptcy-content) .testimonial-stars{color:var(--gold);font-size:1.1rem;margin-bottom:14px}
+    :where(.bankruptcy-content) .testimonial-text{color:var(--gray-800);font-size:0.95rem;margin-bottom:20px;font-style:italic;line-height:1.6}
+    :where(.bankruptcy-content) .testimonial-author{display:flex;align-items:center;gap:12px}
+    :where(.bankruptcy-content) .author-avatar{width:42px;height:42px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:700;font-size:0.85rem;flex-shrink:0}
+    :where(.bankruptcy-content) .author-name{font-size:0.9rem;font-weight:700;color:var(--navy)}
+    :where(.bankruptcy-content) .author-role{font-size:0.8rem;color:var(--gray-600)}
+
+    /* FAQ */
+    :where(.bankruptcy-content) .faq-grid{max-width:800px;margin:0 auto}
+    :where(.bankruptcy-content) .faq-item{border-bottom:1px solid var(--gray-200)}
+    :where(.bankruptcy-content) .faq-q{padding:20px 0;font-size:1.05rem;font-weight:700;color:var(--navy);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px}
+    :where(.bankruptcy-content) .faq-q .arrow{font-size:1.2rem;transition:transform 0.3s;color:var(--primary);flex-shrink:0}
+    :where(.bankruptcy-content) .faq-q .arrow.open{transform:rotate(180deg)}
+    :where(.bankruptcy-content) .faq-a{display:none;padding:0 0 20px;color:var(--gray-600);font-size:1rem;line-height:1.7}
+
+    /* Bottom CTA */
+    :where(.bankruptcy-content) .bottom-cta{background:var(--navy);padding:70px 0;text-align:center}
+    :where(.bankruptcy-content) .bottom-cta h2{color:var(--white);font-size:2rem;font-weight:800;margin-bottom:12px}
+    :where(.bankruptcy-content) .bottom-cta .section-sub{color:rgba(255,255,255,0.8)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card{background:var(--white);border-radius:16px;padding:32px 28px;max-width:520px;margin:0 auto 20px;text-align:left}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .form-group{margin-bottom:14px}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card label{display:block;font-size:0.85rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card input[type="text"],:where(.bankruptcy-content) .bottom-cta .cta-form-card input[type="email"],:where(.bankruptcy-content) .bottom-cta .cta-form-card input[type="tel"],:where(.bankruptcy-content) .bottom-cta .cta-form-card select,:where(.bankruptcy-content) .bottom-cta .cta-form-card textarea{width:100%;padding:12px 16px;border:2px solid var(--gray-200);border-radius:12px;font-size:1rem;transition:border 0.2s;background:var(--white)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card input:focus,:where(.bankruptcy-content) .bottom-cta .cta-form-card select:focus,:where(.bankruptcy-content) .bottom-cta .cta-form-card textarea:focus{outline:none;border-color:var(--primary)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-wrapper{display:flex;align-items:center;border:2px solid var(--gray-200);border-radius:12px;overflow:hidden;transition:border 0.2s;background:var(--white)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-wrapper:focus-within{border-color:var(--primary)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-wrapper .phone-prefix{padding:12px;background:#f8f9fb;font-size:0.9rem;white-space:nowrap;border-right:1px solid var(--gray-200)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-wrapper input{border:none;border-radius:0;padding:12px 16px}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-wrapper input:focus{outline:none;box-shadow:none}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .phone-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .radio-group{display:flex;gap:12px}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .radio-label{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;border:2px solid var(--gray-200);border-radius:12px;cursor:pointer;transition:all 0.2s;font-weight:600;height:auto}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .radio-label:has(input:checked){border-color:var(--primary);background:rgba(48,82,255,0.05)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .radio-label input{display:none}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .consent-group{margin-top:10px}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .consent-label{font-size:0.72rem;color:#666}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .consent-label a{color:var(--primary)}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .consent-error{color:var(--red-600);font-size:0.8rem;margin-top:4px;display:none}
+    :where(.bankruptcy-content) .bottom-cta .cta-form-card .submit-btn{margin-top:12px}
+    :where(.bankruptcy-content) .bottom-form-success{text-align:center;padding:24px}
+    :where(.bankruptcy-content) .bottom-form-success h3{font-size:1.4rem;color:var(--green-600);margin-bottom:8px}
+    :where(.bankruptcy-content) .bottom-form-success p{color:var(--gray-600);font-size:1rem}
+    :where(.bankruptcy-content) .cta-phone{color:var(--white);font-size:1.2rem;font-weight:600;margin-top:8px}
+    :where(.bankruptcy-content) .cta-phone a{color:var(--white);text-decoration:none}
+    :where(.bankruptcy-content) .cta-phone a:hover{text-decoration:underline}
+
+    /* Guide */
+    :where(.bankruptcy-content) .guide-header{padding:60px 0 0;text-align:center}
+    :where(.bankruptcy-content) .guide-header h2{font-size:2rem;font-weight:800;color:var(--navy);margin-bottom:12px}
+    :where(.bankruptcy-content) .guide-header p{color:var(--gray-600);max-width:650px;margin:0 auto;font-size:1.05rem}
+    :where(.bankruptcy-content) .guide-section{padding:50px 0}
+    :where(.bankruptcy-content) .guide-section.bg-white{background:var(--white)}
+    :where(.bankruptcy-content) .guide-section.bg-light{background:#f2f4f9}
+    :where(.bankruptcy-content) .guide-section .guide-inner{max-width:800px;margin:0 auto}
+    :where(.bankruptcy-content) .guide-section h3{font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:14px}
+    :where(.bankruptcy-content) .guide-section p{color:var(--gray-600);font-size:1rem;line-height:1.7;margin-bottom:12px}
+    :where(.bankruptcy-content) .guide-inline-cta{text-align:center;padding:30px 0}
+    :where(.bankruptcy-content) .guide-inline-cta a{display:inline-block;background:var(--cta-btn);color:var(--white);padding:14px 32px;border-radius:50px;font-weight:700;font-size:1rem;text-decoration:none;transition:all 0.2s}
+    :where(.bankruptcy-content) .guide-inline-cta a:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    :where(.bankruptcy-content) .glossary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    :where(.bankruptcy-content) .glossary-card{background:var(--white);border:1px solid var(--gray-200);border-radius:12px;padding:20px}
+    :where(.bankruptcy-content) .glossary-card .term{font-weight:700;color:var(--navy);margin-bottom:4px;font-size:0.95rem}
+    :where(.bankruptcy-content) .glossary-card .def{color:var(--gray-600);font-size:0.9rem;line-height:1.5}
+    :where(.bankruptcy-content) .guide-final-cta{text-align:center;padding:50px 0;background:var(--navy)}
+    :where(.bankruptcy-content) .guide-final-cta .gfc-btn{display:inline-block;background:var(--cta-btn);color:var(--white);padding:16px 40px;border-radius:50px;font-weight:700;font-size:1.1rem;text-decoration:none;transition:all 0.2s;margin-bottom:10px}
+    :where(.bankruptcy-content) .guide-final-cta .gfc-btn:hover{background:var(--cta-btn-hover);transform:translateY(-1px)}
+    :where(.bankruptcy-content) .guide-final-cta .gfc-sub{color:rgba(255,255,255,0.7);font-size:0.95rem}
+
+    /* Footer */
+    :where(.bankruptcy-content) footer{background:var(--navy-dark);padding:40px 0;text-align:center}
+    :where(.bankruptcy-content) footer p{color:rgba(255,255,255,0.6);font-size:0.85rem}
+    :where(.bankruptcy-content) footer a{color:rgba(255,255,255,0.8);text-decoration:none}
+    :where(.bankruptcy-content) footer a:hover{color:var(--white)}
+
+    /* Mobile Sticky CTA */
+    :where(.bankruptcy-content) .mobile-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 16px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.1);gap:8px}
+    :where(.bankruptcy-content) .mobile-cta a{flex:1;text-align:center;font-weight:700;font-size:0.9rem;text-decoration:none;padding:12px 16px;border-radius:50px;display:block}
+    :where(.bankruptcy-content) .mobile-cta .mcta-call{background:var(--navy);color:var(--white)}
+    :where(.bankruptcy-content) .mobile-cta .mcta-form{background:var(--cta-btn);color:var(--white)}
+
+    /* Responsive */
+    @media(max-width:992px){
+      :where(.bankruptcy-content) .hero-grid{display:flex;flex-direction:column;gap:0}
+      :where(.bankruptcy-content) .hero-content{display:contents}
+      :where(.bankruptcy-content) .hero-badge{order:1;margin-bottom:12px}
+      :where(.bankruptcy-content) .hero h1{font-size:2.2rem;order:2;margin-bottom:10px}
+      :where(.bankruptcy-content) .hero-sub{order:3;margin-bottom:16px}
+      :where(.bankruptcy-content) #bulletPoints{order:4;margin-bottom:20px}
+      :where(.bankruptcy-content) .form-card{max-width:520px;margin:0 auto;width:100%;order:5}
+      :where(.bankruptcy-content) .trust-bar-inline{order:6;margin-top:20px}
+      :where(.bankruptcy-content) .comp-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .person-cta-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .person-cta-content{padding:50px 20px}
+      :where(.bankruptcy-content) .person-cta-img{min-height:250px}
+      :where(.bankruptcy-content) .testimonials-grid{grid-template-columns:repeat(2,1fr)}
+      :where(.bankruptcy-content) .cases-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:768px){
+      body::before{display:none}
+      :where(.bankruptcy-content) .hero{padding:20px 0 50px}
+      :where(.bankruptcy-content) .hero-badge{display:none}
+      :where(.bankruptcy-content) .hero h1{font-size:1.8rem}
+      :where(.bankruptcy-content) .hero h1 br{display:none}
+      :where(.bankruptcy-content) .hero-sub{font-size:0.95rem}
+      :where(.bankruptcy-content) .form-card{padding:28px 22px}
+      :where(.bankruptcy-content) .form-title{font-size:1.3rem}
+      :where(.bankruptcy-content) .steps-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .edu-stats{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .calc-card{padding:28px 22px}
+      :where(.bankruptcy-content) .calc-amount{font-size:2rem}
+      :where(.bankruptcy-content) .comp-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .cases-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .testimonials-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .glossary-grid{grid-template-columns:1fr}
+      :where(.bankruptcy-content) .section{padding:50px 0}
+      :where(.bankruptcy-content) .section-title{font-size:1.5rem}
+      :where(.bankruptcy-content) .trust-bar-inline{padding:14px 18px}
+      :where(.bankruptcy-content) .trust-logo-grid{gap:12px}
+      :where(.bankruptcy-content) .trust-logo-grid img{max-width:90px;max-height:40px}
+      :where(.bankruptcy-content) .trust-divider{height:70px}
+      :where(.bankruptcy-content) .trust-bi{max-width:90px;max-height:50px}
+      :where(.bankruptcy-content) .mobile-cta{display:flex}
+      :where(.bankruptcy-content) .bottom-cta{padding-bottom:100px}
+      :where(.bankruptcy-content) .nav-phone span{display:none}
+      :where(.bankruptcy-content) .nav-phone{padding:10px 14px}
+      :where(.bankruptcy-content) .radio-group{flex-direction:column;gap:8px}
+      :where(.bankruptcy-content) .person-cta-content h2{font-size:1.5rem}
+      :where(.bankruptcy-content) .person-cta-content{padding:40px 20px}
+    }
+  </style>
+<link rel="stylesheet" href="/lp/assets/join4-hero.css?v=7">
+  <style>[hidden]{display:none!important}#join4-hero{--primary:{{colors.primary}};--navy:{{colors.navy}};--cta-btn:{{colors.ctaButton}};--cta-btn-hover:{{colors.ctaButtonHover}};--headline-hl:{{colors.headlineHighlight}}}.bankruptcy-content .nav-phone{background:transparent;color:var(--primary)}.bankruptcy-content .nav{position:static}#join4-hero .hero-grid{padding-bottom:70px}@media(max-width:760px){#join4-hero .hero-grid{padding-bottom:48px}}</style>
+</head>
+<body>
+  {{bodyStartScripts}}
+
+  <div class="bankruptcy-content">
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <span class="nav-logo"><img src="/assets/logos/logo-dark-text.svg" alt="Coastal Debt Resolve" height="36"></span>
+      <a href="tel:{{phone}}" class="nav-phone phone-element header-phone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        <span>{{phone}}</span>
+      </a>
+    </div>
+  </nav>
+
+  </div>
+<!-- JOIN4:HERO -->
+<div id="join4-hero">  <section class="hero" id="start-now">
+    <div class="hero-photo" aria-hidden="true"></div>
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <p class="hero-badge">{{badge}}</p>
+        <h1>{{headline}} <span>{{headlineHighlight}}</span> {{headlineLine2}}</h1>
+        <p class="hero-last-update"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Last update <time id="join4LastUpdate">{{currentMonthYear}}</time></span></p>
+        <script>
+          (function () {
+            var now = new Date();
+            var label = document.getElementById('join4LastUpdate');
+            label.textContent = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            label.dateTime = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+          })();
+        </script>
+        <p class="hero-sub">{{subheadline}}</p>
+        <ul class="hero-benefits">{{join3Bullets}}</ul>
+      </div>
+      <div class="form-card" id="assessment" data-form-mode="prequalify" data-skip-prequal="false" data-mobile-bullets-count="{{mobileBulletsCount}}" data-mobile-cta="{{mobileCta}}">
+        <p class="form-progress" id="formProgress" aria-live="polite">Step <span id="stepNumber">1</span> / <span id="stepTotal">3</span></p>
+        <div class="progress-track" aria-hidden="true"><span id="progressFill"></span></div>
+        <form id="leadForm">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="debt_amount" id="debt_amount">
+          <input type="hidden" name="has_mca" id="has_mca">
+          {{HIDDEN_FIELDS}}
+          <fieldset class="form-step" data-step="1">
+            <legend class="form-title">{{formTitle}}</legend>
+            <p class="form-subtitle">{{formSubtitle}}</p>
+            <label for="debtSelect" class="sr-only">Total business debt</label>
+            <select id="debtSelect" required>
+              <option value="">Select your debt amount</option>
+              <option>Under $20,000</option><option>$20,000 - $50,000</option><option>$50,000 - $100,000</option><option>$100,000 - $500,000</option><option>$500,000 - $1,000,000</option><option>$1,000,000+</option>
+            </select>
+            <button type="button" class="debt-visual-cta" id="debtContinue">Check My Eligibility for Free <span aria-hidden="true">→</span></button>
+            <p class="debt-auto-note">Choose your debt amount, then check your eligibility.</p>
+            <p class="eligibility-note" id="debtNotice" role="status" hidden>This program is for businesses with at least $20,000 in MCA or unsecured business debt.</p>
+          </fieldset>
+          <fieldset class="form-step" data-step="2" hidden disabled>
+            <legend class="form-title">What type of business debt do you have?</legend>
+            <p class="form-subtitle">Do you have merchant cash advances or unsecured business loans?</p>
+            <div class="choice-grid">
+              <label class="choice"><input type="radio" name="_qualificationMca" value="Yes" required><span>Yes</span></label>
+              <label class="choice"><input type="radio" name="_qualificationMca" value="No"><span>No</span></label>
+            </div>
+            <p class="eligibility-note" id="mcaNotice" role="status" hidden>Our program focuses on MCA and unsecured business debt. We do not provide new loans or personal debt relief.</p>
+            <button class="back-button" type="button" data-back="1">← Back</button>
+          </fieldset>
+          <fieldset class="form-step" data-step="3" hidden disabled>
+            <legend class="form-title">Where can your advisor reach you?</legend>
+            <p class="form-subtitle">Complete your free, confidential assessment.</p>
+            <div class="contact-fields" id="dynamicFormFields"></div>
+            <div class="consent"><input type="checkbox" name="consent" value="yes" id="consentCb" required><label for="consentCb">By selecting this checkbox, you consent to receive text messages or emails from Coastal Debt Resolve. Message and data rates may apply. Message frequency varies. You may unsubscribe at any time. Carriers are not liable for delayed or undelivered messages. See our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank" rel="noopener">Terms of Use</a>.</label></div>
+            <p class="form-error" id="formError" role="alert" hidden></p>
+            <button type="submit" class="button submit-btn">{{formSubmitText}}</button>
+            <button class="back-button" type="button" data-back="2">← Back</button>
+          </fieldset>
+        </form>
+        <div class="form-success" id="formSuccess" hidden role="status" tabindex="-1"><span class="success-check" aria-hidden="true">✓</span><h2>Thank you!</h2><p>{{formSuccessMsg}}</p><a class="phone-element button" href="tel:{{phoneDigits}}">Call {{phone}}</a></div>
+        <p class="form-security"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Secure form. Free assessment. No obligation.</p>
+        <p class="form-privacy">Your information is handled in accordance with our <a href="https://www.coastaldebt.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <noscript><p>Please enable JavaScript to complete this form, or call <a href="tel:{{phoneDigits}}">{{phone}}</a>.</p></noscript>
+      </div>
+    </div>
+  </section><div class="mobile-cta" id="mobileCta"><a class="button" id="mobileCtaLink" href="#assessment">Free assessment <span aria-hidden="true">→</span></a></div></div>
+<!-- /JOIN4:HERO -->
+  <main class="bankruptcy-content">
+  <!-- SECTION:howItWorks -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{howItWorksTitle}}</h2>
+      <p class="section-sub">{{howItWorksSubtitle}}</p>
+      <div class="steps-grid" id="stepsGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:howItWorks -->
+
+  <!-- SECTION:educational -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{eduTitle}}</h2>
+      <p class="section-sub">{{eduSubtitle}}</p>
+      <div class="edu-stats" id="eduStats"></div>
+      <div class="edu-sections" id="eduSections"></div>
+    </div>
+  </section>
+  <!-- /SECTION:educational -->
+
+  <!-- SECTION:calculator -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{calcTitle}}</h2>
+      <p class="section-sub">{{calcSubtitle}}</p>
+      <div class="calc-card">
+        <div class="calc-label">Your estimated business debt</div>
+        <div class="calc-amount" id="calcAmountDisplay">$50,000</div>
+        <input type="range" class="calc-slider" id="calcSlider" min="{{calcMinDebt}}" max="{{calcMaxDebt}}" value="{{calcDefaultDebt}}" step="5000">
+        <div class="calc-results">
+          <div class="calc-result">
+            <div class="cr-label">Estimated Settlement</div>
+            <div class="cr-value" id="calcSettlement">$25,000</div>
+          </div>
+          <div class="calc-result savings">
+            <div class="cr-label">Estimated Savings</div>
+            <div class="cr-value" id="calcSavings">$25,000</div>
+          </div>
+        </div>
+        <a href="#leadForm" class="calc-cta" onclick="document.getElementById('assessment').scrollIntoView({behavior:'smooth',block:'center'});return false;">{{calcCta}}</a>
+      </div>
+    </div>
+  </section>
+  <!-- /SECTION:calculator -->
+
+  <!-- SECTION:comparison -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{comparisonTitle}}</h2>
+      <p class="section-sub">{{comparisonSubtitle}}</p>
+      <div class="comp-grid" id="compGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:comparison -->
+
+  <!-- SECTION:caseStudies -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{caseStudiesTitle}}</h2>
+      <p class="section-sub">{{caseStudiesSubtitle}}</p>
+      <div class="cases-grid" id="casesGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:caseStudies -->
+
+  <!-- SECTION:personCta -->
+  <section class="person-cta">
+    <div class="container">
+      <div class="person-cta-grid">
+        <div class="person-cta-content">
+          <h2>{{personCtaTitle}} <span class="hl">{{personCtaTitleHighlight}}</span></h2>
+          <p>{{personCtaText}}</p>
+          <a href="#leadForm" class="pcta-btn" onclick="document.getElementById('assessment').scrollIntoView({behavior:'smooth',block:'center'});return false;">{{personCtaButton}}</a>
+          <a href="tel:{{phone}}" class="pcta-phone phone-element">Or call: {{phone}}</a>
+        </div>
+        <div class="person-cta-img">
+          <img src="{{personCtaImage}}" alt="Debt relief consultation" loading="lazy" onerror="if(this.src && !this.src.endsWith('/'))this.style.display='none'">
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- /SECTION:personCta -->
+
+  <!-- SECTION:testimonials -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <h2 class="section-title">{{testimonialsTitle}}</h2>
+      <p class="section-sub">{{testimonialsSubtitle}}</p>
+      <div class="testimonials-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:testimonials -->
+
+  <!-- SECTION:faq -->
+  <section class="section" style="background:#f2f4f9">
+    <div class="container">
+      <h2 class="section-title">{{faqTitle}}</h2>
+      <p class="section-sub">{{faqSubtitle}}</p>
+      <div class="faq-grid" id="faqGrid"></div>
+    </div>
+  </section>
+  <!-- /SECTION:faq -->
+
+  <!-- SECTION:cta -->
+  <section class="bottom-cta">
+    <div class="container">
+      <h2>{{ctaTitle}}</h2>
+      <p class="section-sub">{{ctaSubtitle}}</p>
+      <div class="cta-form-card" id="bottomFormCard">
+        <form id="bottomLeadForm" class="bottom-form">
+          <input type="hidden" name="landing_page_slug" value="{{SLUG}}">
+          <input type="hidden" name="gclid" class="bottom-gclid" value="">
+          <input type="hidden" name="msclkid" class="bottom-msclkid" value="">
+          <input type="hidden" name="fbclid" class="bottom-fbclid" value="">
+          <input type="hidden" name="rt_clickid" class="bottom-rt" value="">
+          <input type="hidden" name="rdt_cid" class="bottom-rdt-cid" value="">
+          <input type="hidden" name="eli_clickid" class="bottom-eli" value="">
+          <input type="hidden" name="keyword" class="bottom-keyword" value="">
+          <input type="hidden" name="fb_campaign_id" class="bottom-fb-campaign-id" value="">
+          <input type="hidden" name="fb_adset_id" class="bottom-fb-adset-id" value="">
+          <input type="hidden" name="fb_ad_id" class="bottom-fb-ad-id" value="">
+          <input type="hidden" name="fb_campaign_name" class="bottom-fb-campaign-name" value="">
+          <input type="hidden" name="fb_adset_name" class="bottom-fb-adset-name" value="">
+          <input type="hidden" name="fb_ad_name" class="bottom-fb-ad-name" value="">
+          <input type="hidden" name="fb_placement" class="bottom-fb-placement" value="">
+          <input type="hidden" name="visitor_ip" class="bottom-visitor-ip" value="">
+          <input type="hidden" name="page_url" class="bottom-pageurl" value="">
+          <input type="hidden" name="referrer_url" class="bottom-referrer" value="">
+          {{hiddenFieldsHtml}}
+          <div id="bottomFormFields"></div>
+          <div class="consent-group">
+            <label class="consent-label">
+              <input type="checkbox" id="bottomConsentCheckbox" name="consent" value="yes" required>
+              <span>By selecting the checkbox, you consent to receive communications by text message or emails from Coastal Debt Resolve. Message and Data rates may apply. <a href="https://www.coastaldebt.com/privacy-policy" target="_blank">Privacy Policy</a> and <a href="https://www.coastaldebt.com/terms-of-use" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <div class="consent-error" id="bottomConsentError">You must agree to continue</div>
+          </div>
+          <button type="submit" class="submit-btn">{{formButton}}</button>
+        </form>
+        <div class="bottom-form-success" id="bottomFormSuccess" style="display:none;">
+          <h3>Thank You!</h3>
+          <p>{{formSuccessMsg}}</p>
+        </div>
+      </div>
+      <p class="cta-phone phone-element">Or call now: <a href="tel:{{phone}}">{{phone}}</a></p>
+    </div>
+  </section>
+  <!-- /SECTION:cta -->
+
+  <!-- SECTION:guide -->
+  <div id="guideContainer"></div>
+  <!-- /SECTION:guide -->
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 {{siteName}}. All rights reserved. | <a href="https://www.coastaldebt.com/privacy-policy">Privacy Policy</a> | <a href="https://www.coastaldebt.com/terms-of-use">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  </main>
+  <script>
+    // ============= Configuration =============
+    var PAGE_SLUG = '{{SLUG}}';
+    var API_BASE = '/api';
+
+    // ============= Hide phone elements if no phone =============
+    (function() {
+      var phone = '{{phone}}';
+      if (!phone || phone === '{' + '{phone}}') {
+        document.querySelectorAll('.phone-element').forEach(function(el) { el.style.display = 'none'; });
+      }
+    })();
+
+    // ============= Main IIFE =============
+    (function() {
+
+    function fmtCurrency(n) { return '$' + n.toLocaleString('en-US'); }
+
+    // ============= Render Steps =============
+    if(document.getElementById("stepsGrid")) {
+
+    var steps = JSON.parse('{{stepsJson}}');
+    document.getElementById('stepsGrid').innerHTML = steps.map(function(step, i) {
+      return '<div class="step-card"><div class="step-num">' + (i + 1) + '</div><h3>' + step.title + '</h3><p>' + step.description + '</p></div>';
+    }).join('');
+
+    }
+
+    // ============= Render Educational Stats =============
+    if(document.getElementById("eduStats")) {
+
+    var eduStats = JSON.parse('{{eduStatsJson}}');
+    document.getElementById('eduStats').innerHTML = eduStats.map(function(stat) {
+      return '<div class="edu-stat"><div class="num">' + stat.number + '</div><div class="lbl">' + stat.label + '</div></div>';
+    }).join('');
+
+    }
+
+    // ============= Render Educational Sections =============
+    if(document.getElementById("eduSections")) {
+
+    var eduSections = JSON.parse('{{eduSectionsJson}}');
+    document.getElementById('eduSections').innerHTML = eduSections.map(function(sec) {
+      var paragraphs = sec.content.split('\n\n').map(function(p) { return '<p>' + p.trim() + '</p>'; }).join('');
+      return '<div class="edu-section"><h3>' + sec.title + '</h3>' + paragraphs + '</div>';
+    }).join('');
+
+    }
+
+    // ============= Calculator =============
+    if(document.getElementById("calcSlider")) {
+
+    var calcSlider = document.getElementById('calcSlider');
+    var savingsPercent = {{calcSavingsPercent}};
+    var calcTracked = false;
+
+    function updateCalc() {
+      var debt = parseInt(calcSlider.value);
+      var settlement = Math.round(debt * (1 - savingsPercent / 100));
+      var savings = debt - settlement;
+      document.getElementById('calcAmountDisplay').textContent = fmtCurrency(debt);
+      document.getElementById('calcSettlement').textContent = fmtCurrency(settlement);
+      document.getElementById('calcSavings').textContent = fmtCurrency(savings);
+    }
+    updateCalc();
+
+    calcSlider.addEventListener('input', function() {
+      updateCalc();
+      if (!calcTracked) {
+        calcTracked = true;
+        fetch('/api/visitors/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eli_clickid: window._eliClickId || '', event: 'calculator_interaction', page_slug: PAGE_SLUG })
+        }).catch(function(){});
+      }
+    });
+
+    }
+
+    // ============= Render Comparison Cards =============
+    if(document.getElementById("compGrid")) {
+
+    var compBad = JSON.parse('{{comparisonBadJson}}');
+    var compGood = JSON.parse('{{comparisonGoodJson}}');
+
+    var compHtml = '<div class="comp-card bad">';
+    compHtml += '<div class="comp-badge">' + (compBad.badge || '') + '</div>';
+    compBad.items.forEach(function(item) {
+      compHtml += '<div class="comp-item"><span class="comp-icon">&#10007;</span><span class="comp-text">' + item + '</span></div>';
+    });
+    compHtml += '</div>';
+
+    compHtml += '<div class="comp-card good"><div class="comp-recommended">Recommended</div>';
+    compHtml += '<div class="comp-badge">' + (compGood.badge || '') + '</div>';
+    compGood.items.forEach(function(item) {
+      compHtml += '<div class="comp-item"><span class="comp-icon">&#10003;</span><span class="comp-text">' + item + '</span></div>';
+    });
+    compHtml += '</div>';
+    document.getElementById('compGrid').innerHTML = compHtml;
+
+    }
+
+    // ============= Render Case Studies =============
+    if(document.getElementById("casesGrid")) {
+
+    var caseStudies = JSON.parse('{{caseStudiesJson}}');
+    document.getElementById('casesGrid').innerHTML = caseStudies.map(function(cs) {
+      var html = '<div class="case-card">';
+      html += '<div class="case-industry">' + cs.industry + '</div>';
+      html += '<p class="case-story">' + cs.story + '</p>';
+      html += '<p class="case-original">Original: <span>' + cs.originalAmount + '</span></p>';
+      html += '<p class="case-settled">' + cs.settledAmount + '</p>';
+      html += '<div class="case-savings-badge">' + cs.savingsPercent + ' Savings</div>';
+      if (cs.savingsNote) html += '<p class="case-note">' + cs.savingsNote + '</p>';
+      if (cs.proofLink) html += '<a href="' + cs.proofLink + '" target="_blank" class="case-link">View Settlement</a>';
+      html += '</div>';
+      return html;
+    }).join('');
+
+    }
+
+    // ============= Render Testimonials =============
+    if(document.getElementById("testimonialsGrid")) {
+
+    var testimonials = JSON.parse('{{testimonialsJson}}');
+    document.getElementById('testimonialsGrid').innerHTML = testimonials.map(function(t) {
+      var initials = t.initials || (t.name ? t.name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase() : '');
+      return '<div class="testimonial-card">' +
+        '<div class="testimonial-stars">\u2605\u2605\u2605\u2605\u2605</div>' +
+        '<p class="testimonial-text">"' + t.quote + '"</p>' +
+        '<div class="testimonial-author">' +
+        '<div class="author-avatar">' + initials + '</div>' +
+        '<div><div class="author-name">' + t.name + '</div><div class="author-role">' + (t.role || '') + '</div></div>' +
+        '</div></div>';
+    }).join('');
+
+    }
+
+    // ============= Render FAQ =============
+    if(document.getElementById("faqGrid")) {
+
+    var faqItems = JSON.parse('{{faqItemsJson}}');
+    document.getElementById('faqGrid').innerHTML = faqItems.map(function(item) {
+      return '<div class="faq-item"><div class="faq-q"><span>' + item.question + '</span><span class="arrow">&#9660;</span></div><div class="faq-a">' + item.answer + '</div></div>';
+    }).join('');
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-q').forEach(function(q) {
+      q.addEventListener('click', function() {
+        var answer = q.nextElementSibling;
+        var arrow = q.querySelector('.arrow');
+        var isOpen = answer.style.display === 'block';
+        // Close all
+        document.querySelectorAll('.faq-a').forEach(function(a) { a.style.display = 'none'; });
+        document.querySelectorAll('.faq-q .arrow').forEach(function(a) { a.classList.remove('open'); });
+        // Toggle this one
+        if (!isOpen) {
+          answer.style.display = 'block';
+          arrow.classList.add('open');
+        }
+      });
+    });
+
+    // FAQPage JSON-LD
+    var faqSchemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': faqItems.map(function(item) {
+        return { '@type': 'Question', 'name': item.question, 'acceptedAnswer': { '@type': 'Answer', 'text': item.answer } };
+      })
+    };
+    document.getElementById('faqSchema').textContent = JSON.stringify(faqSchemaData);
+
+    // AggregateRating JSON-LD
+    var ratingData = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      'name': 'Coastal Debt Resolve',
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': '5',
+        'bestRating': '5',
+        'ratingCount': String((testimonials || []).length)
+      }
+    };
+    document.getElementById('ratingSchema').textContent = JSON.stringify(ratingData);
+
+    }
+
+    // ============= Render Guide =============
+    (function() {
+      var guideContainer = document.getElementById('guideContainer');
+      if (!guideContainer) return;
+      var guideTitle = '{{guideTitle}}';
+      var guideSubtitle = '{{guideSubtitle}}';
+      if (!guideTitle || guideTitle === '{' + '{guideTitle}}') return;
+
+      var guideSections = JSON.parse('{{guideSectionsJson}}');
+      var guideCta = '{{guideCta}}';
+      var guideCtaSubtext = '{{guideCtaSubtext}}';
+
+      var html = '<div class="guide-header container"><h2>' + guideTitle + '</h2><p>' + guideSubtitle + '</p></div>';
+
+      guideSections.forEach(function(sec, i) {
+        var bgClass = sec.background === 'light' ? 'bg-light' : 'bg-white';
+        html += '<div class="guide-section ' + bgClass + '"><div class="container"><div class="guide-inner">';
+        html += '<h3>' + sec.title + '</h3>';
+
+        // Detect glossary: content has multiple lines with ":" pattern
+        var lines = sec.content.split('\n');
+        var colonCount = 0;
+        lines.forEach(function(l) { if (l.indexOf(':') > 0 && l.indexOf(':') < 40) colonCount++; });
+
+        if (colonCount >= 3) {
+          // Render as glossary grid
+          html += '<div class="glossary-grid">';
+          lines.forEach(function(line) {
+            line = line.trim();
+            if (!line) return;
+            var colonIdx = line.indexOf(':');
+            if (colonIdx > 0) {
+              var term = line.substring(0, colonIdx).trim();
+              var def = line.substring(colonIdx + 1).trim();
+              html += '<div class="glossary-card"><div class="term">' + term + '</div><div class="def">' + def + '</div></div>';
+            }
+          });
+          html += '</div>';
+        } else {
+          // Render as paragraphs
+          var paragraphs = sec.content.split('\n').filter(function(p) { return p.trim(); });
+          paragraphs.forEach(function(p) { html += '<p>' + p.trim() + '</p>'; });
+        }
+
+        html += '</div></div></div>';
+
+        // Inline CTA every 2-3 sections
+        if ((i + 1) % 2 === 0 && i < guideSections.length - 1) {
+          html += '<div class="guide-inline-cta"><a href="#leadForm" onclick="document.getElementById(\'assessment\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">Get Your Free Consultation</a></div>';
+        }
+      });
+
+      // Final guide CTA
+      if (guideCta && guideCta !== '{' + '{guideCta}}') {
+        html += '<div class="guide-final-cta"><a href="#leadForm" class="gfc-btn" onclick="document.getElementById(\'assessment\').scrollIntoView({behavior:\'smooth\',block:\'center\'});return false;">' + guideCta + '</a>';
+        if (guideCtaSubtext) html += '<div class="gfc-sub">' + guideCtaSubtext + '</div>';
+        html += '</div>';
+      }
+
+      guideContainer.innerHTML = html;
+    })();
+
+    // ============= Render Form Fields =============
+    var formFields = JSON.parse('{{formFieldsJson}}');
+
+    function renderFormFields(fields, containerId, prefix) {
+      var skipFields = ['has_mca', 'debt_amount'];
+      var existingIds = ['gclid','msclkid','fbclid','rt_clickid','eli_clickid','keyword','visitor_ip','fb_campaign_id','fb_adset_id','fb_ad_id','fb_campaign_name','fb_adset_name','fb_ad_name','fb_placement','page_url','referrer_url'];
+      var html = fields.filter(function(field) {
+        return skipFields.indexOf(field.name) === -1;
+      }).map(function(field) {
+        var fid = prefix ? prefix + field.name : field.name;
+        var fname = prefix && field.type === 'radio' ? prefix + field.name : field.name;
+        if (field.type === 'radio') {
+          var options = (field.options || 'Yes,No').split(',').map(function(o) { return o.trim(); });
+          return '<div class="form-group"><label>' + field.label + '</label><div class="radio-group">' +
+            options.map(function(opt, i) {
+              return '<label class="radio-label"><input type="radio" name="' + fname + '" value="' + opt.toLowerCase() + '"' + (field.required && i === 0 ? ' required' : '') + '><span>' + opt + '</span></label>';
+            }).join('') + '</div></div>';
+        } else if (field.type === 'select') {
+          var options = (field.options || '').split(',').map(function(o) { return o.trim(); });
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><select id="' + fid + '" name="' + field.name + '"' + (field.required ? ' required' : '') + '><option value="">Select...</option>' +
+            options.map(function(opt) { return '<option value="' + opt + '">' + opt + '</option>'; }).join('') + '</select></div>';
+        } else if (field.type === 'hidden') {
+          if (existingIds.includes(field.name)) return '';
+          return '<input type="hidden" name="' + field.name + '" value="' + (field.placeholder || '') + '">';
+        } else if (field.type === 'tel') {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label>' +
+            '<div class="phone-wrapper"><span class="phone-prefix">\u{1F1FA}\u{1F1F8} +1</span>' +
+            '<input type="tel" id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '(555) 123-4567') + '"' + (field.required ? ' required' : '') + '></div>' +
+            '<div class="phone-error" id="' + fid + '_error">Please enter a valid 10-digit US phone number</div></div>';
+        } else if (field.type === 'textarea') {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><textarea id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + ' rows="3" style="border-radius:12px;padding:12px 16px;width:100%;border:2px solid var(--gray-200);font-size:1rem;font-family:inherit;outline:none;transition:border 0.2s;resize:vertical"></textarea></div>';
+        } else {
+          return '<div class="form-group"><label for="' + fid + '">' + field.label + '</label><input type="' + field.type + '" id="' + fid + '" name="' + field.name + '" placeholder="' + (field.placeholder || '') + '"' + (field.required ? ' required' : '') + '></div>';
+        }
+      }).join('');
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    if(document.getElementById('bottomFormFields')) renderFormFields(formFields, 'bottomFormFields', 'bottom_');
+
+    // ============= Phone Formatting =============
+    function isValidUSPhone(digits) {
+      if (digits.length !== 10) return false;
+      if (digits[0] === '0' || digits[0] === '1') return false;
+      if (digits[3] === '0' || digits[3] === '1') return false;
+      if (parseInt(digits.substring(0, 3)) === 555) return false;
+      return true;
+    }
+
+    document.querySelectorAll('input[type="tel"]').forEach(function(phoneInput) {
+      phoneInput.addEventListener('input', function(e) {
+        var x = e.target.value.replace(/\D/g, '').substring(0, 10);
+        var formatted = '';
+        if (x.length > 0) formatted = '(' + x.substring(0, 3);
+        if (x.length >= 3) formatted += ') ' + x.substring(3, 6);
+        if (x.length >= 6) formatted += '-' + x.substring(6, 10);
+        e.target.value = formatted;
+        var errEl = document.getElementById(e.target.id + '_error');
+        if (errEl) errEl.style.display = 'none';
+        var wrapper = e.target.closest('.phone-wrapper');
+        if (wrapper) wrapper.style.borderColor = '';
+      });
+    });
+
+    // Copy the same visitor and attribution fields into the reference footer form.
+    function setBottomHiddenFields() {
+      var bottom=document.getElementById('bottomLeadForm'); if(!bottom)return;
+      document.querySelectorAll('#leadForm input[type="hidden"]').forEach(function(source){
+        if(['debt_amount','has_mca'].includes(source.name))return;
+        var input=Array.from(bottom.elements).find(function(el){return el.name===source.name});
+        if(!input){input=document.createElement('input');input.type='hidden';input.name=source.name;bottom.appendChild(input)}
+        if(source.value)input.value=source.value;
+      });
+    }
+    function showSuccess() {
+      document.getElementById('leadForm').hidden=true;
+      document.getElementById('formProgress').hidden=true;
+      document.getElementById('progressFill').style.width='100%';
+      document.getElementById('formSuccess').hidden=false;
+      var bottom=document.getElementById('bottomLeadForm');if(bottom)bottom.hidden=true;
+      var message=document.getElementById('bottomFormSuccess');if(message)message.style.display='block';
+    }
+    new MutationObserver(function(){if(!document.getElementById('formSuccess').hidden){
+      var bottom=document.getElementById('bottomLeadForm');if(bottom)bottom.hidden=true;
+      var message=document.getElementById('bottomFormSuccess');if(message)message.style.display='block';
+    }}).observe(document.getElementById('formSuccess'),{attributes:true,attributeFilter:['hidden']});
+
+    // ============= Dedup Flag =============
+    var _formSubmitting = false;
+
+    // ============= Bottom Form Submission =============
+    if(document.getElementById('bottomLeadForm')) document.getElementById('bottomLeadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (_formSubmitting) return;
+
+      var consentBox = document.getElementById('bottomConsentCheckbox');
+      var consentErr = document.getElementById('bottomConsentError');
+      if (!consentBox.checked) { consentErr.style.display = 'block'; consentBox.focus(); return; }
+      consentErr.style.display = 'none';
+
+      var phoneInputs = this.querySelectorAll('input[type="tel"]');
+      for (var i = 0; i < phoneInputs.length; i++) {
+        var digits = phoneInputs[i].value.replace(/\D/g, '');
+        if (!isValidUSPhone(digits)) {
+          var errEl = document.getElementById('bottom_' + phoneInputs[i].name + '_error');
+          if (errEl) errEl.style.display = 'block';
+          var wrapper = phoneInputs[i].closest('.phone-wrapper');
+          if (wrapper) wrapper.style.borderColor = '#dc2626';
+          phoneInputs[i].focus();
+          return;
+        }
+      }
+
+      setBottomHiddenFields();
+      _formSubmitting = true;
+      var btn = this.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var formData = new FormData(this);
+      var data = {};
+      formData.forEach(function(val, key) {
+        var cleanKey = key.startsWith('bottom_') ? key.substring(7) : key;
+        data[cleanKey] = val;
+      });
+      data.landing_page_slug = PAGE_SLUG;
+      if (window._abVariant) data.ab_variant = window._abVariant;
+      if (!data.rt_clickid) data.rt_clickid = window.getRtClickId ? window.getRtClickId() : '';
+
+      try {
+        var response = await fetch(API_BASE + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (response.ok) {
+          if (typeof fbq === 'function' && _fbPixelId) {
+            fbq('track', 'Lead', {}, { eventID: 'lead_' + (window._eliClickId || '') + '_' + Date.now() });
+          }
+          showSuccess();
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (error) {
+        alert('Something went wrong. Please try again or call us directly.');
+        _formSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = '{{formButton}}';
+      }
+    });
+
+    // ============= Section Visibility =============
+    (function() {
+      var sections = document.querySelectorAll('[class*="section"]');
+      var allComments = [];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_COMMENT, null, false);
+      while (walker.nextNode()) allComments.push(walker.currentNode);
+
+      allComments.forEach(function(comment) {
+        var text = comment.textContent.trim();
+        if (text.startsWith('SECTION:')) {
+          var key = text.replace('SECTION:', '').trim();
+          var node = comment.nextElementSibling;
+          // Section visibility is controlled server-side by removing the section markers and content
+        }
+      });
+    })();
+
+    })(); // end main IIFE
+  </script>
+  <script>window.join3FormFields = JSON.parse('{{formFieldsJson}}');</script>
+  <script src="/lp/assets/join3.js?v=4" defer></script>
+  <script src="/lp/assets/join4.js?v=1" defer></script>
+  {{bodyEndScripts}}
+
+  <!-- tkclid capture: tkclid = this page's Trakkit SDK ID or cookie; affiliate_tkclid = the referral site's Trakkit id from ?tkclid= (persisted) -->
+  <script>
+  (function () {
+    function ownTkclid() {
+      // The tracker can retain its ID in memory when cookies are unavailable.
+      try {
+        var tracker = window.trakkit;
+        var id = tracker && typeof tracker.getClickId === 'function' ? tracker.getClickId() : '';
+        if (typeof id === 'string' && id) return id;
+      } catch (e) {}
+      try {
+        var m = document.cookie.match(/(?:^|;\s*)tkclid=([^;]*)/);
+        if (!m) return '';
+        try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+      } catch (e) { return ''; }
+    }
+    function refTkclid() {
+      var p = '';
+      try { p = new URLSearchParams(window.location.search).get('tkclid') || ''; } catch (e) {}
+      if (p) { try { localStorage.setItem('_ref_tkclid', p); } catch (e) {} return p; }
+      try { return localStorage.getItem('_ref_tkclid') || ''; } catch (e) { return ''; }
+    }
+    function setHidden(f, name, v) {
+      var input = f.querySelector('input[name="' + name + '"]');
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        f.appendChild(input);
+      }
+      // Create empty fields early so Trakkit can fill them when its response arrives.
+      if (v) input.value = v;
+    }
+    function fillTkclid() {
+      var own = ownTkclid();
+      var ref = refTkclid();
+      var forms = document.querySelectorAll('form');
+      for (var i = 0; i < forms.length; i++) {
+        var f = forms[i];
+        if ((f.getAttribute('action') || '').indexOf('/search') !== -1) continue;
+        setHidden(f, 'tkclid', own);
+        setHidden(f, 'affiliate_tkclid', ref);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fillTkclid);
+    } else {
+      fillTkclid();
+    }
+    document.addEventListener('submit', fillTkclid, true);
+    // Also cover programmatic FormData and forms added after DOMContentLoaded.
+    document.addEventListener('formdata', function (event) {
+      if ((event.target.getAttribute('action') || '').indexOf('/search') !== -1) return;
+      var own = ownTkclid();
+      var ref = refTkclid();
+      if (own) event.formData.set('tkclid', own);
+      if (ref) event.formData.set('affiliate_tkclid', ref);
+    }, true);
+  })();
+  </script>
+</body>
+</html>
