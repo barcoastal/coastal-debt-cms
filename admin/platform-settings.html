@@ -42,6 +42,7 @@
     .pagination span { color: var(--gray-500); font-size: 0.85rem; }
   </style>
   <link rel="stylesheet" href="/admin/assets/css/workspace.css?v=1">
+  <link rel="stylesheet" href="/admin/assets/css/phone-schedule.css?v=1">
   <script src="/admin/assets/js/workspace.js?v=2" defer></script>
 </head>
 <body>
@@ -180,6 +181,7 @@
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('general')">General</button>
+        <button class="tab-btn" onclick="switchTab('phone')">Phone schedule</button>
         <button class="tab-btn" onclick="switchTab('users')">Users & Permissions</button>
         <button class="tab-btn" onclick="switchTab('activity')">Activity Logs</button>
         <button class="tab-btn" onclick="switchTab('notifications')">Notifications</button>
@@ -241,6 +243,38 @@
             <button class="btn btn-primary" style="width:auto" onclick="saveSettings()">Save Settings</button>
           </div>
         </div>
+      </div>
+
+      <div class="tab-content" id="tab-phone">
+        <form id="phoneScheduleForm" class="phone-schedule-card">
+          <div class="phone-schedule-heading">
+            <div><div class="workspace-eyebrow">All landing pages</div><h2>Phone availability</h2>
+              <p>Choose when visitors see phone numbers and Call Now buttons.</p></div>
+            <span class="phone-scope">Shared schedule</span>
+          </div>
+          <fieldset id="phoneScheduleFields" disabled>
+            <div class="phone-schedule-controls">
+              <label for="phoneScheduleMode">Show phone numbers
+                <select id="phoneScheduleMode"><option value="always">Always show</option><option value="scheduled">Use weekly schedule</option><option value="hidden">Always hide</option></select>
+              </label>
+              <label for="phoneScheduleTimezone">Schedule timezone
+                <select id="phoneScheduleTimezone"></select>
+              </label>
+            </div>
+            <div class="phone-schedule-preview" id="phoneSchedulePreview" aria-live="polite">
+              <span class="phone-status-dot" aria-hidden="true"></span><div><strong id="phoneScheduleStatus">Loading schedule…</strong><p id="phoneScheduleClock"></p></div>
+            </div>
+            <div id="phoneWeeklyHours" hidden>
+              <div class="phone-week-heading"><h3>Weekly hours</h3><span>Start included · End excluded</span></div>
+              <div class="phone-hours-labels" aria-hidden="true"><span>Day</span><span>Availability</span><span>From</span><span>Until</span></div>
+              <div id="phoneScheduleDays"></div>
+              <p class="phone-schedule-help">An end time earlier than the start continues into the next day. Daylight saving time adjusts automatically.</p>
+            </div>
+            <div class="phone-schedule-note">Applies to every landing page and A/B version, including headers, mobile call buttons, and confirmation messages. Lead forms stay available.</div>
+            <div class="phone-schedule-footer"><p id="phoneScheduleMessage" role="status">Loading saved settings…</p><button type="submit" id="phoneScheduleSave" class="btn btn-primary">Save phone schedule</button></div>
+          </fieldset>
+          <p id="phoneScheduleLoadError" role="alert" hidden></p>
+        </form>
       </div>
 
       <!-- Tab: Users & Permissions -->
@@ -550,6 +584,8 @@
   </div>
 
   <script src="assets/js/common.js?v=8"></script>
+  <script src="/assets/phone-schedule.js?v=1"></script>
+  <script src="/admin/assets/js/phone-schedule.js?v=1" defer></script>
   <script>
     let currentUserId = null;
     let allUsers = [];

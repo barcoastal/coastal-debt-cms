@@ -1635,6 +1635,7 @@ function generateLandingPage(pageId) {
     fs.mkdirSync(pageDir, { recursive: true });
   }
 
+  html = require('../lib/phone-visibility')(html);
   fs.writeFileSync(path.join(pageDir, 'index.html'), html);
   console.log(`Generated landing page: ${page.slug}`);
 
@@ -1676,6 +1677,7 @@ function generateLandingPage(pageId) {
       const configJson = JSON.stringify(mergedVariant).replace(/<\//g, '<\\/');
       htmlB = htmlB.replace('</body>', `<script>window.__PAGE_CONFIG__=${configJson};</script>\n</body>`);
 
+      htmlB = require('../lib/phone-visibility')(htmlB);
       fs.writeFileSync(path.join(pageDir, 'variant-b.html'), htmlB);
       console.log(`Generated variant B (${abCfg.variantB_template}) for: ${page.slug}`);
     }

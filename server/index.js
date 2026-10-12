@@ -156,6 +156,7 @@ app.use('/api/postback', postbackRoutes);
 app.use('/api/facebook', facebookRoutes);
 app.use('/api/bing-ads', bingAdsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/phone-schedule', require('./routes/phone-schedule')(db, authRoutes.authenticateToken));
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/ai', aiContentRoutes);
 app.use('/api/crm', crmRoutes);
