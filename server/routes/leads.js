@@ -114,7 +114,7 @@ router.post('/', async (req, res) => {
     industry,
     mca_count,
     considered_bankruptcy,
-    gclid,
+    gclid: submittedGclid,
     msclkid,
     fbclid,
     rt_clickid: rt_clickid_body,
@@ -123,6 +123,13 @@ router.post('/', async (req, res) => {
     ab_variant,
     ...hiddenFields
   } = req.body;
+
+  // Recover Google IDs from our Google tracking URL before storage, webhook
+  // delivery and conversion upload. Cached pages may still omit the field.
+  const googleIds = require('../lib/google-click-ids').forRequest(req);
+  const gclid = googleIds.gclid;
+  for (const key of ['gbraid', 'wbraid']) if (googleIds[key]) hiddenFields[key] = googleIds[key];
+  if (gclid && !submittedGclid) hiddenFields.gclid_capture_source = googleIds.source;
 
   // Get rt_clickid from: body → RedTrack cookie → create server-side via RedTrack API
   let rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';

@@ -175,7 +175,6 @@ router.get('/funnel-step/recent', authenticateToken, (req, res) => {
 router.post('/track', async (req, res) => {
   const {
     eli_clickid,
-    gclid,
     msclkid,
     rt_clickid: rt_clickid_body,
     fbclid,
@@ -201,6 +200,8 @@ router.post('/track', async (req, res) => {
     utm_content,
     ab_variant
   } = req.body;
+
+  const gclid = require('../lib/google-click-ids').forRequest(req).gclid;
 
   // Get rt_clickid from: body → cookie → create server-side via RedTrack API
   let rt_clickid = rt_clickid_body || req.cookies?.['rtkclickid-store'] || '';

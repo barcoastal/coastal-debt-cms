@@ -1636,6 +1636,7 @@ function generateLandingPage(pageId) {
   }
 
   html = require('../lib/phone-visibility')(html);
+  html = require('../lib/google-click-ids').inject(html);
   fs.writeFileSync(path.join(pageDir, 'index.html'), html);
   console.log(`Generated landing page: ${page.slug}`);
 
@@ -1678,6 +1679,7 @@ function generateLandingPage(pageId) {
       htmlB = htmlB.replace('</body>', `<script>window.__PAGE_CONFIG__=${configJson};</script>\n</body>`);
 
       htmlB = require('../lib/phone-visibility')(htmlB);
+      htmlB = require('../lib/google-click-ids').inject(htmlB);
       fs.writeFileSync(path.join(pageDir, 'variant-b.html'), htmlB);
       console.log(`Generated variant B (${abCfg.variantB_template}) for: ${page.slug}`);
     }
